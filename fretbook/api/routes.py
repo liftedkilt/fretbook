@@ -1,23 +1,29 @@
-"""HTTP API. UI strings live in the frontend catalogs; progress uses keys."""
+"""HTTP API. UI strings live in the frontend catalogs; errors and progress carry keys."""
 
 from __future__ import annotations
 
+import json
 import re
+import uuid
 from pathlib import Path
+from typing import Literal
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 from fastapi.responses import FileResponse, Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from fretbook import __version__
 from fretbook.api.deps import context, principal, require_song
+from fretbook.api.errors import api_error
 from fretbook.auth.base import Principal
+from fretbook.chords import chordpro
 from fretbook.context import AppContext
-from fretbook.export.pdf import PdfExporter, PdfNotImplemented, available_exporters
-from fretbook.importers.base import ImportRequest
+from fretbook.export.musicxml import to_musicxml
+from fretbook.importers.base import ImportError, ImportRequest
 from fretbook.importers.registry import resolve_importer
-from fretbook.score.instruments import get_preset, presets_payload
+from fretbook.score.instruments import family, get_preset, is_preset, presets_payload
 from fretbook.score.model import ScoreDocument
+from fretbook.storage.repository import RevisionConflict
 
 router = APIRouter()
 
@@ -29,34 +35,59 @@ _AUDIO_TYPES = {
     ".flac": "audio/flac",
     ".webm": "audio/webm",
 }
+_GUITAR_PRO = {".gp", ".gp3", ".gp4", ".gp5", ".gpx"}
+_CHUNK = 1024 * 1024
 
 
-class CreateSongBody(BaseModel):
-    title: str = "Untitled"
-    artist: str = ""
-    preset: str = "bass-4"
+class _Body(BaseModel):
+    model_config = ConfigDict(allow_inf_nan=False)
+
+
+class CreateSongBody(_Body):
+    content_kind: Literal["tab", "chords"] = "tab"
+    title: str = Field(default="Untitled", max_length=300)
+    artist: str = Field(default="", max_length=300)
+    preset: str | None = None
+    """Instrument preset for a tab. Defaults to the user's default instrument."""
     bpm: float = Field(default=120, gt=0, lt=400)
     measures: int = Field(default=4, ge=1, le=500)
     signature: tuple[int, int] = (4, 4)
+    chordpro: str | None = Field(default=None, max_length=chordpro.MAX_CHARS)
+    """ChordPro or chords-over-lyrics text for a chord sheet."""
 
 
-class UpdateSongBody(BaseModel):
-    title: str
-    artist: str = ""
-    document: ScoreDocument
+class UpdateSongBody(_Body):
+    title: str = Field(max_length=300)
+    artist: str = Field(default="", max_length=300)
+    revision: int
+    """The revision the client loaded. A stale one is refused with 409."""
+    document: ScoreDocument | None = None
+    chordpro: str | None = Field(default=None, max_length=chordpro.MAX_CHARS)
 
 
-class SyncBody(BaseModel):
+class SyncBody(_Body):
     bpm: float = Field(gt=0, lt=400)
     anchors: dict[str, float] = Field(default_factory=dict)
 
 
-class ImportUrlBody(BaseModel):
-    url: str
-    video_id: str | None = None
-    slug: str | None = None
+class ImportUrlBody(_Body):
+    url: str = Field(max_length=2000)
+    video_id: str | None = Field(default=None, max_length=11)
+    slug: str | None = Field(default=None, max_length=60)
     part_ids: list[int] | None = None
     kind: str | None = None
+
+
+class ImportDocumentBody(_Body):
+    title: str = Field(default="Untitled", max_length=300)
+    artist: str = Field(default="", max_length=300)
+    source_kind: Literal["file", "guitarpro", "musicxml", "fretbook-json", "manual"] = "file"
+    slug: str | None = Field(default=None, max_length=60)
+    document: ScoreDocument
+
+
+class SettingsBody(_Body):
+    default_instrument: str
 
 
 def _ctx(ctx: AppContext = Depends(context)) -> AppContext:
@@ -65,6 +96,41 @@ def _ctx(ctx: AppContext = Depends(context)) -> AppContext:
 
 def _user(user: Principal = Depends(principal)) -> Principal:
     return user
+
+
+def _prefer(ctx: AppContext, user: Principal) -> str:
+    preset = get_preset(ctx.songs.get_settings(user.user_id)["default_instrument"])
+    return family(preset.instrument)
+
+
+def _import_error(exc: Exception) -> Exception:
+    if isinstance(exc, ImportError):
+        return api_error(400, exc.key, str(exc), **exc.params)
+    return api_error(400, "import.failed", str(exc))
+
+
+async def _spool(file: UploadFile, dest: Path, limit: int) -> int:
+    """Copy an upload to ``dest`` in chunks, stopping at ``limit`` bytes."""
+    size = 0
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with dest.open("wb") as out:
+            while chunk := await file.read(_CHUNK):
+                size += len(chunk)
+                if size > limit:
+                    raise api_error(413, "upload.tooLarge", "file is too large", limit=limit)
+                out.write(chunk)
+    except BaseException:
+        dest.unlink(missing_ok=True)
+        raise
+    if size == 0:
+        dest.unlink(missing_ok=True)
+        raise api_error(400, "upload.empty", "empty file")
+    return size
+
+
+def _safe_name(filename: str) -> str:
+    return re.sub(r"[^A-Za-z0-9._-]+", "-", Path(filename).name)[:80] or "upload"
 
 
 @router.get("/api/health")
@@ -76,21 +142,31 @@ def health() -> dict[str, object]:
 def meta(ctx: AppContext = Depends(_ctx)) -> dict[str, object]:
     return {
         "name": "Fretbook",
-        "tagline": "Self-hosted tabs and sheet music for bass and guitar.",
+        "tagline": "Self-hosted tabs, chord sheets, and sheet music for bass and guitar.",
         "version": __version__,
         "auth_mode": ctx.settings.auth_mode,
-        "exporters": available_exporters(),
+        "exporters": ["json", "musicxml", "chordpro", "print"],
         "instruments": presets_payload(),
     }
 
 
 @router.get("/api/me")
-def me(user: Principal = Depends(_user)) -> dict[str, object]:
+def me(ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> dict[str, object]:
     return {
         "user_id": user.user_id,
         "display_name": user.display_name,
         "authenticated": user.authenticated,
+        "settings": ctx.songs.get_settings(user.user_id),
     }
+
+
+@router.put("/api/me/settings")
+def update_settings(
+    body: SettingsBody, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)
+) -> dict[str, object]:
+    if not is_preset(body.default_instrument):
+        raise api_error(400, "settings.unknownInstrument", "unknown instrument preset", preset=body.default_instrument)
+    return ctx.songs.update_settings(user.user_id, default_instrument=body.default_instrument)
 
 
 @router.get("/api/songs")
@@ -99,23 +175,33 @@ def list_songs(ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)
 
 
 @router.post("/api/songs", status_code=201)
-def create_song(
-    body: CreateSongBody,
-    ctx: AppContext = Depends(_ctx),
-    user: Principal = Depends(_user),
-) -> dict:
-    try:
-        get_preset(body.preset)
-    except KeyError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+def create_song(body: CreateSongBody, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> dict:
+    title = body.title.strip() or "Untitled"
+    artist = body.artist.strip()
+    if body.content_kind == "chords":
+        try:
+            text = chordpro.normalize(body.chordpro or "", title=title, artist=artist)
+        except ValueError as exc:
+            raise api_error(400, "chords.tooLong", str(exc), limit=chordpro.MAX_CHARS) from exc
+        found = chordpro.metadata(text)
+        return ctx.songs.create_song(
+            user.user_id,
+            title=title if body.title.strip() else found.get("title", title),
+            artist=artist or found.get("artist", ""),
+            chordpro=text,
+            source_kind="manual",
+        )
+    preset = body.preset or ctx.songs.get_settings(user.user_id)["default_instrument"]
+    if not is_preset(preset):
+        raise api_error(400, "settings.unknownInstrument", "unknown instrument preset", preset=preset)
     numerator, denominator = body.signature
-    if numerator < 1 or denominator < 1:
-        raise HTTPException(status_code=400, detail="invalid time signature")
+    if not 1 <= numerator <= 32 or denominator not in {1, 2, 4, 8, 16, 32}:
+        raise api_error(400, "song.badSignature", "invalid time signature")
     return ctx.songs.create_blank(
         user.user_id,
-        title=body.title.strip() or "Untitled",
-        artist=body.artist.strip(),
-        preset_id=body.preset,
+        title=title,
+        artist=artist,
+        preset_id=preset,
         bpm=body.bpm,
         measures=body.measures,
         signature=(numerator, denominator),
@@ -134,15 +220,29 @@ def update_song(
     ctx: AppContext = Depends(_ctx),
     user: Principal = Depends(_user),
 ) -> dict:
-    require_song(ctx, user.user_id, song_id)
-    updated = ctx.songs.update_song(
-        user.user_id,
-        song_id,
-        title=body.title.strip() or "Untitled",
-        artist=body.artist.strip(),
-        document=body.document,
-    )
-    assert updated is not None
+    song = require_song(ctx, user.user_id, song_id)
+    chordpro_text: str | None = None
+    if song["content_kind"] == "tab":
+        if body.document is None:
+            raise api_error(400, "song.needsDocument", "a tab update needs a score document")
+    else:
+        if body.chordpro is None:
+            raise api_error(400, "song.needsChordPro", "a chord sheet update needs ChordPro text")
+        chordpro_text = chordpro.normalize(body.chordpro)
+    try:
+        updated = ctx.songs.update_song(
+            user.user_id,
+            song_id,
+            title=body.title.strip() or "Untitled",
+            artist=body.artist.strip(),
+            revision=body.revision,
+            document=body.document if song["content_kind"] == "tab" else None,
+            chordpro=chordpro_text,
+        )
+    except RevisionConflict as exc:
+        raise api_error(409, "song.conflict", "this song changed since you opened it", current=exc.current) from exc
+    if updated is None:
+        raise api_error(404, "song.notFound", "song not found")
     return updated
 
 
@@ -154,11 +254,12 @@ def update_sync(
     user: Principal = Depends(_user),
 ) -> dict:
     require_song(ctx, user.user_id, song_id)
-    for key in body.anchors:
-        if not re.fullmatch(r"\d+", key):
-            raise HTTPException(status_code=400, detail="anchor keys are measure indexes")
-    updated = ctx.songs.update_sync(user.user_id, song_id, bpm=body.bpm, anchors=body.anchors)
-    assert updated is not None
+    try:
+        updated = ctx.songs.update_sync(user.user_id, song_id, bpm=body.bpm, anchors=body.anchors)
+    except ValidationError as exc:
+        raise api_error(400, "sync.badAnchor", "anchor keys must be bar indexes of this song") from exc
+    if updated is None:
+        raise api_error(400, "sync.notTab", "only tabs have sync marks")
     return updated
 
 
@@ -181,96 +282,109 @@ async def upload_audio(
     filename = file.filename or "audio.mp3"
     suffix = Path(filename).suffix.lower()
     if suffix not in _AUDIO_TYPES:
-        raise HTTPException(status_code=400, detail="upload an mp3, wav, ogg, m4a, flac, or webm file")
-    data = await file.read()
-    if len(data) > ctx.settings.max_upload_bytes:
-        raise HTTPException(status_code=413, detail="file is too large")
-    if not data:
-        raise HTTPException(status_code=400, detail="empty file")
-    ctx.media.save(
-        user.user_id,
-        song_id,
-        kind="audio",
-        filename=filename,
-        content_type=file.content_type or _AUDIO_TYPES[suffix],
-        data=data,
-        replace_kind=True,
-    )
-    song = require_song(ctx, user.user_id, song_id)
-    return song
+        raise api_error(400, "upload.notAudio", "upload an mp3, wav, ogg, m4a, flac, or webm file")
+    staging = ctx.settings.inbox_dir / f"upload-{uuid.uuid4().hex}{suffix}"
+    await _spool(file, staging, ctx.settings.max_upload_bytes)
+    try:
+        ctx.media.save_file(
+            user.user_id,
+            song_id,
+            kind="audio",
+            filename=filename,
+            # The type comes from the extension we accepted, not from the client.
+            content_type=_AUDIO_TYPES[suffix],
+            source=staging,
+            replace_kind=True,
+        )
+    finally:
+        staging.unlink(missing_ok=True)
+    return require_song(ctx, user.user_id, song_id)
 
 
 @router.get("/api/songs/{song_id}/audio")
-def download_audio(
-    song_id: str, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)
-) -> FileResponse:
+def download_audio(song_id: str, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> FileResponse:
     require_song(ctx, user.user_id, song_id)
     row = ctx.media.audio_for(user.user_id, song_id)
     if row is None:
-        raise HTTPException(status_code=404, detail="this song has no audio")
+        raise api_error(404, "audio.none", "this song has no audio")
     path = ctx.media.path_for(row)
     if not path.is_file():
-        raise HTTPException(status_code=404, detail="audio file is missing")
+        raise api_error(404, "audio.missing", "audio file is missing")
     return FileResponse(path, media_type=row["content_type"], filename=row["filename"])
 
 
 @router.get("/api/songs/{song_id}/export.json")
-def export_json(song_id: str, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> dict:
+def export_json(song_id: str, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> Response:
     song = require_song(ctx, user.user_id, song_id)
-    return {
+    payload = {
         "format": "fretbook-song",
         "format_version": 1,
+        "content_kind": song["content_kind"],
         "title": song["title"],
         "artist": song["artist"],
-        "document": song["document"],
     }
+    if song["content_kind"] == "tab":
+        payload["document"] = song["document"]
+    else:
+        payload["chordpro"] = song["chordpro"]
+    return Response(
+        json.dumps(payload, ensure_ascii=False, indent=2),
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="{song["slug"]}.json"'},
+    )
 
 
-@router.get("/api/songs/{song_id}/export.pdf")
-def export_pdf(song_id: str, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> Response:
-    """Issue #3 registers a real PDF here. Until then this is a 501."""
+@router.get("/api/songs/{song_id}/export.musicxml")
+def export_musicxml(song_id: str, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> Response:
     song = require_song(ctx, user.user_id, song_id)
-    try:
-        PdfExporter().export(
-            ScoreDocument.model_validate(song["document"]),
-            title=song["title"],
-            artist=song["artist"],
-            track_id=None,
-        )
-    except PdfNotImplemented as exc:
-        raise HTTPException(status_code=501, detail=str(exc)) from exc
-    return Response(status_code=500)
+    if song["content_kind"] != "tab":
+        raise api_error(400, "export.notTab", "only tabs export as MusicXML")
+    document = ScoreDocument.model_validate(song["document"])
+    return Response(
+        to_musicxml(document, title=song["title"], artist=song["artist"]),
+        media_type="application/vnd.recordare.musicxml+xml",
+        headers={"Content-Disposition": f'attachment; filename="{song["slug"]}.musicxml"'},
+    )
+
+
+@router.get("/api/songs/{song_id}/export.cho")
+def export_chordpro(song_id: str, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> Response:
+    song = require_song(ctx, user.user_id, song_id)
+    if song["content_kind"] != "chords":
+        raise api_error(400, "export.notChords", "only chord sheets export as ChordPro")
+    return Response(
+        song["chordpro"] or "",
+        media_type="text/plain; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{song["slug"]}.cho"'},
+    )
 
 
 @router.post("/api/imports", status_code=202)
 def import_url(
-    body: ImportUrlBody,
-    ctx: AppContext = Depends(_ctx),
-    user: Principal = Depends(_user),
+    body: ImportUrlBody, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)
 ) -> dict[str, str]:
-    request = ImportRequest(
-        owner_id=user.user_id,
-        url=body.url.strip(),
-        kind=body.kind,
-        options={"video_id": body.video_id, "slug": body.slug, "part_ids": body.part_ids},
-    )
+    url = body.url.strip()
+    request = ImportRequest(owner_id=user.user_id, url=url, kind=body.kind)
     try:
         importer = resolve_importer(request)
-    except Exception as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    kind = importer.kind if body.kind is None else body.kind
-    job_kind = "import.youtube_frames" if kind == "youtube-frames" else "import.songsterr"
+    except ImportError as exc:
+        raise _import_error(exc) from exc
+    kind = importer.kind
     if kind not in {"songsterr", "youtube-frames"}:
-        raise HTTPException(status_code=400, detail=f"{kind} is not a URL import")
+        raise api_error(400, "import.notUrl", f"{kind} is not a URL import", kind=kind)
+    if kind == "songsterr" and not importer.can_handle(request):
+        raise api_error(400, "songsterr.badUrl", "URL must look like https://www.songsterr.com/a/wsa/<name>-s<digits>")
+    job_kind = "import.youtube_frames" if kind == "youtube-frames" else "import.songsterr"
     job_id = ctx.jobs.enqueue(
         user.user_id,
         job_kind,
         {
-            "url": body.url.strip(),
+            "url": url,
             "video_id": body.video_id,
             "slug": body.slug,
             "part_ids": body.part_ids,
             "kind": kind,
+            "prefer": _prefer(ctx, user),
         },
     )
     return {"job_id": job_id}
@@ -284,62 +398,42 @@ async def import_file(
     user: Principal = Depends(_user),
 ) -> dict[str, str]:
     filename = file.filename or "upload"
-    suffix = Path(filename).suffix.lower()
-    if suffix in {".gp", ".gp3", ".gp4", ".gp5", ".gpx"}:
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                "Guitar Pro files are read in the browser by alphaTab. "
-                "Use the import button in Fretbook rather than this endpoint."
-            ),
+    if Path(filename).suffix.lower() in _GUITAR_PRO:
+        raise api_error(
+            400,
+            "import.guitarProInBrowser",
+            "Guitar Pro files are read in the browser by alphaTab. Use the import button in Fretbook.",
         )
-    data = await file.read()
-    if len(data) > ctx.settings.max_upload_bytes:
-        raise HTTPException(status_code=413, detail="file is too large")
-    inbox = ctx.settings.inbox_dir
-    inbox.mkdir(parents=True, exist_ok=True)
-    safe = re.sub(r"[^A-Za-z0-9._-]+", "-", Path(filename).name)[:80] or "upload"
-    path = inbox / f"{user.user_id}-{safe}"
-    path.write_bytes(data)
-    request = ImportRequest(owner_id=user.user_id, filename=filename, file_path=path, kind=kind)
+    request = ImportRequest(owner_id=user.user_id, filename=filename, kind=kind)
     try:
         resolve_importer(request)
-    except Exception as exc:
-        path.unlink(missing_ok=True)
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except ImportError as exc:
+        raise _import_error(exc) from exc
+    # A unique name per upload: two files called song.xml must not overwrite each other in the inbox.
+    path = ctx.settings.inbox_dir / f"{uuid.uuid4().hex}-{_safe_name(filename)}"
+    await _spool(file, path, ctx.settings.max_upload_bytes)
     job_id = ctx.jobs.enqueue(
         user.user_id,
         "import.file",
-        {"path": str(path), "filename": filename, "kind": kind},
+        {"path": str(path), "filename": filename, "kind": kind, "prefer": _prefer(ctx, user)},
     )
     return {"job_id": job_id}
 
 
 @router.post("/api/songs/import-document", status_code=201)
 def import_document(
-    payload: dict,
-    ctx: AppContext = Depends(_ctx),
-    user: Principal = Depends(_user),
+    body: ImportDocumentBody, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)
 ) -> dict:
     """Save a document the browser built (Guitar Pro via alphaTab)."""
-    try:
-        document = ScoreDocument.model_validate(payload.get("document", payload))
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    title = str(payload.get("title") or "Untitled")
-    artist = str(payload.get("artist") or "")
-    source_kind = str(payload.get("source_kind") or "file")
-    if source_kind not in {"file", "guitarpro", "musicxml", "fretbook-json", "manual"}:
-        source_kind = "file"
-    source_ref = payload.get("source_ref") if isinstance(payload.get("source_ref"), dict) else {}
+    title = body.title.strip() or "Untitled"
     return ctx.songs.create_song(
         user.user_id,
         title=title,
-        artist=artist,
-        document=document,
-        source_kind=source_kind,
-        source_ref=source_ref,
-        slug=str(payload.get("slug") or title),
+        artist=body.artist.strip(),
+        document=body.document,
+        source_kind=body.source_kind,
+        source_ref={},
+        slug=body.slug or title,
     )
 
 
@@ -347,7 +441,7 @@ def import_document(
 def get_job(job_id: str, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> dict:
     job = ctx.jobs.get(user.user_id, job_id)
     if job is None:
-        raise HTTPException(status_code=404, detail="job not found")
-    job.pop("owner_id", None)
-    job.pop("payload", None)
+        raise api_error(404, "job.notFound", "job not found")
+    for private in ("owner_id", "payload", "attempts"):
+        job.pop(private, None)
     return job

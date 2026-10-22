@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from fastapi import HTTPException, Request
+from fastapi import Request
 
+from fretbook.api.errors import api_error
 from fretbook.auth.base import Principal
 from fretbook.context import AppContext
 
@@ -17,5 +18,5 @@ def principal(request: Request) -> Principal:
 def require_song(ctx: AppContext, owner_id: str, song_id: str) -> dict:
     song = ctx.songs.get_song(owner_id, song_id)
     if song is None:
-        raise HTTPException(status_code=404, detail="song not found")
+        raise api_error(404, "song.notFound", "song not found")
     return song

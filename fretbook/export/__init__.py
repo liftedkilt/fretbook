@@ -1,1 +1,1 @@
-"""Export package. See ``pdf.py`` for issue #3."""
+"""Exports of a stored song to portable formats."""

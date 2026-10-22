@@ -1,8 +1,8 @@
 """Instrument presets.
 
-Issue #4 (guitar as a first-class Songsterr import, library filters, capo
-presentation) should add presets here. The create-tab form already lists
-whatever this module returns, and the score model accepts any string count.
+The create-tab form, the editor's add-track menu, and each user's default
+instrument setting list whatever this module returns. The score model accepts
+any string count, so a new preset needs no schema change.
 """
 
 from __future__ import annotations
@@ -72,6 +72,18 @@ PRESETS: tuple[InstrumentPreset, ...] = (
 )
 
 
+DEFAULT_PRESET = "bass-4"
+
+
+def family(instrument: str) -> str:
+    """``bass`` or ``guitar``: which Songsterr parts an import prefers for this instrument."""
+    return "bass" if "bass" in instrument.lower() else "guitar"
+
+
+def is_preset(preset_id: str) -> bool:
+    return any(preset.id == preset_id for preset in PRESETS)
+
+
 def get_preset(preset_id: str) -> InstrumentPreset:
     for preset in PRESETS:
         if preset.id == preset_id:
@@ -90,6 +102,7 @@ def presets_payload() -> list[dict[str, object]]:
             "name": preset.name,
             "tuning_midi": list(preset.tuning_midi),
             "string_count": len(preset.tuning_midi),
+            "family": family(preset.instrument),
         }
         for preset in PRESETS
     ]

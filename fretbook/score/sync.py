@@ -1,64 +1,68 @@
-"""Piecewise-linear measure timing.
+"""Piecewise-linear bar timing.
 
-This is the sync model of the original bass-tab-sync player: tapped anchors
-(or Songsterr video points used as anchors) define measure start times, and
-the gaps are interpolated. The frontend sends the same numbers to alphaTab as
-flat sync points. Keep the two implementations on these vectors.
+This is the sync model of the original bass-tab-sync player, generalized to
+real bar lengths: tapped anchors (or Songsterr video points used as anchors)
+pin bar start times, and the bars in between are spread in proportion to
+their natural length (signature and tempo). The frontend sends the same
+numbers to alphaTab as flat sync points; ``web/src/lib/sync.ts`` is the same
+algorithm, and both are tested on the same vectors.
 """
 
 from __future__ import annotations
 
 
-def measure_starts(measure_count: int, bpm: float, anchors: dict[int, float]) -> list[float]:
-    """Return ``measure_count + 1`` times: each measure start, then the end.
+def measure_starts(bar_lengths: list[float], anchors: dict[int, float]) -> list[float]:
+    """Return ``len(bar_lengths) + 1`` times: each bar start, then the end.
 
-    With no anchors every measure is one 4-beat bar at ``bpm``. That matches
-    the original player (``L = 240 / bpm``), including when the written meter
-    is not 4/4. Once anchors exist, interior measures are interpolated and the
-    ends are extrapolated.
+    ``bar_lengths`` are natural bar lengths in seconds. With no anchors the
+    bars simply follow each other from zero. Before the first anchor bars keep
+    their natural length; between two anchors they are scaled to fit; after
+    the last anchor they keep the scale of the last anchored stretch.
     """
-    if measure_count < 0:
-        raise ValueError("measure_count must be >= 0")
-    if bpm <= 0:
-        raise ValueError("bpm must be positive")
-    bar = 240 / bpm
-    ordered = sorted(anchors)
-    starts = [0.0] * (measure_count + 1)
+    if any(length <= 0 for length in bar_lengths):
+        raise ValueError("bar lengths must be positive")
+    count = len(bar_lengths)
+    natural = [0.0]
+    for length in bar_lengths:
+        natural.append(natural[-1] + length)
+    ordered = sorted(index for index in anchors if 0 <= index <= count)
     if not ordered:
-        for index in range(measure_count + 1):
-            starts[index] = index * bar
-        return starts
+        return natural
 
     def at(index: int) -> float:
-        return anchors[index]
+        return float(anchors[index])
 
+    first = ordered[0]
     last = ordered[-1]
-    for index in range(measure_count + 1):
-        if index <= ordered[0]:
-            starts[index] = at(ordered[0]) - (ordered[0] - index) * bar
+    if len(ordered) > 1:
+        previous = ordered[-2]
+        tail_scale = (at(last) - at(previous)) / (natural[last] - natural[previous])
+    else:
+        tail_scale = 1.0
+    starts = [0.0] * (count + 1)
+    cursor = 0
+    for index in range(count + 1):
+        if index <= first:
+            starts[index] = at(first) - (natural[first] - natural[index])
         elif index >= last:
-            if len(ordered) > 1:
-                previous = ordered[-2]
-                step = (at(last) - at(previous)) / (last - previous)
-            else:
-                step = bar
-            starts[index] = at(last) + (index - last) * step
+            starts[index] = at(last) + tail_scale * (natural[index] - natural[last])
         else:
-            cursor = 0
             while ordered[cursor + 1] <= index:
                 cursor += 1
             left = ordered[cursor]
             right = ordered[cursor + 1]
-            fraction = (index - left) / (right - left)
+            fraction = (natural[index] - natural[left]) / (natural[right] - natural[left])
             starts[index] = at(left) + fraction * (at(right) - at(left))
     return starts
 
 
 def measure_at(starts: list[float], time_seconds: float) -> int:
-    """Measure index containing ``time_seconds``, or -1 before the first start."""
+    """Bar index containing ``time_seconds``; -1 before the first start, ``len(starts) - 1`` after the end."""
     count = len(starts) - 1
     if count <= 0 or time_seconds < starts[0]:
         return -1
+    if time_seconds >= starts[count]:
+        return count
     low = 0
     high = count - 1
     while low < high:
@@ -67,13 +71,5 @@ def measure_at(starts: list[float], time_seconds: float) -> int:
             low = mid
         else:
             high = mid - 1
-    if time_seconds >= starts[count]:
-        return count
     return low
 
-
-def coerce_anchors(raw: dict[str, float] | dict[int, float]) -> dict[int, float]:
-    anchors: dict[int, float] = {}
-    for key, value in raw.items():
-        anchors[int(key)] = float(value)
-    return anchors

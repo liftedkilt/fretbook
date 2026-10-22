@@ -1,13 +1,28 @@
 <script lang="ts">
-  import { ApiError, createSong, deleteSong, getMeta, importDocument, importFile, importUrl, listSongs, waitForJob } from "../lib/api";
+  import {
+    ApiError,
+    createChordSheet,
+    createTab,
+    deleteSong,
+    getMe,
+    getMeta,
+    importDocument,
+    importFile,
+    importUrl,
+    listSongs,
+    saveSettings,
+    waitForJob,
+  } from "../lib/api";
   import { documentFromGuitarPro } from "../lib/alphatab/importScore";
-  import { t, tOr } from "../lib/i18n.svelte";
+  import { keyed, t, tOr } from "../lib/i18n.svelte";
   import { followLink, hrefFor, navigate } from "../lib/router.svelte";
-  import type { InstrumentPreset, SongSummary } from "../lib/types";
+  import type { InstrumentPreset, Job, SongSummary } from "../lib/types";
 
   let songs = $state<SongSummary[]>([]);
   let presets = $state<InstrumentPreset[]>([]);
+  let defaultInstrument = $state("bass-4");
   let error = $state("");
+  let notice = $state("");
   let busy = $state("");
   let title = $state("");
   let artist = $state("");
@@ -18,17 +33,23 @@
   let denominator = $state(4);
   let url = $state("");
   let videoId = $state("");
+  let sheetTitle = $state("");
+  let sheetArtist = $state("");
+  let sheetText = $state("");
+
+  const family = $derived(presets.find((item) => item.id === defaultInstrument)?.family ?? null);
 
   function message(err: unknown): string {
-    if (err instanceof ApiError) return err.message;
-    if (err instanceof Error) return err.message;
+    if (err instanceof ApiError || err instanceof Error) return err.message;
     return t("error.generic");
   }
 
   $effect(() => {
-    void getMeta()
-      .then((meta) => {
+    Promise.all([getMeta(), getMe()])
+      .then(([meta, me]) => {
         presets = meta.instruments;
+        defaultInstrument = me.settings.default_instrument;
+        preset = me.settings.default_instrument;
       })
       .catch((err: unknown) => {
         error = message(err);
@@ -40,10 +61,20 @@
     songs = await listSongs();
   }
 
+  async function changeDefault(next: string) {
+    error = "";
+    try {
+      defaultInstrument = (await saveSettings({ default_instrument: next })).default_instrument;
+      preset = defaultInstrument;
+    } catch (err) {
+      error = message(err);
+    }
+  }
+
   async function create() {
     error = "";
     try {
-      const song = await createSong({
+      const song = await createTab({
         title: title.trim() || "Untitled",
         artist: artist.trim(),
         preset,
@@ -57,16 +88,33 @@
     }
   }
 
+  async function createSheet() {
+    error = "";
+    try {
+      const song = await createChordSheet({ title: sheetTitle.trim(), artist: sheetArtist.trim(), chordpro: sheetText });
+      navigate(`/songs/${song.id}`);
+    } catch (err) {
+      error = message(err);
+    }
+  }
+
+  function progress(job: Job) {
+    busy = tOr(job.progress_key, job.progress || t("library.importing"));
+  }
+
   async function runJob(jobId: string) {
-    const job = await waitForJob(jobId);
-    if (job.status === "error") throw new Error(job.error || t("error.generic"));
+    const job = await waitForJob(jobId, progress);
+    if (job.status === "error") {
+      throw new Error(keyed({ key: job.error_key, message: job.error ?? "", params: job.error_params }));
+    }
     const warnings = job.result?.warnings ?? [];
-    if (warnings.length) error = t("library.warnings", { warnings: warnings.join(" ") });
+    if (warnings.length) notice = t("library.warnings", { warnings: warnings.map((item) => keyed(item)).join(" ") });
     if (job.result?.song_id) navigate(`/songs/${job.result.song_id}`);
   }
 
   async function submitUrl() {
     error = "";
+    notice = "";
     busy = t("library.importing");
     try {
       const started = await importUrl(url.trim(), videoId.trim());
@@ -80,12 +128,11 @@
 
   async function submitFile(file: File) {
     error = "";
+    notice = "";
     busy = t("library.importing");
     try {
-      const lower = file.name.toLowerCase();
-      if (/\.gp[345x]?$/.test(lower) || lower.endsWith(".gpx")) {
-        const bytes = new Uint8Array(await file.arrayBuffer());
-        const parsed = documentFromGuitarPro(bytes);
+      if (/\.(gp|gp3|gp4|gp5|gpx)$/i.test(file.name)) {
+        const parsed = documentFromGuitarPro(new Uint8Array(await file.arrayBuffer()), family);
         const saved = await importDocument({
           title: parsed.title,
           artist: parsed.artist,
@@ -106,8 +153,12 @@
 
   async function remove(song: SongSummary) {
     if (!confirm(t("library.confirmDelete", { title: song.title }))) return;
-    await deleteSong(song.id);
-    await refresh();
+    try {
+      await deleteSong(song.id);
+      await refresh();
+    } catch (err) {
+      error = message(err);
+    }
   }
 
   function presetLabel(item: InstrumentPreset): string {
@@ -116,6 +167,20 @@
 </script>
 
 <div class="stack">
+  <section class="panel">
+    <div class="row">
+      <label class="field">
+        {t("settings.defaultInstrument")}
+        <select value={defaultInstrument} onchange={(event) => void changeDefault(event.currentTarget.value)}>
+          {#each presets as item (item.id)}
+            <option value={item.id}>{presetLabel(item)}</option>
+          {/each}
+        </select>
+      </label>
+      <p class="hint" style="margin:0">{t("settings.defaultInstrumentHint")}</p>
+    </div>
+  </section>
+
   <section class="panel">
     <h2 class="section-title" style="margin-top:0">{t("library.importHeading")}</h2>
     <div class="row">
@@ -134,7 +199,7 @@
         {t("library.file")}
         <input
           type="file"
-          accept=".musicxml,.xml,.json,.gp,.gp3,.gp4,.gp5,.gpx"
+          accept=".musicxml,.xml,.json,.gp,.gp3,.gp4,.gp5,.gpx,.cho,.chordpro,.chopro,.crd,.txt"
           onchange={(event) => {
             const file = event.currentTarget.files?.[0];
             event.currentTarget.value = "";
@@ -165,14 +230,32 @@
         {t("library.signature")}
         <span class="row">
           <input type="number" min="1" max="32" bind:value={numerator} />
-          <input type="number" min="1" max="32" bind:value={denominator} />
+          <select bind:value={denominator}>
+            {#each [1, 2, 4, 8, 16, 32] as value (value)}<option {value}>{value}</option>{/each}
+          </select>
         </span>
       </label>
       <button class="primary" onclick={() => void create()}>{t("library.create")}</button>
     </div>
   </section>
 
+  <section class="panel">
+    <h2 class="section-title" style="margin-top:0">{t("chords.createHeading")}</h2>
+    <div class="row">
+      <label class="field">{t("library.title")}<input bind:value={sheetTitle} /></label>
+      <label class="field">{t("library.artist")}<input bind:value={sheetArtist} /></label>
+    </div>
+    <label class="field" style="margin-top:0.6rem">
+      {t("chords.paste")}
+      <textarea bind:value={sheetText} rows="6" spellcheck="false" placeholder={t("chords.pasteHint")}></textarea>
+    </label>
+    <div class="row" style="margin-top:0.6rem">
+      <button class="primary" disabled={!sheetText.trim()} onclick={() => void createSheet()}>{t("chords.create")}</button>
+    </div>
+  </section>
+
   {#if error}<p class="error">{error}</p>{/if}
+  {#if notice}<p class="hint">{notice}</p>{/if}
 
   <h2>{t("library.heading")}</h2>
   {#if songs.length === 0}
@@ -185,11 +268,15 @@
             <h2>{song.title}</h2>
             <div class="meta">
               {#if song.artist}{song.artist} · {/if}
-              <span class="badge">{song.preferred_instrument}</span>
-              {t("library.strings", { count: song.string_count })}
-              · {t("library.measures", { count: song.measure_count })}
-              · {song.bpm} BPM
-              · {song.has_audio ? t("library.audio") : t("library.noAudio")}
+              {#if song.content_kind === "chords"}
+                <span class="badge">{t("library.chordSheet")}</span>
+              {:else}
+                <span class="badge">{song.preferred_instrument}</span>
+                {t("library.strings", { count: song.string_count })}
+                · {t("library.measures", { count: song.measure_count })}
+                · {song.bpm} BPM
+                · {song.has_audio ? t("library.audio") : t("library.noAudio")}
+              {/if}
             </div>
           </div>
           <div class="actions">

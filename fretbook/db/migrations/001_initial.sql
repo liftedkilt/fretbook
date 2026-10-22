@@ -1,39 +1,48 @@
--- Fretbook initial schema.
--- owner_id is always set. In single-user mode it is the "local" user.
--- Issue #5 maps an OIDC "sub" onto users.external_subject and filters every
--- song and media row by the signed-in user's id.
+-- Fretbook schema.
+-- owner_id is always set. In single-user mode it is the "local" user. users.id
+-- is an internal id used in media paths; an OIDC "sub" goes in
+-- users.external_subject, never in users.id.
 
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE users (
     id TEXT PRIMARY KEY,
     external_subject TEXT UNIQUE,
     display_name TEXT NOT NULL,
+    -- Instrument preset id: the default for new tabs, added tracks, and which
+    -- Songsterr part an import picks.
+    default_instrument TEXT NOT NULL DEFAULT 'bass-4',
     created_at TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS songs (
+CREATE TABLE songs (
     id TEXT PRIMARY KEY,
     owner_id TEXT NOT NULL REFERENCES users(id),
     slug TEXT NOT NULL,
     title TEXT NOT NULL,
     artist TEXT NOT NULL DEFAULT '',
+    -- "tab": a score document in `document`. "chords": ChordPro text in `chordpro`.
+    content_kind TEXT NOT NULL DEFAULT 'tab' CHECK (content_kind IN ('tab', 'chords')),
     source_kind TEXT NOT NULL,
     source_ref TEXT NOT NULL DEFAULT '{}',
-    bpm REAL NOT NULL,
-    measure_count INTEGER NOT NULL,
-    track_count INTEGER NOT NULL,
-    string_count INTEGER NOT NULL,
-    preferred_instrument TEXT NOT NULL,
+    -- Bumped on every write. PUT must send back the revision it loaded.
+    revision INTEGER NOT NULL DEFAULT 1,
+    bpm REAL NOT NULL DEFAULT 0,
+    measure_count INTEGER NOT NULL DEFAULT 0,
+    track_count INTEGER NOT NULL DEFAULT 0,
+    string_count INTEGER NOT NULL DEFAULT 0,
+    preferred_instrument TEXT NOT NULL DEFAULT '',
+    preferred_track_id TEXT NOT NULL DEFAULT '',
     has_sync INTEGER NOT NULL DEFAULT 0,
     duration REAL,
-    document TEXT NOT NULL,
+    document TEXT,
+    chordpro TEXT,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     UNIQUE (owner_id, slug)
 );
 
-CREATE INDEX IF NOT EXISTS songs_owner_updated ON songs (owner_id, updated_at DESC);
+CREATE INDEX songs_owner_updated ON songs (owner_id, updated_at DESC);
 
-CREATE TABLE IF NOT EXISTS media (
+CREATE TABLE media (
     id TEXT PRIMARY KEY,
     owner_id TEXT NOT NULL REFERENCES users(id),
     song_id TEXT REFERENCES songs(id) ON DELETE CASCADE,
@@ -45,9 +54,9 @@ CREATE TABLE IF NOT EXISTS media (
     created_at TEXT NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS media_song_kind ON media (song_id, kind);
+CREATE INDEX media_song_kind ON media (song_id, kind);
 
-CREATE TABLE IF NOT EXISTS jobs (
+CREATE TABLE jobs (
     id TEXT PRIMARY KEY,
     owner_id TEXT NOT NULL REFERENCES users(id),
     kind TEXT NOT NULL,
@@ -55,10 +64,15 @@ CREATE TABLE IF NOT EXISTS jobs (
     payload TEXT NOT NULL,
     result TEXT,
     error TEXT,
+    -- Translatable error: a catalog key under "errors" plus its parameters.
+    error_key TEXT NOT NULL DEFAULT '',
+    error_params TEXT NOT NULL DEFAULT '{}',
     progress TEXT NOT NULL DEFAULT '',
     progress_key TEXT NOT NULL DEFAULT '',
+    -- Claims so far. A job interrupted by a restart is retried once.
+    attempts INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS jobs_status_created ON jobs (status, created_at);
+CREATE INDEX jobs_status_created ON jobs (status, created_at);

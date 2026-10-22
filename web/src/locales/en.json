@@ -1,41 +1,41 @@
 {
   "app": {
     "title": "Fretbook",
-    "tagline": "Self-hosted tabs and sheet music for bass and guitar.",
+    "tagline": "Self-hosted tabs, chord sheets, and sheet music for bass and guitar.",
     "notFound": "That page is not in the book.",
     "loading": "Loading…",
     "back": "Library"
   },
-  "nav": {
-    "library": "Library"
+  "settings": {
+    "defaultInstrument": "Default instrument",
+    "defaultInstrumentHint": "Used for new tabs and added tracks, and to pick the part when importing from Songsterr, Guitar Pro, or MusicXML."
   },
   "library": {
     "heading": "Library",
-    "empty": "No songs yet. Import a Songsterr link or start a blank tab.",
+    "empty": "No songs yet. Import a Songsterr link or a file, start a blank tab, or paste a chord sheet.",
     "open": "Open",
     "edit": "Edit",
     "delete": "Delete",
     "confirmDelete": "Delete {title}?",
-    "measures": "{count} measures",
-    "tracks": "{count} tracks",
-    "strings": "{count} strings",
+    "measures": { "one": "{count} bar", "other": "{count} bars" },
+    "strings": { "one": "{count} string", "other": "{count} strings" },
     "audio": "Audio",
     "noAudio": "No audio",
+    "chordSheet": "Chord sheet",
     "createHeading": "New tab",
     "create": "Create",
     "title": "Title",
     "artist": "Artist",
     "preset": "Instrument",
     "bpm": "BPM",
-    "measureCount": "Measures",
+    "measureCount": "Bars",
     "signature": "Time",
     "importHeading": "Import",
     "url": "Songsterr URL",
     "urlHint": "https://www.songsterr.com/a/wsa/…-s123",
     "videoId": "YouTube id (optional)",
     "importUrl": "Import link",
-    "file": "MusicXML, Fretbook JSON, or Guitar Pro",
-    "importFile": "Import file",
+    "file": "MusicXML, Guitar Pro, ChordPro, text, or Fretbook JSON",
     "importing": "Importing…",
     "warnings": "Imported with warnings: {warnings}"
   },
@@ -47,10 +47,27 @@
     "guitar7": "7-string guitar",
     "guitarAcoustic": "Acoustic guitar"
   },
+  "chords": {
+    "createHeading": "New chord sheet",
+    "create": "Save chord sheet",
+    "paste": "ChordPro, or chords over lyrics",
+    "pasteHint": "Paste a chord sheet. Chord lines above lyric lines are converted to ChordPro.",
+    "editHeading": "Edit chord sheet",
+    "editHint": "ChordPro: chords in brackets before the syllable, like [G]Hello. {title: …}, {comment: …}, and {start_of_chorus} / {end_of_chorus} are understood. Chords over lyrics are converted on save.",
+    "text": "ChordPro text",
+    "view": "View",
+    "transpose": "Transpose",
+    "up": "Up a semitone",
+    "down": "Down a semitone",
+    "reset": "Reset",
+    "flats": "Flats",
+    "size": "Size",
+    "exportChordPro": "Export ChordPro"
+  },
   "player": {
     "play": "Play",
     "pause": "Pause",
-    "tap": "Tap measure (T)",
+    "tap": "Tap bar (T)",
     "nudgeBack": "−0.05s",
     "nudgeForward": "+0.05s",
     "clearAnchor": "Clear mark",
@@ -64,47 +81,102 @@
     "clearAll": "Clear marks",
     "upload": "Upload audio",
     "exportJson": "Export JSON",
-    "exportPdf": "Export PDF",
+    "exportMusicXml": "Export MusicXML",
+    "print": "Print or save PDF",
     "edit": "Edit",
     "track": "Track",
-    "tuning": "Tuning",
     "capo": "Capo {fret}",
     "noCapo": "No capo",
-    "status": "Measure {measure}/{total} · {time}",
+    "status": "Bar {measure}/{total} · {time}",
     "statusIdle": "– · {time}",
     "nextTap": "Next mark: {measure}",
     "usingPublished": "Playback is using the published sync points. Tap to start your own.",
     "needAudio": "Sync points are saved, but there is no audio file yet. Upload an mp3 or wav.",
     "synth": "No audio file, so playback uses the built-in synth.",
-    "keys": "Space plays. Arrows move a measure. T taps the next mark.",
-    "anchor": "Marked"
+    "keys": "Space plays. Arrows move a bar. T taps the next mark."
   },
   "editor": {
     "heading": "Edit",
     "save": "Save",
     "saved": "Saved",
     "saving": "Saving…",
-    "measure": "Measure {number}",
+    "conflict": "This song was changed somewhere else after you opened it.",
+    "reload": "Load the latest (discards your changes)",
+    "measure": "Bar {number}",
     "previous": "Previous",
     "next": "Next",
-    "addMeasure": "Add measure",
-    "deleteMeasure": "Delete measure",
+    "addMeasure": "Insert bar after",
+    "deleteMeasure": "Delete bar",
+    "barsAreShared": "Bars are shared by every track: time, tempo, and sections apply to all of them, and inserting or deleting a bar does too. Sync marks move with their bars.",
+    "tempoChange": "Tempo change",
+    "section": "Section",
+    "voice": "Voice",
     "addBeat": "Add beat",
-    "deleteBeat": "Delete beat",
+    "deleteBeat": "Delete",
+    "moveEarlier": "Move earlier",
+    "moveLater": "Move later",
+    "barFull": "Bar is full",
+    "barShort": "Bar is short; the rest is filled with rests",
+    "barOver": "Bar is too long",
     "duration": "Duration",
-    "rest": "Rest",
     "grace": "Grace",
-    "dead": "Dead",
-    "tie": "Tie",
+    "graceOnBeat": "On the beat",
+    "graceBeforeBeat": "Before the beat",
+    "techniques": "Techniques",
     "addString": "Add string",
     "removeString": "Remove string",
     "stringInUse": "That string still has notes.",
     "addTrack": "Add track",
+    "deleteTrack": "Delete track",
+    "confirmDeleteTrack": "Delete the {name} track?",
     "trackName": "Track name",
     "preferred": "Preferred",
     "capo": "Capo",
     "fretHint": "Empty means no note. 0 is the open string.",
     "play": "Play"
+  },
+  "durations": {
+    "whole": "Whole",
+    "dottedHalf": "Dotted half",
+    "half": "Half",
+    "dottedQuarter": "Dotted quarter",
+    "quarter": "Quarter",
+    "quarterTriplet": "Quarter triplet",
+    "dottedEighth": "Dotted eighth",
+    "eighth": "Eighth",
+    "eighthTriplet": "Eighth triplet",
+    "sixteenth": "Sixteenth",
+    "sixteenthTriplet": "Sixteenth triplet",
+    "thirtySecond": "Thirty-second",
+    "other": "Other ({ticks} ticks)"
+  },
+  "tech": {
+    "dead": "Dead",
+    "tie": "Tie",
+    "ghost": "Ghost",
+    "hammer": "Hammer-on / pull-off",
+    "vibrato": "Vibrato",
+    "palm_mute": "Palm mute",
+    "let_ring": "Let ring",
+    "staccato": "Staccato",
+    "slide": "Slide",
+    "slides": {
+      "shift": "Shift",
+      "legato": "Legato",
+      "in_below": "In from below",
+      "in_above": "In from above",
+      "out_up": "Out upward",
+      "out_down": "Out downward"
+    },
+    "harmonic": "Harmonic",
+    "harmonics": {
+      "natural": "Natural",
+      "artificial": "Artificial",
+      "pinch": "Pinch",
+      "tap": "Tapped",
+      "semi": "Semi"
+    },
+    "bend": "Bend (semitones)"
   },
   "import": {
     "fetchingTab": "Fetching the tab",
@@ -118,5 +190,90 @@
   },
   "error": {
     "generic": "Something went wrong."
+  },
+  "errors": {
+    "request": {
+      "tooLarge": "That request is too large.",
+      "crossOrigin": "Requests from other sites are not allowed.",
+      "invalid": "Some fields are not valid."
+    },
+    "song": {
+      "notFound": "That song is not in your library.",
+      "conflict": "This song was changed somewhere else after you opened it.",
+      "badSignature": "That time signature is not valid.",
+      "needsDocument": "A tab needs its score to be saved.",
+      "needsChordPro": "A chord sheet needs its text to be saved."
+    },
+    "sync": {
+      "badAnchor": "Sync marks must belong to bars of this song.",
+      "notTab": "Only tabs have sync marks."
+    },
+    "settings": {
+      "unknownInstrument": "Unknown instrument: {preset}."
+    },
+    "upload": {
+      "tooLarge": "That file is too large.",
+      "empty": "That file is empty.",
+      "notAudio": "Upload an mp3, wav, ogg, m4a, flac, or webm file."
+    },
+    "audio": {
+      "none": "This song has no audio.",
+      "missing": "The audio file is missing.",
+      "failed": "Audio download failed. The tab was saved; you can upload an mp3.",
+      "timeout": "The audio download took longer than {seconds} seconds. The tab was saved; you can upload an mp3.",
+      "badVideo": "That is not a YouTube video id."
+    },
+    "export": {
+      "notTab": "Only tabs export as MusicXML.",
+      "notChords": "Only chord sheets export as ChordPro."
+    },
+    "job": {
+      "notFound": "That import was not found.",
+      "failed": "The import failed.",
+      "interrupted": "The server restarted during this import. Start it again.",
+      "noHandler": "This kind of import is not available.",
+      "timeout": "The import is taking too long."
+    },
+    "import": {
+      "failed": "The import failed.",
+      "notImplemented": "This importer is not available yet.",
+      "needsFile": "This import needs a file.",
+      "badSlug": "That slug is not valid.",
+      "unknownKind": "Unknown importer: {kind}.",
+      "notUrl": "{kind} is not a link import.",
+      "noUrlImporter": "No importer matches this link. Songsterr links work today; YouTube frame import is not available yet.",
+      "noFileImporter": "No importer matches this file. Try MusicXML, Guitar Pro, ChordPro, or a Fretbook JSON export.",
+      "guitarProInBrowser": "Guitar Pro files are read in the browser. Use the import button in Fretbook.",
+      "syncCountMismatch": "The source has {points} sync points for {bars} bars, so playback may drift.",
+      "noSyncPoints": "No sync points are published for this song.",
+      "keptEditedCopy": "\"{title}\" was edited since it was imported, so this import was saved as a separate song.",
+      "anchorsDropped": "The new import has fewer bars, so some sync marks were dropped."
+    },
+    "songsterr": {
+      "badUrl": "The link must look like https://www.songsterr.com/a/wsa/<name>-s<digits>.",
+      "noState": "Songsterr's page could not be read. The site may have changed.",
+      "idMismatch": "The Songsterr page does not match the link.",
+      "noSuchPart": "None of the requested Songsterr parts are fretted tracks.",
+      "noFrettedTrack": "This song has no fretted track ({names}).",
+      "noSuchVideo": "Video {video} has no sync points.",
+      "noTuning": "Part {part} has no tuning.",
+      "badJson": "Songsterr sent unreadable {what}.",
+      "badVideo": "Songsterr named an unexpected video id."
+    },
+    "musicxml": {
+      "parse": "The MusicXML file could not be read.",
+      "timewise": "Timewise MusicXML is not supported. Save it as partwise.",
+      "notMusicXml": "This is not a MusicXML score.",
+      "noTab": "This MusicXML file has no tablature (string and fret) data."
+    },
+    "json": {
+      "parse": "The JSON file could not be read.",
+      "notFretbook": "This JSON file is not a Fretbook export."
+    },
+    "chords": {
+      "empty": "The chord sheet is empty.",
+      "notText": "The chord sheet is not UTF-8 text.",
+      "tooLong": "The chord sheet is longer than {limit} characters."
+    }
   }
 }

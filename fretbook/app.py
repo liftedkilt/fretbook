@@ -5,14 +5,17 @@ from __future__ import annotations
 import logging
 import mimetypes
 import re
+import shutil
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from starlette.responses import Response
 
 from fretbook import __version__
+from fretbook.api.middleware import BodyLimitMiddleware, SameOriginMiddleware
 from fretbook.api.routes import router
 from fretbook.auth import build_auth
 from fretbook.config import Settings
@@ -65,6 +68,12 @@ def _base_href(root_path: str) -> str:
 
 
 def import_legacy(ctx: AppContext) -> int:
+    """Import bass-tab-sync ``songs/<slug>/`` folders for the single local user.
+
+    Only runs in single-user mode: with OIDC there is no obvious owner for them.
+    """
+    if ctx.settings.auth_mode not in {"", "single", "none"}:
+        return 0
     root = ctx.settings.legacy_songs_dir
     if root is None or not root.is_dir():
         return 0
@@ -92,13 +101,17 @@ def import_legacy(ctx: AppContext) -> int:
         )
         audio = folder / "audio.mp3"
         if audio.is_file():
-            ctx.media.save(
+            # The songs folder may be read-only, so copy rather than move.
+            staging = ctx.settings.inbox_dir / f"legacy-{song['id']}.mp3"
+            staging.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(audio, staging)
+            ctx.media.save_file(
                 owner,
                 song["id"],
                 kind="audio",
                 filename="audio.mp3",
                 content_type="audio/mpeg",
-                data=audio.read_bytes(),
+                source=staging,
             )
         imported += 1
     return imported
@@ -131,6 +144,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(title="Fretbook", version=__version__, lifespan=lifespan)
     app.state.ctx = ctx
+    app.add_exception_handler(RequestValidationError, _validation_error)
+    app.add_middleware(SameOriginMiddleware)
+    # Room for multipart framing around the largest allowed upload.
+    app.add_middleware(BodyLimitMiddleware, max_bytes=settings.max_upload_bytes + 1024 * 1024)
     app.include_router(router)
 
     @app.get("/")
@@ -151,6 +168,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return _index(settings)
 
     return app
+
+
+async def _validation_error(_request: Request, exc: Exception) -> JSONResponse:
+    # FastAPI's default handler echoes each rejected input back, which fails for NaN
+    # (not valid JSON) and repeats whole documents. Location and message are enough.
+    assert isinstance(exc, RequestValidationError)
+    errors = [
+        {"type": error.get("type"), "loc": list(error.get("loc", ())), "msg": error.get("msg")}
+        for error in exc.errors()
+    ]
+    return JSONResponse({"detail": errors}, status_code=422)
 
 
 def _index(settings: Settings) -> HTMLResponse:

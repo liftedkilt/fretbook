@@ -1,14 +1,25 @@
-"""Audio and other files, stored beside the SQLite database."""
+"""Audio and other files, stored beside the SQLite database under ``media/<owner>/<song>/``."""
 
 from __future__ import annotations
 
+import re
+import shutil
 import sqlite3
 import uuid
 from pathlib import Path
 
 from fretbook.config import Settings
-from fretbook.db.connection import connect
+from fretbook.db.connection import session
 from fretbook.db.migrate import utcnow
+
+_SAFE_ID = re.compile(r"[A-Za-z0-9_-]{1,64}")
+
+
+def _check_id(value: str, what: str) -> str:
+    # Ids become directory names. users.id is internal (never an OIDC sub), but check anyway.
+    if not _SAFE_ID.fullmatch(value):
+        raise ValueError(f"{what} {value!r} cannot be used in a media path")
+    return value
 
 
 class MediaStore:
@@ -16,8 +27,61 @@ class MediaStore:
         self.settings = settings
         self.root = settings.media_dir
 
-    def _conn(self) -> sqlite3.Connection:
-        return connect(self.settings.database_path)
+    def _session(self):
+        return session(self.settings.database_path)
+
+    def save_file(
+        self,
+        owner_id: str,
+        song_id: str,
+        *,
+        kind: str,
+        filename: str,
+        content_type: str,
+        source: Path,
+        replace_kind: bool = False,
+    ) -> dict[str, str]:
+        """Move ``source`` into the media store and record it. With ``replace_kind``, older files of this kind go."""
+        _check_id(owner_id, "owner id")
+        _check_id(song_id, "song id")
+        _check_id(kind, "media kind")
+        media_id = uuid.uuid4().hex
+        suffix = Path(filename).suffix.lower()[:12]
+        if not re.fullmatch(r"\.[a-z0-9]+", suffix or ""):
+            suffix = ".bin"
+        relative = Path(owner_id) / song_id / f"{kind}-{media_id}{suffix}"
+        dest = self.root / relative
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(source), dest)
+        size = dest.stat().st_size
+        try:
+            with self._session() as conn:
+                conn.execute(
+                    """
+                    INSERT INTO media (
+                        id, owner_id, song_id, kind, filename, content_type,
+                        storage_relpath, byte_size, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        media_id,
+                        owner_id,
+                        song_id,
+                        kind,
+                        Path(filename).name,
+                        content_type,
+                        relative.as_posix(),
+                        size,
+                        utcnow(),
+                    ),
+                )
+        except sqlite3.Error:
+            dest.unlink(missing_ok=True)
+            raise
+        # Remove the old file only once the new one is safely recorded.
+        if replace_kind:
+            self.delete_kind(owner_id, song_id, kind, keep=media_id)
+        return {"id": media_id, "kind": kind, "filename": Path(filename).name}
 
     def save(
         self,
@@ -30,40 +94,24 @@ class MediaStore:
         data: bytes,
         replace_kind: bool = False,
     ) -> dict[str, str]:
-        if replace_kind:
-            self.delete_kind(owner_id, song_id, kind)
-        media_id = uuid.uuid4().hex
-        suffix = Path(filename).suffix.lower()[:12]
-        if not suffix or any(ch not in ".abcdefghijklmnopqrstuvwxyz0123456789" for ch in suffix):
-            suffix = ".bin"
-        relative = Path(owner_id) / song_id / f"{kind}-{media_id}{suffix}"
-        dest = self.root / relative
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_bytes(data)
-        with self._conn() as conn:
-            conn.execute(
-                """
-                INSERT INTO media (
-                    id, owner_id, song_id, kind, filename, content_type,
-                    storage_relpath, byte_size, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    media_id,
-                    owner_id,
-                    song_id,
-                    kind,
-                    Path(filename).name,
-                    content_type,
-                    relative.as_posix(),
-                    len(data),
-                    utcnow(),
-                ),
+        staging = self.settings.inbox_dir / f"media-{uuid.uuid4().hex}"
+        staging.parent.mkdir(parents=True, exist_ok=True)
+        staging.write_bytes(data)
+        try:
+            return self.save_file(
+                owner_id,
+                song_id,
+                kind=kind,
+                filename=filename,
+                content_type=content_type,
+                source=staging,
+                replace_kind=replace_kind,
             )
-        return {"id": media_id, "kind": kind, "filename": Path(filename).name}
+        finally:
+            staging.unlink(missing_ok=True)
 
     def audio_for(self, owner_id: str, song_id: str) -> dict[str, str] | None:
-        with self._conn() as conn:
+        with self._session() as conn:
             row = conn.execute(
                 """
                 SELECT * FROM media
@@ -72,46 +120,35 @@ class MediaStore:
                 """,
                 (owner_id, song_id),
             ).fetchone()
-        if row is None:
-            return None
-        return dict(row)
+        return dict(row) if row else None
 
     def path_for(self, row: dict[str, str] | sqlite3.Row) -> Path:
-        relative = Path(str(row["storage_relpath"]))
-        path = (self.root / relative).resolve()
-        root = self.root.resolve()
-        if not path.is_relative_to(root):
+        path = (self.root / str(row["storage_relpath"])).resolve()
+        if not path.is_relative_to(self.root.resolve()):
             raise ValueError("media path escapes the data directory")
         return path
 
-    def delete_kind(self, owner_id: str, song_id: str, kind: str) -> None:
-        with self._conn() as conn:
+    def delete_kind(self, owner_id: str, song_id: str, kind: str, *, keep: str | None = None) -> None:
+        with self._session() as conn:
             rows = conn.execute(
-                "SELECT * FROM media WHERE owner_id = ? AND song_id = ? AND kind = ?",
-                (owner_id, song_id, kind),
+                "SELECT * FROM media WHERE owner_id = ? AND song_id = ? AND kind = ? AND id != ?",
+                (owner_id, song_id, kind, keep or ""),
             ).fetchall()
             conn.execute(
-                "DELETE FROM media WHERE owner_id = ? AND song_id = ? AND kind = ?",
-                (owner_id, song_id, kind),
+                "DELETE FROM media WHERE owner_id = ? AND song_id = ? AND kind = ? AND id != ?",
+                (owner_id, song_id, kind, keep or ""),
             )
         for row in rows:
-            path = self.path_for(row)
-            if path.is_file():
-                path.unlink()
+            self.path_for(row).unlink(missing_ok=True)
 
     def delete_song_files(self, owner_id: str, song_id: str) -> None:
-        with self._conn() as conn:
+        with self._session() as conn:
             rows = conn.execute(
                 "SELECT * FROM media WHERE owner_id = ? AND song_id = ?",
                 (owner_id, song_id),
             ).fetchall()
         for row in rows:
-            path = self.path_for(row)
-            if path.is_file():
-                path.unlink()
-        folder = self.root / owner_id / song_id
+            self.path_for(row).unlink(missing_ok=True)
+        folder = self.root / _check_id(owner_id, "owner id") / _check_id(song_id, "song id")
         if folder.is_dir():
-            for child in folder.iterdir():
-                if child.is_file():
-                    child.unlink()
-            folder.rmdir()
+            shutil.rmtree(folder)

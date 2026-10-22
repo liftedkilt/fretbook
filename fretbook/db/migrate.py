@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -13,9 +14,16 @@ def utcnow() -> str:
 
 
 def migrate(database_path: Path) -> None:
-    """Apply numbered SQL files in ``migrations/`` that have not been recorded."""
+    """Apply numbered SQL files in ``migrations/`` that have not been recorded.
+
+    Each file runs in one transaction together with its ``schema_migrations``
+    row, so a failing migration leaves neither a half-applied schema nor a
+    record. Run one server process per database: two would race here.
+    """
     conn = connect(database_path)
     try:
+        # WAL is a property of the database file, so setting it once is enough.
+        conn.execute("PRAGMA journal_mode = WAL")
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -30,11 +38,17 @@ def migrate(database_path: Path) -> None:
             version = int(path.name.split("_", 1)[0])
             if version in applied:
                 continue
-            conn.executescript(path.read_text(encoding="utf-8"))
-            conn.execute(
-                "INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)",
-                (version, utcnow()),
+            script = (
+                "BEGIN;\n"
+                + path.read_text(encoding="utf-8")
+                + f"\nINSERT INTO schema_migrations (version, applied_at) VALUES ({version}, '{utcnow()}');\n"
+                + "COMMIT;\n"
             )
-            conn.commit()
+            try:
+                conn.executescript(script)
+            except sqlite3.Error:
+                if conn.in_transaction:
+                    conn.execute("ROLLBACK")
+                raise
     finally:
         conn.close()

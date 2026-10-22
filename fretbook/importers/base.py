@@ -1,13 +1,12 @@
 """Importer contracts.
 
-An importer turns an external source into a :class:`ScoreDocument`. Slow work
-(network, audio, a future frame scan) runs inside a background job; the
-importer itself should stay callable from tests with a fake fetcher.
+An importer turns an external source into a :class:`ScoreDocument` (or, for
+chord sheets, ChordPro text). Slow work (network, audio, a future frame scan)
+runs inside a background job; the importer itself stays callable from tests
+with a fake fetcher.
 
-Issue #6 implements :class:`fretbook.importers.youtube_frames.YouTubeFrameImporter`
-against this same result type. Guitar Pro bytes are parsed in the browser by
-alphaTab (see ``web/src/lib/alphatab/importScore.ts``) and then saved as a
-normal document.
+Guitar Pro bytes are parsed in the browser by alphaTab (see
+``web/src/lib/alphatab/importScore.ts``) and then saved as a normal document.
 """
 
 from __future__ import annotations
@@ -15,7 +14,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Protocol
+from typing import Any, Protocol
 
 from fretbook.score.model import ScoreDocument
 
@@ -23,11 +22,36 @@ Progress = Callable[[str, str], None]
 
 
 class ImportError(Exception):
-    """A source was recognized but could not be turned into a score."""
+    """A source was recognized but could not be turned into a song.
+
+    ``key`` names a message under ``errors`` in the UI catalogs and ``params``
+    fills it in, so the browser can show the error in the reader's language.
+    The English ``str()`` stays for logs and API clients.
+    """
+
+    def __init__(self, message: str, key: str = "import.failed", **params: Any) -> None:
+        super().__init__(message)
+        self.key = key
+        self.params = params
 
 
 class ImporterNotImplemented(ImportError):
     """The importer is registered so a job can find it, but not built yet."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message, "import.notImplemented")
+
+
+@dataclass
+class Notice:
+    """A translatable import warning (shown to the user, not raised)."""
+
+    key: str
+    message: str
+    params: dict[str, Any] = field(default_factory=dict)
+
+    def as_dict(self) -> dict[str, Any]:
+        return {"key": self.key, "message": self.message, "params": self.params}
 
 
 @dataclass
@@ -52,11 +76,16 @@ class ImportResult:
     title: str
     artist: str
     slug: str
-    document: ScoreDocument
     source_kind: str
     source_ref: dict
+    document: ScoreDocument | None = None
+    chordpro: str | None = None
     audio: AudioFetch | None = None
-    warnings: list[str] = field(default_factory=list)
+    warnings: list[Notice] = field(default_factory=list)
+
+    @property
+    def content_kind(self) -> str:
+        return "chords" if self.chordpro is not None else "tab"
 
 
 class Importer(Protocol):

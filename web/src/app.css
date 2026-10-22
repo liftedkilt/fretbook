@@ -154,3 +154,42 @@ label.field input, label.field select { color: var(--text); min-width: 0; }
 
 h2 { font-weight: 600; }
 .section-title { margin: 1.4rem 0 0.6rem; }
+
+textarea {
+  background: var(--bg-raise);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.55rem 0.65rem;
+  width: 100%;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.techniques { margin-top: 0.2rem; font-size: 0.85rem; }
+.techniques summary { cursor: pointer; color: var(--dim); }
+.techniques .check { display: flex; gap: 0.35rem; align-items: center; }
+.techniques .field { margin-top: 0.3rem; }
+
+/* Chord sheets: chords sit above the syllable they belong to. */
+.chord-paper { padding: 1.2rem 1.4rem; }
+.chord-sheet { color: var(--paper-ink); font-family: inherit; line-height: 1.25; }
+.chord-title { margin: 0 0 0.1rem; }
+.chord-artist { margin: 0 0 0.8rem; color: #6b5d48; }
+.chord-block { margin: 0 0 0.9rem; }
+.chord-block-chorus { border-left: 3px solid var(--brass); padding-left: 0.7rem; }
+.chord-label, .chord-comment { margin: 0.5rem 0 0.2rem; font-style: italic; color: #6b5d48; }
+.chord-line { display: flex; flex-wrap: wrap; align-items: flex-end; margin-bottom: 0.25rem; }
+.chord-segment { display: inline-flex; flex-direction: column; white-space: pre; }
+.chord-name { color: #8a4b0f; font-weight: 700; font-size: 0.9em; min-height: 1.2em; padding-right: 0.25em; }
+.chord-lyric { min-height: 1.2em; }
+.chord-gap { height: 0.8em; }
+.chord-tab { margin: 0; font-size: 0.85em; }
+.chord-editor { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+@media (max-width: 860px) { .chord-editor { grid-template-columns: 1fr; } }
+
+@media print {
+  .app-header, .no-print, .transport { display: none !important; }
+  body, main { background: #fff; padding: 0; }
+  .paper { box-shadow: none; }
+}

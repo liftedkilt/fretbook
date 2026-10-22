@@ -1,4 +1,4 @@
-"""Song rows. Every query is scoped by ``owner_id``."""
+"""Song and user rows. Every song query is scoped by ``owner_id``."""
 
 from __future__ import annotations
 
@@ -9,19 +9,37 @@ import uuid
 from typing import Any
 
 from fretbook.config import Settings
-from fretbook.db.connection import connect
+from fretbook.db.connection import session
 from fretbook.db.migrate import utcnow
-from fretbook.score.instruments import get_preset
+from fretbook.score.instruments import DEFAULT_PRESET, get_preset, is_preset
 from fretbook.score.model import (
+    Bar,
     Beat,
-    Measure,
     ScoreDocument,
-    TempoMark,
     Track,
+    TrackBar,
     Voice,
-    preferred_track,
     summary_fields,
 )
+
+_EMPTY_SUMMARY: dict[str, Any] = {
+    "bpm": 0,
+    "measure_count": 0,
+    "track_count": 0,
+    "string_count": 0,
+    "preferred_instrument": "",
+    "preferred_track_id": "",
+    "has_sync": False,
+    "duration": None,
+}
+
+
+class RevisionConflict(Exception):
+    """The song changed since the caller loaded it."""
+
+    def __init__(self, current: int) -> None:
+        super().__init__(f"song is at revision {current}")
+        self.current = current
 
 
 def _slugify(text: str) -> str:
@@ -29,15 +47,30 @@ def _slugify(text: str) -> str:
     return slug[:60] or "song"
 
 
+def _content_fields(document: ScoreDocument | None, chordpro: str | None) -> dict[str, Any]:
+    if document is not None:
+        return {
+            **summary_fields(document),
+            "content_kind": "tab",
+            "document": document.model_dump_json(),
+            "chordpro": None,
+        }
+    if chordpro is None:
+        raise ValueError("a song needs a score document or ChordPro text")
+    return {**_EMPTY_SUMMARY, "content_kind": "chords", "document": None, "chordpro": chordpro}
+
+
 class SongRepository:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
 
-    def _conn(self) -> sqlite3.Connection:
-        return connect(self.settings.database_path)
+    def _session(self, *, immediate: bool = False):
+        return session(self.settings.database_path, immediate=immediate)
+
+    # --- users -------------------------------------------------------------
 
     def ensure_user(self, user_id: str, display_name: str, external_subject: str | None = None) -> None:
-        with self._conn() as conn:
+        with self._session() as conn:
             conn.execute(
                 """
                 INSERT INTO users (id, external_subject, display_name, created_at)
@@ -47,15 +80,30 @@ class SongRepository:
                 (user_id, external_subject, display_name, utcnow()),
             )
 
+    def get_settings(self, user_id: str) -> dict[str, Any]:
+        with self._session() as conn:
+            row = conn.execute("SELECT default_instrument FROM users WHERE id = ?", (user_id,)).fetchone()
+        instrument = row["default_instrument"] if row else DEFAULT_PRESET
+        if not is_preset(instrument):
+            instrument = DEFAULT_PRESET
+        return {"default_instrument": instrument}
+
+    def update_settings(self, user_id: str, *, default_instrument: str) -> dict[str, Any]:
+        get_preset(default_instrument)
+        with self._session() as conn:
+            conn.execute("UPDATE users SET default_instrument = ? WHERE id = ?", (default_instrument, user_id))
+        return self.get_settings(user_id)
+
+    # --- songs -------------------------------------------------------------
+
     def list_songs(self, owner_id: str) -> list[dict[str, Any]]:
-        with self._conn() as conn:
+        with self._session() as conn:
             rows = conn.execute(
                 """
                 SELECT s.*,
-                       EXISTS(
-                           SELECT 1 FROM media m
-                           WHERE m.song_id = s.id AND m.kind = 'audio'
-                       ) AS has_audio
+                       (SELECT m.id FROM media m
+                        WHERE m.song_id = s.id AND m.kind = 'audio'
+                        ORDER BY m.created_at DESC LIMIT 1) AS audio_id
                 FROM songs s
                 WHERE s.owner_id = ?
                 ORDER BY s.updated_at DESC
@@ -65,18 +113,19 @@ class SongRepository:
         return [_summary(row) for row in rows]
 
     def get_song(self, owner_id: str, song_id: str) -> dict[str, Any] | None:
-        with self._conn() as conn:
+        with self._session() as conn:
             row = conn.execute(
-                "SELECT * FROM songs WHERE owner_id = ? AND id = ?",
+                """
+                SELECT s.*,
+                       (SELECT m.id FROM media m
+                        WHERE m.song_id = s.id AND m.kind = 'audio'
+                        ORDER BY m.created_at DESC LIMIT 1) AS audio_id
+                FROM songs s
+                WHERE s.owner_id = ? AND s.id = ?
+                """,
                 (owner_id, song_id),
             ).fetchone()
-            if row is None:
-                return None
-            audio = conn.execute(
-                "SELECT id FROM media WHERE song_id = ? AND kind = 'audio' ORDER BY created_at DESC LIMIT 1",
-                (song_id,),
-            ).fetchone()
-        return _detail(row, has_audio=audio is not None)
+        return _detail(row) if row else None
 
     def find_by_source(self, owner_id: str, source_kind: str, **ref: Any) -> dict[str, Any] | None:
         clauses = ["owner_id = ?", "source_kind = ?"]
@@ -86,14 +135,12 @@ class SongRepository:
                 raise ValueError(f"bad source ref key: {key}")
             clauses.append(f"json_extract(source_ref, '$.{key}') = ?")
             values.append(value)
-        with self._conn() as conn:
+        with self._session() as conn:
             row = conn.execute(
-                f"SELECT * FROM songs WHERE {' AND '.join(clauses)} LIMIT 1",
+                f"SELECT id FROM songs WHERE {' AND '.join(clauses)} ORDER BY created_at LIMIT 1",
                 values,
             ).fetchone()
-        if row is None:
-            return None
-        return _detail(row, has_audio=False)
+        return self.get_song(owner_id, row["id"]) if row else None
 
     def create_song(
         self,
@@ -101,45 +148,57 @@ class SongRepository:
         *,
         title: str,
         artist: str,
-        document: ScoreDocument,
         source_kind: str,
         source_ref: dict[str, Any] | None = None,
         slug: str | None = None,
+        document: ScoreDocument | None = None,
+        chordpro: str | None = None,
     ) -> dict[str, Any]:
         song_id = uuid.uuid4().hex
         now = utcnow()
         base = _slugify(slug or title)
-        fields = summary_fields(document)
-        with self._conn() as conn:
-            unique = _unique_slug(conn, owner_id, base)
-            conn.execute(
-                """
-                INSERT INTO songs (
-                    id, owner_id, slug, title, artist, source_kind, source_ref,
-                    bpm, measure_count, track_count, string_count, preferred_instrument,
-                    has_sync, duration, document, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    song_id,
-                    owner_id,
-                    unique,
-                    title,
-                    artist,
-                    source_kind,
-                    json.dumps(source_ref or {}, ensure_ascii=False),
-                    fields["bpm"],
-                    fields["measure_count"],
-                    fields["track_count"],
-                    fields["string_count"],
-                    fields["preferred_instrument"],
-                    int(fields["has_sync"]),
-                    fields["duration"],
-                    document.model_dump_json(),
-                    now,
-                    now,
-                ),
-            )
+        fields = _content_fields(document, chordpro)
+        for _attempt in range(5):
+            try:
+                with self._session(immediate=True) as conn:
+                    unique = _unique_slug(conn, owner_id, base)
+                    conn.execute(
+                        """
+                        INSERT INTO songs (
+                            id, owner_id, slug, title, artist, content_kind, source_kind, source_ref,
+                            bpm, measure_count, track_count, string_count, preferred_instrument,
+                            preferred_track_id, has_sync, duration, document, chordpro, created_at, updated_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            song_id,
+                            owner_id,
+                            unique,
+                            title,
+                            artist,
+                            fields["content_kind"],
+                            source_kind,
+                            json.dumps(source_ref or {}, ensure_ascii=False),
+                            fields["bpm"],
+                            fields["measure_count"],
+                            fields["track_count"],
+                            fields["string_count"],
+                            fields["preferred_instrument"],
+                            fields["preferred_track_id"],
+                            int(fields["has_sync"]),
+                            fields["duration"],
+                            fields["document"],
+                            fields["chordpro"],
+                            now,
+                            now,
+                        ),
+                    )
+                break
+            except sqlite3.IntegrityError:
+                # Another writer took the slug between the check and the insert.
+                continue
+        else:
+            raise RuntimeError("could not find a free slug")
         song = self.get_song(owner_id, song_id)
         assert song is not None
         return song
@@ -156,9 +215,11 @@ class SongRepository:
         signature: tuple[int, int],
     ) -> dict[str, Any]:
         preset = get_preset(preset_id)
+        bar = Bar(signature=signature)
+        beat_ticks = bar.length_ticks // signature[0]
         document = ScoreDocument(
             bpm=bpm,
-            tempos=[TempoMark(bpm=bpm, measure=0)],
+            bars=[Bar(signature=signature) for _ in range(measures)],
             tracks=[
                 Track(
                     id="trk_" + uuid.uuid4().hex[:8],
@@ -166,32 +227,22 @@ class SongRepository:
                     instrument=preset.instrument,
                     tuning_midi=list(preset.tuning_midi),
                     preferred=True,
-                    measures=[
-                        Measure(
-                            signature=signature,
+                    bars=[
+                        TrackBar(
                             voices=[
                                 Voice(
                                     beats=[
-                                        Beat(position=float(index), duration=1.0, rest=True)
+                                        Beat(position=index * beat_ticks, duration=beat_ticks)
                                         for index in range(signature[0])
                                     ]
-                                    if signature[1] == 4
-                                    else []
                                 )
-                            ],
+                            ]
                         )
                         for _ in range(measures)
                     ],
                 )
             ],
         )
-        if signature[1] != 4:
-            step = 4 / signature[1]
-            for measure in document.tracks[0].measures:
-                measure.voices[0].beats = [
-                    Beat(position=round(index * step, 4), duration=round(step, 4), rest=True)
-                    for index in range(signature[0])
-                ]
         return self.create_song(
             owner_id,
             title=title or "Untitled",
@@ -208,36 +259,65 @@ class SongRepository:
         *,
         title: str,
         artist: str,
-        document: ScoreDocument,
+        revision: int | None,
+        document: ScoreDocument | None = None,
+        chordpro: str | None = None,
+        source_ref: dict[str, Any] | None = None,
     ) -> dict[str, Any] | None:
-        fields = summary_fields(document)
-        with self._conn() as conn:
-            cursor = conn.execute(
-                """
-                UPDATE songs SET
-                    title = ?, artist = ?, bpm = ?, measure_count = ?, track_count = ?,
-                    string_count = ?, preferred_instrument = ?, has_sync = ?, duration = ?,
-                    document = ?, updated_at = ?
-                WHERE owner_id = ? AND id = ?
-                """,
-                (
-                    title,
-                    artist,
-                    fields["bpm"],
-                    fields["measure_count"],
-                    fields["track_count"],
-                    fields["string_count"],
-                    fields["preferred_instrument"],
-                    int(fields["has_sync"]),
-                    fields["duration"],
-                    document.model_dump_json(),
-                    utcnow(),
-                    owner_id,
-                    song_id,
-                ),
-            )
-            if cursor.rowcount == 0:
+        """Replace a song's content. ``revision`` must match the stored one unless it is ``None``.
+
+        Returns ``None`` when the song does not exist and raises
+        :class:`RevisionConflict` when it changed since ``revision``.
+        """
+        fields = _content_fields(document, chordpro)
+        assignments = [
+            "title = ?",
+            "artist = ?",
+            "content_kind = ?",
+            "bpm = ?",
+            "measure_count = ?",
+            "track_count = ?",
+            "string_count = ?",
+            "preferred_instrument = ?",
+            "preferred_track_id = ?",
+            "has_sync = ?",
+            "duration = ?",
+            "document = ?",
+            "chordpro = ?",
+            "updated_at = ?",
+            "revision = revision + 1",
+        ]
+        values: list[Any] = [
+            title,
+            artist,
+            fields["content_kind"],
+            fields["bpm"],
+            fields["measure_count"],
+            fields["track_count"],
+            fields["string_count"],
+            fields["preferred_instrument"],
+            fields["preferred_track_id"],
+            int(fields["has_sync"]),
+            fields["duration"],
+            fields["document"],
+            fields["chordpro"],
+            utcnow(),
+        ]
+        if source_ref is not None:
+            assignments.append("source_ref = ?")
+            values.append(json.dumps(source_ref, ensure_ascii=False))
+        with self._session(immediate=True) as conn:
+            row = conn.execute(
+                "SELECT revision FROM songs WHERE owner_id = ? AND id = ?", (owner_id, song_id)
+            ).fetchone()
+            if row is None:
                 return None
+            if revision is not None and row["revision"] != revision:
+                raise RevisionConflict(row["revision"])
+            conn.execute(
+                f"UPDATE songs SET {', '.join(assignments)} WHERE owner_id = ? AND id = ?",
+                (*values, owner_id, song_id),
+            )
         return self.get_song(owner_id, song_id)
 
     def update_sync(
@@ -248,9 +328,10 @@ class SongRepository:
         bpm: float,
         anchors: dict[str, float],
     ) -> dict[str, Any] | None:
-        with self._conn() as conn:
+        """Set the opening tempo and tapped anchors in one locked read-modify-write."""
+        with self._session(immediate=True) as conn:
             row = conn.execute(
-                "SELECT document FROM songs WHERE owner_id = ? AND id = ?",
+                "SELECT document FROM songs WHERE owner_id = ? AND id = ? AND content_kind = 'tab'",
                 (owner_id, song_id),
             ).fetchone()
             if row is None:
@@ -258,12 +339,12 @@ class SongRepository:
             document = ScoreDocument.model_validate_json(row["document"])
             document.bpm = bpm
             document.sync.anchors = {str(key): float(value) for key, value in anchors.items()}
-            if document.tempos:
-                document.tempos[0].bpm = bpm
+            document = ScoreDocument.model_validate(document.model_dump())
             fields = summary_fields(document)
             conn.execute(
                 """
-                UPDATE songs SET bpm = ?, has_sync = ?, duration = ?, document = ?, updated_at = ?
+                UPDATE songs SET bpm = ?, has_sync = ?, duration = ?, document = ?, updated_at = ?,
+                                 revision = revision + 1
                 WHERE owner_id = ? AND id = ?
                 """,
                 (
@@ -279,11 +360,8 @@ class SongRepository:
         return self.get_song(owner_id, song_id)
 
     def delete_song(self, owner_id: str, song_id: str) -> bool:
-        with self._conn() as conn:
-            cursor = conn.execute(
-                "DELETE FROM songs WHERE owner_id = ? AND id = ?",
-                (owner_id, song_id),
-            )
+        with self._session() as conn:
+            cursor = conn.execute("DELETE FROM songs WHERE owner_id = ? AND id = ?", (owner_id, song_id))
             return cursor.rowcount > 0
 
 
@@ -299,33 +377,39 @@ def _unique_slug(conn: sqlite3.Connection, owner_id: str, base: str) -> str:
     return candidate
 
 
+def _audio_url(row: sqlite3.Row) -> str | None:
+    audio_id = row["audio_id"]
+    # The media id in the query string changes when the audio is replaced, so the <audio> element reloads.
+    return f"api/songs/{row['id']}/audio?v={audio_id}" if audio_id else None
+
+
 def _summary(row: sqlite3.Row) -> dict[str, Any]:
     return {
         "id": row["id"],
         "slug": row["slug"],
         "title": row["title"],
         "artist": row["artist"],
+        "content_kind": row["content_kind"],
         "source_kind": row["source_kind"],
+        "revision": row["revision"],
         "bpm": row["bpm"],
         "measure_count": row["measure_count"],
         "track_count": row["track_count"],
         "string_count": row["string_count"],
         "preferred_instrument": row["preferred_instrument"],
         "has_sync": bool(row["has_sync"]),
-        "has_audio": bool(row["has_audio"]) if "has_audio" in row.keys() else False,
+        "has_audio": row["audio_id"] is not None,
         "duration": row["duration"],
         "updated_at": row["updated_at"],
     }
 
 
-def _detail(row: sqlite3.Row, *, has_audio: bool) -> dict[str, Any]:
-    document = json.loads(row["document"])
+def _detail(row: sqlite3.Row) -> dict[str, Any]:
     payload = _summary(row)
-    payload["has_audio"] = has_audio
     payload["source_ref"] = json.loads(row["source_ref"] or "{}")
-    payload["document"] = document
+    payload["document"] = json.loads(row["document"]) if row["document"] else None
+    payload["chordpro"] = row["chordpro"]
     payload["created_at"] = row["created_at"]
-    payload["audio_url"] = f"api/songs/{row['id']}/audio" if has_audio else None
-    track = preferred_track(ScoreDocument.model_validate(document))
-    payload["preferred_track_id"] = track.id
+    payload["audio_url"] = _audio_url(row)
+    payload["preferred_track_id"] = row["preferred_track_id"]
     return payload

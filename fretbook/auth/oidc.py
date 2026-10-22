@@ -11,14 +11,23 @@ Implement:
 * ``GET /auth/callback`` — exchange the code. Client id is
   ``FRETBOOK_OIDC_CLIENT_ID``. ``FRETBOOK_OIDC_CLIENT_SECRET`` is optional
   (public PKCE clients). Redirect URI is ``FRETBOOK_OIDC_REDIRECT_URI``.
-* Store the local user id in a secure session cookie signed with
-  ``FRETBOOK_SESSION_SECRET``. Map the OIDC ``sub`` to
-  ``users.external_subject`` (create the row on first login).
+* Store the local user id in a session cookie signed with
+  ``FRETBOOK_SESSION_SECRET``: ``HttpOnly``, ``Secure``, ``SameSite=Lax``.
+  Map the OIDC ``sub`` to ``users.external_subject`` and create the row on
+  first login with a new internal ``users.id`` (a uuid hex). Never use the
+  ``sub`` itself as the id: it names directories under ``media/``.
 * ``authenticate`` reads that cookie and returns a :class:`Principal` with
   ``authenticated=True``. Missing or bad cookies are 401.
 * ``POST /auth/logout`` clears the cookie.
-* Honor ``X-Forwarded-Proto`` and ``Host`` (uvicorn proxy headers are already
-  on). Scopes: ``openid profile email``.
+* Build the callback from ``FRETBOOK_OIDC_REDIRECT_URI``, not from request
+  headers. Uvicorn trusts ``X-Forwarded-*`` only from
+  ``FRETBOOK_FORWARDED_ALLOW_IPS`` (default ``127.0.0.1``). Scopes:
+  ``openid profile email``.
+* ``SameOriginMiddleware`` already refuses cross-site writes to ``/api``;
+  keep it in front of cookie auth.
+* Songs owned by ``local`` (single-user mode, legacy imports) are not visible
+  to OIDC users. If an install switches modes, decide whether the first
+  login claims them.
 * With no OIDC config, :func:`fretbook.auth.build_auth` must keep returning
   :class:`fretbook.auth.single_user.SingleUserAuth`.
 

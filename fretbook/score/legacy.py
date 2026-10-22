@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from fretbook.score.model import Beat, Measure, Note, ScoreDocument, SyncMap, TempoMark, Track, Voice
+from fretbook.score.model import TICKS_PER_QUARTER, Bar, Beat, Note, ScoreDocument, SyncMap, Track, TrackBar, Voice
 from fretbook.score.tuning import labels_to_midi
 
 
@@ -36,28 +36,29 @@ def signature_from_length(length: float) -> tuple[int, int]:
 def legacy_document(tab: dict[str, Any], preset: dict[str, Any] | None = None) -> ScoreDocument:
     preset = preset or {}
     tuning = labels_to_midi(list(tab["strings"]))
-    measures: list[Measure] = []
+    bars: list[Bar] = []
+    track_bars: list[TrackBar] = []
     for length, events in tab["measures"]:
         beats: list[Beat] = []
         for index, (position, notes) in enumerate(events):
             nxt = events[index + 1][0] if index + 1 < len(events) else float(length)
-            duration = round(max(0.01, float(nxt) - float(position)), 4)
             beats.append(
                 Beat(
-                    position=float(position),
-                    duration=duration,
+                    position=round(float(position) * TICKS_PER_QUARTER),
+                    duration=max(1, round((float(nxt) - float(position)) * TICKS_PER_QUARTER)),
                     notes=[Note(string=int(string), fret=int(fret)) for string, fret in notes],
                 )
             )
-        measures.append(
-            Measure(signature=signature_from_length(float(length)), voices=[Voice(beats=beats)])
-        )
-    if not measures:
-        measures.append(Measure())
+        bars.append(Bar(signature=signature_from_length(float(length))))
+        track_bars.append(TrackBar(voices=[Voice(beats=beats)]))
+    if not bars:
+        bars.append(Bar())
+        track_bars.append(TrackBar())
+    bpm = float(tab.get("bpm") or 120)
     points = [float(point) for point in (preset.get("points") or [])]
     return ScoreDocument(
-        bpm=float(tab.get("bpm") or 120),
-        tempos=[TempoMark(bpm=float(tab.get("bpm") or 120), measure=0)],
+        bpm=bpm,
+        bars=bars,
         tracks=[
             Track(
                 id="trk_legacy",
@@ -65,7 +66,7 @@ def legacy_document(tab: dict[str, Any], preset: dict[str, Any] | None = None) -
                 instrument="bass-guitar",
                 tuning_midi=tuning,
                 preferred=True,
-                measures=measures,
+                bars=track_bars,
             )
         ],
         sync=SyncMap(video_id=preset.get("videoId"), points=points),

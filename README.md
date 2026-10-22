@@ -1,67 +1,33 @@
 # Fretbook
 
-Self-hosted tabs and sheet music for bass and guitar.
+Self-hosted tabs, chord sheets, and sheet music for bass and guitar.
 
-Fretbook started from [Mr-P4p3r/bass-tab-sync](https://github.com/Mr-P4p3r/bass-tab-sync), a local player that synced Songsterr bass tabs to audio. The score model, importers, and player are now instrument-agnostic: any string count, any tuning, more than one track, and the same tap-to-sync timing as the original player.
+- **Tabs**: import from Songsterr, Guitar Pro (3–8), MusicXML, or start blank. Any string count and tuning, several tracks per song, standard notation and tab rendered by [alphaTab](https://alphatab.net).
+- **Play along**: with an audio file (uploaded, or downloaded from the YouTube video Songsterr syncs to), the score follows the recording. Tap `T` on each bar to line it up. Without audio, alphaTab's synth plays the tab.
+- **Chord sheets**: lyrics with chords over them, stored as ChordPro. Paste an Ultimate Guitar style "chords over lyrics" sheet and it is converted. Transpose and print.
+- **Export**: MusicXML (opens in MuseScore, Guitar Pro, and other tab apps), ChordPro, Fretbook JSON, and print/PDF.
 
-## Architecture
+Fretbook grew out of [Mr-P4p3r/bass-tab-sync](https://github.com/Mr-P4p3r/bass-tab-sync) and still imports its `songs/` folders.
 
-```
-browser (Svelte + TypeScript)
-    alphaTab renders notation and moves the cursor
-    |
-    FastAPI  (fretbook/)
-    SQLite   data/fretbook.sqlite
-    files    data/media/<owner>/<song>/
-```
+## Run it
 
-The browser is a Vite single-page app. `npm run build` writes `web/dist`, and FastAPI serves those files. Docker builds the UI in a Node stage and copies it into one Python image, so the running container does not need Node.
-
-The score stored in SQLite is a Fretbook JSON document (`fretbook/score/model.py`). alphaTab is the viewer and player, not the source of truth. Importers and the editor write the document; the song page turns the selected track into alphaTex and hands it to alphaTab.
-
-String index 0 is the highest string, matching Songsterr. alphaTab numbers strings the other way (1 is the lowest). `web/src/lib/alphatex.ts` and `web/src/lib/alphatab/importScore.ts` convert.
-
-### Why this stack
-
-- **FastAPI and SQLite.** One process, a file database, and an `owner_id` on every song. That is enough for the single-user default and for private libraries later. Schema changes are numbered SQL files in `fretbook/db/migrations/`.
-- **Svelte with Vite, not SvelteKit.** The UI is a client-side app with no server routes of its own. SvelteKit's adapter would add a second server. Vite builds static files, FastAPI serves them, and `<base href>` is rewritten from `FRETBOOK_ROOT_PATH` so a reverse proxy prefix still loads the assets.
-- **alphaTab (`@coderline/alphatab` 1.8).** It fits. The library is MPL-2.0: using the unmodified package inside Fretbook does not relicense the app. File-level copyleft would apply only if an alphaTab source file itself were changed. It already draws standard notation and tab for any tuning and string count, follows an external audio file with sync points, imports Guitar Pro 3–8, and opens a print view with `api.print()`. Bravura (the music font) is SIL OFL. The bundled SONiVOX soundfont is Apache-2.0. See those license files under `web/node_modules/@coderline/alphatab` after install; the Vite plugin copies the font and soundfont into the build.
-- Playback sync stays the original piecewise-linear map (`fretbook/score/sync.py`, `web/src/lib/sync.ts`). Measure starts are sent to alphaTab as flat sync points. With an audio file, alphaTab runs in external-media mode and the `<audio>` element is the clock. Without audio, alphaTab's synthesizer plays the tab.
-
-Songsterr import still downloads the bass part by default, the same behavior as bass-tab-sync. Every fretted part is listed on the song for a later picker.
-
-## Run locally
-
-Python 3.12, Node 22, and ffmpeg (only needed when downloading YouTube audio).
-
-```sh
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
-cd web && npm ci && npm run build && cd ..
-.venv/bin/python -m fretbook
-```
-
-`./run.sh` does the same. The app listens on `http://127.0.0.1:8137`.
-
-During UI work, `cd web && npm run dev` proxies `/api` to that server.
-
-Checks:
-
-```sh
-.venv/bin/ruff check fretbook tests
-.venv/bin/python -m pytest
-cd web && npm run check && npm test && npm run build
-```
-
-## Docker
+### Docker
 
 ```sh
 docker compose up --build
 ```
 
-The service and image are named `fretbook`. Published port is 8137. The SQLite file and uploaded audio live in the `fretbook-data` volume. A `./songs` directory is mounted read-only for legacy imports.
+Open `http://localhost:8137`. The database and audio live in the `fretbook-data` volume. A `./songs` folder is mounted read-only for bass-tab-sync imports.
 
-Behind a reverse proxy, forward `X-Forwarded-Proto` and `Host`. If the proxy strips a prefix, set `FRETBOOK_ROOT_PATH` to that prefix (`/fretbook`). Leave it empty when the proxy keeps the path and Uvicorn's `root_path` is enough.
+### Locally
+
+Python 3.12, Node 22, and ffmpeg (only for downloading YouTube audio).
+
+```sh
+./run.sh            # creates .venv, builds the web app, starts on http://127.0.0.1:8137
+```
+
+For UI work, run the API with `.venv/bin/python -m fretbook` and `cd web && npm run dev` (Vite proxies `/api`).
 
 ## Configuration
 
@@ -69,54 +35,72 @@ Behind a reverse proxy, forward `X-Forwarded-Proto` and `Host`. If the proxy str
 | --- | --- | --- |
 | `FRETBOOK_HOST` | `127.0.0.1` | Bind address. The image sets `0.0.0.0`. |
 | `FRETBOOK_PORT` | `8137` | Listen port. |
-| `FRETBOOK_DATA_DIR` | `data` | SQLite, media, and import inbox. |
+| `FRETBOOK_DATA_DIR` | `data` | SQLite database, media, and upload inbox. |
 | `FRETBOOK_DATABASE` | `$DATA_DIR/fretbook.sqlite` | Database file. |
-| `FRETBOOK_LEGACY_SONGS_DIR` | `songs` | Old `tab-data.js` folders. Empty disables import. |
-| `FRETBOOK_AUTH_MODE` | `single` | `single` (no login) or `oidc` (issue #5). |
-| `FRETBOOK_ROOT_PATH` | empty | Prefix used in the HTML `<base href>`. |
-| `FRETBOOK_FORWARDED_ALLOW_IPS` | `*` | Which proxies may set forwarded headers. |
-| `FRETBOOK_DOWNLOAD_AUDIO` | `true` | Download the Songsterr video's audio with yt-dlp. |
-| `FRETBOOK_MAX_UPLOAD_BYTES` | 80MB | Upload limit. |
-| `FRETBOOK_STATIC_DIR` | built-in | Override the UI directory. |
-| `FRETBOOK_OIDC_ISSUER` | empty | Issue #5. |
-| `FRETBOOK_OIDC_CLIENT_ID` | empty | Issue #5. |
-| `FRETBOOK_OIDC_CLIENT_SECRET` | empty | Issue #5, optional for public clients. |
-| `FRETBOOK_OIDC_REDIRECT_URI` | empty | Issue #5. |
-| `FRETBOOK_SESSION_SECRET` | empty | Issue #5. |
+| `FRETBOOK_LEGACY_SONGS_DIR` | `songs` | bass-tab-sync `songs/<slug>/` folders to import on start. Empty disables it. |
+| `FRETBOOK_AUTH_MODE` | `single` | `single` (no login, one library) or `oidc` (not implemented yet, see #5). |
+| `FRETBOOK_ROOT_PATH` | empty | URL prefix when a reverse proxy strips one, for example `/fretbook`. |
+| `FRETBOOK_FORWARDED_ALLOW_IPS` | `127.0.0.1` | Proxies allowed to send `X-Forwarded-*`. Set it to your proxy's address. |
+| `FRETBOOK_DOWNLOAD_AUDIO` | `true` | Download the audio of the video a Songsterr tab is synced to, with yt-dlp. |
+| `FRETBOOK_AUDIO_TIMEOUT` | `600` | Seconds before a yt-dlp download is abandoned. |
+| `FRETBOOK_MAX_UPLOAD_BYTES` | 80 MB | Largest upload and request body. |
+| `FRETBOOK_STATIC_DIR` | built-in | Serve the web app from another directory. |
+| `FRETBOOK_OIDC_*`, `FRETBOOK_SESSION_SECRET` | empty | Reserved for #5. |
 
-With no OIDC settings the app is one shared library owned by the user id `local`.
-
-## Legacy songs
-
-On startup, each `songs/<slug>/` directory that contains `tab-data.js` is imported once for the local user, including `audio.mp3` and `sync-preset.js` when those files exist. A folder that was already imported is left alone.
+**Security.** In single-user mode there is no login: anyone who can reach the port can use the library, so keep it on a trusted network or behind an authenticating proxy. Writes from other websites are refused (the `Origin` must match the `Host`), and request bodies are capped. Behind a reverse proxy, forward `Host` and `X-Forwarded-Proto` and set `FRETBOOK_FORWARDED_ALLOW_IPS`. Run one server process per database.
 
 ## Using it
 
-- Paste a Songsterr URL (`https://www.songsterr.com/a/wsa/…-s123`). The import runs as a background job. The bass part is saved, and audio is downloaded when Songsterr published sync points for a video. If the download fails (YouTube often refuses a datacenter address), the tab is still saved and an audio file can be uploaded on the song page.
-- MusicXML and a Fretbook JSON export upload to the server. Guitar Pro files are read in the browser by alphaTab and then saved as a normal document.
-- Create a blank tab from a preset (4- and 5-string bass, 6- and 7-string guitar, drop D, acoustic).
-- On the song page, space plays, arrows move a measure, and T taps the next measure onto the audio. Marks are stored on the song. Without an audio file, alphaTab synthesizes the part.
+- **Default instrument** (top of the library) is a per-user setting. It is the preset for new tabs and added tracks, and decides which part an import picks: bass parts for a bass preset, guitar parts otherwise. Every fretted Songsterr part is still listed on the song for a future picker.
+- **Songsterr**: paste a link (`https://www.songsterr.com/a/wsa/…-s123`). The import runs in the background. If YouTube refuses the download (common from datacenter addresses), the tab is still saved and you can upload an mp3 on the song page. Importing the same song again refreshes it and keeps your sync marks, unless you edited the tab, in which case the new import is saved as a separate song.
+- **Files**: MusicXML, ChordPro (`.cho`, `.chordpro`, `.crd`, `.txt`), and Fretbook JSON upload to the server. Guitar Pro files are read in the browser by alphaTab.
+- **Song page**: Space plays, arrows move a bar, `T` marks the start of the next bar against the audio. Loop A/B, speed, and nudge buttons help line up a recording.
+- **Editor**: bars are shared by every track, so time signatures, tempo changes, sections, and inserting or deleting a bar apply to the whole song, and sync marks move with their bars. If the song changed elsewhere since you opened it (for example sync marks tapped in another tab), saving merges your edits on top; real conflicts ask you to reload.
 
-## Where the follow-up issues plug in
+## How it is built
 
-These are not implemented in this rewrite. The contracts below are the ones a follow-up should fill in.
+```
+browser   Svelte 5 + TypeScript (Vite)    alphaTab renders and plays tabs; ChordSheet.svelte renders chord sheets
+server    FastAPI (fretbook/)             one process, background job thread for imports
+storage   SQLite data/fretbook.sqlite     songs, users, jobs; audio files under data/media/<owner>/<song>/
+```
 
-### #2 English translations and language switching
+FastAPI serves the built web app, so the container needs no Node at runtime. `<base href>` is rewritten from `FRETBOOK_ROOT_PATH`.
 
-Strings already go through `t()` in `web/src/lib/i18n.svelte.ts`. The English catalog is `web/src/locales/en.json`. `setLocale` remembers `fretbook.locale` and falls back to English when the browser language has no catalog. Add a locale by dropping in another JSON file and registering it in `catalogs`. Job progress uses `progress_key` (for example `import.fetchingTab`) so status text can be translated without parsing English sentences. A missing-key check in CI belongs with this issue.
+### Stored formats
 
-### #3 PDF export
+A song is either a **tab** or a **chord sheet**.
 
-`fretbook/export/pdf.py` defines `PdfExporter` and `available_exporters()`. The list is `["json"]` until PDF is real, and the song page shows Export PDF only when `pdf` is included (`GET /api/meta`). `GET /api/songs/{id}/export.pdf` returns 501. `web/src/lib/export/pdf.ts` calls alphaTab `api.print()` for a client print view. A paginated PDF still has to put the title, artist, tuning, and track name in the header and must not split a staff across a page. Cover at least 4- and 5-string bass and 6-string guitar.
+- **Tabs** are stored as a Fretbook JSON score document (`fretbook/score/model.py`). It is not alphaTex and not tied to alphaTab: the browser turns it into alphaTex only to render. MusicXML would be the other candidate, but it is far harder to validate, edit in place, and attach sync data to, and every import would round-trip through it. Portability comes from the MusicXML export instead, which the importer reads back (tested), so a library is never locked in.
+- **Chord sheets** are stored as ChordPro text and rendered by a small component of our own. alphaTab is built around bars of notation, which suits tabs but makes a chord chart look stiff.
 
-### #4 Guitar alongside bass
+The score document, in short:
 
-The document already stores any string count, tuning, capo, and several tracks (`fretbook/score/model.py`, presets in `fretbook/score/instruments.py`). Songsterr import lists every fretted part on `source_ref["available_tracks"]` and, by default, still downloads only the bass. `POST /api/imports` accepts `part_ids`; `choose_tracks` in `fretbook/importers/songsterr.py` is the picker hook. Library filters are not built. The song page already shows the instrument and tuning.
+- `bars` are song-level (time signature, tempo changes, repeats, section names), like alphaTab's master bars. Each track has exactly one entry per bar with only its notes, in one or more voices.
+- Time is integer ticks, 960 per quarter note (alphaTab's resolution), so triplets and other tuplets are exact.
+- String index 0 is the highest string, as in Songsterr and MusicXML `<string>`. `tuning_midi` lists the strings highest first. alphaTab numbers strings from the lowest; `web/src/lib/alphatex.ts` and `web/src/lib/alphatab/importScore.ts` convert.
+- Techniques (hammer-on/pull-off, slides, bends, vibrato, harmonics, ghost/dead notes, palm mute, let ring, staccato, grace notes) are typed fields.
+- `sync.points` (published per-bar times) and `sync.anchors` (your taps) are keyed by bar index. Bar timing between marks is piecewise linear and follows each bar's real length (`fretbook/score/sync.py` and `web/src/lib/sync.ts` implement the same algorithm and share test vectors). Repeats are stored but not rendered yet, so the bar index is also the playback order.
 
-### #5 Pocket ID / OIDC
+Every write bumps a song's `revision`; `PUT /api/songs/{id}` must send the revision it loaded and gets `409` if the song changed. Schema changes are numbered SQL files in `fretbook/db/migrations/`, each applied in one transaction.
 
-`fretbook/auth/oidc.py` documents the authorization-code + PKCE flow and currently returns HTTP 501. `build_auth` in `fretbook/auth/__init__.py` selects it when `FRETBOOK_AUTH_MODE=oidc`. `Principal` is in `fretbook/auth/base.py`. Every repository query filters on `owner_id`. `users.external_subject` is the OIDC `sub`. Wire login, logout, secure cookies, and `X-Forwarded-Proto` / `Host` there. No OIDC configuration must keep the single-user behavior.
+API errors are `{"detail": {"key", "message", "params"}}`. The web app shows `errors.<key>` from its catalog and falls back to the English message, so server errors can be translated; job progress uses keys too.
 
-### #6 YouTube frame importer
+## Development
 
-`fretbook/importers/youtube_frames.py` is the design: `download_video`, `extract_frames`, `recognize_tab`, and `stitch`. `can_handle` stays false so a YouTube URL is not mistaken for Songsterr. The job kind `import.youtube_frames` is registered in `fretbook/jobs/handlers.py` and ends in the not-implemented error. The saved result should be a normal document the existing editor can review before it is trusted.
+```sh
+.venv/bin/pip install -r requirements-dev.txt
+.venv/bin/ruff check fretbook tests
+.venv/bin/python -m pytest
+cd web && npm ci && npm run check && npm test && npm run build
+```
+
+The Python tests fail on an unclosed database connection, and check that the English catalog has every error and progress key the server sends; a Vitest test does the same for keys the UI uses.
+
+## Follow-up issues
+
+- **#2 Languages.** Strings go through `t()` (`web/src/lib/i18n.svelte.ts`) with plural forms; add a locale by adding a JSON catalog next to `web/src/locales/en.json` and registering it. The missing-key checks above already run in CI.
+- **#3 PDF.** "Print or save PDF" uses the browser's print dialog (alphaTab's print view for tabs). A designed PDF (title, artist, tuning, and track in the header; no staff split across pages) belongs in the browser too, where the renderer is.
+- **#4 Guitar.** The model, editor, and default-instrument setting already handle guitar. Left: a part picker for Songsterr (`part_ids` on `POST /api/imports`, `choose_tracks` in `fretbook/importers/songsterr.py`) and library filters.
+- **#5 Pocket ID / OIDC.** `fretbook/auth/oidc.py` lists what to build. Keep `users.id` an internal id (it names media folders) and store the OIDC `sub` in `users.external_subject`.
+- **#6 YouTube frames.** `fretbook/importers/youtube_frames.py` has the pipeline stubs and the job kind is registered. Frame recognition is slow, GPU-bound work: run it as a separate worker that claims only its job kind from the same `jobs` table, rather than in the web process's single job thread. The result should land as a draft that the editor reviews.

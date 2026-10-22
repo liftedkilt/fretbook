@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from fretbook.importers.base import Importer, ImportError, ImportRequest
+from fretbook.importers.chordpro import ChordProImporter
 from fretbook.importers.fretbook_json import FretbookJsonImporter
 from fretbook.importers.guitarpro import GuitarProImporter
 from fretbook.importers.musicxml import MusicXmlImporter
@@ -15,6 +16,7 @@ def default_importers() -> list[Importer]:
         SongsterrImporter(),
         MusicXmlImporter(),
         FretbookJsonImporter(),
+        ChordProImporter(),
         GuitarProImporter(),
         YouTubeFrameImporter(),
     ]
@@ -26,13 +28,17 @@ def resolve_importer(request: ImportRequest, importers: list[Importer] | None = 
         for importer in pool:
             if importer.kind == request.kind:
                 return importer
-        raise ImportError(f"unknown importer {request.kind}")
+        raise ImportError(f"unknown importer {request.kind}", "import.unknownKind", kind=request.kind)
     for importer in pool:
         if importer.can_handle(request):
             return importer
     if request.url:
         raise ImportError(
             "No importer matches this URL. Songsterr links work today. "
-            "YouTube frame import is issue #6 and is not available yet."
+            "YouTube frame import is issue #6 and is not available yet.",
+            "import.noUrlImporter",
         )
-    raise ImportError("No importer matches this file. Try MusicXML or a Fretbook JSON export.")
+    raise ImportError(
+        "No importer matches this file. Try MusicXML, ChordPro, Guitar Pro, or a Fretbook JSON export.",
+        "import.noFileImporter",
+    )
