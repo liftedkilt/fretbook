@@ -2,9 +2,10 @@
 
 Ports ``fetch_song.py`` and ``make_data.py`` from bass-tab-sync onto the score
 model. By default an import takes the parts matching the user's default
-instrument family (bass parts for a bass preset, otherwise guitar parts) and
-lists every fretted part on ``source_ref["available_tracks"]``, so a picker can
-pass ``options["part_ids"]``.
+instrument family (bass parts for a bass preset, otherwise guitar parts,
+acoustic and electric together) and lists every fretted part on
+``source_ref["available_tracks"]``. ``preview`` returns that list without
+downloading the parts, and a picker passes ``options["part_ids"]``.
 """
 
 from __future__ import annotations
@@ -17,6 +18,7 @@ from urllib.parse import quote
 
 from fretbook.importers.base import AudioFetch, ImportError, ImportRequest, ImportResult, Notice, Progress
 from fretbook.score import techniques
+from fretbook.score.instruments import canonical_instrument, family
 from fretbook.score.model import (
     TICKS_PER_QUARTER,
     Bar,
@@ -235,14 +237,44 @@ def pick_video(entries: list[dict[str, Any]], video_id: str | None) -> dict[str,
     return usable[0]
 
 
+def _capo(part: dict[str, Any]) -> int:
+    """Songsterr puts the capo on the part, sometimes only on the first measure."""
+    raw = part.get("capo", part.get("capoFret"))
+    if raw in (None, ""):
+        measures = part.get("measures") or []
+        if measures and isinstance(measures[0], dict):
+            raw = measures[0].get("capo", measures[0].get("capoFret"))
+    try:
+        value = int(raw or 0)
+    except (TypeError, ValueError):
+        return 0
+    return max(0, min(24, value))
+
+
+def track_instrument(part: dict[str, Any], meta_track: dict[str, Any]) -> str:
+    raw = str(part.get("instrument") or meta_track.get("instrument") or "")
+    return canonical_instrument(
+        raw,
+        is_bass=_is_bass(part) or _is_bass(meta_track),
+        is_guitar=bool(part.get("isGuitar") or meta_track.get("isGuitar")),
+    )
+
+
 def describe_track(track: dict[str, Any]) -> dict[str, Any]:
+    raw = str(track.get("instrument") or "")
+    is_bass = _is_bass(track)
+    is_guitar = bool(track.get("isGuitar")) or (not is_bass and "guitar" in raw.lower())
+    tuning = [int(note) for note in (track.get("tuning") or [])]
     return {
         "part_id": track.get("partId"),
-        "name": track.get("name") or "",
-        "instrument": track.get("instrument") or "",
-        "is_bass": _is_bass(track),
-        "is_guitar": bool(track.get("isGuitar")),
-        "tuning": list(track.get("tuning") or []),
+        "name": str(track.get("name") or ""),
+        "instrument": raw,
+        "canonical_instrument": canonical_instrument(raw, is_bass=is_bass, is_guitar=is_guitar),
+        "is_bass": is_bass,
+        "is_guitar": is_guitar and not is_bass,
+        "tuning": tuning,
+        "string_count": len(tuning),
+        "capo": _capo(track),
     }
 
 
@@ -259,6 +291,34 @@ class SongsterrImporter:
     def can_handle(self, request: ImportRequest) -> bool:
         return bool(request.url and URL_RE.match(request.url.strip()))
 
+    def _page(self, url: str) -> tuple[int, dict[str, Any], str]:
+        match = URL_RE.match(url)
+        if not match:
+            raise ImportError("URL must look like https://www.songsterr.com/a/wsa/<name>-s<digits>", "songsterr.badUrl")
+        song_id = int(match.group(1))
+        html = self.fetcher.get_text(url)
+        meta = parse_page_state(html)
+        if int(meta["songId"]) != song_id:
+            raise ImportError(
+                f"page song id {meta['songId']} does not match the URL ({song_id})", "songsterr.idMismatch"
+            )
+        return song_id, meta, html
+
+    def preview(self, request: ImportRequest) -> dict[str, Any]:
+        """Fretted parts for the track picker. Does not download part JSON or audio."""
+        url = (request.url or "").strip()
+        song_id, meta, _html = self._page(url)
+        tracks = fretted_tracks(meta)
+        if not tracks:
+            names = ", ".join(str(track.get("instrument", "?")) for track in meta.get("tracks") or [])
+            raise ImportError(f"this song has no fretted track: {names}", "songsterr.noFrettedTrack", names=names)
+        return {
+            "title": str(meta.get("title") or ""),
+            "artist": str(meta.get("artist") or ""),
+            "song_id": song_id,
+            "tracks": [describe_track(track) for track in tracks],
+        }
+
     def _json(self, url: str, what: str) -> Any:
         try:
             return json.loads(self.fetcher.get_text(url))
@@ -267,17 +327,8 @@ class SongsterrImporter:
 
     def import_score(self, request: ImportRequest, progress: Progress) -> ImportResult:
         url = (request.url or "").strip()
-        match = URL_RE.match(url)
-        if not match:
-            raise ImportError("URL must look like https://www.songsterr.com/a/wsa/<name>-s<digits>", "songsterr.badUrl")
-        song_id = int(match.group(1))
         progress("Fetching the tab", "import.fetchingTab")
-        html = self.fetcher.get_text(url)
-        meta = parse_page_state(html)
-        if int(meta["songId"]) != song_id:
-            raise ImportError(
-                f"page song id {meta['songId']} does not match the URL ({song_id})", "songsterr.idMismatch"
-            )
+        song_id, meta, html = self._page(url)
         revision = meta["revisionId"]
         image = str(meta["image"])
         host = cdn_host(html)
@@ -310,13 +361,18 @@ class SongsterrImporter:
                 Track(
                     id=f"trk_{part_id}",
                     name=str(part.get("name") or meta_track.get("name") or meta_track.get("instrument") or "Track"),
-                    instrument=str(part.get("instrument") or meta_track.get("instrument") or "unknown"),
-                    capo=int(part.get("capo") or 0),
+                    instrument=track_instrument(part, meta_track),
+                    capo=_capo(part),
                     tuning_midi=tuning,
-                    preferred=index == 0,
+                    preferred=False,
                     bars=track_bars,
                 )
             )
+        # Among the imported parts, the one matching the user's default family
+        # is the track the song opens on. A bass-only import still prefers the
+        # first bass part, as before.
+        prefer_index = next((index for index, track in enumerate(tracks) if family(track.instrument) == prefer), 0)
+        tracks[prefer_index].preferred = True
 
         progress("Fetching sync points", "import.fetchingSync")
         listing = self._json(f"https://www.songsterr.com/api/video-points/{song_id}/{revision}/list", "sync points")

@@ -170,8 +170,10 @@ export function choosePreferred(document: ScoreDocument, family: "bass" | "guita
 }
 
 function instrumentName(program: number, strings: number): string {
+  // General MIDI: 24–25 acoustic guitar, 26–31 electric, 32–39 bass.
   if (program >= 32 && program <= 39) return "bass-guitar";
-  if (program === 25) return "acoustic-guitar";
+  if (program === 24 || program === 25) return "acoustic-guitar";
+  if (program >= 26 && program <= 31) return "guitar";
   if (strings <= 5) return "bass-guitar";
   return "guitar";
 }

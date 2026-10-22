@@ -26,8 +26,35 @@ function bass(beats: Beat[][], signatures: [number, number][] = beats.map(() => 
   };
 }
 
-function load(document: ScoreDocument): alphaTab.model.Score {
-  return alphaTab.importer.ScoreLoader.loadAlphaTex(trackToAlphaTex(document, "bass", "Fixture", "Ada"));
+function load(document: ScoreDocument, trackId = "bass"): alphaTab.model.Score {
+  return alphaTab.importer.ScoreLoader.loadAlphaTex(trackToAlphaTex(document, trackId, "Fixture", "Ada"));
+}
+
+function fretted(
+  id: string,
+  name: string,
+  instrument: string,
+  tuning: number[],
+  beats: Beat[][],
+  capo = 0,
+): ScoreDocument {
+  return {
+    version: 1,
+    bpm: 120,
+    bars: beats.map(() => ({ signature: [4, 4] })),
+    sync: { video_id: null, points: [], anchors: {} },
+    tracks: [
+      {
+        id,
+        name,
+        instrument,
+        capo,
+        tuning_midi: tuning,
+        preferred: true,
+        bars: beats.map((bar) => ({ voices: [{ beats: bar }] })),
+      },
+    ],
+  };
 }
 
 function played(score: alphaTab.model.Score, bar = 0, voice = 0) {
@@ -163,5 +190,73 @@ describe("trackToAlphaTex", () => {
       ],
     ]);
     expect(beats[0].notes[0].hammer).toBe(true);
+  });
+
+  it("renders 6-string standard, drop D, capo, and 7-string the way bass is rendered", () => {
+    const standard = fretted(
+      "gtr",
+      "Guitar",
+      "guitar",
+      [64, 59, 55, 50, 45, 40],
+      [
+        [
+          { position: 0, duration: 960, notes: [{ string: 0, fret: 0 }] },
+          { position: 960, duration: 960, notes: [{ string: 5, fret: 3 }] },
+        ],
+      ],
+    );
+    const tex = trackToAlphaTex(standard, "gtr", "Fixture", "Ada");
+    expect(tex).toContain("\\tuning (E4 B3 G3 D3 A2 E2)");
+    expect(tex).toContain("\\instrument (27)");
+    expect(tex).not.toContain("\\capo");
+    const score = load(standard, "gtr");
+    const staff = score.tracks[0].staves[0];
+    expect(staff.tuning).toEqual([64, 59, 55, 50, 45, 40]);
+    expect(staff.capo).toBe(0);
+    expect(score.tracks[0].playbackInfo.program).toBe(27);
+    const beats = played(score);
+    // alphaTab numbers strings from the lowest, so the top line is string 6.
+    expect(beats[0].notes[0]).toMatchObject({ fret: 0, string: 6 });
+    expect(beats[0].notes[0].realValue).toBe(64);
+    expect(beats[0].playbackStart).toBe(0);
+    expect(beats[0].playbackDuration).toBe(960);
+    expect(beats[1].notes[0]).toMatchObject({ fret: 3, string: 1 });
+    expect(beats[1].notes[0].realValue).toBe(43);
+    expect(beats[1].playbackStart).toBe(960);
+    expect(beats[1].playbackDuration).toBe(960);
+
+    const drop = fretted("gtr", "Guitar", "guitar", [64, 59, 55, 50, 45, 38], [
+      [{ position: 0, duration: 1920, notes: [{ string: 5, fret: 0 }] }],
+    ]);
+    const dropped = played(load(drop, "gtr"));
+    expect(load(drop, "gtr").tracks[0].staves[0].tuning[5]).toBe(38);
+    expect(dropped[0].notes[0].realValue).toBe(38);
+    expect(dropped[0].playbackDuration).toBe(1920);
+
+    const capo = fretted(
+      "gtr",
+      "Acoustic",
+      "acoustic-guitar",
+      [64, 59, 55, 50, 45, 40],
+      [[{ position: 0, duration: 3840, notes: [{ string: 0, fret: 0 }] }]],
+      2,
+    );
+    const capoTex = trackToAlphaTex(capo, "gtr", "Fixture", "Ada");
+    expect(capoTex).toContain("\\capo (2)");
+    expect(capoTex).toContain("\\instrument (25)");
+    const capoScore = load(capo, "gtr");
+    expect(capoScore.tracks[0].staves[0].capo).toBe(2);
+    expect(capoScore.tracks[0].playbackInfo.program).toBe(25);
+    expect(played(capoScore)[0].notes[0].realValue).toBe(66);
+
+    const seven = fretted("gtr", "Seven", "guitar", [64, 59, 55, 50, 45, 40, 35], [
+      [{ position: 0, duration: 960, notes: [{ string: 6, fret: 1 }] }],
+    ]);
+    const sevenScore = load(seven, "gtr");
+    expect(sevenScore.tracks[0].staves[0].tuning).toEqual([64, 59, 55, 50, 45, 40, 35]);
+    const low = played(sevenScore)[0].notes[0];
+    expect(low).toMatchObject({ fret: 1, string: 1 });
+    expect(low.realValue).toBe(36);
+    expect(played(sevenScore)[0].playbackDuration).toBe(960);
   });
 });

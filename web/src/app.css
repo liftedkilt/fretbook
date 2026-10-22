@@ -115,6 +115,22 @@ label.field input, label.field select { color: var(--text); min-width: 0; }
   margin-right: 0.35rem;
 }
 
+.filter-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.2rem 0 0.2rem; }
+.filter-row button[aria-pressed="true"] {
+  background: var(--brass);
+  color: var(--brass-ink);
+  border-color: transparent;
+}
+
+.track-choice {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+  padding: 0.3rem 0;
+  color: var(--text);
+}
+.track-choice input { width: auto; }
+
 .error { color: #ffb4a8; }
 .hint { color: var(--dim); }
 

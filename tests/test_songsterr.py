@@ -1,11 +1,20 @@
 """Songsterr port: default-instrument parts, grace notes, tuplets, repeats, sync warnings."""
 
 import json
+from pathlib import Path
 
 import pytest
 
 from fretbook.importers.base import ImportError, ImportRequest, silent_progress
-from fretbook.importers.songsterr import SongsterrImporter, apply_tempos, legacy_events, part_bars
+from fretbook.importers.songsterr import (
+    SongsterrImporter,
+    _capo,
+    apply_tempos,
+    legacy_events,
+    part_bars,
+    track_instrument,
+)
+from fretbook.score.instruments import canonical_instrument
 from fretbook.score.model import ScoreDocument
 
 URL = "https://www.songsterr.com/a/wsa/fixture-song-s42"
@@ -230,3 +239,200 @@ def test_unknown_video_and_bad_url() -> None:
 def test_document_validates() -> None:
     _, result = _import()
     ScoreDocument.model_validate(result.document.model_dump())
+
+
+def test_bass_import_matches_the_recorded_document() -> None:
+    """The bass part's notes, timing, tuning, and sync stay the recorded document."""
+    _, result = _import()
+    expected = json.loads(Path("tests/fixtures/songsterr-bass.json").read_text(encoding="utf-8"))
+    assert result.document.model_dump(mode="json") == expected
+    assert result.source_ref["part_ids"] == [2]
+    assert result.document.tracks[0].capo == 0
+
+
+STANDARD = [64, 59, 55, 50, 45, 40]
+DROP_D = [64, 59, 55, 50, 45, 38]
+SEVEN = [64, 59, 55, 50, 45, 40, 35]
+MULTI_URL = "https://www.songsterr.com/a/wsa/multi-guitar-s99"
+
+
+def _part(name: str, instrument: str, tuning: list[int], capo: int = 0, notes: list[dict] | None = None) -> dict:
+    return {
+        "name": name,
+        "instrument": instrument,
+        "tuning": tuning,
+        "capo": capo,
+        "automations": {"tempo": [{"measure": 0, "bpm": 100}]},
+        "measures": [
+            {
+                "signature": [4, 4],
+                "voices": [{"beats": [{"duration": [1, 4], "notes": notes or [{"string": 0, "fret": 0}]}]}],
+            },
+            {"voices": [{"beats": [{"duration": [1, 1], "notes": []}]}]},
+        ],
+    }
+
+
+ACOUSTIC = _part("Acoustic", "Acoustic Guitar (steel)", STANDARD, capo=2)
+ELECTRIC = _part("Lead", "Distortion Guitar", DROP_D, notes=[{"string": 5, "fret": 0}])
+SEVEN_STRING = _part("Rhythm", "Electric Guitar (clean)", SEVEN, notes=[{"string": 6, "fret": 1}])
+MULTI_PAGE = (
+    '<html><script id="state">'
+    + json.dumps(
+        {
+            "meta": {
+                "current": {
+                    "songId": 99,
+                    "revisionId": 3,
+                    "image": "img",
+                    "title": "Multi",
+                    "artist": "Fixture",
+                    "tracks": [
+                        {
+                            "partId": 1,
+                            "name": "Acoustic",
+                            "instrument": "Acoustic Guitar (steel)",
+                            "isGuitar": True,
+                            "tuning": STANDARD,
+                            "capo": 2,
+                        },
+                        {
+                            "partId": 2,
+                            "name": "Lead",
+                            "instrument": "Distortion Guitar",
+                            "isGuitar": True,
+                            "tuning": DROP_D,
+                        },
+                        {
+                            "partId": 3,
+                            "name": "Rhythm",
+                            "instrument": "Electric Guitar (clean)",
+                            "isGuitar": True,
+                            "tuning": SEVEN,
+                        },
+                        {
+                            "partId": 4,
+                            "name": "Bass",
+                            "instrument": "Bass Guitar",
+                            "isBassGuitar": True,
+                            "tuning": BASS["tuning"],
+                        },
+                        {"partId": 5, "name": "Drums", "instrument": "Drums", "isDrums": True},
+                    ],
+                }
+            }
+        }
+    )
+    + "</script></html>"
+)
+
+
+class MultiFetcher:
+    def __init__(self) -> None:
+        self.urls: list[str] = []
+
+    def get_text(self, url: str) -> str:
+        self.urls.append(url)
+        if url == MULTI_URL:
+            return MULTI_PAGE
+        if url.endswith("/1.json"):
+            return json.dumps(ACOUSTIC)
+        if url.endswith("/2.json"):
+            return json.dumps(ELECTRIC)
+        if url.endswith("/3.json"):
+            return json.dumps(SEVEN_STRING)
+        if url.endswith("/4.json"):
+            return json.dumps(BASS)
+        if url.endswith("/list"):
+            return json.dumps([{"videoId": "bbbbbbbbbbb", "feature": None, "points": [0.0, 2.0]}])
+        raise AssertionError(url)
+
+
+def _multi(**options: object):
+    fetcher = MultiFetcher()
+    result = SongsterrImporter(fetcher).import_score(
+        ImportRequest(owner_id="local", url=MULTI_URL, options=options),
+        silent_progress,
+    )
+    return fetcher, result
+
+
+def test_song_with_guitars_still_imports_only_the_bass_by_default() -> None:
+    fetcher, result = _multi()
+    expected = json.loads(Path("tests/fixtures/songsterr-bass.json").read_text(encoding="utf-8"))
+    track = result.document.model_dump(mode="json")["tracks"][0]
+    assert track["instrument"] == "bass-guitar"
+    assert track["tuning_midi"] == [43, 38, 33, 28]
+    assert track["capo"] == 0
+    assert track["bars"] == expected["tracks"][0]["bars"]
+    assert result.document.bpm == expected["bpm"]
+    assert result.document.sync.points == [0.0, 2.0]
+    assert not any(url.endswith(("/1.json", "/2.json", "/3.json")) for url in fetcher.urls)
+    assert any(url.endswith("/4.json") for url in fetcher.urls)
+
+
+def test_preview_lists_fretted_tracks_and_skips_the_part_files() -> None:
+    fetcher = MultiFetcher()
+    preview = SongsterrImporter(fetcher).preview(ImportRequest(owner_id="local", url=MULTI_URL))
+    assert preview["title"] == "Multi"
+    assert [track["part_id"] for track in preview["tracks"]] == [1, 2, 3, 4]
+    assert [track["canonical_instrument"] for track in preview["tracks"]] == [
+        "acoustic-guitar",
+        "guitar",
+        "guitar",
+        "bass-guitar",
+    ]
+    assert preview["tracks"][0]["capo"] == 2
+    assert preview["tracks"][1]["tuning"] == DROP_D
+    assert preview["tracks"][2]["string_count"] == 7
+    assert fetcher.urls == [MULTI_URL]
+
+
+def test_guitar_family_imports_acoustic_electric_and_seven_string() -> None:
+    fetcher, result = _multi(prefer="guitar")
+    tracks = result.document.tracks
+    assert [(track.name, track.instrument, track.tuning_midi, track.capo) for track in tracks] == [
+        ("Acoustic", "acoustic-guitar", STANDARD, 2),
+        ("Lead", "guitar", DROP_D, 0),
+        ("Rhythm", "guitar", SEVEN, 0),
+    ]
+    assert tracks[0].preferred
+    assert tracks[1].bars[0].voices[0].beats[0].notes[0].string == 5
+    assert tracks[2].bars[0].voices[0].beats[0].notes[0].string == 6
+    assert result.document.sync.video_id == "bbbbbbbbbbb"
+    assert result.document.sync.points == [0.0, 2.0]
+    assert not any(url.endswith("/4.json") for url in fetcher.urls)
+
+
+def test_part_ids_import_one_of_several_guitars() -> None:
+    fetcher, result = _multi(part_ids=[2])
+    track = result.document.tracks[0]
+    assert track.name == "Lead"
+    assert track.instrument == "guitar"
+    assert track.tuning_midi == DROP_D
+    assert track.preferred
+    assert len(result.document.tracks) == 1
+    part_urls = [url for url in fetcher.urls if url.endswith(".json") and not url.endswith("/list")]
+    assert part_urls and all(url.endswith("/2.json") for url in part_urls)
+
+
+def test_mixed_selection_prefers_the_default_family() -> None:
+    _, result = _multi(part_ids=[1, 4])
+    assert [track.name for track in result.document.tracks] == ["Acoustic", "Bass"]
+    assert result.document.tracks[1].preferred
+    assert not result.document.tracks[0].preferred
+    _, guitar_first = _multi(part_ids=[1, 4], prefer="guitar")
+    assert guitar_first.document.tracks[0].preferred
+    assert guitar_first.document.tracks[0].instrument == "acoustic-guitar"
+
+
+def test_capo_and_instrument_names() -> None:
+    assert canonical_instrument("Electric Bass (finger)", is_bass=True) == "bass-guitar"
+    assert canonical_instrument("Acoustic Guitar (nylon)") == "acoustic-guitar"
+    assert canonical_instrument("Distortion Guitar", is_guitar=True) == "guitar"
+    assert canonical_instrument("Banjo") == "Banjo"
+    assert (
+        track_instrument({"instrument": "bass-guitar"}, {"instrument": "Bass", "isBassGuitar": True}) == "bass-guitar"
+    )
+    assert _capo({"measures": [{"capo": 4}]}) == 4
+    assert _capo({"capo": "nope"}) == 0

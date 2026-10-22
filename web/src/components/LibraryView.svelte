@@ -10,13 +10,16 @@
     importFile,
     importUrl,
     listSongs,
+    previewImport,
     saveSettings,
     waitForJob,
   } from "../lib/api";
   import { documentFromGuitarPro } from "../lib/alphatab/importScore";
   import { keyed, t, tOr } from "../lib/i18n.svelte";
+  import { instrumentFamily, instrumentLabel, type InstrumentFilter } from "../lib/instruments";
   import { followLink, hrefFor, navigate } from "../lib/router.svelte";
-  import type { InstrumentPreset, Job, SongSummary } from "../lib/types";
+  import { tuningLabel } from "../lib/tuning";
+  import type { ImportPreview, InstrumentPreset, Job, SongSummary } from "../lib/types";
 
   let songs = $state<SongSummary[]>([]);
   let presets = $state<InstrumentPreset[]>([]);
@@ -36,8 +39,15 @@
   let sheetTitle = $state("");
   let sheetArtist = $state("");
   let sheetText = $state("");
+  let filter = $state<"all" | InstrumentFilter>("all");
+  let picker = $state<ImportPreview | null>(null);
+  let previewUrl = $state("");
+  let selected = $state<number[]>([]);
 
-  const family = $derived(presets.find((item) => item.id === defaultInstrument)?.family ?? null);
+  const family = $derived(presets.find((item) => item.id === defaultInstrument)?.family ?? "bass");
+  const visible = $derived(
+    songs.filter((song) => filter === "all" || (song.content_kind === "tab" && instrumentFamily(song.preferred_instrument) === filter)),
+  );
 
   function message(err: unknown): string {
     if (err instanceof ApiError || err instanceof Error) return err.message;
@@ -112,18 +122,56 @@
     if (job.result?.song_id) navigate(`/songs/${job.result.song_id}`);
   }
 
-  async function submitUrl() {
+  const songsterrUrl = /^https:\/\/www\.songsterr\.com\/a\/wsa\/[\w-]+-s\d+/i;
+
+  function togglePart(partId: number, checked: boolean) {
+    selected = checked ? [...selected, partId] : selected.filter((id) => id !== partId);
+  }
+
+  async function startImport(target: string, partIds: number[] | null) {
     error = "";
     notice = "";
     busy = t("library.importing");
     try {
-      const started = await importUrl(url.trim(), videoId.trim());
+      const started = await importUrl(target, videoId.trim(), partIds);
       await runJob(started.job_id);
+      picker = null;
     } catch (err) {
       error = message(err);
     } finally {
       busy = "";
     }
+  }
+
+  async function submitUrl() {
+    error = "";
+    notice = "";
+    picker = null;
+    const target = url.trim();
+    if (!target) return;
+    if (!songsterrUrl.test(target)) {
+      await startImport(target, null);
+      return;
+    }
+    busy = t("library.checkingTracks");
+    let preview: ImportPreview;
+    try {
+      preview = await previewImport(target);
+    } catch (err) {
+      error = message(err);
+      busy = "";
+      return;
+    }
+    if (preview.tracks.length <= 1) {
+      await startImport(target, null);
+      return;
+    }
+    previewUrl = target;
+    picker = preview;
+    const matching = preview.tracks.filter((track) => (track.is_bass ? "bass" : "guitar") === family);
+    const initial = matching.length ? matching : preview.tracks.slice(0, 1);
+    selected = initial.map((track) => track.part_id);
+    busy = "";
   }
 
   async function submitFile(file: File) {
@@ -194,6 +242,33 @@
       </label>
       <button class="primary" disabled={Boolean(busy) || !url.trim()} onclick={() => void submitUrl()}>{t("library.importUrl")}</button>
     </div>
+    {#if picker}
+      <div class="track-picker">
+        <h3 class="section-title" style="margin-top:0.8rem">{t("library.pickTracks")}</h3>
+        <p class="hint" style="margin-top:0">{t("library.pickTracksHint", { title: picker.title || picker.artist })}</p>
+        {#each picker.tracks as track (track.part_id)}
+          <label class="track-choice">
+            <input
+              type="checkbox"
+              checked={selected.includes(track.part_id)}
+              onchange={(event) => togglePart(track.part_id, event.currentTarget.checked)}
+            />
+            <span>
+              {track.name || instrumentLabel(track.canonical_instrument || track.instrument)}
+              · {instrumentLabel(track.canonical_instrument || track.instrument)}
+              · {tuningLabel(track.tuning)}
+              {#if track.capo > 0}· {t("player.capo", { fret: track.capo })}{/if}
+            </span>
+          </label>
+        {/each}
+        <div class="row" style="margin-top:0.6rem">
+          <button class="primary" disabled={Boolean(busy) || selected.length === 0} onclick={() => void startImport(previewUrl, selected)}>
+            {t("library.importSelected")}
+          </button>
+          <button type="button" onclick={() => (picker = null)}>{t("library.cancel")}</button>
+        </div>
+      </div>
+    {/if}
     <div class="row" style="margin-top:0.7rem">
       <label class="field">
         {t("library.file")}
@@ -261,8 +336,17 @@
   {#if songs.length === 0}
     <p class="hint">{t("library.empty")}</p>
   {:else}
+    <div class="filter-row" role="group" aria-label={t("library.filters")}>
+      <button type="button" aria-pressed={filter === "all"} onclick={() => (filter = "all")}>{t("library.filterAll")}</button>
+      <button type="button" aria-pressed={filter === "bass"} onclick={() => (filter = "bass")}>{t("library.filterBass")}</button>
+      <button type="button" aria-pressed={filter === "electric"} onclick={() => (filter = "electric")}>{t("library.filterElectric")}</button>
+      <button type="button" aria-pressed={filter === "acoustic"} onclick={() => (filter = "acoustic")}>{t("library.filterAcoustic")}</button>
+    </div>
+    {#if visible.length === 0}
+      <p class="hint">{t("library.filterEmpty")}</p>
+    {/if}
     <div class="song-list">
-      {#each songs as song (song.id)}
+      {#each visible as song (song.id)}
         <article class="song">
           <div>
             <h2>{song.title}</h2>
@@ -271,7 +355,7 @@
               {#if song.content_kind === "chords"}
                 <span class="badge">{t("library.chordSheet")}</span>
               {:else}
-                <span class="badge">{song.preferred_instrument}</span>
+                <span class="badge">{instrumentLabel(song.preferred_instrument)}</span>
                 {t("library.strings", { count: song.string_count })}
                 · {t("library.measures", { count: song.measure_count })}
                 · {song.bpm} BPM

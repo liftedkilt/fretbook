@@ -1,5 +1,5 @@
 import { keyed } from "./i18n.svelte";
-import type { Job, Keyed, Me, Meta, ScoreDocument, Settings, SongDetail, SongSummary } from "./types";
+import type { ImportPreview, Job, Keyed, Me, Meta, ScoreDocument, Settings, SongDetail, SongSummary } from "./types";
 
 export class ApiError extends Error {
   status: number;
@@ -114,8 +114,14 @@ export function uploadAudio(id: string, file: File): Promise<SongDetail> {
   return request(`/api/songs/${id}/audio`, { method: "POST", body: data });
 }
 
-export function importUrl(url: string, videoId: string): Promise<{ job_id: string }> {
-  return request("/api/imports", json("POST", { url, video_id: videoId || null }));
+export function previewImport(url: string): Promise<ImportPreview> {
+  return request("/api/imports/preview", json("POST", { url }));
+}
+
+export function importUrl(url: string, videoId: string, partIds?: number[] | null): Promise<{ job_id: string }> {
+  const body: { url: string; video_id: string | null; part_ids?: number[] } = { url, video_id: videoId || null };
+  if (partIds && partIds.length) body.part_ids = partIds;
+  return request("/api/imports", json("POST", body));
 }
 
 export function importFile(file: File): Promise<{ job_id: string }> {

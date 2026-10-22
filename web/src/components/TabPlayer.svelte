@@ -9,6 +9,7 @@
   import { t } from "../lib/i18n.svelte";
   import { followLink, hrefFor } from "../lib/router.svelte";
   import { flatSyncPoints, measureAt, pointAnchors, songStarts } from "../lib/sync";
+  import { instrumentLabel } from "../lib/instruments";
   import { tuningLabel } from "../lib/tuning";
   import type { SongDetail, TabSong } from "../lib/types";
 
@@ -293,7 +294,7 @@
     <p class="hint" style="margin:0.2rem 0 0">
       {song.artist}
       {#if song.artist}·{/if}
-      {track.instrument}
+      {instrumentLabel(track.instrument)}
       · {tuningLabel(track.tuning_midi)}
       · {track.capo > 0 ? t("player.capo", { fret: track.capo }) : t("player.noCapo")}
     </p>

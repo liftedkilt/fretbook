@@ -35,6 +35,17 @@
     "urlHint": "https://www.songsterr.com/a/wsa/…-s123",
     "videoId": "YouTube id (optional)",
     "importUrl": "Import link",
+    "checkingTracks": "Checking tracks…",
+    "pickTracks": "Choose tracks",
+    "pickTracksHint": "{title} has more than one fretted track. Pick the ones to import.",
+    "importSelected": "Import selected",
+    "cancel": "Cancel",
+    "filters": "Filter by instrument",
+    "filterAll": "All",
+    "filterBass": "Bass",
+    "filterElectric": "Electric guitar",
+    "filterAcoustic": "Acoustic guitar",
+    "filterEmpty": "No songs match this filter.",
     "file": "MusicXML, Guitar Pro, ChordPro, text, or Fretbook JSON",
     "importing": "Importing…",
     "warnings": "Imported with warnings: {warnings}"
@@ -45,7 +56,10 @@
     "guitar6": "6-string guitar",
     "guitarDropD": "6-string guitar (Drop D)",
     "guitar7": "7-string guitar",
-    "guitarAcoustic": "Acoustic guitar"
+    "guitarAcoustic": "Acoustic guitar",
+    "bass": "Bass",
+    "electric": "Electric guitar",
+    "acoustic": "Acoustic guitar"
   },
   "chords": {
     "createHeading": "New chord sheet",
@@ -243,6 +257,7 @@
       "notUrl": "{kind} is not a link import.",
       "noUrlImporter": "No importer matches this link. Songsterr links work today; YouTube frame import is not available yet.",
       "noFileImporter": "No importer matches this file. Try MusicXML, Guitar Pro, ChordPro, or a Fretbook JSON export.",
+      "noPreview": "This link has no track list to choose from.",
       "guitarProInBrowser": "Guitar Pro files are read in the browser. Use the import button in Fretbook.",
       "syncCountMismatch": "The source has {points} sync points for {bars} bars, so playback may drift.",
       "noSyncPoints": "No sync points are published for this song.",

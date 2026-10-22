@@ -78,6 +78,10 @@ class ImportUrlBody(_Body):
     kind: str | None = None
 
 
+class PreviewBody(_Body):
+    url: str = Field(max_length=2000)
+
+
 class ImportDocumentBody(_Body):
     title: str = Field(default="Untitled", max_length=300)
     artist: str = Field(default="", max_length=300)
@@ -357,6 +361,28 @@ def export_chordpro(song_id: str, ctx: AppContext = Depends(_ctx), user: Princip
         media_type="text/plain; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="{song["slug"]}.cho"'},
     )
+
+
+@router.post("/api/imports/preview")
+def preview_import(body: PreviewBody, user: Principal = Depends(_user)) -> dict[str, object]:
+    """Fretted tracks on a link, so the library can ask which ones to import.
+
+    Songsterr is the importer that has a preview. Others are refused with the
+    same error a direct import would use.
+    """
+    url = body.url.strip()
+    request = ImportRequest(owner_id=user.user_id, url=url)
+    try:
+        importer = resolve_importer(request)
+    except ImportError as exc:
+        raise _import_error(exc) from exc
+    preview = getattr(importer, "preview", None)
+    if not callable(preview):
+        raise api_error(400, "import.noPreview", "this import has no track list")
+    try:
+        return preview(request)
+    except ImportError as exc:
+        raise _import_error(exc) from exc
 
 
 @router.post("/api/imports", status_code=202)
