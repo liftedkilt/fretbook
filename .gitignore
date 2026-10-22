@@ -2,6 +2,16 @@
 .venv/
 __pycache__/
 *.pyc
+data/
+*.sqlite
+*.sqlite-*
+
+# Frontend
+web/node_modules/
+web/dist/
+# Copied from @coderline/alphatab by the Vite plugin on build.
+web/public/font/
+web/public/soundfont/
 
 # Downloaded songs (copyrighted tabs and audio); keep only the folder
 songs/*

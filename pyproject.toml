@@ -1,0 +1,22 @@
+[project]
+name = "fretbook"
+version = "0.1.0"
+description = "Self-hosted tabs and sheet music for bass and guitar."
+requires-python = ">=3.12"
+readme = "README.md"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+src = ["fretbook", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["fretbook"]

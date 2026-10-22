@@ -1,0 +1,27 @@
+services:
+  fretbook:
+    build: .
+    image: fretbook
+    ports:
+      - "8137:8137"
+    volumes:
+      - fretbook-data:/data
+      - ./songs:/songs:ro
+    environment:
+      FRETBOOK_HOST: "0.0.0.0"
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8137/api/health')",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+volumes:
+  fretbook-data:
