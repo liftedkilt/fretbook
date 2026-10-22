@@ -5,6 +5,12 @@ description = "Self-hosted tabs and sheet music for bass and guitar."
 requires-python = ">=3.12"
 readme = "README.md"
 
+[project.optional-dependencies]
+vision = [
+    "opencv-python-headless>=4.10,<5",
+    "pytesseract>=0.3.13",
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"

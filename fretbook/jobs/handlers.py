@@ -27,7 +27,23 @@ def register_handlers(runner: JobRunner, songs: SongRepository, media: MediaStor
         return _import_file(job, progress, songs, media)
 
     def youtube(job: dict[str, Any], progress: Progress) -> dict[str, Any]:
-        del job
+        payload = job["payload"]
+        local = payload.get("frames_dir") or payload.get("video_path")
+        if local:
+            request = ImportRequest(
+                owner_id=job["owner_id"],
+                file_path=Path(local),
+                filename=Path(local).name,
+                kind="youtube-frames",
+                options={
+                    "title": payload.get("title") or "",
+                    "artist": payload.get("artist") or "",
+                    "video_id": payload.get("video_id"),
+                },
+            )
+            result = YouTubeFrameImporter().import_score(request, progress)
+            return _store_result(job, result, songs, media, progress)
+        # A watch URL is still the rest of issue #6 (download, review screen).
         progress("YouTube import is not available yet", "import.youtubeUnavailable")
         YouTubeFrameImporter().import_score(ImportRequest(owner_id="", kind="youtube-frames"), progress)
         return {}
