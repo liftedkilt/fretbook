@@ -82,11 +82,23 @@ Roles are read from the groups claim at each sign-in, so a group change in Pocke
 
 ## Using it
 
-- **Default instrument** (top of the library) is a per-user setting. It is the preset for new tabs and added tracks, and decides which part an import picks: bass parts for a bass preset, guitar parts otherwise. Every fretted Songsterr part is still listed on the song for a future picker.
-- **Songsterr**: paste a link (`https://www.songsterr.com/a/wsa/…-s123`). The import runs in the background. If YouTube refuses the download (common from datacenter addresses), the tab is still saved and you can upload an mp3 on the song page. Importing the same song again refreshes it and keeps your sync marks, unless you edited the tab, in which case the new import is saved as a separate song.
+- **Default instrument** (top of the library) is a per-user setting. It is the preset for new tabs and added tracks, and decides which Songsterr parts start checked: bass parts for a bass preset, guitar parts (acoustic and electric) otherwise.
+- **Songsterr**: paste a link (`https://www.songsterr.com/a/wsa/…-s123`). If the song has several fretted tracks, you pick which ones to import. The import runs in the background. If YouTube refuses the download (common from datacenter addresses), the tab is still saved and you can upload an mp3 on the song page. Importing the same song again refreshes it and keeps your sync marks, unless you edited the tab, in which case the new import is saved as a separate song. The song page shows the instrument, tuning, and capo. The library can be filtered by bass, electric guitar, or acoustic guitar.
 - **Files**: MusicXML, ChordPro (`.cho`, `.chordpro`, `.crd`, `.txt`), and Fretbook JSON upload to the server. Guitar Pro files are read in the browser by alphaTab.
 - **Song page**: Space plays, arrows move a bar, `T` marks the start of the next bar against the audio. Loop A/B, speed, and nudge buttons help line up a recording.
 - **Editor**: bars are shared by every track, so time signatures, tempo changes, sections, and inserting or deleting a bar apply to the whole song, and sync marks move with their bars. If the song changed elsewhere since you opened it (for example sync marks tapped in another tab), saving merges your edits on top; real conflicts ask you to reload.
+- **Language**: English and Brazilian Portuguese. The header switcher remembers the choice. With no choice saved, the browser language is used (`pt` and `pt-PT` select `pt-BR`).
+
+## Adding a locale
+
+English (`en`) and Brazilian Portuguese (`pt-BR`) live in `web/src/locales/`. The UI reads them through `t()` in `web/src/lib/i18n.svelte.ts`. `<html lang>` follows the active locale.
+
+1. Copy `web/src/locales/en.json` to `web/src/locales/<tag>.json`. Use a BCP 47 tag, such as `fr` or `es-MX`.
+2. Translate every string. Keep `{placeholder}` names unchanged. A plural value is an object: include `other` and the categories `Intl.PluralRules` returns for that locale (English uses `one` and `other`).
+3. Import the file in `web/src/lib/i18n.svelte.ts`, add it to `catalogs`, and add a `locales` entry (`id` is the tag, `labelKey` is the language's own name, the same text in every catalog, such as `language.fr`).
+4. From `web/`, run `npm test`. The catalog test fails if any locale is missing a key the UI passes to `t()`, or if the locale files do not share the same keys and placeholders. It also fails if a new JSON file is not registered on the switcher.
+
+An exact browser tag wins (`pt-BR`). A tag that only shares the language (`pt`, `pt-PT`) uses the first catalog of that language. The choice is stored in `localStorage` under `fretbook.locale`. Server errors and import progress use the same catalogs (`errors.*` and `import.*`).
 
 ## How it is built
 
@@ -127,12 +139,13 @@ API errors are `{"detail": {"key", "message", "params"}}`. The web app shows `er
 cd web && npm ci && npm run check && npm test && npm run build
 ```
 
-The Python tests fail on an unclosed database connection, and check that the English catalog has every error and progress key the server sends; a Vitest test does the same for keys the UI uses.
+The Python tests fail on an unclosed database connection, and check that the English catalog has every error and progress key the server sends. A Vitest test checks that every locale has every key the UI passes to `t()`, and that the locale files share the same keys. See [Adding a locale](#adding-a-locale).
+
+The HTTP contract is the committed `openapi.json`. Regenerate it with `python -m fretbook.openapi` (or `make openapi`) and the TypeScript types with `npm run api-types --prefix web`. A pull request labeled `ui-only` may only touch `web/`; the rules are in `web/README.md`.
 
 ## Follow-up issues
 
-- **#2 Languages.** Strings go through `t()` (`web/src/lib/i18n.svelte.ts`) with plural forms; add a locale by adding a JSON catalog next to `web/src/locales/en.json` and registering it. The missing-key checks above already run in CI.
 - **#3 PDF.** "Print or save PDF" uses the browser's print dialog (alphaTab's print view for tabs). A designed PDF (title, artist, tuning, and track in the header; no staff split across pages) belongs in the browser too, where the renderer is.
-- **#4 Guitar.** The model, editor, and default-instrument setting already handle guitar. Left: a part picker for Songsterr (`part_ids` on `POST /api/imports`, `choose_tracks` in `fretbook/importers/songsterr.py`) and library filters.
+- **#4 Guitar.** Songsterr imports acoustic and electric guitar (and 7-string) as well as bass. A song with several fretted tracks asks which to import (`POST /api/imports/preview`, then `part_ids` on `POST /api/imports`). The library filters by instrument.
 - **Sharing.** Libraries are private. Sharing a song by link, or a shared library, would build on `owner_id` checks in `fretbook/storage/repository.py`.
 - **#6 YouTube frames.** `fretbook/importers/youtube_frames.py` has the pipeline stubs and the job kind is registered. Frame recognition is slow, GPU-bound work: run it as a separate worker that claims only its job kind from the same `jobs` table, rather than in the web process's single job thread. The result should land as a draft that the editor reviews.

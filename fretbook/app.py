@@ -140,7 +140,48 @@ def create_app(settings: Settings | None = None, *, oidc_transport: httpx.AsyncB
         yield
         jobs.stop()
 
-    app = FastAPI(title="Fretbook", version=__version__, lifespan=lifespan)
+    app = FastAPI(
+        title="Fretbook",
+        version=__version__,
+        description=(
+            "JSON API for the web app. Every route is under /api. "
+            "Errors use the shape {\"detail\": {\"key\", \"message\", \"params\"}}; "
+            "the UI looks `key` up under `errors` and falls back to the English `message`. "
+            "Single-user mode has no login: every request is the local user. "
+            "With OIDC (FRETBOOK_OIDC_ISSUER set) a browser signs in through GET /auth/login, "
+            "GET /auth/callback and POST /auth/logout, which are not JSON and not listed here; "
+            "every route but /api/health then answers 401 auth.required without a session cookie."
+        ),
+        lifespan=lifespan,
+        openapi_tags=[
+            {
+                "name": "meta",
+                "description": "Server identity, instrument presets, and auth mode.",
+            },
+            {
+                "name": "auth",
+                "description": "Current user, their role, and per-user settings.",
+            },
+            {
+                "name": "admin",
+                "description": "OIDC mode, admins only: accounts, sessions, and the single-user library.",
+            },
+            {
+                "name": "songs",
+                "description": "Library, score documents, chord sheets, audio, and exports.",
+            },
+            {
+                "name": "imports",
+                "description": "Start a background import. Poll GET /api/jobs/{job_id}.",
+            },
+            {
+                "name": "jobs",
+                "description": "Background job status, progress keys, and errors.",
+            },
+        ],
+        # Output schemas mark defaulted fields as present, which is what responses actually send.
+        separate_input_output_schemas=True,
+    )
     app.state.ctx = ctx
     app.add_exception_handler(RequestValidationError, _validation_error)
     app.add_middleware(SameOriginMiddleware)
@@ -162,11 +203,11 @@ def create_app(settings: Settings | None = None, *, oidc_transport: httpx.AsyncB
             raise
         return None
 
-    @app.get("/")
+    @app.get("/", include_in_schema=False)
     def index(request: Request) -> Response:
         return signed_out(request, "") or _index(settings)
 
-    @app.get("/{full_path:path}")
+    @app.get("/{full_path:path}", include_in_schema=False)
     def assets(request: Request, full_path: str) -> Response:
         if full_path.startswith(("api/", "auth/")):
             raise HTTPException(status_code=404, detail="not found")

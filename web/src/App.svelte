@@ -4,7 +4,7 @@
   import LibraryView from "./components/LibraryView.svelte";
   import SongView from "./components/SongView.svelte";
   import { apiUrl, getMe } from "./lib/api";
-  import { t } from "./lib/i18n.svelte";
+  import { currentLocale, locales, setLocale, t } from "./lib/i18n.svelte";
   import { followLink, hrefFor, routePath } from "./lib/router.svelte";
   import type { Me } from "./lib/types";
 
@@ -33,6 +33,14 @@
       <p>{t("app.tagline")}</p>
     </span>
   </a>
+  <label class="locale-switch">
+    {t("language.label")}
+    <select value={currentLocale()} onchange={(event) => setLocale(event.currentTarget.value)}>
+      {#each locales as item (item.id)}
+        <option value={item.id}>{t(item.labelKey)}</option>
+      {/each}
+    </select>
+  </label>
   {#if me?.authenticated}
     <div class="account">
       <span class="hint" title={me.email}>{me.display_name}</span>

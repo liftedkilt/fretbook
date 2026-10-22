@@ -80,6 +80,24 @@ def family(instrument: str) -> str:
     return "bass" if "bass" in instrument.lower() else "guitar"
 
 
+def canonical_instrument(raw: str, *, is_bass: bool = False, is_guitar: bool = False) -> str:
+    """Map a source instrument name onto ``bass-guitar``, ``acoustic-guitar``, or ``guitar``.
+
+    Acoustic is recognized from the name (Songsterr uses "Acoustic Guitar (steel)"
+    and similar). Anything else with a guitar flag or the word guitar is electric.
+    A name that is neither bass nor guitar is returned unchanged.
+    """
+    text = raw.lower()
+    if is_bass or "bass" in text:
+        return "bass-guitar"
+    if "acoustic" in text:
+        return "acoustic-guitar"
+    if is_guitar or "guitar" in text:
+        return "guitar"
+    cleaned = raw.strip()
+    return cleaned or "unknown"
+
+
 def is_preset(preset_id: str) -> bool:
     return any(preset.id == preset_id for preset in PRESETS)
 

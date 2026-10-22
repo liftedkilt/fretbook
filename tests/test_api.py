@@ -226,6 +226,49 @@ def test_chord_sheets(tmp_path: Path) -> None:
         assert client.get("/api/songs").json()[0]["content_kind"] == "chords"
 
 
+def test_songsterr_preview_and_selected_guitar(tmp_path: Path, monkeypatch) -> None:
+    from tests.test_songsterr import URL, FakeFetcher
+
+    from fretbook.importers.registry import SongsterrImporter as Real
+
+    fetcher = FakeFetcher()
+    monkeypatch.setattr("fretbook.importers.registry.SongsterrImporter", lambda: Real(fetcher))
+    with _client(tmp_path) as client:
+        refused = client.post("/api/imports/preview", json={"url": "https://example.com/nope"})
+        assert refused.status_code == 400
+        assert refused.json()["detail"]["key"] == "import.noUrlImporter"
+
+        preview = client.post("/api/imports/preview", json={"url": URL})
+        assert preview.status_code == 200, preview.text
+        tracks = preview.json()["tracks"]
+        assert [track["part_id"] for track in tracks] == [1, 2]
+        assert tracks[0]["canonical_instrument"] == "guitar"
+        assert tracks[1]["is_bass"] is True
+        assert not any(url.endswith(".json") for url in fetcher.urls)
+
+        # No part_ids: the default instrument is bass, and only that part is fetched.
+        fetcher.urls.clear()
+        bass = client.post("/api/imports", json={"url": URL})
+        assert bass.status_code == 202
+        bass_job = _wait(client, bass.json()["job_id"])
+        assert bass_job["status"] == "done", bass_job
+        bass_song = client.get(f"/api/songs/{bass_job['result']['song_id']}").json()
+        assert bass_song["preferred_instrument"] == "bass-guitar"
+        assert bass_song["document"]["tracks"][0]["tuning_midi"] == [43, 38, 33, 28]
+        assert bass_song["string_count"] == 4
+        assert not any(url.endswith("/1.json") for url in fetcher.urls)
+
+        guitar = client.post("/api/imports", json={"url": URL, "part_ids": [1]})
+        guitar_job = _wait(client, guitar.json()["job_id"])
+        assert guitar_job["status"] == "done", guitar_job
+        # The first import was not edited, so choosing the guitar part refreshes that song.
+        guitar_song = client.get(f"/api/songs/{guitar_job['result']['song_id']}").json()
+        assert guitar_song["id"] == bass_song["id"]
+        assert guitar_song["preferred_instrument"] == "guitar"
+        assert guitar_song["string_count"] == 6
+        assert guitar_song["document"]["tracks"][0]["tuning_midi"] == [64, 59, 55, 50, 45, 40]
+
+
 def test_file_imports(tmp_path: Path) -> None:
     with _client(tmp_path) as client:
         refused = client.post(

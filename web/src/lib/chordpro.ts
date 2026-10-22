@@ -92,7 +92,8 @@ export function parse(text: string): Sheet {
       } else if (name.startsWith("end_of_")) {
         close();
       } else if (name === "chorus") {
-        current.lines.push({ kind: "section", label: value || "Chorus" });
+        // An empty label is the repeat-chorus marker; the view names it in the reader's language.
+        current.lines.push({ kind: "section", label: value });
       }
       continue;
     }

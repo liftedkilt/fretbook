@@ -1,0 +1,5 @@
+# Optional extras for a later YouTube-frame recognizer. The default install,
+# requirements-dev.txt, and the Docker image do not install these.
+# The issue #6 spike measures a pure-Python pipeline instead.
+opencv-python-headless>=4.10,<5
+pytesseract>=0.3.13

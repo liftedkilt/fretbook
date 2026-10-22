@@ -173,6 +173,26 @@ export interface Keyed {
   params: Record<string, string | number>;
 }
 
+/** One fretted Songsterr part, from `POST /api/imports/preview`. */
+export interface SongsterrTrackChoice {
+  part_id: number;
+  name: string;
+  instrument: string;
+  canonical_instrument: string;
+  is_bass: boolean;
+  is_guitar: boolean;
+  tuning: number[];
+  string_count: number;
+  capo: number;
+}
+
+export interface ImportPreview {
+  title: string;
+  artist: string;
+  song_id: number;
+  tracks: SongsterrTrackChoice[];
+}
+
 export interface Job {
   id: string;
   kind: string;

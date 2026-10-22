@@ -1,0 +1,336 @@
+{
+  "app": {
+    "title": "Fretbook",
+    "tagline": "Tablaturas, cifras e partituras auto-hospedadas para baixo e guitarra.",
+    "notFound": "Essa página não está no caderno.",
+    "loading": "Carregando…",
+    "back": "Biblioteca"
+  },
+  "account": {
+    "signOut": "Sair",
+    "admin": "Usuários"
+  },
+  "admin": {
+    "heading": "Usuários",
+    "hint": "As pessoas entram pelo seu provedor de identidade. Membros do grupo de usuários têm a própria biblioteca; membros do grupo de administradores também veem esta página. Os papéis são lidos a cada entrada.",
+    "name": "Nome",
+    "email": "E-mail",
+    "role": "Papel",
+    "roleUser": "Usuário",
+    "roleAdmin": "Administrador",
+    "songs": "Músicas",
+    "lastLogin": "Última entrada",
+    "never": "Nunca",
+    "sessions": { "one": "{count} sessão", "other": "{count} sessões" },
+    "signOut": "Encerrar todas as sessões",
+    "confirmSignOut": "Desconectar {name} de todos os navegadores?",
+    "signedOut": { "one": "{count} sessão encerrada.", "other": "{count} sessões encerradas." },
+    "adoptHeading": "Biblioteca do modo de usuário único",
+    "adoptHint": { "one": "{count} música foi adicionada antes de a entrada ser ativada. Ninguém a vê até que um administrador a mova para uma biblioteca.", "other": "{count} músicas foram adicionadas antes de a entrada ser ativada. Ninguém as vê até que um administrador as mova para uma biblioteca." },
+    "adopt": "Mover para minha biblioteca",
+    "adopted": { "one": "{count} música movida para sua biblioteca.", "other": "{count} músicas movidas para sua biblioteca." }
+  },
+  "language": {
+    "label": "Idioma",
+    "en": "English",
+    "ptBR": "Português (Brasil)"
+  },
+  "settings": {
+    "defaultInstrument": "Instrumento padrão",
+    "defaultInstrumentHint": "Usado em tablaturas novas e faixas adicionadas, e para escolher a parte ao importar do Songsterr, do Guitar Pro ou de MusicXML."
+  },
+  "library": {
+    "heading": "Biblioteca",
+    "empty": "Nenhuma música ainda. Importe um link do Songsterr ou um arquivo, comece uma tablatura em branco ou cole uma cifra.",
+    "open": "Abrir",
+    "edit": "Editar",
+    "delete": "Excluir",
+    "confirmDelete": "Excluir {title}?",
+    "measures": { "one": "{count} compasso", "other": "{count} compassos" },
+    "strings": { "one": "{count} corda", "other": "{count} cordas" },
+    "audio": "Áudio",
+    "noAudio": "Sem áudio",
+    "chordSheet": "Cifra",
+    "createHeading": "Nova tablatura",
+    "create": "Criar",
+    "title": "Título",
+    "artist": "Artista",
+    "preset": "Instrumento",
+    "bpm": "BPM",
+    "measureCount": "Compassos",
+    "signature": "Fórmula",
+    "importHeading": "Importar",
+    "url": "URL do Songsterr",
+    "urlHint": "https://www.songsterr.com/a/wsa/…-s123",
+    "videoId": "Id do YouTube (opcional)",
+    "importUrl": "Importar link",
+    "checkingTracks": "Verificando faixas…",
+    "pickTracks": "Escolher faixas",
+    "pickTracksHint": "{title} tem mais de uma faixa de cordas. Escolha quais importar.",
+    "importSelected": "Importar selecionadas",
+    "cancel": "Cancelar",
+    "filters": "Filtrar por instrumento",
+    "filterAll": "Todas",
+    "filterBass": "Baixo",
+    "filterElectric": "Guitarra elétrica",
+    "filterAcoustic": "Violão",
+    "filterEmpty": "Nenhuma música corresponde a este filtro.",
+    "file": "MusicXML, Guitar Pro, ChordPro, texto ou JSON do Fretbook",
+    "importing": "Importando…",
+    "warnings": "Importado com avisos: {warnings}",
+    "untitled": "Sem título",
+    "tempo": "{bpm} BPM"
+  },
+  "instrument": {
+    "bass4": "Baixo de 4 cordas",
+    "bass5": "Baixo de 5 cordas",
+    "guitar6": "Guitarra de 6 cordas",
+    "guitarDropD": "Guitarra de 6 cordas (Drop D)",
+    "guitar7": "Guitarra de 7 cordas",
+    "guitarAcoustic": "Violão",
+    "bass": "Baixo",
+    "electric": "Guitarra elétrica",
+    "acoustic": "Violão"
+  },
+  "chords": {
+    "createHeading": "Nova cifra",
+    "create": "Salvar cifra",
+    "paste": "ChordPro, ou acordes sobre a letra",
+    "pasteHint": "Cole uma cifra. Linhas de acordes acima da letra são convertidas para ChordPro.",
+    "editHeading": "Editar cifra",
+    "editHint": "ChordPro: acordes entre colchetes antes da sílaba, como [G]Olá. {title: …}, {comment: …} e {start_of_chorus} / {end_of_chorus} são reconhecidos. Acordes sobre a letra são convertidos ao salvar.",
+    "text": "Texto ChordPro",
+    "view": "Ver",
+    "transpose": "Transpor",
+    "up": "Um semitom acima",
+    "down": "Um semitom abaixo",
+    "reset": "Restaurar",
+    "flats": "Bemóis",
+    "size": "Tamanho",
+    "exportChordPro": "Exportar ChordPro",
+    "chorus": "Refrão"
+  },
+  "player": {
+    "play": "Tocar",
+    "pause": "Pausar",
+    "tap": "Marcar compasso (T)",
+    "nudgeBack": "−0,05s",
+    "nudgeForward": "+0,05s",
+    "clearAnchor": "Limpar marca",
+    "loopA": "Loop A",
+    "loopB": "Loop B",
+    "clearLoop": "Limpar loop",
+    "follow": "Seguir",
+    "rate": "Velocidade",
+    "bpm": "BPM",
+    "restore": "Usar sincronia publicada",
+    "clearAll": "Limpar marcas",
+    "upload": "Enviar áudio",
+    "exportJson": "Exportar JSON",
+    "exportMusicXml": "Exportar MusicXML",
+    "print": "Imprimir ou salvar PDF",
+    "edit": "Editar",
+    "track": "Faixa",
+    "capo": "Capotraste {fret}",
+    "noCapo": "Sem capotraste",
+    "status": "Compasso {measure}/{total} · {time}",
+    "statusIdle": "– · {time}",
+    "nextTap": "Próxima marca: {measure}",
+    "usingPublished": "A reprodução está usando os pontos de sincronia publicados. Marque um compasso para começar os seus.",
+    "needAudio": "Os pontos de sincronia foram salvos, mas ainda não há arquivo de áudio. Envie um mp3 ou wav.",
+    "synth": "Não há arquivo de áudio, então a reprodução usa o sintetizador interno.",
+    "keys": "Espaço toca. As setas mudam de compasso. T marca o próximo.",
+    "loopRange": "A{a}–B{b}"
+  },
+  "editor": {
+    "heading": "Editar",
+    "save": "Salvar",
+    "saved": "Salvo",
+    "saving": "Salvando…",
+    "conflict": "Esta música foi alterada em outro lugar depois que você a abriu.",
+    "reload": "Carregar a versão mais recente (descarta as suas alterações)",
+    "measure": "Compasso {number} / {total}",
+    "untitledTrack": "Faixa {number}",
+    "previous": "Anterior",
+    "next": "Próximo",
+    "addMeasure": "Inserir compasso depois",
+    "deleteMeasure": "Excluir compasso",
+    "barsAreShared": "Os compassos são compartilhados por todas as faixas: fórmula de compasso, andamento e seções valem para todas, e inserir ou excluir um compasso também. As marcas de sincronia acompanham os compassos.",
+    "tempoChange": "Mudança de andamento",
+    "section": "Seção",
+    "voice": "Voz",
+    "addBeat": "Adicionar batida",
+    "deleteBeat": "Excluir",
+    "moveEarlier": "Mover para antes",
+    "moveLater": "Mover para depois",
+    "barFull": "Compasso cheio",
+    "barShort": "Compasso curto; o resto é preenchido com pausas",
+    "barOver": "Compasso longo demais",
+    "duration": "Duração",
+    "grace": "Apojatura",
+    "graceOnBeat": "No tempo",
+    "graceBeforeBeat": "Antes do tempo",
+    "techniques": "Técnicas",
+    "addString": "Adicionar corda",
+    "removeString": "Remover corda",
+    "stringInUse": "Essa corda ainda tem notas.",
+    "addTrack": "Adicionar faixa",
+    "deleteTrack": "Excluir faixa",
+    "confirmDeleteTrack": "Excluir a faixa {name}?",
+    "trackName": "Nome da faixa",
+    "preferred": "Preferida",
+    "capo": "Capotraste",
+    "fretHint": "Vazio significa sem nota. 0 é a corda solta.",
+    "play": "Tocar"
+  },
+  "durations": {
+    "whole": "Semibreve",
+    "dottedHalf": "Mínima pontuada",
+    "half": "Mínima",
+    "dottedQuarter": "Semínima pontuada",
+    "quarter": "Semínima",
+    "quarterTriplet": "Tercina de semínima",
+    "dottedEighth": "Colcheia pontuada",
+    "eighth": "Colcheia",
+    "eighthTriplet": "Tercina de colcheia",
+    "sixteenth": "Semicolcheia",
+    "sixteenthTriplet": "Tercina de semicolcheia",
+    "thirtySecond": "Fusa",
+    "other": "Outra ({ticks} ticks)"
+  },
+  "tech": {
+    "dead": "Morta",
+    "tie": "Ligadura",
+    "ghost": "Fantasma",
+    "hammer": "Hammer-on / pull-off",
+    "vibrato": "Vibrato",
+    "palm_mute": "Abafado",
+    "let_ring": "Deixar soar",
+    "staccato": "Staccato",
+    "slide": "Slide",
+    "slides": {
+      "shift": "Shift",
+      "legato": "Legato",
+      "in_below": "Entrada por baixo",
+      "in_above": "Entrada por cima",
+      "out_up": "Saída para cima",
+      "out_down": "Saída para baixo"
+    },
+    "harmonic": "Harmônico",
+    "harmonics": {
+      "natural": "Natural",
+      "artificial": "Artificial",
+      "pinch": "Pinch",
+      "tap": "Tap",
+      "semi": "Semi"
+    },
+    "bend": "Bend (semitons)"
+  },
+  "import": {
+    "fetchingTab": "Buscando a tablatura",
+    "fetchingSync": "Buscando os pontos de sincronia",
+    "tabReady": "Tablatura pronta",
+    "readingFile": "Lendo o arquivo",
+    "youtubeUnavailable": "A importação do YouTube ainda não está disponível",
+    "downloadingAudio": "Baixando o áudio",
+    "convertingAudio": "Convertendo para mp3",
+    "ready": "Pronto",
+    "noFrettedTracks": "Este arquivo não tem faixas de cordas."
+  },
+  "error": {
+    "generic": "Algo deu errado."
+  },
+  "errors": {
+    "auth": {
+      "required": "Sua sessão terminou. Entre novamente.",
+      "adminOnly": "Só administradores podem fazer isso."
+    },
+    "user": {
+      "notFound": "Esse usuário não foi encontrado."
+    },
+    "request": {
+      "tooLarge": "Esse pedido é grande demais.",
+      "crossOrigin": "Pedidos de outros sites não são permitidos.",
+      "invalid": "Alguns campos não são válidos."
+    },
+    "song": {
+      "notFound": "Essa música não está na sua biblioteca.",
+      "conflict": "Esta música foi alterada em outro lugar depois que você a abriu.",
+      "badSignature": "Essa fórmula de compasso não é válida.",
+      "needsDocument": "Uma tablatura precisa da partitura para ser salva.",
+      "needsChordPro": "Uma cifra precisa do texto para ser salva."
+    },
+    "sync": {
+      "badAnchor": "As marcas de sincronia precisam pertencer a compassos desta música.",
+      "notTab": "Só tablaturas têm marcas de sincronia."
+    },
+    "settings": {
+      "unknownInstrument": "Instrumento desconhecido: {preset}."
+    },
+    "upload": {
+      "tooLarge": "Esse arquivo é grande demais.",
+      "empty": "Esse arquivo está vazio.",
+      "notAudio": "Envie um arquivo mp3, wav, ogg, m4a, flac ou webm."
+    },
+    "audio": {
+      "none": "Esta música não tem áudio.",
+      "missing": "O arquivo de áudio está faltando.",
+      "failed": "O download do áudio falhou. A tablatura foi salva; você pode enviar um mp3.",
+      "timeout": "O download do áudio passou de {seconds} segundos. A tablatura foi salva; você pode enviar um mp3.",
+      "badVideo": "Isso não é um id de vídeo do YouTube."
+    },
+    "export": {
+      "notTab": "Só tablaturas são exportadas como MusicXML.",
+      "notChords": "Só cifras são exportadas como ChordPro."
+    },
+    "job": {
+      "notFound": "Essa importação não foi encontrada.",
+      "failed": "A importação falhou.",
+      "interrupted": "O servidor reiniciou durante esta importação. Comece de novo.",
+      "noHandler": "Esse tipo de importação não está disponível.",
+      "timeout": "A importação está demorando demais."
+    },
+    "import": {
+      "failed": "A importação falhou.",
+      "notImplemented": "Este importador ainda não está disponível.",
+      "needsFile": "Esta importação precisa de um arquivo.",
+      "badSlug": "Esse slug não é válido.",
+      "unknownKind": "Importador desconhecido: {kind}.",
+      "notUrl": "{kind} não é uma importação por link.",
+      "noUrlImporter": "Nenhum importador corresponde a este link. Links do Songsterr funcionam hoje; a importação por quadros do YouTube ainda não está disponível.",
+      "noFileImporter": "Nenhum importador corresponde a este arquivo. Tente MusicXML, Guitar Pro, ChordPro ou uma exportação JSON do Fretbook.",
+      "guitarProInBrowser": "Arquivos do Guitar Pro são lidos no navegador. Use o botão de importar no Fretbook.",
+      "syncCountMismatch": "A fonte tem {points} pontos de sincronia para {bars} compassos, então a reprodução pode sair do tempo.",
+      "noSyncPoints": "Não há pontos de sincronia publicados para esta música.",
+      "keptEditedCopy": "\"{title}\" teve alterações desde a importação, então esta importação foi salva como outra música.",
+      "anchorsDropped": "A nova importação tem menos compassos, então algumas marcas de sincronia foram descartadas.",
+      "noPreview": "Este link não tem uma lista de faixas para escolher."
+    },
+    "songsterr": {
+      "badUrl": "O link precisa ter o formato https://www.songsterr.com/a/wsa/<name>-s<digits>.",
+      "noState": "Não foi possível ler a página do Songsterr. O site pode ter mudado.",
+      "idMismatch": "A página do Songsterr não corresponde ao link.",
+      "noSuchPart": "Nenhuma das partes pedidas do Songsterr é uma faixa de cordas.",
+      "noFrettedTrack": "Esta música não tem faixa de cordas ({names}).",
+      "noSuchVideo": "O vídeo {video} não tem pontos de sincronia.",
+      "noTuning": "A parte {part} não tem afinação.",
+      "badJson": "O Songsterr enviou {what} ilegível.",
+      "badVideo": "O Songsterr indicou um id de vídeo inesperado."
+    },
+    "musicxml": {
+      "parse": "Não foi possível ler o arquivo MusicXML.",
+      "timewise": "MusicXML no formato timewise não é suportado. Salve como partwise.",
+      "notMusicXml": "Isto não é uma partitura MusicXML.",
+      "noTab": "Este arquivo MusicXML não tem tablatura (corda e casa)."
+    },
+    "json": {
+      "parse": "Não foi possível ler o arquivo JSON.",
+      "notFretbook": "Este arquivo JSON não é uma exportação do Fretbook."
+    },
+    "chords": {
+      "empty": "A cifra está vazia.",
+      "notText": "A cifra não é texto UTF-8.",
+      "tooLong": "A cifra tem mais de {limit} caracteres."
+    }
+  }
+}

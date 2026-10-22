@@ -1,5 +1,6 @@
 import * as alphaTab from "@coderline/alphatab";
 
+import { t } from "../i18n.svelte";
 import type { Bar, Beat, GraceKind, HarmonicKind, Note, ScoreDocument, SlideKind, Track, TrackBar } from "../types";
 
 /**
@@ -145,7 +146,7 @@ export function scoreToDocument(score: alphaTab.model.Score): { title: string; a
     });
     tracks.push({
       id: `trk_gp_${index}`,
-      name: source.name || `Track ${index + 1}`,
+      name: source.name || t("editor.untitledTrack", { number: index + 1 }),
       instrument: instrumentName(source.playbackInfo.program, tuning.length),
       capo: staff.capo || 0,
       tuning_midi: tuning,
@@ -153,9 +154,9 @@ export function scoreToDocument(score: alphaTab.model.Score): { title: string; a
       bars: trackBars,
     });
   });
-  if (!tracks.length) throw new Error("no fretted tracks in this file");
+  if (!tracks.length) throw new Error(t("import.noFrettedTracks"));
   return {
-    title: score.title || "Untitled",
+    title: score.title || t("library.untitled"),
     artist: score.artist || "",
     document: { version: 1, bpm, bars, tracks, sync: { video_id: null, points: [], anchors: {} } },
   };
@@ -170,8 +171,10 @@ export function choosePreferred(document: ScoreDocument, family: "bass" | "guita
 }
 
 function instrumentName(program: number, strings: number): string {
+  // General MIDI: 24–25 acoustic guitar, 26–31 electric, 32–39 bass.
   if (program >= 32 && program <= 39) return "bass-guitar";
-  if (program === 25) return "acoustic-guitar";
+  if (program === 24 || program === 25) return "acoustic-guitar";
+  if (program >= 26 && program <= 31) return "guitar";
   if (strings <= 5) return "bass-guitar";
   return "guitar";
 }
