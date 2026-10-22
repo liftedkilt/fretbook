@@ -1,0 +1,12 @@
+# Python env and caches
+.venv/
+__pycache__/
+*.pyc
+
+# Downloaded songs (copyrighted tabs and audio); keep only the folder
+songs/*
+!songs/.gitkeep
+
+# Raw Songsterr test data
+source/*.json
+source/*.html
