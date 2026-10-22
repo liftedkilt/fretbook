@@ -5,7 +5,7 @@ Self-hosted tabs, chord sheets, and sheet music for bass and guitar.
 - **Tabs**: import from Songsterr, Guitar Pro (3–8), MusicXML, or start blank. Any string count and tuning, several tracks per song, standard notation and tab rendered by [alphaTab](https://alphatab.net).
 - **Play along**: with an audio file (uploaded, or downloaded from the YouTube video Songsterr syncs to), the score follows the recording. Tap `T` on each bar to line it up. Without audio, alphaTab's synth plays the tab.
 - **Chord sheets**: lyrics with chords over them, stored as ChordPro. Paste an Ultimate Guitar style "chords over lyrics" sheet and it is converted. Transpose and print.
-- **Export**: MusicXML (opens in MuseScore, Guitar Pro, and other tab apps), ChordPro, Fretbook JSON, and print/PDF.
+- **Export**: MusicXML (opens in MuseScore, Guitar Pro, and other tab apps), ChordPro, Fretbook JSON, and PDF. The PDF is engraved in the browser by alphaTab, then paged so a staff is never split, with the title, artist, tuning, and track name on every page. Chord sheets export to PDF too.
 
 Fretbook grew out of [Mr-P4p3r/bass-tab-sync](https://github.com/Mr-P4p3r/bass-tab-sync) and still imports its `songs/` folders.
 
@@ -72,12 +72,14 @@ An exact browser tag wins (`pt-BR`). A tag that only shares the language (`pt`, 
 ## How it is built
 
 ```
-browser   Svelte 5 + TypeScript (Vite)    alphaTab renders and plays tabs; ChordSheet.svelte renders chord sheets
+browser   Svelte 5 + TypeScript (Vite)    alphaTab renders and plays tabs; pdf-lib writes the PDF; ChordSheet.svelte renders chord sheets
 server    FastAPI (fretbook/)             one process, background job thread for imports
 storage   SQLite data/fretbook.sqlite     songs, users, jobs; audio files under data/media/<owner>/<song>/
 ```
 
 FastAPI serves the built web app, so the container needs no Node at runtime. `<base href>` is rewritten from `FRETBOOK_ROOT_PATH`.
+
+PDF export adds two web dependencies, [`pdf-lib`](https://pdf-lib.js.org/) and [`@pdf-lib/fontkit`](https://github.com/Hopding/fontkit) (`web/package.json`). Vite bundles them with the app. The music font is Bravura from `@coderline/alphatab`, copied into `font/` by the Vite plugin. fontkit reads its glyph outlines and the PDF draws those as vectors, so the font file itself is not embedded. The Docker image does not install anything extra for PDF.
 
 ### Stored formats
 
@@ -113,7 +115,6 @@ The HTTP contract is the committed `openapi.json`. Regenerate it with `python -m
 
 ## Follow-up issues
 
-- **#3 PDF.** "Print or save PDF" uses the browser's print dialog (alphaTab's print view for tabs). A designed PDF (title, artist, tuning, and track in the header; no staff split across pages) belongs in the browser too, where the renderer is.
 - **#4 Guitar.** Songsterr imports acoustic and electric guitar (and 7-string) as well as bass. A song with several fretted tracks asks which to import (`POST /api/imports/preview`, then `part_ids` on `POST /api/imports`). The library filters by instrument.
 - **#5 Pocket ID / OIDC.** `fretbook/auth/oidc.py` lists what to build. Keep `users.id` an internal id (it names media folders) and store the OIDC `sub` in `users.external_subject`.
 - **#6 YouTube frames.** `fretbook/importers/youtube_frames.py` has the pipeline stubs and the job kind is registered. Frame recognition is slow, GPU-bound work: run it as a separate worker that claims only its job kind from the same `jobs` table, rather than in the web process's single job thread. The result should land as a draft that the editor reviews.

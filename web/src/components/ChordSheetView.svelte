@@ -9,12 +9,34 @@
   let transpose = $state(0);
   let flats = $state(false);
   let size = $state(1);
+  let exporting = $state(false);
+  let error = $state("");
 
   function exportUrl(kind: string): string {
     return new URL(`api/songs/${song.id}/export.${kind}`, document.baseURI).toString();
   }
+
+  async function exportPdf() {
+    exporting = true;
+    error = "";
+    try {
+      const { downloadChordSheetPdf } = await import("../lib/export/pdf");
+      await downloadChordSheetPdf({
+        chordpro: song.chordpro ?? "",
+        title: song.title,
+        artist: song.artist,
+        transpose,
+        flats,
+      });
+    } catch {
+      error = t("player.exportPdfFailed");
+    } finally {
+      exporting = false;
+    }
+  }
 </script>
 
+{#if error}<p class="error">{error}</p>{/if}
 <div class="row no-print" style="justify-content:space-between">
   <div>
     <h2 style="margin:0">{song.title}</h2>
@@ -25,7 +47,7 @@
     <a class="button" href={hrefFor(`/songs/${song.id}/edit`)} onclick={(event) => followLink(event, `/songs/${song.id}/edit`)}>{t("player.edit")}</a>
     <a class="button" href={exportUrl("cho")}>{t("chords.exportChordPro")}</a>
     <a class="button" href={exportUrl("json")}>{t("player.exportJson")}</a>
-    <button onclick={() => window.print()}>{t("player.print")}</button>
+    <button disabled={exporting} onclick={() => void exportPdf()}>{exporting ? t("player.exportingPdf") : t("player.exportPdf")}</button>
   </div>
 </div>
 
