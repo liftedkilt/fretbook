@@ -56,6 +56,18 @@ For UI work, run the API with `.venv/bin/python -m fretbook` and `cd web && npm 
 - **Files**: MusicXML, ChordPro (`.cho`, `.chordpro`, `.crd`, `.txt`), and Fretbook JSON upload to the server. Guitar Pro files are read in the browser by alphaTab.
 - **Song page**: Space plays, arrows move a bar, `T` marks the start of the next bar against the audio. Loop A/B, speed, and nudge buttons help line up a recording.
 - **Editor**: bars are shared by every track, so time signatures, tempo changes, sections, and inserting or deleting a bar apply to the whole song, and sync marks move with their bars. If the song changed elsewhere since you opened it (for example sync marks tapped in another tab), saving merges your edits on top; real conflicts ask you to reload.
+- **Language**: English and Brazilian Portuguese. The header switcher remembers the choice. With no choice saved, the browser language is used (`pt` and `pt-PT` select `pt-BR`).
+
+## Adding a locale
+
+English (`en`) and Brazilian Portuguese (`pt-BR`) live in `web/src/locales/`. The UI reads them through `t()` in `web/src/lib/i18n.svelte.ts`. `<html lang>` follows the active locale.
+
+1. Copy `web/src/locales/en.json` to `web/src/locales/<tag>.json`. Use a BCP 47 tag, such as `fr` or `es-MX`.
+2. Translate every string. Keep `{placeholder}` names unchanged. A plural value is an object: include `other` and the categories `Intl.PluralRules` returns for that locale (English uses `one` and `other`).
+3. Import the file in `web/src/lib/i18n.svelte.ts`, add it to `catalogs`, and add a `locales` entry (`id` is the tag, `labelKey` is the language's own name, the same text in every catalog, such as `language.fr`).
+4. From `web/`, run `npm test`. The catalog test fails if any locale is missing a key the UI passes to `t()`, or if the locale files do not share the same keys and placeholders. It also fails if a new JSON file is not registered on the switcher.
+
+An exact browser tag wins (`pt-BR`). A tag that only shares the language (`pt`, `pt-PT`) uses the first catalog of that language. The choice is stored in `localStorage` under `fretbook.locale`. Server errors and import progress use the same catalogs (`errors.*` and `import.*`).
 
 ## How it is built
 
@@ -95,11 +107,10 @@ API errors are `{"detail": {"key", "message", "params"}}`. The web app shows `er
 cd web && npm ci && npm run check && npm test && npm run build
 ```
 
-The Python tests fail on an unclosed database connection, and check that the English catalog has every error and progress key the server sends; a Vitest test does the same for keys the UI uses.
+The Python tests fail on an unclosed database connection, and check that the English catalog has every error and progress key the server sends. A Vitest test checks that every locale has every key the UI passes to `t()`, and that the locale files share the same keys. See [Adding a locale](#adding-a-locale).
 
 ## Follow-up issues
 
-- **#2 Languages.** Strings go through `t()` (`web/src/lib/i18n.svelte.ts`) with plural forms; add a locale by adding a JSON catalog next to `web/src/locales/en.json` and registering it. The missing-key checks above already run in CI.
 - **#3 PDF.** "Print or save PDF" uses the browser's print dialog (alphaTab's print view for tabs). A designed PDF (title, artist, tuning, and track in the header; no staff split across pages) belongs in the browser too, where the renderer is.
 - **#4 Guitar.** Songsterr imports acoustic and electric guitar (and 7-string) as well as bass. A song with several fretted tracks asks which to import (`POST /api/imports/preview`, then `part_ids` on `POST /api/imports`). The library filters by instrument.
 - **#5 Pocket ID / OIDC.** `fretbook/auth/oidc.py` lists what to build. Keep `users.id` an internal id (it names media folders) and store the OIDC `sub` in `users.external_subject`.

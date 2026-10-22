@@ -7,9 +7,9 @@
   import { preferredTrack, trackToAlphaTex } from "../lib/alphatex";
   import { barTicks } from "../lib/durations";
   import { t } from "../lib/i18n.svelte";
+  import { instrumentLabel } from "../lib/instruments";
   import { followLink, hrefFor } from "../lib/router.svelte";
   import { flatSyncPoints, measureAt, pointAnchors, songStarts } from "../lib/sync";
-  import { instrumentLabel } from "../lib/instruments";
   import { tuningLabel } from "../lib/tuning";
   import type { SongDetail, TabSong } from "../lib/types";
 
@@ -380,7 +380,7 @@
     · {t("player.nextTap", { measure: tapIndex + 1 })}
   {/if}
   {#if saveLabel}· {saveLabel}{/if}
-  {#if loopA != null && loopB != null}· A{loopA + 1}–B{loopB + 1}{/if}
+  {#if loopA != null && loopB != null}· {t("player.loopRange", { a: loopA + 1, b: loopB + 1 })}{/if}
 </p>
 {#if song.has_audio && Object.keys(song.document.sync.anchors).length === 0 && song.document.sync.points.some((point) => point != null)}
   <p class="hint">{t("player.usingPublished")}</p>

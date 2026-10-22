@@ -21,7 +21,7 @@
     conflict = false;
     try {
       song = await updateSong(song.id, {
-        title: song.title.trim() || "Untitled",
+        title: song.title.trim() || t("library.untitled"),
         artist: song.artist.trim(),
         revision: song.revision,
         chordpro: text,

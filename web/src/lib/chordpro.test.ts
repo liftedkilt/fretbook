@@ -26,6 +26,14 @@ describe("chordpro", () => {
     expect(sheet.blocks[2].lines[0]).toEqual({ kind: "tab", text: "e|--3--|" });
   });
 
+  it("leaves a bare chorus marker for the view to name", () => {
+    const sheet = parse("{chorus}\n{chorus: Special}\n");
+    const labels = sheet.blocks.flatMap((block) =>
+      block.lines.flatMap((line) => (line.kind === "section" ? [line.label] : [])),
+    );
+    expect(labels).toEqual(["", "Special"]);
+  });
+
   it("transposes chords and slash basses", () => {
     expect(transposeChord("G", 2)).toBe("A");
     expect(transposeChord("Em7", -2)).toBe("Dm7");

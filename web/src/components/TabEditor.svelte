@@ -211,7 +211,7 @@
 
   async function send(revision: number, sync: SyncMap, bpm: number) {
     const document: ScoreDocument = { ...$state.snapshot(song.document), bpm, sync: remapSync(sync, origin) };
-    return updateSong(song.id, { title: song.title.trim() || "Untitled", artist: song.artist.trim(), revision, document });
+    return updateSong(song.id, { title: song.title.trim() || t("library.untitled"), artist: song.artist.trim(), revision, document });
   }
 
   async function save() {
@@ -316,7 +316,7 @@
 
 <div class="row" style="margin:0.8rem 0">
   <button disabled={barIndex <= 0} onclick={() => (barIndex -= 1)}>{t("editor.previous")}</button>
-  <strong>{t("editor.measure", { number: barIndex + 1 })} / {document_.bars.length}</strong>
+  <strong>{t("editor.measure", { number: barIndex + 1, total: document_.bars.length })}</strong>
   <button disabled={barIndex >= document_.bars.length - 1} onclick={() => (barIndex += 1)}>{t("editor.next")}</button>
   <label class="field">
     {t("library.signature")}

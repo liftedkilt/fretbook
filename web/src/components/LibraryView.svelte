@@ -85,7 +85,7 @@
     error = "";
     try {
       const song = await createTab({
-        title: title.trim() || "Untitled",
+        title: title.trim() || t("library.untitled"),
         artist: artist.trim(),
         preset,
         bpm,
@@ -358,7 +358,7 @@
                 <span class="badge">{instrumentLabel(song.preferred_instrument)}</span>
                 {t("library.strings", { count: song.string_count })}
                 · {t("library.measures", { count: song.measure_count })}
-                · {song.bpm} BPM
+                · {t("library.tempo", { bpm: song.bpm })}
                 · {song.has_audio ? t("library.audio") : t("library.noAudio")}
               {/if}
             </div>

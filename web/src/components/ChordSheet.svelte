@@ -1,5 +1,6 @@
 <script lang="ts">
   import { parse, transposeChord } from "../lib/chordpro";
+  import { t } from "../lib/i18n.svelte";
 
   let { text, transpose = 0, flats = false }: { text: string; transpose?: number; flats?: boolean } = $props();
 
@@ -25,7 +26,7 @@
         {:else if line.kind === "comment"}
           <p class="chord-comment">{line.text}</p>
         {:else if line.kind === "section"}
-          <p class="chord-label">{line.label}</p>
+          <p class="chord-label">{line.label || t("chords.chorus")}</p>
         {:else if line.kind === "tab"}
           <pre class="chord-tab">{line.text}</pre>
         {:else}

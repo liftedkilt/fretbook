@@ -62,6 +62,8 @@ a { color: var(--green-2); }
 .app-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
   gap: 0.9rem;
   padding: 0.85rem 1.25rem;
   border-bottom: 1px solid var(--line);
@@ -70,6 +72,18 @@ a { color: var(--green-2); }
   top: 0;
   z-index: 2;
 }
+
+.locale-switch {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-left: auto;
+  color: var(--dim);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.locale-switch select { min-width: 12rem; }
 
 .brand { display: flex; align-items: center; gap: 0.75rem; text-decoration: none; color: inherit; }
 .brand img { width: 42px; height: 42px; }

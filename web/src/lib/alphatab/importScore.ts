@@ -1,5 +1,6 @@
 import * as alphaTab from "@coderline/alphatab";
 
+import { t } from "../i18n.svelte";
 import type { Bar, Beat, GraceKind, HarmonicKind, Note, ScoreDocument, SlideKind, Track, TrackBar } from "../types";
 
 /**
@@ -145,7 +146,7 @@ export function scoreToDocument(score: alphaTab.model.Score): { title: string; a
     });
     tracks.push({
       id: `trk_gp_${index}`,
-      name: source.name || `Track ${index + 1}`,
+      name: source.name || t("editor.untitledTrack", { number: index + 1 }),
       instrument: instrumentName(source.playbackInfo.program, tuning.length),
       capo: staff.capo || 0,
       tuning_midi: tuning,
@@ -153,9 +154,9 @@ export function scoreToDocument(score: alphaTab.model.Score): { title: string; a
       bars: trackBars,
     });
   });
-  if (!tracks.length) throw new Error("no fretted tracks in this file");
+  if (!tracks.length) throw new Error(t("import.noFrettedTracks"));
   return {
-    title: score.title || "Untitled",
+    title: score.title || t("library.untitled"),
     artist: score.artist || "",
     document: { version: 1, bpm, bars, tracks, sync: { video_id: null, points: [], anchors: {} } },
   };

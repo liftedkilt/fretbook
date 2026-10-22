@@ -6,6 +6,11 @@
     "loading": "Loading…",
     "back": "Library"
   },
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "ptBR": "Português (Brasil)"
+  },
   "settings": {
     "defaultInstrument": "Default instrument",
     "defaultInstrumentHint": "Used for new tabs and added tracks, and to pick the part when importing from Songsterr, Guitar Pro, or MusicXML."
@@ -48,7 +53,9 @@
     "filterEmpty": "No songs match this filter.",
     "file": "MusicXML, Guitar Pro, ChordPro, text, or Fretbook JSON",
     "importing": "Importing…",
-    "warnings": "Imported with warnings: {warnings}"
+    "warnings": "Imported with warnings: {warnings}",
+    "untitled": "Untitled",
+    "tempo": "{bpm} BPM"
   },
   "instrument": {
     "bass4": "4-string bass",
@@ -76,7 +83,8 @@
     "reset": "Reset",
     "flats": "Flats",
     "size": "Size",
-    "exportChordPro": "Export ChordPro"
+    "exportChordPro": "Export ChordPro",
+    "chorus": "Chorus"
   },
   "player": {
     "play": "Play",
@@ -107,7 +115,8 @@
     "usingPublished": "Playback is using the published sync points. Tap to start your own.",
     "needAudio": "Sync points are saved, but there is no audio file yet. Upload an mp3 or wav.",
     "synth": "No audio file, so playback uses the built-in synth.",
-    "keys": "Space plays. Arrows move a bar. T taps the next mark."
+    "keys": "Space plays. Arrows move a bar. T taps the next mark.",
+    "loopRange": "A{a}–B{b}"
   },
   "editor": {
     "heading": "Edit",
@@ -116,7 +125,8 @@
     "saving": "Saving…",
     "conflict": "This song was changed somewhere else after you opened it.",
     "reload": "Load the latest (discards your changes)",
-    "measure": "Bar {number}",
+    "measure": "Bar {number} / {total}",
+    "untitledTrack": "Track {number}",
     "previous": "Previous",
     "next": "Next",
     "addMeasure": "Insert bar after",
@@ -200,7 +210,8 @@
     "youtubeUnavailable": "YouTube import is not available yet",
     "downloadingAudio": "Downloading audio",
     "convertingAudio": "Converting to mp3",
-    "ready": "Ready"
+    "ready": "Ready",
+    "noFrettedTracks": "This file has no fretted tracks."
   },
   "error": {
     "generic": "Something went wrong."
