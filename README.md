@@ -38,16 +38,47 @@ For UI work, run the API with `.venv/bin/python -m fretbook` and `cd web && npm 
 | `FRETBOOK_DATA_DIR` | `data` | SQLite database, media, and upload inbox. |
 | `FRETBOOK_DATABASE` | `$DATA_DIR/fretbook.sqlite` | Database file. |
 | `FRETBOOK_LEGACY_SONGS_DIR` | `songs` | bass-tab-sync `songs/<slug>/` folders to import on start. Empty disables it. |
-| `FRETBOOK_AUTH_MODE` | `single` | `single` (no login, one library) or `oidc` (not implemented yet, see #5). |
+| `FRETBOOK_AUTH_MODE` | `single`, or `oidc` when `FRETBOOK_OIDC_ISSUER` is set | `single` (no login, one library) or `oidc` (sign-in, one library per user). |
 | `FRETBOOK_ROOT_PATH` | empty | URL prefix when a reverse proxy strips one, for example `/fretbook`. |
 | `FRETBOOK_FORWARDED_ALLOW_IPS` | `127.0.0.1` | Proxies allowed to send `X-Forwarded-*`. Set it to your proxy's address. |
 | `FRETBOOK_DOWNLOAD_AUDIO` | `true` | Download the audio of the video a Songsterr tab is synced to, with yt-dlp. |
 | `FRETBOOK_AUDIO_TIMEOUT` | `600` | Seconds before a yt-dlp download is abandoned. |
 | `FRETBOOK_MAX_UPLOAD_BYTES` | 80 MB | Largest upload and request body. |
 | `FRETBOOK_STATIC_DIR` | built-in | Serve the web app from another directory. |
-| `FRETBOOK_OIDC_*`, `FRETBOOK_SESSION_SECRET` | empty | Reserved for #5. |
+| `FRETBOOK_OIDC_ISSUER` | empty | Provider URL, for example `https://id.example.com`. Setting it turns on sign-in. |
+| `FRETBOOK_OIDC_CLIENT_ID` | empty | Client id from the provider. |
+| `FRETBOOK_OIDC_CLIENT_SECRET` | empty | Optional. Leave empty for a public (PKCE-only) client. |
+| `FRETBOOK_OIDC_REDIRECT_URI` | empty | The public callback URL, `https://<your host>[/prefix]/auth/callback`. |
+| `FRETBOOK_SESSION_SECRET` | empty | At least 32 characters, for example `openssl rand -hex 32`. Signs the short-lived sign-in cookie. |
+| `FRETBOOK_OIDC_USER_GROUP` | `fretbook_users` | Members get their own library. Empty admits everyone the provider signs in. |
+| `FRETBOOK_OIDC_ADMIN_GROUP` | `fretbook_admins` | Members are users who also manage the Users page. |
+| `FRETBOOK_OIDC_GROUPS_CLAIM` | `groups` | Claim that lists the groups, read from the ID token or else from userinfo. |
+| `FRETBOOK_OIDC_SCOPES` | `openid profile email groups` | Requested scopes. |
+| `FRETBOOK_OIDC_POST_LOGOUT_REDIRECT_URI` | empty | Where the provider sends the browser after sign-out. It must be registered with the provider. |
+| `FRETBOOK_SESSION_MAX_AGE` | `604800` | Session length in seconds (7 days). |
 
-**Security.** In single-user mode there is no login: anyone who can reach the port can use the library, so keep it on a trusted network or behind an authenticating proxy. Writes from other websites are refused (the `Origin` must match the `Host`), and request bodies are capped. Behind a reverse proxy, forward `Host` and `X-Forwarded-Proto` and set `FRETBOOK_FORWARDED_ALLOW_IPS`. Run one server process per database.
+### Sign-in with Pocket ID
+
+1. In Pocket ID, open **Administration → User Groups** and create `fretbook_users` and `fretbook_admins`. Add people to one of them; admins do not also need to be in `fretbook_users`.
+2. Open **Administration → OIDC Clients → Add OIDC Client**. Name it Fretbook and set the callback URL to `https://fretbook.example.com/auth/callback` (with your prefix, if you set `FRETBOOK_ROOT_PATH`, before `/auth`). Turn on **Public client** to use PKCE without a secret, or keep the generated secret. Optionally restrict the client to the two groups as well.
+3. Optionally add a logout callback URL such as `https://fretbook.example.com/` and set the same value in `FRETBOOK_OIDC_POST_LOGOUT_REDIRECT_URI`.
+4. Configure Fretbook:
+
+   ```yaml
+   environment:
+     FRETBOOK_OIDC_ISSUER: "https://id.example.com"
+     FRETBOOK_OIDC_CLIENT_ID: "<client id>"
+     FRETBOOK_OIDC_CLIENT_SECRET: "<secret, or leave out for a public client>"
+     FRETBOOK_OIDC_REDIRECT_URI: "https://fretbook.example.com/auth/callback"
+     FRETBOOK_SESSION_SECRET: "<openssl rand -hex 32>"
+     FRETBOOK_FORWARDED_ALLOW_IPS: "<your reverse proxy's address>"
+   ```
+
+Fretbook requests the scopes `openid profile email groups`. Every page, asset, and API route except `/api/health` needs a session; a browser without one is sent to Pocket ID and comes back to the page it asked for. Members of neither group are refused at the callback.
+
+Roles are read from the groups claim at each sign-in, so a group change in Pocket ID applies at the user's next sign-in. To apply it at once, an admin can end that user's sessions on the **Users** page. Each user's library is private. Songs from single-user mode (and bass-tab-sync imports) belong to no signed-in user; an admin can move them into their own library from the Users page.
+
+**Security.** In single-user mode there is no login: anyone who can reach the port can use the library, so keep it on a trusted network or behind an authenticating proxy. Writes from other websites are refused (the `Origin` must match the `Host`), and request bodies are capped. With sign-in, sessions are stored server-side (the cookie holds a random token and the database only its hash); cookies are `HttpOnly`, `SameSite=Lax`, and `Secure` when the redirect URI is https. The ID token's signature, issuer, audience, expiry, and nonce are checked, and the callback URL always comes from `FRETBOOK_OIDC_REDIRECT_URI`, never from request headers. Behind a reverse proxy, forward `Host` and `X-Forwarded-Proto` and set `FRETBOOK_FORWARDED_ALLOW_IPS`. Run one server process per database.
 
 ## Using it
 
@@ -62,7 +93,8 @@ For UI work, run the API with `.venv/bin/python -m fretbook` and `cd web && npm 
 ```
 browser   Svelte 5 + TypeScript (Vite)    alphaTab renders and plays tabs; ChordSheet.svelte renders chord sheets
 server    FastAPI (fretbook/)             one process, background job thread for imports
-storage   SQLite data/fretbook.sqlite     songs, users, jobs; audio files under data/media/<owner>/<song>/
+storage   SQLite data/fretbook.sqlite     songs, users, sessions, jobs; audio files under data/media/<owner>/<song>/
+auth      fretbook/auth/                  single-user, or OIDC code flow + PKCE with roles from groups
 ```
 
 FastAPI serves the built web app, so the container needs no Node at runtime. `<base href>` is rewritten from `FRETBOOK_ROOT_PATH`.
@@ -102,5 +134,5 @@ The Python tests fail on an unclosed database connection, and check that the Eng
 - **#2 Languages.** Strings go through `t()` (`web/src/lib/i18n.svelte.ts`) with plural forms; add a locale by adding a JSON catalog next to `web/src/locales/en.json` and registering it. The missing-key checks above already run in CI.
 - **#3 PDF.** "Print or save PDF" uses the browser's print dialog (alphaTab's print view for tabs). A designed PDF (title, artist, tuning, and track in the header; no staff split across pages) belongs in the browser too, where the renderer is.
 - **#4 Guitar.** The model, editor, and default-instrument setting already handle guitar. Left: a part picker for Songsterr (`part_ids` on `POST /api/imports`, `choose_tracks` in `fretbook/importers/songsterr.py`) and library filters.
-- **#5 Pocket ID / OIDC.** `fretbook/auth/oidc.py` lists what to build. Keep `users.id` an internal id (it names media folders) and store the OIDC `sub` in `users.external_subject`.
+- **Sharing.** Libraries are private. Sharing a song by link, or a shared library, would build on `owner_id` checks in `fretbook/storage/repository.py`.
 - **#6 YouTube frames.** `fretbook/importers/youtube_frames.py` has the pipeline stubs and the job kind is registered. Frame recognition is slow, GPU-bound work: run it as a separate worker that claims only its job kind from the same `jobs` table, rather than in the web process's single job thread. The result should land as a draft that the editor reviews.

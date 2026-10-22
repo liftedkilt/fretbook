@@ -6,6 +6,30 @@
     "loading": "Loading…",
     "back": "Library"
   },
+  "account": {
+    "signOut": "Sign out",
+    "admin": "Users"
+  },
+  "admin": {
+    "heading": "Users",
+    "hint": "People sign in through your identity provider. Members of the users group get their own library; members of the admins group also see this page. Roles are read at each sign-in.",
+    "name": "Name",
+    "email": "Email",
+    "role": "Role",
+    "roleUser": "User",
+    "roleAdmin": "Admin",
+    "songs": "Songs",
+    "lastLogin": "Last sign-in",
+    "never": "Never",
+    "sessions": { "one": "{count} session", "other": "{count} sessions" },
+    "signOut": "Sign out everywhere",
+    "confirmSignOut": "Sign {name} out of every browser?",
+    "signedOut": { "one": "Ended {count} session.", "other": "Ended {count} sessions." },
+    "adoptHeading": "Library from single-user mode",
+    "adoptHint": { "one": "{count} song was added before sign-in was turned on. Nobody can see it until an admin moves it into a library.", "other": "{count} songs were added before sign-in was turned on. Nobody can see them until an admin moves them into a library." },
+    "adopt": "Move into my library",
+    "adopted": { "one": "Moved {count} song into your library.", "other": "Moved {count} songs into your library." }
+  },
   "settings": {
     "defaultInstrument": "Default instrument",
     "defaultInstrumentHint": "Used for new tabs and added tracks, and to pick the part when importing from Songsterr, Guitar Pro, or MusicXML."
@@ -192,6 +216,13 @@
     "generic": "Something went wrong."
   },
   "errors": {
+    "auth": {
+      "required": "Your session has ended. Sign in again.",
+      "adminOnly": "Only administrators can do that."
+    },
+    "user": {
+      "notFound": "That user was not found."
+    },
     "request": {
       "tooLarge": "That request is too large.",
       "crossOrigin": "Requests from other sites are not allowed.",

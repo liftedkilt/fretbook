@@ -9,9 +9,10 @@ import shutil
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+import httpx
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from starlette.responses import Response
 
 from fretbook import __version__
@@ -26,6 +27,7 @@ from fretbook.jobs.runner import JobRunner
 from fretbook.score.legacy import legacy_document, load_legacy_dir
 from fretbook.storage.media import MediaStore
 from fretbook.storage.repository import SongRepository
+from fretbook.storage.users import UserStore
 
 logger = logging.getLogger("fretbook")
 
@@ -60,19 +62,12 @@ def resolve_static(settings: Settings) -> Path | None:
     return None
 
 
-def _base_href(root_path: str) -> str:
-    cleaned = "/" + root_path.strip("/")
-    if cleaned == "/":
-        return "/"
-    return cleaned + "/"
-
-
 def import_legacy(ctx: AppContext) -> int:
     """Import bass-tab-sync ``songs/<slug>/`` folders for the single local user.
 
     Only runs in single-user mode: with OIDC there is no obvious owner for them.
     """
-    if ctx.settings.auth_mode not in {"", "single", "none"}:
+    if ctx.settings.oidc_enabled:
         return 0
     root = ctx.settings.legacy_songs_dir
     if root is None or not root.is_dir():
@@ -117,9 +112,11 @@ def import_legacy(ctx: AppContext) -> int:
     return imported
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+def create_app(settings: Settings | None = None, *, oidc_transport: httpx.AsyncBaseTransport | None = None) -> FastAPI:
+    """``oidc_transport`` stands in for the network to the OIDC provider in tests."""
     settings = settings or Settings.from_env()
     songs = SongRepository(settings)
+    users = UserStore(settings)
     media = MediaStore(settings)
     jobs = JobRunner(settings)
     register_handlers(jobs, songs, media)
@@ -128,7 +125,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         songs=songs,
         media=media,
         jobs=jobs,
-        auth=build_auth(settings),
+        users=users,
+        auth=build_auth(settings, users, transport=oidc_transport),
     )
 
     @asynccontextmanager
@@ -149,15 +147,31 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # Room for multipart framing around the largest allowed upload.
     app.add_middleware(BodyLimitMiddleware, max_bytes=settings.max_upload_bytes + 1024 * 1024)
     app.include_router(router)
+    auth_routes = ctx.auth.routes()
+    if auth_routes is not None:
+        app.include_router(auth_routes)
+
+    def signed_out(request: Request, full_path: str) -> Response | None:
+        """Send a browser without a session to sign in. Every page and asset is behind it."""
+        try:
+            ctx.auth.authenticate(request)
+        except HTTPException as exc:
+            target = ctx.auth.login_url(full_path + (f"?{request.url.query}" if request.url.query else ""))
+            if exc.status_code == 401 and target:
+                return RedirectResponse(target, status_code=302)
+            raise
+        return None
 
     @app.get("/")
-    def index() -> HTMLResponse:
-        return _index(settings)
+    def index(request: Request) -> Response:
+        return signed_out(request, "") or _index(settings)
 
     @app.get("/{full_path:path}")
-    def assets(full_path: str) -> Response:
-        if full_path.startswith("api/"):
+    def assets(request: Request, full_path: str) -> Response:
+        if full_path.startswith(("api/", "auth/")):
             raise HTTPException(status_code=404, detail="not found")
+        if redirect := signed_out(request, full_path):
+            return redirect
         static = resolve_static(settings)
         if static is None:
             return _index(settings)
@@ -186,6 +200,6 @@ def _index(settings: Settings) -> HTMLResponse:
     if static is None:
         return HTMLResponse(_PLACEHOLDER)
     html = (static / "index.html").read_text(encoding="utf-8")
-    base = _base_href(settings.root_path)
+    base = settings.base_path
     html = _BASE_TAG.sub(lambda _match: f'<base href="{base}">', html, count=1)
     return HTMLResponse(html)

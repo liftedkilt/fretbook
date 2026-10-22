@@ -145,8 +145,25 @@ export interface Settings {
 export interface Me {
   user_id: string;
   display_name: string;
+  email: string;
+  /** False in single-user mode, where there is no sign-in. */
   authenticated: boolean;
+  role: "user" | "admin";
   settings: Settings;
+}
+
+/** A row of `GET /api/admin/users`. */
+export interface AdminUser {
+  id: string;
+  display_name: string;
+  email: string;
+  role: "user" | "admin";
+  /** The owner of songs from single-user mode and legacy imports. */
+  local: boolean;
+  created_at: string;
+  last_login_at: string | null;
+  song_count: number;
+  session_count: number;
 }
 
 /** A translatable message: a catalog key under `errors`, its parameters, and English text. */

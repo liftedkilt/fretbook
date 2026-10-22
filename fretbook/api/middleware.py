@@ -9,6 +9,7 @@ from fastapi import HTTPException
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 _UNSAFE = {"POST", "PUT", "PATCH", "DELETE"}
+_GUARDED = ("/api", "/auth")
 
 
 async def _json_error(send: Send, status: int, key: str, message: str) -> None:
@@ -71,7 +72,7 @@ class BodyLimitMiddleware:
 
 
 class SameOriginMiddleware:
-    """Reject cross-site writes to ``/api``.
+    """Reject cross-site writes to ``/api`` and ``/auth``.
 
     A browser sends ``Origin`` with cross-site POSTs, including multipart form
     posts that need no CORS preflight. A write whose Origin host differs from
@@ -87,7 +88,7 @@ class SameOriginMiddleware:
         if (
             scope["type"] == "http"
             and scope["method"] in _UNSAFE
-            and scope["path"].startswith((scope.get("root_path", "") + "/api", "/api"))
+            and scope["path"].startswith(_GUARDED + tuple(scope.get("root_path", "") + p for p in _GUARDED))
         ):
             headers = dict(scope.get("headers") or [])
             origin = headers.get(b"origin")

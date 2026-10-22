@@ -13,7 +13,7 @@ from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from fretbook import __version__
-from fretbook.api.deps import context, principal, require_song
+from fretbook.api.deps import admin, context, principal, require_song
 from fretbook.api.errors import api_error
 from fretbook.auth.base import Principal
 from fretbook.chords import chordpro
@@ -139,7 +139,7 @@ def health() -> dict[str, object]:
 
 
 @router.get("/api/meta")
-def meta(ctx: AppContext = Depends(_ctx)) -> dict[str, object]:
+def meta(ctx: AppContext = Depends(_ctx), _user: Principal = Depends(_user)) -> dict[str, object]:
     return {
         "name": "Fretbook",
         "tagline": "Self-hosted tabs, chord sheets, and sheet music for bass and guitar.",
@@ -155,7 +155,9 @@ def me(ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> dic
     return {
         "user_id": user.user_id,
         "display_name": user.display_name,
+        "email": user.email,
         "authenticated": user.authenticated,
+        "role": user.role,
         "settings": ctx.songs.get_settings(user.user_id),
     }
 
@@ -445,3 +447,25 @@ def get_job(job_id: str, ctx: AppContext = Depends(_ctx), user: Principal = Depe
     for private in ("owner_id", "payload", "attempts"):
         job.pop(private, None)
     return job
+
+
+# --- administration (OIDC mode; admins come from FRETBOOK_OIDC_ADMIN_GROUP) ---
+
+
+@router.get("/api/admin/users")
+def admin_users(ctx: AppContext = Depends(_ctx), _admin: Principal = Depends(admin)) -> list[dict]:
+    return ctx.users.list_users()
+
+
+@router.post("/api/admin/users/{user_id}/sign-out")
+def admin_sign_out(user_id: str, ctx: AppContext = Depends(_ctx), _admin: Principal = Depends(admin)) -> dict:
+    """End every session of a user. Their next visit signs in again and re-reads their groups."""
+    if not ctx.users.exists(user_id):
+        raise api_error(404, "user.notFound", "user not found")
+    return {"ended": ctx.users.revoke_sessions(user_id)}
+
+
+@router.post("/api/admin/adopt-local")
+def admin_adopt_local(ctx: AppContext = Depends(_ctx), user: Principal = Depends(admin)) -> dict:
+    """Move the songs from single-user mode into the calling admin's library."""
+    return {"moved": ctx.users.adopt_local(user.user_id)}
