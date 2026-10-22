@@ -49,6 +49,7 @@
   const beats = $derived(trackBar.voices[voiceIndex]?.beats ?? []);
   const used = $derived(beats.reduce((total, beat) => total + (beat.grace ? 0 : beat.duration), 0));
   const length = $derived(barTicks(bar.signature));
+  const fillPct = $derived(length > 0 ? Math.min(100, Math.round((used / length) * 100)) : 0);
 
   function contentKey(document: ScoreDocument): string {
     return JSON.stringify({ bars: document.bars, tracks: document.tracks });
@@ -264,180 +265,277 @@
   <p class="error">{t("editor.conflict")} <button onclick={() => void reload()}>{t("editor.reload")}</button></p>
 {/if}
 
-<div class="row" style="justify-content:space-between">
-  <h2 style="margin:0">{t("editor.heading")}</h2>
+<div class="page-header">
+  <div class="page-title-group">
+    <h2>{t("editor.heading")} · {song.title || t("library.untitled")}</h2>
+    <p class="hint" style="margin:0.2rem 0 0">{t("editor.barsAreShared")}</p>
+  </div>
   <div class="actions">
-    <a class="button" href={hrefFor(`/songs/${song.id}`)} onclick={(event) => followLink(event, `/songs/${song.id}`)}>{t("editor.play")}</a>
+    {#if status}<span class="badge subtle">{status}</span>{/if}
+    <a class="button" href={hrefFor("/")} onclick={(event) => followLink(event, "/")}>
+      {t("app.back")}
+    </a>
+    <a class="button" href={hrefFor(`/songs/${song.id}`)} onclick={(event) => followLink(event, `/songs/${song.id}`)}>
+      {t("editor.play")}
+    </a>
     <button class="primary" onclick={() => void save()}>{t("editor.save")}</button>
-    {#if status}<span class="hint">{status}</span>{/if}
   </div>
 </div>
 
-<div class="row" style="margin:0.8rem 0">
-  <label class="field">{t("library.title")}<input bind:value={song.title} /></label>
-  <label class="field">{t("library.artist")}<input bind:value={song.artist} /></label>
-  <label class="field">{t("library.bpm")}<input type="number" min="1" max="399" bind:value={song.document.bpm} /></label>
-  <label class="field">
-    {t("player.track")}
-    <select bind:value={trackId} onchange={() => (voiceIndex = 0)}>
-      {#each document_.tracks as item (item.id)}
-        <option value={item.id}>{item.name}</option>
-      {/each}
-    </select>
-  </label>
-</div>
-
-<section class="panel stack">
-  <div class="row">
-    <label class="field">{t("editor.trackName")}<input bind:value={track.name} /></label>
-    <label class="field">{t("editor.capo")}<input type="number" min="0" max="24" bind:value={track.capo} /></label>
-    <label class="field" style="align-items:center">
-      <span>{t("editor.preferred")}</span>
-      <input type="checkbox" checked={track.preferred} onchange={() => setPreferred(track)} />
-    </label>
-    <span class="hint">{track.tuning_midi.map((midi) => midiToName(midi)).join(" ")}</span>
-    <button onclick={addString}>{t("editor.addString")}</button>
-    <button onclick={removeString}>{t("editor.removeString")}</button>
-    {#if document_.tracks.length > 1}<button onclick={deleteTrack}>{t("editor.deleteTrack")}</button>{/if}
-  </div>
-  <div class="row">
-    <label class="field">
-      {t("library.preset")}
-      <select bind:value={newPreset}>
-        {#each presets as item (item.id)}
-          <option value={item.id}>{tOr(item.label_key, item.label)}</option>
-        {/each}
-      </select>
-    </label>
-    <button onclick={addTrack}>{t("editor.addTrack")}</button>
-  </div>
-  <p class="hint">{t("editor.fretHint")}</p>
-</section>
-
-<div class="row" style="margin:0.8rem 0">
-  <button disabled={barIndex <= 0} onclick={() => (barIndex -= 1)}>{t("editor.previous")}</button>
-  <strong>{t("editor.measure", { number: barIndex + 1, total: document_.bars.length })}</strong>
-  <button disabled={barIndex >= document_.bars.length - 1} onclick={() => (barIndex += 1)}>{t("editor.next")}</button>
-  <label class="field">
-    {t("library.signature")}
-    <span class="row">
-      <input type="number" min="1" max="32" value={bar.signature[0]} onchange={(event) => setSignature(0, event.currentTarget.value)} />
-      <select value={bar.signature[1]} onchange={(event) => setSignature(1, event.currentTarget.value)}>
-        {#each [1, 2, 4, 8, 16, 32] as value (value)}<option {value}>{value}</option>{/each}
-      </select>
-    </span>
-  </label>
-  {#if barIndex > 0}
-    <label class="field">
-      {t("editor.tempoChange")}
-      <input type="number" min="1" max="399" placeholder="—" value={bar.tempo ?? ""} onchange={(event) => setTempo(event.currentTarget.value)} />
-    </label>
-  {/if}
-  <label class="field">
-    {t("editor.section")}
-    <input value={bar.section ?? ""} onchange={(event) => (bar.section = event.currentTarget.value.trim() || null)} />
-  </label>
-  <button onclick={insertBar}>{t("editor.addMeasure")}</button>
-  <button onclick={deleteBar} disabled={document_.bars.length <= 1}>{t("editor.deleteMeasure")}</button>
-</div>
-<p class="hint">{t("editor.barsAreShared")}</p>
-
-<div class="row" style="margin:0.8rem 0">
-  <label class="field">
-    {t("editor.voice")}
-    <select bind:value={voiceIndex}>
-      {#each Array.from({ length: Math.max(2, trackBar.voices.length) }, (_, index) => index) as index (index)}
-        <option value={index}>{index + 1}</option>
-      {/each}
-    </select>
-  </label>
-  <button onclick={addBeat}>{t("editor.addBeat")}</button>
-  <span class={used === length ? "hint" : "error"} style="margin:0">
-    {used === length ? t("editor.barFull") : used > length ? t("editor.barOver") : t("editor.barShort")}
-  </span>
-</div>
-
-<div class="editor-grid">
-  {#each beats as beat, beatIndex (beatIndex)}
-    <div class="beat">
+<div class="stack">
+  <section class="panel stack">
+    <div class="form-grid">
+      <label class="field">{t("library.title")}<input bind:value={song.title} /></label>
+      <label class="field">{t("library.artist")}<input bind:value={song.artist} /></label>
+      <label class="field">{t("library.bpm")}<input type="number" min="1" max="399" bind:value={song.document.bpm} /></label>
       <label class="field">
-        {t("editor.duration")}
-        <select value={durationValue(beat)} onchange={(event) => setDuration(beat, event.currentTarget.value)}>
-          {#each EDITOR_DURATIONS as option (option.key)}
-            <option value={`${option.ticks}:${option.tuplet ?? ""}`}>{t(`durations.${option.key}`)}</option>
+        {t("player.track")}
+        <select bind:value={trackId} onchange={() => (voiceIndex = 0)}>
+          {#each document_.tracks as item (item.id)}
+            <option value={item.id}>{item.name}</option>
           {/each}
-          {#if !EDITOR_DURATIONS.some((option) => `${option.ticks}:${option.tuplet ?? ""}` === durationValue(beat))}
-            <option value={durationValue(beat)}>{t("durations.other", { ticks: beat.duration })}</option>
-          {/if}
         </select>
       </label>
-      <label class="field">
-        {t("editor.grace")}
-        <select value={beat.grace ?? ""} onchange={(event) => setGrace(beat, event.currentTarget.value)}>
-          <option value="">—</option>
-          <option value="on_beat">{t("editor.graceOnBeat")}</option>
-          <option value="before_beat">{t("editor.graceBeforeBeat")}</option>
-        </select>
-      </label>
-      {#each track.tuning_midi as midi, stringIndex (stringIndex)}
-        {@const note = noteOn(beat, stringIndex)}
-        <div class="field">
-          <label>
-            {midiToName(midi)}
-            <input
-              type="text"
-              inputmode="numeric"
-              value={note?.fret ?? ""}
-              oninput={(event) => setFret(beat, stringIndex, event.currentTarget.value)}
-            />
-          </label>
-          {#if note}
-            <details class="techniques">
-              <summary>{t("editor.techniques")}</summary>
-              {#each ["dead", "tie", "ghost", "hammer", "vibrato", "palm_mute", "let_ring", "staccato"] as const as flag (flag)}
-                <label class="check"><input type="checkbox" checked={Boolean(note[flag])} onchange={() => toggle(note, flag)} />{t(`tech.${flag}`)}</label>
-              {/each}
-              <label class="field">
-                {t("tech.slide")}
-                <select value={note.slide ?? ""} onchange={(event) => (note.slide = (event.currentTarget.value || null) as SlideKind | null)}>
-                  <option value="">—</option>
-                  {#each ["shift", "legato", "in_below", "in_above", "out_up", "out_down"] as kind (kind)}
-                    <option value={kind}>{t(`tech.slides.${kind}`)}</option>
-                  {/each}
-                </select>
-              </label>
-              <label class="field">
-                {t("tech.harmonic")}
-                <select value={note.harmonic ?? ""} onchange={(event) => (note.harmonic = (event.currentTarget.value || null) as HarmonicKind | null)}>
-                  <option value="">—</option>
-                  {#each ["natural", "artificial", "pinch", "tap", "semi"] as kind (kind)}
-                    <option value={kind}>{t(`tech.harmonics.${kind}`)}</option>
-                  {/each}
-                </select>
-              </label>
-              <label class="field">
-                {t("tech.bend")}
-                <input
-                  type="number"
-                  min="0"
-                  max="4"
-                  step="0.5"
-                  value={note.bend ?? ""}
-                  onchange={(event) => {
-                    const value = Number(event.currentTarget.value);
-                    note.bend = value > 0 && value <= 4 ? value : null;
-                  }}
-                />
-              </label>
-            </details>
-          {/if}
-        </div>
-      {/each}
+    </div>
+
+    <div class="row" style="padding-top:0.65rem;border-top:1px solid var(--line);justify-content:space-between">
       <div class="row">
-        <button onclick={() => moveBeat(beatIndex, -1)} disabled={beatIndex === 0} aria-label={t("editor.moveEarlier")}>←</button>
-        <button onclick={() => moveBeat(beatIndex, 1)} disabled={beatIndex === beats.length - 1} aria-label={t("editor.moveLater")}>→</button>
-        <button onclick={() => deleteBeat(beatIndex)}>{t("editor.deleteBeat")}</button>
+        <label class="field">{t("editor.trackName")}<input bind:value={track.name} /></label>
+        <label class="field">{t("editor.capo")}<input type="number" min="0" max="24" bind:value={track.capo} style="width:4.8rem" /></label>
+        <label class="field-inline">
+          <input type="checkbox" checked={track.preferred} onchange={() => setPreferred(track)} />
+          <span>{t("editor.preferred")}</span>
+        </label>
+        <span class="badge">{track.tuning_midi.map((midi) => midiToName(midi)).join(" ")}</span>
+        <button class="sm" onclick={addString}>{t("editor.addString")}</button>
+        <button class="sm" onclick={removeString}>{t("editor.removeString")}</button>
+        {#if document_.tracks.length > 1}
+          <button class="sm ghost danger-btn" onclick={deleteTrack}>{t("editor.deleteTrack")}</button>
+        {/if}
+      </div>
+
+      <div class="row">
+        <label class="field" style="display:flex;align-items:center;gap:0.4rem">
+          <span>{t("library.preset")}</span>
+          <select bind:value={newPreset}>
+            {#each presets as item (item.id)}
+              <option value={item.id}>{tOr(item.label_key, item.label)}</option>
+            {/each}
+          </select>
+        </label>
+        <button class="sm" onclick={addTrack}>{t("editor.addTrack")}</button>
       </div>
     </div>
-  {/each}
+  </section>
+
+  <section class="editor-bar-nav">
+    <div class="transport-group">
+      <button class="sm" disabled={barIndex <= 0} onclick={() => (barIndex -= 1)}>
+        <span aria-hidden="true">←</span> {t("editor.previous")}
+      </button>
+      <span class="status-readout">
+        {t("editor.measure", { number: barIndex + 1, total: document_.bars.length })}
+      </span>
+      <button class="sm" disabled={barIndex >= document_.bars.length - 1} onclick={() => (barIndex += 1)}>
+        {t("editor.next")} <span aria-hidden="true">→</span>
+      </button>
+
+      <label class="field" style="display:flex;align-items:center;gap:0.35rem">
+        <span>{t("library.signature")}</span>
+        <input
+          type="number"
+          min="1"
+          max="32"
+          style="width:4rem"
+          value={bar.signature[0]}
+          onchange={(event) => setSignature(0, event.currentTarget.value)}
+        />
+        <select value={bar.signature[1]} onchange={(event) => setSignature(1, event.currentTarget.value)} style="width:4rem">
+          {#each [1, 2, 4, 8, 16, 32] as value (value)}<option {value}>{value}</option>{/each}
+        </select>
+      </label>
+
+      {#if barIndex > 0}
+        <label class="field" style="display:flex;align-items:center;gap:0.35rem">
+          <span>{t("editor.tempoChange")}</span>
+          <input
+            type="number"
+            min="1"
+            max="399"
+            style="width:4.8rem"
+            placeholder="—"
+            value={bar.tempo ?? ""}
+            onchange={(event) => setTempo(event.currentTarget.value)}
+          />
+        </label>
+      {/if}
+
+      <label class="field" style="display:flex;align-items:center;gap:0.35rem">
+        <span>{t("editor.section")}</span>
+        <input
+          style="width:7.5rem"
+          value={bar.section ?? ""}
+          onchange={(event) => (bar.section = event.currentTarget.value.trim() || null)}
+        />
+      </label>
+    </div>
+
+    <div class="transport-group">
+      <button class="sm" onclick={insertBar}>{t("editor.addMeasure")}</button>
+      <button class="sm ghost danger-btn" onclick={deleteBar} disabled={document_.bars.length <= 1}>
+        {t("editor.deleteMeasure")}
+      </button>
+    </div>
+  </section>
+
+  <section class="panel" style="padding:0.75rem 1rem">
+    <div class="transport-primary">
+      <div class="transport-group">
+        <label class="field" style="display:flex;align-items:center;gap:0.4rem">
+          <span>{t("editor.voice")}</span>
+          <select bind:value={voiceIndex}>
+            {#each Array.from({ length: Math.max(2, trackBar.voices.length) }, (_, index) => index) as index (index)}
+              <option value={index}>{index + 1}</option>
+            {/each}
+          </select>
+        </label>
+        <button class="primary sm" onclick={addBeat}><span aria-hidden="true">+</span> {t("editor.addBeat")}</button>
+        <span class="hint">{t("editor.fretHint")}</span>
+      </div>
+
+      <div class="bar-meter">
+        <div class="bar-meter-track">
+          <div
+            class="bar-meter-fill {used === length ? '' : used > length ? 'over' : 'short'}"
+            style="width:{fillPct}%"
+          ></div>
+        </div>
+        <span class="badge {used === length ? '' : used > length ? 'brass' : 'subtle'}">
+          {used === length ? t("editor.barFull") : used > length ? t("editor.barOver") : t("editor.barShort")}
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <div class="editor-grid">
+    {#each beats as beat, beatIndex (beatIndex)}
+      <div class="beat">
+        <div class="beat-header">
+          <div class="transport-group">
+            <span class="badge subtle">#{beatIndex + 1}</span>
+            <label class="field" style="display:flex;align-items:center;gap:0.35rem">
+              <span>{t("editor.duration")}</span>
+              <select value={durationValue(beat)} onchange={(event) => setDuration(beat, event.currentTarget.value)}>
+                {#each EDITOR_DURATIONS as option (option.key)}
+                  <option value={`${option.ticks}:${option.tuplet ?? ""}`}>{t(`durations.${option.key}`)}</option>
+                {/each}
+                {#if !EDITOR_DURATIONS.some((option) => `${option.ticks}:${option.tuplet ?? ""}` === durationValue(beat))}
+                  <option value={durationValue(beat)}>{t("durations.other", { ticks: beat.duration })}</option>
+                {/if}
+              </select>
+            </label>
+            <label class="field" style="display:flex;align-items:center;gap:0.35rem">
+              <span>{t("editor.grace")}</span>
+              <select value={beat.grace ?? ""} onchange={(event) => setGrace(beat, event.currentTarget.value)}>
+                <option value="">—</option>
+                <option value="on_beat">{t("editor.graceOnBeat")}</option>
+                <option value="before_beat">{t("editor.graceBeforeBeat")}</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="transport-group">
+            <button
+              class="sm"
+              onclick={() => moveBeat(beatIndex, -1)}
+              disabled={beatIndex === 0}
+              aria-label={t("editor.moveEarlier")}
+            >
+              ←
+            </button>
+            <button
+              class="sm"
+              onclick={() => moveBeat(beatIndex, 1)}
+              disabled={beatIndex === beats.length - 1}
+              aria-label={t("editor.moveLater")}
+            >
+              →
+            </button>
+            <button class="sm ghost danger-btn" onclick={() => deleteBeat(beatIndex)}>
+              {t("editor.deleteBeat")}
+            </button>
+          </div>
+        </div>
+
+        <div class="beat-strings">
+          {#each track.tuning_midi as midi, stringIndex (stringIndex)}
+            {@const note = noteOn(beat, stringIndex)}
+            <div class="string-cell {note ? 'has-note' : ''}">
+              <label class="string-label">
+                <span>{midiToName(midi)}</span>
+                <input
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="—"
+                  value={note?.fret ?? ""}
+                  oninput={(event) => setFret(beat, stringIndex, event.currentTarget.value)}
+                />
+              </label>
+              {#if note}
+                <details class="techniques">
+                  <summary>{t("editor.techniques")}</summary>
+                  <div class="techniques-grid">
+                    {#each ["dead", "tie", "ghost", "hammer", "vibrato", "palm_mute", "let_ring", "staccato"] as const as flag (flag)}
+                      <label class="check">
+                        <input type="checkbox" checked={Boolean(note[flag])} onchange={() => toggle(note, flag)} />
+                        {t(`tech.${flag}`)}
+                      </label>
+                    {/each}
+                    <label class="field">
+                      {t("tech.slide")}
+                      <select
+                        value={note.slide ?? ""}
+                        onchange={(event) => (note.slide = (event.currentTarget.value || null) as SlideKind | null)}
+                      >
+                        <option value="">—</option>
+                        {#each ["shift", "legato", "in_below", "in_above", "out_up", "out_down"] as kind (kind)}
+                          <option value={kind}>{t(`tech.slides.${kind}`)}</option>
+                        {/each}
+                      </select>
+                    </label>
+                    <label class="field">
+                      {t("tech.harmonic")}
+                      <select
+                        value={note.harmonic ?? ""}
+                        onchange={(event) => (note.harmonic = (event.currentTarget.value || null) as HarmonicKind | null)}
+                      >
+                        <option value="">—</option>
+                        {#each ["natural", "artificial", "pinch", "tap", "semi"] as kind (kind)}
+                          <option value={kind}>{t(`tech.harmonics.${kind}`)}</option>
+                        {/each}
+                      </select>
+                    </label>
+                    <label class="field">
+                      {t("tech.bend")}
+                      <input
+                        type="number"
+                        min="0"
+                        max="4"
+                        step="0.5"
+                        value={note.bend ?? ""}
+                        onchange={(event) => {
+                          const value = Number(event.currentTarget.value);
+                          note.bend = value > 0 && value <= 4 ? value : null;
+                        }}
+                      />
+                    </label>
+                  </div>
+                </details>
+              {/if}
+            </div>
+          {/each}
+        </div>
+      </div>
+    {/each}
+  </div>
 </div>

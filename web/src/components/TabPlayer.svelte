@@ -34,6 +34,8 @@
   let currentMeasure = $state(-1);
   let clock = $state("0:00.0");
   let playing = $state(false);
+  let showSyncTools = $state(typeof window !== "undefined" ? window.matchMedia("(min-width: 769px)").matches : true);
+  let userToggledSync = false;
   let saveLabel = $state("");
   let saveTimer = 0;
   let pendingSync: (() => Promise<void>) | null = null;
@@ -123,6 +125,8 @@
     settings.core.fontDirectory = new URL("font/", document.baseURI).href;
     settings.core.logLevel = alphaTab.LogLevel.Warning;
     settings.display.staveProfile = alphaTab.StaveProfile.ScoreTab;
+    const initialNarrow = (element.clientWidth || window.innerWidth) < 520;
+    settings.display.scale = initialNarrow ? 0.8 : 1.0;
     settings.player.playerMode = useAudio ? alphaTab.PlayerMode.EnabledExternalMedia : alphaTab.PlayerMode.EnabledSynthesizer;
     settings.player.soundFont = new URL("soundfont/sonivox.sf2", document.baseURI).href;
     settings.player.enableCursor = true;
@@ -133,6 +137,15 @@
     settings.player.scrollMode = untrack(() => follow) ? alphaTab.ScrollMode.Continuous : alphaTab.ScrollMode.Off;
     const instance = new alphaTab.AlphaTabApi(element, settings);
     player.api = instance;
+    const onResize = () => {
+      const nextScale = (element.clientWidth || window.innerWidth) < 520 ? 0.8 : 1.0;
+      if (instance.settings.display.scale !== nextScale) {
+        instance.settings.display.scale = nextScale;
+        instance.updateSettings();
+        instance.render();
+      }
+    };
+    window.addEventListener("resize", onResize);
     instance.scoreLoaded.on(() => {
       queueMicrotask(() => {
         scoreReady += 1;
@@ -156,6 +169,7 @@
     });
     instance.tex(source);
     return () => {
+      window.removeEventListener("resize", onResize);
       scoreReady = 0;
       player.api = null;
       instance.destroy();
@@ -172,6 +186,11 @@
 
   onMount(() => {
     const timer = window.setInterval(paintAudioClock, 50);
+    const mq = window.matchMedia("(min-width: 769px)");
+    const onMediaChange = (event: MediaQueryListEvent) => {
+      if (!userToggledSync) showSyncTools = event.matches;
+    };
+    mq.addEventListener("change", onMediaChange);
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       if (target && /INPUT|TEXTAREA|SELECT/.test(target.tagName)) return;
@@ -195,6 +214,7 @@
     document.addEventListener("keydown", onKey);
     return () => {
       window.clearInterval(timer);
+      mq.removeEventListener("change", onMediaChange);
       document.removeEventListener("keydown", onKey);
       // Leaving the page must not lose a tap that is still waiting to be saved.
       void flushSync();
@@ -310,111 +330,158 @@
 </script>
 
 {#if error}<p class="error">{error}</p>{/if}
-<div class="row" style="justify-content:space-between">
-  <div>
-    <h2 style="margin:0">{song.title}</h2>
-    <p class="hint" style="margin:0.2rem 0 0">
-      {song.artist}
-      {#if song.artist}·{/if}
-      {instrumentLabel(track.instrument)}
-      · {tuningLabel(track.tuning_midi)}
-      · {track.capo > 0 ? t("player.capo", { fret: track.capo }) : t("player.noCapo")}
-    </p>
+
+<div class="page-header no-print">
+  <div class="page-title-group">
+    <h2>{song.title}</h2>
+    <div class="page-meta">
+      {#if song.artist}<strong>{song.artist}</strong> ·{/if}
+      <span class="badge">{instrumentLabel(track.instrument)}</span>
+      <span class="badge subtle">{tuningLabel(track.tuning_midi)}</span>
+      <span class="badge subtle">{track.capo > 0 ? t("player.capo", { fret: track.capo }) : t("player.noCapo")}</span>
+    </div>
   </div>
   <div class="actions">
-    <a class="button" href={hrefFor("/")} onclick={(event) => followLink(event, "/")}>{t("app.back")}</a>
-    <a class="button" href={hrefFor(`/songs/${song.id}/edit`)} onclick={(event) => followLink(event, `/songs/${song.id}/edit`)}>{t("player.edit")}</a>
-    <a class="button" href={exportUrl("musicxml")}>{t("player.exportMusicXml")}</a>
-    <a class="button" href={exportUrl("json")}>{t("player.exportJson")}</a>
-    <button disabled={exporting} onclick={() => void exportPdf()}>
+    <a class="button sm" href={hrefFor("/")} onclick={(event) => followLink(event, "/")}>{t("app.back")}</a>
+    <a class="button sm" href={hrefFor(`/songs/${song.id}/edit`)} onclick={(event) => followLink(event, `/songs/${song.id}/edit`)}>
+      {t("player.edit")}
+    </a>
+    <label class="button sm file-btn">
+      <span>{t("player.upload")}</span>
+      <input
+        type="file"
+        accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.webm"
+        onchange={(event) => {
+          const file = event.currentTarget.files?.[0];
+          event.currentTarget.value = "";
+          if (file) void onUpload(file);
+        }}
+      />
+    </label>
+    <a class="button sm ghost" href={exportUrl("musicxml")}>{t("player.exportMusicXml")}</a>
+    <a class="button sm ghost" href={exportUrl("json")}>{t("player.exportJson")}</a>
+    <button class="sm ghost" disabled={exporting} onclick={() => void exportPdf()}>
       {exporting ? t("player.exportingPdf") : song.document.tracks.length > 1 ? t("player.exportPdfTrack", { name: track.name }) : t("player.exportPdf")}
     </button>
   </div>
 </div>
 
-<div class="transport">
-  <button class="primary" onclick={toggle}>{playing ? t("player.pause") : t("player.play")}</button>
-  {#if song.document.tracks.length > 1}
-    <label class="field">
-      {t("player.track")}
-      <select bind:value={trackId}>
-        {#each song.document.tracks as item (item.id)}
-          <option value={item.id}>{item.name}</option>
-        {/each}
-      </select>
-    </label>
-  {/if}
-  <label class="field">
-    {t("player.bpm")}
-    <input
-      type="number"
-      min="1"
-      max="399"
-      value={song.document.bpm}
-      onchange={(event) => {
-        const bpm = Number(event.currentTarget.value);
-        if (bpm > 0 && bpm < 400) commitAnchors({ ...song.document.sync.anchors }, bpm);
-      }}
-    />
-  </label>
-  <label class="field">
-    {t("player.rate")}
-    <select value={rate} onchange={(event) => setRate(Number(event.currentTarget.value))}>
-      {#each [0.5, 0.75, 1, 1.25, 1.5] as value (value)}
-        <option {value}>{value}</option>
-      {/each}
-    </select>
-  </label>
-  <label class="field" style="align-items:center">
-    <span>{t("player.follow")}</span>
-    <input type="checkbox" checked={follow} onchange={(event) => setFollow(event.currentTarget.checked)} />
-  </label>
-  {#if song.has_audio}
-    <button onclick={tap}>{t("player.tap")}</button>
-    <button onclick={() => nudge(-0.05)}>{t("player.nudgeBack")}</button>
-    <button onclick={() => nudge(0.05)}>{t("player.nudgeForward")}</button>
-    <button onclick={clearCurrent}>{t("player.clearAnchor")}</button>
-    <button onclick={() => setLoop("a")}>{t("player.loopA")}</button>
-    <button onclick={() => setLoop("b")}>{t("player.loopB")}</button>
-    <button onclick={() => { loopA = null; loopB = null; }}>{t("player.clearLoop")}</button>
-    <button onclick={() => commitAnchors(pointAnchors(song.document.sync, barCount))}>{t("player.restore")}</button>
-    <button onclick={() => commitAnchors({})}>{t("player.clearAll")}</button>
-  {/if}
-  <label class="field">
-    {t("player.upload")}
-    <input
-      type="file"
-      accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.webm"
-      onchange={(event) => {
-        const file = event.currentTarget.files?.[0];
-        event.currentTarget.value = "";
-        if (file) void onUpload(file);
-      }}
-    />
-  </label>
-</div>
+<section class="transport-dock no-print">
+  <div class="transport-primary">
+    <div class="transport-group">
+      <button class="primary" onclick={toggle}>
+        <span aria-hidden="true">{playing ? "⏸" : "▶"}</span>
+        <span>{playing ? t("player.pause") : t("player.play")}</span>
+      </button>
+      <button class="sm" onclick={() => step(-1)} aria-label={t("player.prevBar")} title={t("player.prevBar")}>
+        <span aria-hidden="true">⏮</span>
+      </button>
+      <button class="sm" onclick={() => step(1)} aria-label={t("player.nextBar")} title={t("player.nextBar")}>
+        <span aria-hidden="true">⏭</span>
+      </button>
+      <span class="status-readout">
+        <span class="status-dot {playing ? 'live' : ''}" aria-hidden="true"></span>
+        {#if currentMeasure >= 0 && currentMeasure < barCount}
+          {t("player.status", { measure: currentMeasure + 1, total: barCount, time: clock })}
+        {:else}
+          {t("player.statusIdle", { time: clock })}
+        {/if}
+      </span>
+    </div>
 
-<p class="hint">
-  {#if currentMeasure >= 0 && currentMeasure < barCount}
-    {t("player.status", { measure: currentMeasure + 1, total: barCount, time: clock })}
-  {:else}
-    {t("player.statusIdle", { time: clock })}
+    <div class="transport-group">
+      {#if song.document.tracks.length > 1}
+        <label class="field" style="display:flex;align-items:center;gap:0.4rem">
+          <span>{t("player.track")}</span>
+          <select bind:value={trackId}>
+            {#each song.document.tracks as item (item.id)}
+              <option value={item.id}>{item.name}</option>
+            {/each}
+          </select>
+        </label>
+      {/if}
+      <label class="field" style="display:flex;align-items:center;gap:0.4rem">
+        <span>{t("player.bpm")}</span>
+        <input
+          type="number"
+          min="1"
+          max="399"
+          style="width:4.8rem"
+          value={song.document.bpm}
+          onchange={(event) => {
+            const bpm = Number(event.currentTarget.value);
+            if (bpm > 0 && bpm < 400) commitAnchors({ ...song.document.sync.anchors }, bpm);
+          }}
+        />
+      </label>
+      <label class="field" style="display:flex;align-items:center;gap:0.4rem">
+        <span>{t("player.rate")}</span>
+        <select value={rate} onchange={(event) => setRate(Number(event.currentTarget.value))}>
+          {#each [0.5, 0.75, 1, 1.25, 1.5] as value (value)}
+            <option {value}>{t("player.rateValue", { rate: value })}</option>
+          {/each}
+        </select>
+      </label>
+      <label class="field-inline">
+        <input type="checkbox" checked={follow} onchange={(event) => setFollow(event.currentTarget.checked)} />
+        <span>{t("player.follow")}</span>
+      </label>
+      {#if song.has_audio}
+        <button
+          type="button"
+          class="sm"
+          aria-pressed={showSyncTools}
+          onclick={() => {
+            userToggledSync = true;
+            showSyncTools = !showSyncTools;
+          }}
+        >
+          {t("player.syncTools")}
+        </button>
+      {/if}
+    </div>
+  </div>
+
+  {#if song.has_audio && showSyncTools}
+    <div class="sync-drawer">
+      <button class="primary sm" onclick={tap}>{t("player.tap")}</button>
+      <button class="sm" onclick={() => nudge(-0.05)}>{t("player.nudgeBack")}</button>
+      <button class="sm" onclick={() => nudge(0.05)}>{t("player.nudgeForward")}</button>
+      <button class="sm" onclick={clearCurrent}>{t("player.clearAnchor")}</button>
+      <span class="sync-divider" aria-hidden="true"></span>
+      <button class="sm" onclick={() => setLoop("a")}>{t("player.loopA")}</button>
+      <button class="sm" onclick={() => setLoop("b")}>{t("player.loopB")}</button>
+      <button class="sm" onclick={() => { loopA = null; loopB = null; }}>{t("player.clearLoop")}</button>
+      <span class="sync-divider" aria-hidden="true"></span>
+      <button class="sm ghost" onclick={() => commitAnchors(pointAnchors(song.document.sync, barCount))}>{t("player.restore")}</button>
+      <button class="sm ghost danger-btn" onclick={() => commitAnchors({})}>{t("player.clearAll")}</button>
+    </div>
   {/if}
-  {#if song.has_audio}
-    · {t("player.nextTap", { measure: tapIndex + 1 })}
-  {/if}
-  {#if saveLabel}· {saveLabel}{/if}
-  {#if loopA != null && loopB != null}· {t("player.loopRange", { a: loopA + 1, b: loopB + 1 })}{/if}
-</p>
-{#if song.has_audio && Object.keys(song.document.sync.anchors).length === 0 && song.document.sync.points.some((point) => point != null)}
-  <p class="hint">{t("player.usingPublished")}</p>
-{:else if song.has_audio}
-  <p class="hint">{t("player.keys")}</p>
-{:else if song.document.sync.points.length || song.document.sync.video_id}
-  <p class="hint">{t("player.needAudio")}</p>
-{:else}
-  <p class="hint">{t("player.synth")} {t("player.keys")}</p>
-{/if}
+  <div class="transport-status-bar">
+    <div>
+      {#if song.has_audio && Object.keys(song.document.sync.anchors).length === 0 && song.document.sync.points.some((point) => point != null)}
+        <span>{t("player.usingPublished")}</span>
+      {:else if song.has_audio}
+        <span>{t("player.keys")}</span>
+      {:else if song.document.sync.points.length || song.document.sync.video_id}
+        <span>{t("player.needAudio")}</span>
+      {:else}
+        <span>{t("player.synth")} {t("player.keys")}</span>
+      {/if}
+    </div>
+    <div class="transport-group">
+      {#if song.has_audio}
+        <span class="badge brass">{t("player.nextTap", { measure: tapIndex + 1 })}</span>
+      {/if}
+      {#if loopA != null && loopB != null}
+        <span class="badge">{t("player.loopRange", { a: loopA + 1, b: loopB + 1 })}</span>
+      {/if}
+      {#if saveLabel}
+        <span class="badge subtle">{saveLabel}</span>
+      {/if}
+    </div>
+  </div>
+</section>
 
 {#if song.has_audio}
   <audio bind:this={audioEl} src={audioSrc} preload="auto"></audio>

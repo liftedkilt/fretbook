@@ -14,6 +14,7 @@
   let error = $state("");
   let conflict = $state(false);
   let status = $state("");
+  let viewMode = $state<"split" | "write" | "preview">("split");
 
   async function save() {
     status = t("editor.saving");
@@ -48,21 +49,46 @@
   <p class="error">{t("editor.conflict")} <button onclick={() => void reload()}>{t("editor.reload")}</button></p>
 {/if}
 
-<div class="row" style="justify-content:space-between">
-  <h2 style="margin:0">{t("chords.editHeading")}</h2>
+<div class="page-header">
+  <div class="page-title-group">
+    <h2>{t("chords.editHeading")}</h2>
+    <p class="hint" style="margin:0.25rem 0 0">{t("chords.editHint")}</p>
+  </div>
   <div class="actions">
-    <a class="button" href={hrefFor(`/songs/${song.id}`)} onclick={(event) => followLink(event, `/songs/${song.id}`)}>{t("chords.view")}</a>
+    {#if status}<span class="badge subtle">{status}</span>{/if}
+    <div class="segmented" role="group" aria-label={t("chords.view")}>
+      <button type="button" aria-pressed={viewMode === "split"} onclick={() => (viewMode = "split")}>
+        {t("chords.editTabSplit")}
+      </button>
+      <button type="button" aria-pressed={viewMode === "write"} onclick={() => (viewMode = "write")}>
+        {t("chords.editTabWrite")}
+      </button>
+      <button type="button" aria-pressed={viewMode === "preview"} onclick={() => (viewMode = "preview")}>
+        {t("chords.editTabPreview")}
+      </button>
+    </div>
+    <a class="button" href={hrefFor("/")} onclick={(event) => followLink(event, "/")}>
+      {t("app.back")}
+    </a>
+    <a class="button" href={hrefFor(`/songs/${song.id}`)} onclick={(event) => followLink(event, `/songs/${song.id}`)}>
+      {t("chords.view")}
+    </a>
     <button class="primary" onclick={() => void save()}>{t("editor.save")}</button>
-    {#if status}<span class="hint">{status}</span>{/if}
   </div>
 </div>
 
-<div class="row" style="margin:0.8rem 0">
-  <label class="field">{t("library.title")}<input bind:value={song.title} /></label>
-  <label class="field">{t("library.artist")}<input bind:value={song.artist} /></label>
-</div>
-<p class="hint">{t("chords.editHint")}</p>
-<div class="chord-editor">
-  <textarea bind:value={text} spellcheck="false" rows="24" aria-label={t("chords.text")}></textarea>
-  <div class="paper chord-paper"><ChordSheet {text} /></div>
+<section class="panel" style="margin-bottom:1rem">
+  <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr))">
+    <label class="field">{t("library.title")}<input bind:value={song.title} /></label>
+    <label class="field">{t("library.artist")}<input bind:value={song.artist} /></label>
+  </div>
+</section>
+
+<div class="chord-editor mode-{viewMode}">
+  {#if viewMode !== "preview"}
+    <textarea bind:value={text} spellcheck="false" rows="24" aria-label={t("chords.text")}></textarea>
+  {/if}
+  {#if viewMode !== "write"}
+    <div class="paper chord-paper"><ChordSheet {text} /></div>
+  {/if}
 </div>
