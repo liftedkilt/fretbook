@@ -142,7 +142,44 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         yield
         jobs.stop()
 
-    app = FastAPI(title="Fretbook", version=__version__, lifespan=lifespan)
+    app = FastAPI(
+        title="Fretbook",
+        version=__version__,
+        description=(
+            "JSON API for the web app. Every route is under /api. "
+            "Errors use the shape {\"detail\": {\"key\", \"message\", \"params\"}}; "
+            "the UI looks `key` up under `errors` and falls back to the English `message`. "
+            "Auth today is GET /api/me and PUT /api/me/settings. "
+            "Single-user mode has no login redirect: every request is the local user. "
+            "OIDC (GET /auth/login, GET /auth/callback, POST /auth/logout) is not implemented; "
+            "setting FRETBOOK_AUTH_MODE=oidc makes authenticated routes return 501."
+        ),
+        lifespan=lifespan,
+        openapi_tags=[
+            {
+                "name": "meta",
+                "description": "Server identity, instrument presets, and auth mode.",
+            },
+            {
+                "name": "auth",
+                "description": "Current user and per-user settings. This is the auth surface until OIDC lands.",
+            },
+            {
+                "name": "songs",
+                "description": "Library, score documents, chord sheets, audio, and exports.",
+            },
+            {
+                "name": "imports",
+                "description": "Start a background import. Poll GET /api/jobs/{job_id}.",
+            },
+            {
+                "name": "jobs",
+                "description": "Background job status, progress keys, and errors.",
+            },
+        ],
+        # Output schemas mark defaulted fields as present, which is what responses actually send.
+        separate_input_output_schemas=True,
+    )
     app.state.ctx = ctx
     app.add_exception_handler(RequestValidationError, _validation_error)
     app.add_middleware(SameOriginMiddleware)
@@ -150,11 +187,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_middleware(BodyLimitMiddleware, max_bytes=settings.max_upload_bytes + 1024 * 1024)
     app.include_router(router)
 
-    @app.get("/")
+    @app.get("/", include_in_schema=False)
     def index() -> HTMLResponse:
         return _index(settings)
 
-    @app.get("/{full_path:path}")
+    @app.get("/{full_path:path}", include_in_schema=False)
     def assets(full_path: str) -> Response:
         if full_path.startswith("api/"):
             raise HTTPException(status_code=404, detail="not found")

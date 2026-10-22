@@ -6,7 +6,9 @@
     "dev": "vite",
     "build": "vite build",
     "check": "svelte-check --tsconfig ./tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "api-types": "openapi-typescript ../openapi.json -o src/lib/api-types.ts --alphabetize --root-types --root-types-no-schema-prefix",
+    "api-types:check": "openapi-typescript ../openapi.json -o src/lib/api-types.ts --alphabetize --root-types --root-types-no-schema-prefix --check || (echo 'API types are stale: run npm run api-types --prefix web and commit web/src/lib/api-types.ts' && exit 1)"
   },
   "dependencies": {
     "@coderline/alphatab": "1.8.4"
@@ -14,6 +16,7 @@
   "devDependencies": {
     "@coderline/alphatab-vite": "1.8.4",
     "@sveltejs/vite-plugin-svelte": "^6.2.0",
+    "openapi-typescript": "^7.13.0",
     "svelte": "^5.39.0",
     "svelte-check": "^4.3.0",
     "typescript": "~5.9.2",

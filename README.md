@@ -109,6 +109,8 @@ cd web && npm ci && npm run check && npm test && npm run build
 
 The Python tests fail on an unclosed database connection, and check that the English catalog has every error and progress key the server sends. A Vitest test checks that every locale has every key the UI passes to `t()`, and that the locale files share the same keys. See [Adding a locale](#adding-a-locale).
 
+The HTTP contract is the committed `openapi.json`. Regenerate it with `python -m fretbook.openapi` (or `make openapi`) and the TypeScript types with `npm run api-types --prefix web`. A pull request labeled `ui-only` may only touch `web/`; the rules are in `web/README.md`.
+
 ## Follow-up issues
 
 - **#3 PDF.** "Print or save PDF" uses the browser's print dialog (alphaTab's print view for tabs). A designed PDF (title, artist, tuning, and track in the header; no staff split across pages) belongs in the browser too, where the renderer is.
