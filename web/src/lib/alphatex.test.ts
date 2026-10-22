@@ -1,14 +1,16 @@
 import * as alphaTab from "@coderline/alphatab";
 import { describe, expect, it } from "vitest";
 
+import { scoreToDocument } from "./alphatab/importScore";
 import { trackToAlphaTex } from "./alphatex";
-import type { ScoreDocument } from "./types";
+import { notation } from "./durations";
+import type { Beat, ScoreDocument } from "./types";
 
-function document(): ScoreDocument {
+function bass(beats: Beat[][], signatures: [number, number][] = beats.map(() => [4, 4])): ScoreDocument {
   return {
     version: 1,
     bpm: 120,
-    tempos: [{ bpm: 120, measure: 0 }],
+    bars: signatures.map((signature) => ({ signature })),
     sync: { video_id: null, points: [], anchors: {} },
     tracks: [
       {
@@ -18,100 +20,148 @@ function document(): ScoreDocument {
         capo: 0,
         tuning_midi: [43, 38, 33, 28],
         preferred: true,
-        measures: [
-          {
-            signature: [4, 4],
-            extras: {},
-            voices: [
-              {
-                beats: [
-                  {
-                    position: 0,
-                    duration: 1,
-                    rest: false,
-                    extras: {},
-                    notes: [{ string: 0, fret: 3, dead: false, tie: false, extras: {} }],
-                  },
-                  {
-                    position: 1,
-                    duration: 0.5,
-                    rest: false,
-                    extras: {},
-                    notes: [{ string: 3, fret: 0, dead: true, tie: false, extras: {} }],
-                  },
-                ],
-              },
-            ],
-          },
-        ],
+        bars: beats.map((bar) => ({ voices: [{ beats: bar }] })),
       },
     ],
   };
 }
 
+function load(document: ScoreDocument): alphaTab.model.Score {
+  return alphaTab.importer.ScoreLoader.loadAlphaTex(trackToAlphaTex(document, "bass", "Fixture", "Ada"));
+}
+
+function played(score: alphaTab.model.Score, bar = 0, voice = 0) {
+  return score.tracks[0].staves[0].bars[bar].voices[voice].beats.filter((beat) => !beat.isRest);
+}
+
+describe("notation", () => {
+  it("finds exact plain, dotted, and tuplet values", () => {
+    expect(notation(960)).toMatchObject({ token: 4, dots: 0, tuplet: null });
+    expect(notation(1440)).toMatchObject({ token: 4, dots: 1 });
+    expect(notation(320)).toMatchObject({ token: 8, tuplet: 3 });
+    expect(notation(192)).toMatchObject({ token: 16, tuplet: 5 });
+    expect(notation(640, 3)).toMatchObject({ token: 4, tuplet: 3 });
+  });
+});
+
 describe("trackToAlphaTex", () => {
   it("numbers the highest string as alphaTex string 1 and parses in alphaTab", () => {
-    const tex = trackToAlphaTex(document(), "bass", "Fixture", "Ada");
+    const tex = trackToAlphaTex(
+      bass([
+        [
+          { position: 0, duration: 960, notes: [{ string: 0, fret: 3 }] },
+          { position: 960, duration: 480, notes: [{ string: 3, fret: 0, dead: true }] },
+        ],
+      ]),
+      "bass",
+      "Fixture",
+      "Ada",
+    );
     expect(tex).toContain("\\tuning (G2 D2 A1 E1)");
     expect(tex).toContain("3.1.4");
     expect(tex).toContain("0.4 { x }.8");
-    expect(tex).not.toContain("\\sync");
 
     const score = alphaTab.importer.ScoreLoader.loadAlphaTex(tex);
     const staff = score.tracks[0].staves[0];
-    expect(score.tracks).toHaveLength(1);
     expect(staff.tuning).toEqual([43, 38, 33, 28]);
     expect(staff.showTablature).toBe(true);
-    expect(staff.showStandardNotation).toBe(true);
-    expect(score.masterBars[0].timeSignatureNumerator).toBe(4);
     expect(score.tempo).toBe(120);
-
-    const beats = staff.bars[0].voices[0].beats;
-    const played = beats.filter((beat) => !beat.isRest);
-    expect(played[0].notes[0].fret).toBe(3);
-    expect(played[0].notes[0].string).toBe(4);
-    expect(played[0].playbackDuration).toBe(960);
-    expect(played[1].notes[0].fret).toBe(0);
-    expect(played[1].notes[0].string).toBe(1);
-    expect(played[1].notes[0].isDead).toBe(true);
-    expect(played[1].playbackDuration).toBe(480);
+    const beats = played(score);
+    expect(beats[0].notes[0]).toMatchObject({ fret: 3, string: 4 });
+    expect(beats[0].playbackDuration).toBe(960);
+    expect(beats[1].notes[0]).toMatchObject({ fret: 0, string: 1, isDead: true });
+    expect(beats[1].playbackDuration).toBe(480);
   });
 
-  it("keeps an on-beat grace from advancing the next note, on six strings", () => {
-    const source = document();
-    const track = source.tracks[0];
-    track.tuning_midi = [64, 59, 55, 50, 45, 40];
-    track.instrument = "guitar";
-    track.measures[0].signature = [6, 8];
-    track.measures[0].voices[0].beats = [
-      {
-        position: 0,
-        duration: 0.25,
-        rest: false,
-        extras: { graceNote: "onBeat" },
-        notes: [{ string: 0, fret: 1, dead: false, tie: false, extras: {} }],
-      },
-      {
-        position: 0,
-        duration: 1.5,
-        rest: false,
-        extras: {},
-        notes: [{ string: 5, fret: 0, dead: false, tie: false, extras: {} }],
-      },
-    ];
-    const score = alphaTab.importer.ScoreLoader.loadAlphaTex(
-      trackToAlphaTex(source, "bass", "Six", "Ada"),
+  it("renders techniques with alphaTab's meaning", () => {
+    const score = load(
+      bass([
+        [
+          { position: 0, duration: 480, notes: [{ string: 0, fret: 3, slide: "shift" }] },
+          { position: 480, duration: 480, notes: [{ string: 0, fret: 5, slide: "legato" }] },
+          { position: 960, duration: 480, notes: [{ string: 0, fret: 7, hammer: true }] },
+          { position: 1440, duration: 480, notes: [{ string: 0, fret: 9, bend: 2, vibrato: true }] },
+          { position: 1920, duration: 480, notes: [{ string: 1, fret: 12, harmonic: "natural", let_ring: true }] },
+          { position: 2400, duration: 480, notes: [{ string: 2, fret: 2, palm_mute: true, staccato: true, ghost: true }] },
+          { position: 2880, duration: 480, notes: [{ string: 2, fret: 2 }] },
+          { position: 3360, duration: 480, notes: [{ string: 2, fret: 2, tie: true }] },
+        ],
+      ]),
     );
-    const beats = score.tracks[0].staves[0].bars[0].voices[0].beats.filter((beat) => !beat.isRest);
-    expect(score.tracks[0].staves[0].tuning).toEqual([64, 59, 55, 50, 45, 40]);
+    const notes = played(score).map((beat) => beat.notes[0]);
+    const { SlideOutType, HarmonicType, VibratoType } = alphaTab.model;
+    expect(notes[0].slideOutType).toBe(SlideOutType.Shift);
+    expect(notes[1].slideOutType).toBe(SlideOutType.Legato);
+    expect(notes[2].isHammerPullOrigin).toBe(true);
+    expect(notes[3].bendPoints?.map((point) => point.value)).toEqual([0, 4]);
+    expect(notes[3].vibrato).not.toBe(VibratoType.None);
+    expect(notes[4].harmonicType).toBe(HarmonicType.Natural);
+    expect(notes[4].isLetRing).toBe(true);
+    expect([notes[5].isPalmMute, notes[5].isStaccato, notes[5].isGhost]).toEqual([true, true, true]);
+    expect(notes[7].isTieDestination).toBe(true);
+  });
+
+  it("keeps grace notes, tuplets, rests, tempo changes, sections, and second voices", () => {
+    const document = bass(
+      [
+        [
+          { position: 0, duration: 240, grace: "on_beat", notes: [{ string: 0, fret: 1 }] },
+          { position: 0, duration: 320, tuplet: 3, notes: [{ string: 3, fret: 0 }] },
+          { position: 320, duration: 320, tuplet: 3, notes: [{ string: 3, fret: 2 }] },
+          { position: 640, duration: 320, tuplet: 3, notes: [{ string: 3, fret: 3 }] },
+          { position: 1920, duration: 960, notes: [{ string: 2, fret: 0 }] },
+        ],
+        [{ position: 0, duration: 2880, notes: [{ string: 1, fret: 5 }] }],
+      ],
+      [
+        [4, 4],
+        [3, 4],
+      ],
+    );
+    document.bars[1].tempo = 90;
+    document.bars[0].section = "Intro";
+    document.tracks[0].bars[0].voices.push({ beats: [{ position: 0, duration: 3840, notes: [{ string: 0, fret: 7 }] }] });
+    const score = load(document);
+    const beats = played(score);
     expect(beats[0].graceType).toBe(alphaTab.model.GraceType.OnBeat);
-    expect(beats[0].notes[0].string).toBe(6);
-    expect(beats[0].displayStart).toBe(0);
-    expect(beats[0].playbackDuration).toBe(120);
-    expect(beats[1].notes[0].string).toBe(1);
-    expect(beats[1].notes[0].fret).toBe(0);
-    expect(beats[1].displayStart).toBe(0);
-    expect(beats[1].playbackStart).toBe(120);
-    expect(beats[1].playbackDuration).toBe(1320);
+    // Notated durations: in playback an on-beat grace borrows its time from the next note.
+    expect(beats.slice(1, 4).map((beat) => [beat.displayDuration, beat.tupletNumerator])).toEqual([
+      [320, 3],
+      [320, 3],
+      [320, 3],
+    ]);
+    // The gap after the triplets is filled with rests, so the last note lands on beat 3.
+    expect(beats[4].playbackStart).toBe(1920);
+    expect(score.masterBars[1].timeSignatureNumerator).toBe(3);
+    expect(score.masterBars[1].tempoAutomations.map((mark) => mark.value)).toEqual([90]);
+    expect(score.masterBars[0].section?.text).toBe("Intro");
+    const second = played(score, 0, 1);
+    expect(second[0].notes[0]).toMatchObject({ fret: 7, string: 4 });
+  });
+
+  it("round-trips through alphaTab's model back to the same document", () => {
+    const document = bass([
+      [
+        { position: 0, duration: 1440, notes: [{ string: 0, fret: 3, hammer: true }] },
+        { position: 1440, duration: 480, notes: [{ string: 0, fret: 5 }] },
+        { position: 1920, duration: 1920, notes: [{ string: 1, fret: 0 }, { string: 3, fret: 2 }] },
+      ],
+    ]);
+    const back = scoreToDocument(load(document)).document;
+    const beats = back.tracks[0].bars[0].voices[0].beats;
+    expect(back.tracks[0].tuning_midi).toEqual([43, 38, 33, 28]);
+    expect(beats.map((beat) => [beat.position, beat.duration, beat.notes.map((note) => [note.string, note.fret])])).toEqual([
+      [0, 1440, [[0, 3]]],
+      [1440, 480, [[0, 5]]],
+      [
+        1920,
+        1920,
+        [
+          [1, 0],
+          [3, 2],
+        ],
+      ],
+    ]);
+    expect(beats[0].notes[0].hammer).toBe(true);
   });
 });

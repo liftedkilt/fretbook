@@ -3,6 +3,10 @@
 Every setting is read from a ``FRETBOOK_*`` variable so the same image can run
 locally, in Docker, and behind a reverse proxy. Single-user mode is the
 default. Issue #5 (Pocket ID / OIDC) switches ``FRETBOOK_AUTH_MODE`` to ``oidc``.
+
+``FRETBOOK_FORWARDED_ALLOW_IPS`` defaults to ``127.0.0.1``: only a proxy on the
+same host may set ``X-Forwarded-*``. Behind a proxy in another container, set it
+to that proxy's address, never ``*`` on a port clients can reach directly.
 """
 
 from __future__ import annotations
@@ -31,6 +35,7 @@ class Settings:
     download_audio: bool
     forwarded_allow_ips: str
     max_upload_bytes: int
+    audio_timeout_seconds: int
     static_dir: Path | None
     oidc_issuer: str
     oidc_client_id: str
@@ -54,8 +59,9 @@ class Settings:
             auth_mode=os.environ.get("FRETBOOK_AUTH_MODE", "single").strip().lower() or "single",
             root_path=os.environ.get("FRETBOOK_ROOT_PATH", "").strip(),
             download_audio=_flag("FRETBOOK_DOWNLOAD_AUDIO", True),
-            forwarded_allow_ips=os.environ.get("FRETBOOK_FORWARDED_ALLOW_IPS", "*"),
+            forwarded_allow_ips=os.environ.get("FRETBOOK_FORWARDED_ALLOW_IPS", "127.0.0.1").strip() or "127.0.0.1",
             max_upload_bytes=int(os.environ.get("FRETBOOK_MAX_UPLOAD_BYTES", str(80 * 1024 * 1024))),
+            audio_timeout_seconds=int(os.environ.get("FRETBOOK_AUDIO_TIMEOUT", "600")),
             static_dir=Path(static_raw).expanduser() if static_raw else None,
             oidc_issuer=os.environ.get("FRETBOOK_OIDC_ISSUER", "").strip(),
             oidc_client_id=os.environ.get("FRETBOOK_OIDC_CLIENT_ID", "").strip(),
@@ -76,8 +82,9 @@ class Settings:
             auth_mode="single",
             root_path="",
             download_audio=False,
-            forwarded_allow_ips="*",
+            forwarded_allow_ips="127.0.0.1",
             max_upload_bytes=2_000_000,
+            audio_timeout_seconds=30,
             static_dir=None,
             oidc_issuer="",
             oidc_client_id="",

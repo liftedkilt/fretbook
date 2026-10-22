@@ -3,14 +3,16 @@
 from __future__ import annotations
 
 import logging
+import uuid
 from pathlib import Path
 from typing import Any
 
 from fretbook.audio.ytdlp import AudioDownloadError, download_audio
-from fretbook.importers.base import ImportRequest, silent_progress
+from fretbook.importers.base import ImportRequest, ImportResult, Notice
 from fretbook.importers.registry import resolve_importer
 from fretbook.importers.youtube_frames import YouTubeFrameImporter
 from fretbook.jobs.runner import JobRunner, Progress
+from fretbook.score.model import ScoreDocument, content_hash
 from fretbook.storage.media import MediaStore
 from fretbook.storage.repository import SongRepository
 
@@ -27,10 +29,7 @@ def register_handlers(runner: JobRunner, songs: SongRepository, media: MediaStor
     def youtube(job: dict[str, Any], progress: Progress) -> dict[str, Any]:
         del job
         progress("YouTube import is not available yet", "import.youtubeUnavailable")
-        YouTubeFrameImporter().import_score(
-            ImportRequest(owner_id="", kind="youtube-frames"),
-            progress,
-        )
+        YouTubeFrameImporter().import_score(ImportRequest(owner_id="", kind="youtube-frames"), progress)
         return {}
 
     runner.register("import.songsterr", songsterr)
@@ -38,111 +37,142 @@ def register_handlers(runner: JobRunner, songs: SongRepository, media: MediaStor
     runner.register("import.youtube_frames", youtube)
 
 
-def _import_url(
-    job: dict[str, Any],
-    progress: Progress,
-    songs: SongRepository,
-    media: MediaStore,
-) -> dict[str, Any]:
+def _options(payload: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "video_id": payload.get("video_id"),
+        "slug": payload.get("slug"),
+        "part_ids": payload.get("part_ids"),
+        "prefer": payload.get("prefer"),
+    }
+
+
+def _import_url(job: dict[str, Any], progress: Progress, songs: SongRepository, media: MediaStore) -> dict[str, Any]:
     payload = job["payload"]
     request = ImportRequest(
         owner_id=job["owner_id"],
         url=payload.get("url"),
         kind=payload.get("kind") or "songsterr",
-        options={
-            "video_id": payload.get("video_id"),
-            "slug": payload.get("slug"),
-            "part_ids": payload.get("part_ids"),
-        },
+        options=_options(payload),
     )
-    importer = resolve_importer(request)
-    result = importer.import_score(request, progress)
+    result = resolve_importer(request).import_score(request, progress)
     return _store_result(job, result, songs, media, progress)
 
 
-def _import_file(
-    job: dict[str, Any],
-    progress: Progress,
-    songs: SongRepository,
-    media: MediaStore,
-) -> dict[str, Any]:
+def _import_file(job: dict[str, Any], progress: Progress, songs: SongRepository, media: MediaStore) -> dict[str, Any]:
     payload = job["payload"]
     path = Path(payload["path"])
-    request = ImportRequest(
-        owner_id=job["owner_id"],
-        filename=payload.get("filename") or path.name,
-        file_path=path,
-        kind=payload.get("kind"),
-    )
-    importer = resolve_importer(request)
-    result = importer.import_score(request, progress)
-    stored = _store_result(job, result, songs, media, progress)
     try:
-        data = path.read_bytes()
-        media.save(
-            job["owner_id"],
-            stored["song_id"],
-            kind="import",
-            filename=path.name,
-            content_type="application/octet-stream",
-            data=data,
+        request = ImportRequest(
+            owner_id=job["owner_id"],
+            filename=payload.get("filename") or path.name,
+            file_path=path,
+            kind=payload.get("kind"),
+            options=_options(payload),
         )
-    except OSError:
-        logger.warning("could not keep the uploaded file for %s", stored["song_id"])
-    return stored
+        result = resolve_importer(request).import_score(request, progress)
+        stored = _store_result(job, result, songs, media, progress)
+        try:
+            # Keep the original upload next to the song.
+            media.save_file(
+                job["owner_id"],
+                stored["song_id"],
+                kind="import",
+                filename=payload.get("filename") or path.name,
+                content_type="application/octet-stream",
+                source=path,
+            )
+        except (OSError, ValueError):
+            logger.warning("could not keep the uploaded file for %s", stored["song_id"])
+        return stored
+    finally:
+        path.unlink(missing_ok=True)
 
 
-def _store_result(job, result, songs: SongRepository, media: MediaStore, progress: Progress) -> dict[str, Any]:
+def _reimport(
+    existing: dict[str, Any], result: ImportResult, songs: SongRepository, owner_id: str, warnings: list[Notice]
+) -> dict[str, Any] | None:
+    """Refresh an untouched Songsterr import in place, keeping the user's taps. ``None`` means "make a new song"."""
+    assert result.document is not None
+    stored = ScoreDocument.model_validate(existing["document"])
+    imported_hash = existing["source_ref"].get("content_hash")
+    if imported_hash != content_hash(stored):
+        warnings.append(
+            Notice(
+                "import.keptEditedCopy",
+                "this song was edited since it was imported, so the new import was saved as a separate song",
+                {"title": existing["title"]},
+            )
+        )
+        return None
+    document = result.document
+    anchors = {key: value for key, value in stored.sync.anchors.items() if int(key) <= len(document.bars)}
+    if len(anchors) != len(stored.sync.anchors):
+        warnings.append(
+            Notice("import.anchorsDropped", "the new import has fewer bars, so some sync marks were dropped")
+        )
+    document.sync.anchors = anchors
+    # The player's BPM field is a sync adjustment; keep it along with the taps.
+    document.bpm = stored.bpm
+    document = ScoreDocument.model_validate(document.model_dump())
+    source_ref = {**result.source_ref, "content_hash": content_hash(document)}
+    saved = songs.update_song(
+        owner_id,
+        existing["id"],
+        title=result.title,
+        artist=result.artist,
+        revision=existing["revision"],
+        document=document,
+        source_ref=source_ref,
+    )
+    return saved
+
+
+def _store_result(
+    job: dict[str, Any], result: ImportResult, songs: SongRepository, media: MediaStore, progress: Progress
+) -> dict[str, Any]:
     owner_id = job["owner_id"]
-    existing = None
-    if result.source_kind == "songsterr":
+    warnings = list(result.warnings)
+    saved: dict[str, Any] | None = None
+    if result.source_kind == "songsterr" and result.document is not None:
         song_id = result.source_ref.get("song_id")
-        if song_id is not None:
-            existing = songs.find_by_source(owner_id, "songsterr", song_id=song_id)
-    if existing:
-        saved = songs.update_song(
-            owner_id,
-            existing["id"],
-            title=result.title,
-            artist=result.artist,
-            document=result.document,
-        )
-        assert saved is not None
-    else:
+        existing = songs.find_by_source(owner_id, "songsterr", song_id=song_id) if song_id is not None else None
+        if existing:
+            saved = _reimport(existing, result, songs, owner_id, warnings)
+    if saved is None:
+        source_ref = dict(result.source_ref)
+        if result.document is not None:
+            source_ref["content_hash"] = content_hash(result.document)
         saved = songs.create_song(
             owner_id,
             title=result.title,
             artist=result.artist,
             document=result.document,
+            chordpro=result.chordpro,
             source_kind=result.source_kind,
-            source_ref=result.source_ref,
+            source_ref=source_ref,
             slug=result.slug,
         )
-    warnings = list(result.warnings)
     if result.audio and songs.settings.download_audio:
-        tmp = songs.settings.inbox_dir / f"{saved['id']}-audio.mp3"
+        tmp = songs.settings.inbox_dir / f"audio-{uuid.uuid4().hex}.mp3"
         try:
-            download_audio(result.audio.video_id, tmp, progress)
-            media.save(
+            download_audio(result.audio.video_id, tmp, progress, timeout_seconds=songs.settings.audio_timeout_seconds)
+            media.save_file(
                 owner_id,
                 saved["id"],
                 kind="audio",
                 filename="audio.mp3",
                 content_type="audio/mpeg",
-                data=tmp.read_bytes(),
+                source=tmp,
                 replace_kind=True,
             )
         except AudioDownloadError as exc:
-            warnings.append(str(exc))
+            warnings.append(Notice(exc.key, str(exc), exc.params))
         finally:
             tmp.unlink(missing_ok=True)
     progress("Ready", "import.ready")
     return {
         "song_id": saved["id"],
         "slug": saved["slug"],
-        "warnings": warnings,
+        "content_kind": saved["content_kind"],
+        "warnings": [warning.as_dict() for warning in warnings],
     }
-
-
-def noop_progress(message: str, key: str = "") -> None:
-    silent_progress(message, key)

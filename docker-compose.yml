@@ -9,6 +9,11 @@ services:
       - ./songs:/songs:ro
     environment:
       FRETBOOK_HOST: "0.0.0.0"
+      # Without FRETBOOK_AUTH_MODE=oidc there is no login: anyone who can reach
+      # this port can use the library. Publish it only where that is fine.
+      # Behind a reverse proxy, set the proxy's address so it may send
+      # X-Forwarded-* headers (the default trusts only 127.0.0.1):
+      # FRETBOOK_FORWARDED_ALLOW_IPS: "172.18.0.1"
     restart: unless-stopped
     healthcheck:
       test:

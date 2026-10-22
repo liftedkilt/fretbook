@@ -1,26 +1,41 @@
 """Songsterr importer.
 
-Ports ``fetch_song.py`` and ``make_data.py``. The default track selection is
-still the bass part, which is what the original player downloaded. Every
-fretted part is listed on ``source_ref["available_tracks"]`` so issue #4 can
-ask the user which guitar tracks to import and pass ``options["part_ids"]``.
+Ports ``fetch_song.py`` and ``make_data.py`` from bass-tab-sync onto the score
+model. By default an import takes the parts matching the user's default
+instrument family (bass parts for a bass preset, otherwise guitar parts) and
+lists every fretted part on ``source_ref["available_tracks"]``, so a picker can
+pass ``options["part_ids"]``.
 """
 
 from __future__ import annotations
 
 import json
 import re
+from fractions import Fraction
 from typing import Any, Protocol
 from urllib.parse import quote
 
-from fretbook.importers.base import AudioFetch, ImportError, ImportRequest, ImportResult, Progress
-from fretbook.score.model import Beat, Measure, Note, ScoreDocument, SyncMap, TempoMark, Track, Voice
+from fretbook.importers.base import AudioFetch, ImportError, ImportRequest, ImportResult, Notice, Progress
+from fretbook.score import techniques
+from fretbook.score.model import (
+    TICKS_PER_QUARTER,
+    Bar,
+    Beat,
+    Note,
+    ScoreDocument,
+    SyncMap,
+    Track,
+    TrackBar,
+    Voice,
+)
 
 URL_RE = re.compile(r"^https://www\.songsterr\.com/a/wsa/[\w-]+-s(\d+)(?:t\d+)?/?(?:[?#].*)?$")
 DEFAULT_CDN = "dqsljvtekg760.cloudfront.net"
 VIDEO_ID_RE = re.compile(r"^[\w-]{11}$")
-_BEAT_SKIP = {"duration", "notes", "rest", "type", "dots"}
-_NOTE_FIELDS = {"string", "fret", "rest", "dead", "tie"}
+_BEAT_SKIP = {"duration", "notes", "rest", "type", "dots"} | techniques.BEAT_KEYS
+_NOTE_FIELDS = {"string", "fret", "rest", "dead", "tie"} | techniques.NOTE_KEYS
+_BAR_KEYS = {"voices", "signature", "repeatStart", "repeat", "repeatEnd", "alternateEnding", "marker"}
+WHOLE = 4 * TICKS_PER_QUARTER
 
 
 class TextFetcher(Protocol):
@@ -42,130 +57,140 @@ def cdn_host(html: str) -> str:
 def parse_page_state(html: str) -> dict[str, Any]:
     match = re.search(r'<script[^>]*id="state"[^>]*>(.*?)</script>', html, re.S)
     if not match:
-        raise ImportError("Songsterr page state was not found (the site layout may have changed)")
+        raise ImportError("Songsterr page state was not found (the site layout may have changed)", "songsterr.noState")
     try:
         state = json.loads(match.group(1))
         return state["meta"]["current"]
     except (KeyError, TypeError, json.JSONDecodeError) as exc:
-        raise ImportError("Songsterr page state could not be read") from exc
+        raise ImportError("Songsterr page state could not be read", "songsterr.noState") from exc
 
 
 def fretted_tracks(meta: dict[str, Any]) -> list[dict[str, Any]]:
     chosen: list[dict[str, Any]] = []
     for track in meta.get("tracks") or []:
-        if track.get("isEmpty") or track.get("isDrums") or track.get("isVocalTrack"):
+        if track.get("isEmpty") or track.get("isDrums") or track.get("isVocalTrack") or track.get("isPiano"):
             continue
-        if track.get("isPiano"):
-            continue
-        tuning = track.get("tuning") or []
-        if not tuning:
+        if not track.get("tuning"):
             continue
         chosen.append(track)
     return chosen
 
 
-def choose_tracks(meta: dict[str, Any], part_ids: list[int] | None) -> list[dict[str, Any]]:
-    """Bass parts by default. ``part_ids`` is the hook issue #4's picker calls."""
+def _is_bass(track: dict[str, Any]) -> bool:
+    return bool(track.get("isBassGuitar")) or "bass" in str(track.get("instrument") or "").lower()
+
+
+def choose_tracks(meta: dict[str, Any], part_ids: list[int] | None, prefer: str = "bass") -> list[dict[str, Any]]:
+    """Parts of the ``prefer`` family ("bass" or "guitar") by default, or exactly ``part_ids``."""
     available = fretted_tracks(meta)
     if part_ids is not None:
         wanted = set(part_ids)
         chosen = [track for track in available if track.get("partId") in wanted]
         if not chosen:
-            raise ImportError("none of the requested Songsterr parts are fretted tracks")
+            raise ImportError("none of the requested Songsterr parts are fretted tracks", "songsterr.noSuchPart")
         return chosen
-    bass = [track for track in available if track.get("isBassGuitar")]
-    if bass:
-        return bass
+    matching = [track for track in available if _is_bass(track) == (prefer == "bass")]
+    if matching:
+        return matching
     if available:
         return [available[0]]
-    names = ", ".join(track.get("instrument", "?") for track in meta.get("tracks") or [])
-    raise ImportError(f"this song has no fretted track: {names}")
+    names = ", ".join(str(track.get("instrument", "?")) for track in meta.get("tracks") or [])
+    raise ImportError(f"this song has no fretted track: {names}", "songsterr.noFrettedTrack", names=names)
 
 
-def _notes(raw_notes: list[dict[str, Any]]) -> list[Note]:
+def beat_ticks(raw_beat: dict[str, Any]) -> int | None:
+    """Duration in ticks. ``duration`` already includes dots; a tuplet scales it unless the fraction already has."""
+    duration = raw_beat.get("duration")
+    if not isinstance(duration, list) or len(duration) != 2 or not duration[1]:
+        return None
+    value = Fraction(int(duration[0]), int(duration[1])) * WHOLE
+    tuplet = techniques.tuplet_number(raw_beat.get("tuplet"))
+    denominator = int(duration[1])
+    if tuplet and denominator & (denominator - 1) == 0:
+        actual, normal = techniques.tuplet_ratio(tuplet)
+        value = value * normal / actual
+    return max(1, round(value))
+
+
+def _notes(raw_beat: dict[str, Any]) -> list[Note]:
     notes: list[Note] = []
-    for raw in raw_notes:
+    for raw in raw_beat.get("notes") or []:
         if raw.get("rest") or "fret" not in raw or "string" not in raw:
             continue
-        extras = {key: value for key, value in raw.items() if key not in _NOTE_FIELDS}
         notes.append(
             Note(
                 string=int(raw["string"]),
                 fret=int(raw["fret"]),
                 dead=bool(raw.get("dead")),
                 tie=bool(raw.get("tie")),
-                extras=extras,
+                **techniques.note_fields(raw, raw_beat),
+                extras={key: value for key, value in raw.items() if key not in _NOTE_FIELDS},
             )
         )
     return notes
 
 
-def part_to_track(part: dict[str, Any], meta_track: dict[str, Any], track_id: str, preferred: bool) -> Track:
-    signature = [4, 4]
-    measures: list[Measure] = []
+def part_bars(part: dict[str, Any]) -> tuple[list[Bar], list[TrackBar]]:
+    """Song-level bars and this part's content, from one Songsterr part."""
+    signature = (4, 4)
+    bars: list[Bar] = []
+    track_bars: list[TrackBar] = []
     for raw_measure in part.get("measures") or []:
         if raw_measure.get("signature"):
-            signature = [int(raw_measure["signature"][0]), int(raw_measure["signature"][1])]
+            signature = (int(raw_measure["signature"][0]), int(raw_measure["signature"][1]))
         voices: list[Voice] = []
         for raw_voice in raw_measure.get("voices") or []:
-            position = 0.0
+            position = 0
             beats: list[Beat] = []
             for raw_beat in raw_voice.get("beats") or []:
-                duration = raw_beat.get("duration")
-                if not isinstance(duration, list) or len(duration) != 2 or not duration[1]:
+                ticks = beat_ticks(raw_beat)
+                if ticks is None:
                     continue
-                quarters = 4 * float(duration[0]) / float(duration[1])
-                notes = _notes(raw_beat.get("notes") or [])
-                extras = {key: value for key, value in raw_beat.items() if key not in _BEAT_SKIP}
-                grace = bool(raw_beat.get("graceNote"))
+                grace = techniques.grace_kind(raw_beat.get("graceNote"))
                 beats.append(
                     Beat(
-                        position=round(position, 4),
-                        duration=round(max(quarters, 0.01), 4),
-                        notes=notes,
-                        rest=not notes,
-                        extras=extras,
+                        position=position,
+                        duration=ticks,
+                        notes=_notes(raw_beat),
+                        grace=grace,
+                        tuplet=techniques.tuplet_number(raw_beat.get("tuplet")),
+                        extras={key: value for key, value in raw_beat.items() if key not in _BEAT_SKIP},
                     )
                 )
-                if not grace:
-                    position += quarters
+                if grace is None:
+                    position += ticks
             voices.append(Voice(beats=beats))
-        if not voices:
-            voices = [Voice()]
-        extras = {key: value for key, value in raw_measure.items() if key not in {"voices", "signature"}}
-        measures.append(
-            Measure(signature=(signature[0], signature[1]), voices=voices, extras=extras)
+        bars.append(
+            Bar(
+                signature=signature,
+                **techniques.bar_fields(raw_measure),
+                extras={key: value for key, value in raw_measure.items() if key not in _BAR_KEYS},
+            )
         )
-    if not measures:
-        measures = [Measure()]
-    tuning = [int(note) for note in (part.get("tuning") or meta_track.get("tuning") or [])]
-    if not tuning:
-        raise ImportError(f"part {meta_track.get('partId')} has no tuning")
-    return Track(
-        id=track_id,
-        name=str(part.get("name") or meta_track.get("name") or meta_track.get("instrument") or "Track"),
-        instrument=str(part.get("instrument") or meta_track.get("instrument") or "unknown"),
-        capo=int(part.get("capo") or 0),
-        tuning_midi=tuning,
-        preferred=preferred,
-        measures=measures,
-    )
+        track_bars.append(TrackBar(voices=voices or [Voice()]))
+    return bars, track_bars
 
 
-def tempos_from(part: dict[str, Any]) -> list[TempoMark]:
-    marks: list[TempoMark] = []
+def apply_tempos(part: dict[str, Any], bars: list[Bar]) -> float:
+    """Write tempo changes onto ``bars`` and return the opening tempo."""
+    opening = 120.0
     for item in (part.get("automations") or {}).get("tempo") or []:
         if "bpm" not in item:
             continue
-        marks.append(TempoMark(bpm=float(item["bpm"]), measure=int(item.get("measure") or 0)))
-    return marks
+        bpm = float(item["bpm"])
+        measure = int(item.get("measure") or 0)
+        if measure == 0:
+            opening = bpm
+        elif measure < len(bars):
+            bars[measure].tempo = bpm
+    return opening
 
 
 def legacy_events(part: dict[str, Any]) -> tuple[float, list[list[Any]]]:
     """Reproduce ``make_data.convert`` for voice 0, including grace-note time.
 
     Tests use this to prove the port still lines up with the original player.
-    The stored document itself does not let grace notes consume measure time,
+    The stored document itself does not let grace notes consume bar time,
     because alphaTab draws them as grace notes.
     """
     signature = [4, 4]
@@ -198,7 +223,11 @@ def pick_video(entries: list[dict[str, Any]], video_id: str | None) -> dict[str,
         found = [entry for entry in usable if entry.get("videoId") == video_id]
         if not found:
             available = [entry.get("videoId") for entry in usable]
-            raise ImportError(f"video {video_id} has no sync points; available: {available}")
+            raise ImportError(
+                f"video {video_id} has no sync points; available: {available}",
+                "songsterr.noSuchVideo",
+                video=video_id,
+            )
         return found[0]
     for entry in usable:
         if not entry.get("feature"):
@@ -211,7 +240,7 @@ def describe_track(track: dict[str, Any]) -> dict[str, Any]:
         "part_id": track.get("partId"),
         "name": track.get("name") or "",
         "instrument": track.get("instrument") or "",
-        "is_bass": bool(track.get("isBassGuitar")),
+        "is_bass": _is_bass(track),
         "is_guitar": bool(track.get("isGuitar")),
         "tuning": list(track.get("tuning") or []),
     }
@@ -230,92 +259,92 @@ class SongsterrImporter:
     def can_handle(self, request: ImportRequest) -> bool:
         return bool(request.url and URL_RE.match(request.url.strip()))
 
+    def _json(self, url: str, what: str) -> Any:
+        try:
+            return json.loads(self.fetcher.get_text(url))
+        except json.JSONDecodeError as exc:
+            raise ImportError(f"Songsterr {what} was not valid JSON", "songsterr.badJson", what=what) from exc
+
     def import_score(self, request: ImportRequest, progress: Progress) -> ImportResult:
         url = (request.url or "").strip()
         match = URL_RE.match(url)
         if not match:
-            raise ImportError(
-                "URL must look like https://www.songsterr.com/a/wsa/<name>-s<digits>"
-            )
+            raise ImportError("URL must look like https://www.songsterr.com/a/wsa/<name>-s<digits>", "songsterr.badUrl")
         song_id = int(match.group(1))
         progress("Fetching the tab", "import.fetchingTab")
         html = self.fetcher.get_text(url)
         meta = parse_page_state(html)
         if int(meta["songId"]) != song_id:
-            raise ImportError(f"page song id {meta['songId']} does not match the URL ({song_id})")
+            raise ImportError(
+                f"page song id {meta['songId']} does not match the URL ({song_id})", "songsterr.idMismatch"
+            )
         revision = meta["revisionId"]
         image = str(meta["image"])
         host = cdn_host(html)
         raw_ids = request.options.get("part_ids")
         part_ids = [int(part_id) for part_id in raw_ids] if raw_ids is not None else None
-        selected = choose_tracks(meta, part_ids)
-        video_id = request.options.get("video_id") or None
+        prefer = str(request.options.get("prefer") or "bass")
+        selected = choose_tracks(meta, part_ids, prefer)
 
+        bars: list[Bar] = []
+        bpm = 120.0
         tracks: list[Track] = []
-        tempos: list[TempoMark] = []
-        warnings: list[str] = []
-        bass_ids = [track["partId"] for track in selected if track.get("isBassGuitar")]
-        preferred_part = bass_ids[0] if bass_ids else selected[0]["partId"]
-        for meta_track in selected:
-            part_url = (
-                f"https://{host}/{song_id}/{revision}/{quote(image, safe='')}/"
-                f"{meta_track['partId']}.json"
+        warnings: list[Notice] = []
+        for index, meta_track in enumerate(selected):
+            part_id = meta_track["partId"]
+            part = self._json(
+                f"https://{host}/{song_id}/{revision}/{quote(image, safe='')}/{part_id}.json", f"part {part_id}"
             )
-            try:
-                part = json.loads(self.fetcher.get_text(part_url))
-            except json.JSONDecodeError as exc:
-                raise ImportError(
-                    f"Songsterr part {meta_track['partId']} was not valid JSON"
-                ) from exc
-            track = part_to_track(
-                part,
-                meta_track,
-                f"trk_{meta_track['partId']}",
-                meta_track["partId"] == preferred_part,
+            part_song_bars, track_bars = part_bars(part)
+            if index == 0:
+                bars = part_song_bars or [Bar()]
+                bpm = apply_tempos(part, bars)
+            if not track_bars:
+                track_bars = [TrackBar()]
+            # Parts of one Songsterr song normally have the same bar count; pad or trim to the first.
+            track_bars = (track_bars + [TrackBar() for _ in bars])[: len(bars)]
+            tuning = [int(note) for note in (part.get("tuning") or meta_track.get("tuning") or [])]
+            if not tuning:
+                raise ImportError(f"part {part_id} has no tuning", "songsterr.noTuning", part=part_id)
+            tracks.append(
+                Track(
+                    id=f"trk_{part_id}",
+                    name=str(part.get("name") or meta_track.get("name") or meta_track.get("instrument") or "Track"),
+                    instrument=str(part.get("instrument") or meta_track.get("instrument") or "unknown"),
+                    capo=int(part.get("capo") or 0),
+                    tuning_midi=tuning,
+                    preferred=index == 0,
+                    bars=track_bars,
+                )
             )
-            tracks.append(track)
-            if track.preferred and not tempos:
-                tempos = tempos_from(part)
-
-        if not any(track.preferred for track in tracks):
-            tracks[0].preferred = True
-        bpm = tempos[0].bpm if tempos else 120.0
-        if not tempos:
-            tempos = [TempoMark(bpm=bpm, measure=0)]
 
         progress("Fetching sync points", "import.fetchingSync")
-        points_url = f"https://www.songsterr.com/api/video-points/{song_id}/{revision}/list"
-        try:
-            listing = json.loads(self.fetcher.get_text(points_url))
-        except json.JSONDecodeError as exc:
-            raise ImportError("Songsterr sync points were not valid JSON") from exc
+        listing = self._json(f"https://www.songsterr.com/api/video-points/{song_id}/{revision}/list", "sync points")
         if not isinstance(listing, list):
-            raise ImportError("Songsterr sync points had an unexpected shape")
-        video = pick_video(listing, video_id)
-        points: list[float] = []
+            raise ImportError("Songsterr sync points had an unexpected shape", "songsterr.badJson", what="sync points")
+        video = pick_video(listing, request.options.get("video_id") or None)
+        points: list[float | None] = []
         chosen_video: str | None = None
         if video:
             chosen_video = str(video["videoId"])
             if not VIDEO_ID_RE.fullmatch(chosen_video):
-                raise ImportError("unexpected video id")
+                raise ImportError("unexpected video id", "songsterr.badVideo")
             points = [float(point) for point in video["points"]]
-            measure_count = len(next(track for track in tracks if track.preferred).measures)
-            if len(points) != measure_count:
+            if len(points) != len(bars):
                 warnings.append(
-                    "sync point count does not match the measure count; playback may drift"
+                    Notice(
+                        "import.syncCountMismatch",
+                        "sync point count does not match the bar count; playback may drift",
+                        {"points": len(points), "bars": len(bars)},
+                    )
                 )
         else:
-            warnings.append("no sync points are published for this song")
+            warnings.append(Notice("import.noSyncPoints", "no sync points are published for this song"))
 
         slug = str(request.options.get("slug") or slug_from_url(url))
         if not re.fullmatch(r"[\w-]+", slug):
-            raise ImportError("invalid slug")
-        document = ScoreDocument(
-            bpm=bpm,
-            tempos=tempos,
-            tracks=tracks,
-            sync=SyncMap(video_id=chosen_video, points=points),
-        )
+            raise ImportError("invalid slug", "import.badSlug")
+        document = ScoreDocument(bpm=bpm, bars=bars, tracks=tracks, sync=SyncMap(video_id=chosen_video, points=points))
         progress("Tab ready", "import.tabReady")
         return ImportResult(
             title=str(meta.get("title") or "Untitled"),
@@ -329,6 +358,7 @@ class SongsterrImporter:
                 "image": image,
                 "url": url,
                 "video_id": chosen_video,
+                "part_ids": [track["partId"] for track in selected],
                 "available_tracks": [describe_track(track) for track in fretted_tracks(meta)],
             },
             audio=AudioFetch(video_id=chosen_video) if chosen_video else None,

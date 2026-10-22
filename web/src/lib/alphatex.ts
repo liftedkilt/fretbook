@@ -1,41 +1,41 @@
-import type { Beat, Note, ScoreDocument, Track } from "./types";
+import { barTicks, notation, VALUES } from "./durations";
+import type { Bar, Beat, Note, ScoreDocument, Track, TrackBar } from "./types";
 import { tuningLabel } from "./tuning";
 
-const STEPS = [
-  { quarters: 4, token: "1" },
-  { quarters: 2, token: "2" },
-  { quarters: 1, token: "4" },
-  { quarters: 0.5, token: "8" },
-  { quarters: 0.25, token: "16" },
-  { quarters: 0.125, token: "32" },
-  { quarters: 0.0625, token: "64" },
-];
+/*
+ * alphaTab 1.8 alphaTex for one track of a song.
+ *
+ * - String 1 is the top tab line, which is our string index 0.
+ * - A note is `fret.string`, a beat ends with `.duration`; note effects sit in
+ *   braces after the note, beat effects after the duration.
+ * - Metadata arguments sit in parentheses: `\ts (3 4)`, `\tempo (90)`.
+ * - Voices: all bars of voice 1, then `\voice` and all bars of voice 2.
+ * - Repeats are stored but not rendered, so playback order stays the written
+ *   order that sync points are keyed by.
+ */
 
-interface Quantized {
-  token: string;
-  effects: string[];
-}
+const SLIDE: Record<string, string> = {
+  shift: "ss",
+  legato: "sl",
+  in_below: "sib",
+  in_above: "sia",
+  out_up: "sou",
+  out_down: "sod",
+};
 
-export function quantizeDuration(quarters: number): Quantized {
-  let best: Quantized & { error: number } = {
-    token: "4",
-    effects: [],
-    error: Number.POSITIVE_INFINITY,
-  };
-  for (const step of STEPS) {
-    const options = [
-      { effects: [] as string[], used: step.quarters },
-      { effects: ["d"], used: step.quarters * 1.5 },
-      { effects: ["dd"], used: step.quarters * 1.75 },
-      { effects: ["tu 3"], used: (step.quarters * 2) / 3 },
-    ];
-    for (const option of options) {
-      const error = Math.abs(quarters - option.used);
-      if (error < best.error) best = { token: step.token, effects: option.effects, error };
-    }
-  }
-  return { token: best.token, effects: best.effects };
-}
+const HARMONIC: Record<string, string> = {
+  natural: "nh",
+  artificial: "ah",
+  pinch: "ph",
+  tap: "th",
+  semi: "sh",
+};
+
+const GRACE: Record<string, string> = {
+  on_beat: "gr onbeat",
+  before_beat: "gr beforebeat",
+  bend: "gr bendgrace",
+};
 
 function escapeTex(value: string): string {
   return value.replaceAll("\\", "\\\\").replaceAll('"', '\\"').replaceAll("\n", " ");
@@ -47,110 +47,124 @@ function brace(effects: string[]): string {
 
 function instrumentProgram(track: Track): number {
   if (track.instrument === "acoustic-guitar") return 25;
-  if (track.instrument === "guitar") return 27;
-  if (track.tuning_midi.length <= 5) return 33;
-  return 27;
+  if (track.instrument.includes("bass")) return 33;
+  if (track.instrument.includes("guitar")) return 27;
+  return track.tuning_midi.length <= 5 ? 33 : 27;
 }
 
-function noteEffects(note: Note): string[] {
-  return [
-    note.dead ? "x" : "",
-    note.tie ? "t" : "",
-    slideEffect(note),
-    note.extras?.hp ? "h" : "",
-    note.extras?.ghost ? "g" : "",
-  ].filter((effect) => effect !== "");
-}
-
-function slideEffect(note: Note): string {
-  const slide = note.extras?.slide;
-  if (slide === "legato") return "ss";
-  if (typeof slide === "string" && slide) return "sl";
-  return "";
-}
-
-function graceEffect(beat: Beat): string {
-  const grace = beat.extras?.graceNote;
-  if (!grace) return "";
-  const name = String(grace).toLowerCase();
-  if (name.includes("before")) return "gr beforebeat";
-  if (name.includes("bend")) return "gr bendgrace";
-  return "gr onbeat";
+export function noteEffects(note: Note): string[] {
+  const effects: string[] = [];
+  if (note.dead) effects.push("x");
+  if (note.tie) effects.push("t");
+  if (note.ghost) effects.push("g");
+  if (note.hammer) effects.push("h");
+  if (note.slide && SLIDE[note.slide]) effects.push(SLIDE[note.slide]);
+  if (note.vibrato) effects.push("v");
+  if (note.harmonic && HARMONIC[note.harmonic]) effects.push(HARMONIC[note.harmonic]);
+  // alphaTab bend values are quarter tones.
+  if (note.bend) effects.push(`b (0 ${Math.round(note.bend * 2)})`);
+  if (note.palm_mute) effects.push("pm");
+  if (note.let_ring) effects.push("lr");
+  if (note.staccato) effects.push("st");
+  return effects;
 }
 
 function noteToken(note: Note): string {
   return `${note.fret}.${note.string + 1}${brace(noteEffects(note))}`;
 }
 
-function beatToken(beat: Beat): string {
-  const duration = quantizeDuration(beat.duration);
-  const beatFx = [...duration.effects];
-  const grace = graceEffect(beat);
-  if (grace) beatFx.push(grace);
-  const tail = `.${duration.token}${brace(beatFx)}`;
-  if (beat.rest || beat.notes.length === 0) return `r${tail}`;
+export function beatToken(beat: Beat): string {
+  const shape = notation(beat.duration, beat.tuplet ?? null);
+  const effects: string[] = [];
+  if (shape.dots === 1) effects.push("d");
+  if (shape.dots === 2) effects.push("dd");
+  if (shape.tuplet) effects.push(`tu ${shape.tuplet}`);
+  if (beat.grace && GRACE[beat.grace]) effects.push(GRACE[beat.grace]);
+  const tail = `.${shape.token}${brace(effects)}`;
+  if (beat.notes.length === 0) return `r${tail}`;
   if (beat.notes.length === 1) return `${noteToken(beat.notes[0])}${tail}`;
-  return `(${beat.notes.map((note) => noteToken(note)).join(" ")})${tail}`;
+  return `(${[...beat.notes].sort((a, b) => a.string - b.string).map(noteToken).join(" ")})${tail}`;
 }
 
-function restToken(quarters: number): string {
+/** Rests filling `ticks`, longest values first. */
+export function restTokens(ticks: number): string[] {
   const parts: string[] = [];
-  let left = quarters;
-  for (const step of STEPS) {
-    while (left + 0.001 >= step.quarters) {
-      const duration = quantizeDuration(step.quarters);
-      parts.push(`r.${duration.token}${brace(duration.effects)}`);
-      left -= step.quarters;
+  let left = ticks;
+  for (const value of VALUES) {
+    while (left >= value.ticks) {
+      parts.push(`r.${value.token}`);
+      left -= value.ticks;
     }
   }
-  return parts.join(" ");
+  if (left > 1) {
+    const rest = notation(left);
+    if (Math.abs(rest.ticks - left) <= 1) parts.push(beatToken({ position: 0, duration: left, notes: [] }));
+  }
+  return parts;
+}
+
+function voiceBeats(trackBar: TrackBar | undefined, voice: number): Beat[] {
+  return [...(trackBar?.voices[voice]?.beats ?? [])].sort(
+    (left, right) => left.position - right.position || Number(Boolean(right.grace)) - Number(Boolean(left.grace)),
+  );
+}
+
+function barContent(bar: Bar, trackBar: TrackBar | undefined, voice: number): string[] {
+  const length = barTicks(bar.signature);
+  const parts: string[] = [];
+  let cursor = 0;
+  for (const beat of voiceBeats(trackBar, voice)) {
+    if (!beat.grace && beat.position > cursor + 1) {
+      parts.push(...restTokens(beat.position - cursor));
+      cursor = beat.position;
+    }
+    parts.push(beatToken(beat));
+    if (!beat.grace) cursor += beat.duration;
+  }
+  if (cursor < length - 1) parts.push(...restTokens(length - cursor));
+  return parts;
+}
+
+function barMetadata(document: ScoreDocument, index: number): string[] {
+  const bar = document.bars[index];
+  const previous = index > 0 ? document.bars[index - 1] : undefined;
+  const parts: string[] = [];
+  if (!previous || previous.signature[0] !== bar.signature[0] || previous.signature[1] !== bar.signature[1]) {
+    parts.push(`\\ts (${bar.signature[0]} ${bar.signature[1]})`);
+  }
+  if (index > 0 && bar.tempo) parts.push(`\\tempo (${Math.round(bar.tempo * 100) / 100})`);
+  if (bar.section) parts.push(`\\section ("${escapeTex(bar.section)}")`);
+  return parts;
 }
 
 export function preferredTrack(document: ScoreDocument): Track {
   return document.tracks.find((track) => track.preferred) ?? document.tracks[0];
 }
 
-/**
- * alphaTab 1.8 alphaTex.
- * String 1 is the top tab line, which is our string index 0.
- * Duration is a dot plus the value (`3.1.4` is fret 3, string 1, quarter),
- * metadata arguments sit in parentheses, and effects sit in braces.
- * One track per load keeps the sync points aligned with that staff.
- */
-export function trackToAlphaTex(
-  document: ScoreDocument,
-  trackId: string,
-  title: string,
-  artist: string,
-): string {
+export function voiceCount(track: Track): number {
+  return Math.max(1, ...track.bars.map((bar) => bar.voices.filter((voice) => voice.beats.length > 0).length));
+}
+
+export function trackToAlphaTex(document: ScoreDocument, trackId: string, title: string, artist: string): string {
   const track = document.tracks.find((item) => item.id === trackId) ?? preferredTrack(document);
-  const header = [
+  const lines = [
     `\\title ("${escapeTex(title || track.name)}")`,
     `\\artist ("${escapeTex(artist)}")`,
-    `\\tempo (${Math.max(1, Math.round(document.bpm))})`,
+    `\\tempo (${Math.round(document.bpm * 100) / 100})`,
     `\\track ("${escapeTex(track.name)}")`,
     "\\staff { score tabs }",
     `\\tuning (${tuningLabel(track.tuning_midi)})`,
     `\\instrument (${instrumentProgram(track)})`,
   ];
-  if (track.capo) header.push(`\\capo (${track.capo})`);
-  const bars = track.measures.map((measure) => {
-    const [numerator, denominator] = measure.signature;
-    const length = (4 * numerator) / denominator;
-    const beats = [...(measure.voices[0]?.beats ?? [])].sort((left, right) => left.position - right.position);
-    const parts = [`\\ts (${numerator} ${denominator})`];
-    let cursor = 0;
-    for (const beat of beats) {
-      const grace = Boolean(beat.extras?.graceNote);
-      if (!grace && beat.position > cursor + 0.02) {
-        parts.push(restToken(beat.position - cursor));
-        cursor = beat.position;
-      }
-      parts.push(beatToken(beat));
-      if (!grace) cursor += beat.duration;
-    }
-    if (cursor < length - 0.02) parts.push(restToken(length - cursor));
-    return `${parts.join(" ")} |`;
-  });
-  return [...header, ...bars].join("\n");
+  if (track.capo) lines.push(`\\capo (${track.capo})`);
+  const voices = voiceCount(track);
+  for (let voice = 0; voice < voices; voice += 1) {
+    if (voices > 1) lines.push("\\voice");
+    document.bars.forEach((bar, index) => {
+      const metadata = voice === 0 ? barMetadata(document, index) : [];
+      const content = barContent(bar, track.bars[index], voice);
+      lines.push(`${[...metadata, ...content].join(" ")} |`);
+    });
+  }
+  return lines.join("\n");
 }

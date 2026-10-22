@@ -1,27 +1,51 @@
-"""A small MusicXML tablature importer.
+"""MusicXML tablature importer.
 
-Only string/fret notes are accepted. Standard notation without ``<technical>``
-is rejected so we do not invent a fingering. Guitar Pro files are not parsed
-here; alphaTab reads those in the browser.
+Only string/fret notes become notes, so a fingering is never invented. Parts
+without tablature (vocals, piano) are skipped. Conventions that are easy to
+get backwards:
+
+* ``<staff-tuning line="1">`` is the bottom staff line, the *lowest* string.
+  Fretbook stores the highest string first, so the tuning is reversed.
+* ``<technical><string>1</string>`` is the *highest* string, the same as
+  Fretbook's index 0.
+* ``<backup>`` and ``<forward>`` move the time cursor; a second voice or a
+  second staff (Guitar Pro exports write standard notation and tab as two
+  staves of one part) comes after a ``<backup>``. Only the tab staff is kept.
+* Grace notes have no ``<duration>`` and take no time.
 """
 
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
+from collections import defaultdict
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 from fretbook.importers.base import ImportError, ImportRequest, ImportResult, Progress
-from fretbook.score.model import Beat, Measure, Note, ScoreDocument, TempoMark, Track, Voice
-from fretbook.score.tuning import midi_to_name
+from fretbook.score.instruments import PRESETS
+from fretbook.score.model import TICKS_PER_QUARTER, Bar, Beat, Note, ScoreDocument, Track, TrackBar, Voice
 
 _STEP = {"C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11}
+_TYPE_TICKS = {
+    "breve": 8 * TICKS_PER_QUARTER,
+    "whole": 4 * TICKS_PER_QUARTER,
+    "half": 2 * TICKS_PER_QUARTER,
+    "quarter": TICKS_PER_QUARTER,
+    "eighth": TICKS_PER_QUARTER // 2,
+    "16th": TICKS_PER_QUARTER // 4,
+    "32nd": TICKS_PER_QUARTER // 8,
+    "64th": TICKS_PER_QUARTER // 16,
+}
 
 
 def _local(tag: str) -> str:
     return tag.rsplit("}", 1)[-1]
 
 
-def _child(element: ET.Element, name: str) -> ET.Element | None:
+def _child(element: ET.Element | None, name: str) -> ET.Element | None:
+    if element is None:
+        return None
     for child in element:
         if _local(child.tag) == name:
             return child
@@ -38,8 +62,35 @@ def _text(element: ET.Element | None) -> str:
     return element.text.strip()
 
 
+def _int(element: ET.Element | None, default: int = 0) -> int:
+    try:
+        return int(float(_text(element)))
+    except ValueError:
+        return default
+
+
 def _midi(step: str, alter: int, octave: int) -> int:
     return (octave + 1) * 12 + _STEP[step.upper()] + alter
+
+
+@dataclass
+class _Event:
+    start: int
+    duration: int
+    notes: list[Note] = field(default_factory=list)
+    grace: str | None = None
+    tuplet: int | None = None
+
+
+@dataclass
+class _Part:
+    name: str
+    tuning: list[int]
+    capo: int
+    bars: list[Bar]
+    track_bars: list[TrackBar]
+    opening_tempo: float | None
+    has_tab: bool
 
 
 class MusicXmlImporter:
@@ -51,31 +102,38 @@ class MusicXmlImporter:
 
     def import_score(self, request: ImportRequest, progress: Progress) -> ImportResult:
         if request.file_path is None:
-            raise ImportError("MusicXML import needs a file")
+            raise ImportError("MusicXML import needs a file", "import.needsFile")
         progress("Reading MusicXML", "import.readingFile")
         try:
             root = ET.parse(request.file_path).getroot()
         except ET.ParseError as exc:
-            raise ImportError("MusicXML file could not be parsed") from exc
-        if _local(root.tag) not in {"score-partwise", "score-timewise"}:
-            raise ImportError("expected a MusicXML score-partwise or score-timewise document")
+            raise ImportError("MusicXML file could not be parsed", "musicxml.parse") from exc
         if _local(root.tag) == "score-timewise":
-            raise ImportError("score-timewise MusicXML is not imported yet; save as score-partwise")
+            raise ImportError("score-timewise MusicXML is not imported; save as score-partwise", "musicxml.timewise")
+        if _local(root.tag) != "score-partwise":
+            raise ImportError("expected a MusicXML score-partwise document", "musicxml.notMusicXml")
         title, artist = _credits(root)
-        part_names = _part_names(root)
-        tracks: list[Track] = []
-        tempos: list[TempoMark] = []
-        for index, part in enumerate(_children(root, "part")):
-            track, part_tempos = _part_to_track(part, part_names, index)
-            tracks.append(track)
-            if not tempos:
-                tempos = part_tempos
-        if not tracks:
-            raise ImportError("this MusicXML file has no tablature string/fret data")
-        tracks[0].preferred = True
-        bpm = tempos[0].bpm if tempos else 120.0
-        if not tempos:
-            tempos = [TempoMark(bpm=bpm, measure=0)]
+        names = _part_names(root)
+        parts = [_read_part(part, names, index) for index, part in enumerate(_children(root, "part"))]
+        tab_parts = [part for part in parts if part.has_tab]
+        if not tab_parts:
+            raise ImportError("this MusicXML file has no tablature string/fret data", "musicxml.noTab")
+        bars = tab_parts[0].bars
+        bpm = tab_parts[0].opening_tempo or 120.0
+        prefer = str(request.options.get("prefer") or "")
+        preferred = _preferred_index(tab_parts, prefer)
+        tracks = [
+            Track(
+                id=f"trk_xml_{index}",
+                name=part.name,
+                instrument="bass-guitar" if len(part.tuning) <= 5 else "guitar",
+                capo=part.capo,
+                tuning_midi=part.tuning,
+                preferred=index == preferred,
+                bars=(part.track_bars + [TrackBar() for _ in bars])[: len(bars)],
+            )
+            for index, part in enumerate(tab_parts)
+        ]
         slug = Path(request.filename or request.file_path.name).stem
         slug = "".join(ch.lower() if ch.isalnum() else "-" for ch in slug).strip("-") or "song"
         progress("Tab ready", "import.tabReady")
@@ -83,164 +141,261 @@ class MusicXmlImporter:
             title=title or slug,
             artist=artist,
             slug=slug[:60],
-            document=ScoreDocument(bpm=bpm, tempos=tempos, tracks=tracks),
+            document=ScoreDocument(bpm=bpm, bars=bars, tracks=tracks),
             source_kind="musicxml",
             source_ref={"filename": request.filename or request.file_path.name},
         )
 
 
+def _preferred_index(parts: list[_Part], prefer: str) -> int:
+    if prefer:
+        for index, part in enumerate(parts):
+            if (len(part.tuning) <= 5) == (prefer == "bass"):
+                return index
+    return 0
+
+
 def _credits(root: ET.Element) -> tuple[str, str]:
     work = _child(root, "work")
-    title = _text(_child(work if work is not None else root, "work-title"))
+    title = _text(_child(work, "work-title")) or _text(_child(root, "movement-title"))
     artist = ""
     identification = _child(root, "identification")
     if identification is not None:
-        for creator in _children(identification, "creator"):
-            if creator.attrib.get("type", "composer") in {"composer", "artist"} or not artist:
-                artist = _text(creator) or artist
-                if creator.attrib.get("type") in {"composer", "artist"}:
-                    break
+        creators = _children(identification, "creator")
+        for creator in creators:
+            if creator.attrib.get("type") in {"composer", "artist"} and _text(creator):
+                artist = _text(creator)
+                break
+        if not artist and creators:
+            artist = _text(creators[0])
     return title, artist
 
 
 def _part_names(root: ET.Element) -> dict[str, str]:
-    names: dict[str, str] = {}
     part_list = _child(root, "part-list")
     if part_list is None:
-        return names
-    for score_part in _children(part_list, "score-part"):
-        names[score_part.attrib.get("id", "")] = _text(_child(score_part, "part-name"))
-    return names
+        return {}
+    return {
+        score_part.attrib.get("id", ""): _text(_child(score_part, "part-name"))
+        for score_part in _children(part_list, "score-part")
+    }
 
 
-def _part_to_track(
-    part: ET.Element, names: dict[str, str], index: int
-) -> tuple[Track, list[TempoMark]]:
-    part_id = part.attrib.get("id", str(index))
-    tuning: list[int] = []
+def _guess_tuning(strings: int) -> list[int]:
+    for preset in PRESETS:
+        if len(preset.tuning_midi) == strings:
+            return list(preset.tuning_midi)
+    return [64 - 5 * index for index in range(strings)]
+
+
+def _read_part(part: ET.Element, names: dict[str, str], index: int) -> _Part:
     divisions = 1
     signature = (4, 4)
-    measures: list[Measure] = []
-    tempos: list[TempoMark] = []
-    saw_fret = False
-    for measure_index, raw in enumerate(_children(part, "measure")):
-        divisions, signature, tuning, tempo = _attributes(raw, divisions, signature, tuning)
-        if tempo is not None:
-            tempos.append(TempoMark(bpm=tempo, measure=measure_index))
-        beats, found = _measure_beats(raw, divisions)
-        saw_fret = saw_fret or found
-        measures.append(Measure(signature=signature, voices=[Voice(beats=beats)]))
-    if not saw_fret:
-        raise ImportError("this MusicXML file has no tablature string/fret data")
-    if not tuning:
-        highest = 0
-        for measure in measures:
-            for beat in measure.voices[0].beats:
-                for note in beat.notes:
-                    highest = max(highest, note.string + 1)
-        tuning = [40 - (5 * string) for string in range(max(highest, 1))]
-    name = names.get(part_id) or f"Track {index + 1}"
-    instrument = "bass-guitar" if len(tuning) <= 5 else "guitar"
-    track = Track(
-        id=f"trk_xml_{index}",
-        name=name,
-        instrument=instrument,
-        tuning_midi=tuning,
-        preferred=index == 0,
-        measures=measures or [Measure()],
-    )
-    return track, tempos
+    tuning_by_line: dict[int, int] = {}
+    capo = 0
+    tab_staff: str | None = None
+    opening_tempo: float | None = None
+    bars: list[Bar] = []
+    track_bars: list[TrackBar] = []
+    has_tab = False
+    highest_string = 0
 
-
-def _attributes(
-    measure: ET.Element,
-    divisions: int,
-    signature: tuple[int, int],
-    tuning: list[int],
-) -> tuple[int, tuple[int, int], list[int], float | None]:
-    tempo: float | None = None
-    for element in measure.iter():
-        if _local(element.tag) == "divisions" and element.text:
-            divisions = max(1, int(element.text))
-        elif _local(element.tag) == "time":
-            beats = _text(_child(element, "beats"))
-            beat_type = _text(_child(element, "beat-type"))
-            if beats and beat_type:
-                signature = (int(beats), int(beat_type))
-        elif _local(element.tag) == "staff-tuning":
-            line = int(element.attrib.get("line", "1"))
-            step = _text(_child(element, "tuning-step"))
-            octave = int(_text(_child(element, "tuning-octave")) or "0")
-            alter = int(_text(_child(element, "tuning-alter")) or "0")
-            if step:
-                while len(tuning) < line:
-                    tuning.append(0)
-                tuning[line - 1] = _midi(step, alter, octave)
-        elif _local(element.tag) == "sound" and element.attrib.get("tempo"):
-            tempo = float(element.attrib["tempo"])
-    return divisions, signature, tuning, tempo
-
-
-def _measure_beats(measure: ET.Element, divisions: int) -> tuple[list[Beat], bool]:
-    beats: list[Beat] = []
-    position = 0.0
-    found = False
-    pending: list[Note] = []
-    pending_quarters = 0.0
-    for element in list(measure):
-        if _local(element.tag) != "note":
-            continue
-        if _child(element, "chord") is None and pending:
-            beats.append(
-                Beat(position=round(position, 4), duration=round(max(pending_quarters, 0.01), 4), notes=pending)
-            )
-            position += pending_quarters
-            pending = []
-        duration = int(_text(_child(element, "duration")) or "0")
-        quarters = duration / divisions if divisions else 0
-        technical = _technical(element)
-        if _child(element, "rest") is not None or technical is None:
-            if _child(element, "chord") is None:
-                pending_quarters = quarters or pending_quarters or 1
-                if not pending:
-                    beats.append(
-                        Beat(
-                            position=round(position, 4),
-                            duration=round(max(quarters or 1, 0.01), 4),
-                            rest=True,
-                        )
+    for measure_index, measure in enumerate(_children(part, "measure")):
+        bar_fields: dict[str, Any] = {}
+        tempo: float | None = None
+        cursor = 0
+        last_start = 0
+        voices: dict[str, dict[int, _Event]] = defaultdict(dict)
+        for element in measure:
+            tag = _local(element.tag)
+            if tag == "attributes":
+                divisions = max(1, _int(_child(element, "divisions"), divisions))
+                time = _child(element, "time")
+                if time is not None and _text(_child(time, "beats")) and _text(_child(time, "beat-type")):
+                    beats_text = _text(_child(time, "beats")).split("+")[0]
+                    signature = (int(beats_text), _int(_child(time, "beat-type"), 4))
+                for details in _children(element, "staff-details"):
+                    lines = _children(details, "staff-tuning")
+                    if lines:
+                        tab_staff = details.attrib.get("number", "1")
+                        for line in lines:
+                            step = _text(_child(line, "tuning-step"))
+                            if step:
+                                tuning_by_line[int(line.attrib.get("line", "1"))] = _midi(
+                                    step, _int(_child(line, "tuning-alter")), _int(_child(line, "tuning-octave"))
+                                )
+                    capo = _int(_child(details, "capo"), capo)
+            elif tag == "backup":
+                cursor = max(0, cursor - _ticks(element, divisions))
+            elif tag == "forward":
+                cursor += _ticks(element, divisions)
+            elif tag == "direction":
+                rehearsal = element.find(".//{*}rehearsal")
+                if rehearsal is None:
+                    rehearsal = element.find(".//rehearsal")
+                if rehearsal is not None and _text(rehearsal):
+                    bar_fields["section"] = _text(rehearsal)
+                tempo = tempo or _sound_tempo(element)
+            elif tag == "sound":
+                tempo = tempo or _sound_tempo(element)
+            elif tag == "barline":
+                repeat = _child(element, "repeat")
+                if repeat is not None:
+                    if repeat.attrib.get("direction") == "forward":
+                        bar_fields["repeat_start"] = True
+                    elif repeat.attrib.get("direction") == "backward":
+                        bar_fields["repeat_end"] = int(repeat.attrib.get("times", "2"))
+                ending = _child(element, "ending")
+                if ending is not None and ending.attrib.get("type") == "start":
+                    numbers = [
+                        int(item) for item in ending.attrib.get("number", "").replace(" ", "").split(",") if item
+                    ]
+                    bar_fields["alternate_endings"] = numbers
+            elif tag == "note":
+                chord = _child(element, "chord") is not None
+                grace = _child(element, "grace") is not None
+                ticks = 0 if grace else _ticks(element, divisions)
+                start = last_start if chord else cursor
+                if not chord:
+                    last_start = start
+                    cursor += ticks
+                staff = _text(_child(element, "staff")) or "1"
+                if tab_staff is not None and staff != tab_staff:
+                    continue
+                voice_id = _text(_child(element, "voice")) or "1"
+                note = _note(element)
+                if note is not None:
+                    has_tab = True
+                    highest_string = max(highest_string, note.string + 1)
+                key = start * 2 + (1 if not grace else 0)
+                event = voices[voice_id].get(key)
+                if event is None:
+                    duration = ticks or _TYPE_TICKS.get(_text(_child(element, "type")), TICKS_PER_QUARTER // 4)
+                    event = _Event(
+                        start=start,
+                        duration=duration,
+                        grace=_grace_kind(element) if grace else None,
+                        tuplet=_tuplet(element),
                     )
-                    position += quarters or 1
-                    pending_quarters = 0
-            continue
-        string_number, fret = technical
-        found = True
-        pending.append(Note(string=string_number - 1, fret=fret))
-        pending_quarters = quarters or pending_quarters or 1
-    if pending:
-        beats.append(
-            Beat(
-                position=round(position, 4),
-                duration=round(max(pending_quarters, 0.01), 4),
-                notes=pending,
+                    voices[voice_id][key] = event
+                if note is not None:
+                    event.notes.append(note)
+        if tempo is not None:
+            if measure_index == 0:
+                opening_tempo = tempo
+            else:
+                bar_fields["tempo"] = tempo
+        bars.append(Bar(signature=signature, **bar_fields))
+        track_bars.append(
+            TrackBar(
+                voices=[
+                    Voice(
+                        beats=[
+                            Beat(
+                                position=event.start,
+                                duration=max(1, event.duration),
+                                notes=sorted(event.notes, key=lambda item: item.string),
+                                grace=event.grace,  # type: ignore[arg-type]
+                                tuplet=event.tuplet,
+                            )
+                            for _key, event in sorted(events.items())
+                        ]
+                    )
+                    for _voice, events in sorted(voices.items())
+                ]
+                or [Voice()]
             )
         )
-    return beats, found
+
+    if tuning_by_line:
+        tuning = [tuning_by_line[line] for line in sorted(tuning_by_line, reverse=True)]
+    else:
+        tuning = _guess_tuning(max(highest_string, 1))
+    if len(tuning) < highest_string:
+        tuning = _guess_tuning(highest_string)
+    name = names.get(part.attrib.get("id", "")) or f"Track {index + 1}"
+    return _Part(
+        name=name,
+        tuning=tuning,
+        capo=capo,
+        bars=bars or [Bar()],
+        track_bars=track_bars or [TrackBar()],
+        opening_tempo=opening_tempo,
+        has_tab=has_tab,
+    )
 
 
-def _technical(note: ET.Element) -> tuple[int, int] | None:
-    notations = _child(note, "notations")
-    if notations is None:
+def _ticks(element: ET.Element, divisions: int) -> int:
+    return round(_int(_child(element, "duration")) * TICKS_PER_QUARTER / divisions)
+
+
+def _sound_tempo(element: ET.Element) -> float | None:
+    sound = element if _local(element.tag) == "sound" else _child(element, "sound")
+    if sound is None or not sound.attrib.get("tempo"):
         return None
+    try:
+        tempo = float(sound.attrib["tempo"])
+    except ValueError:
+        return None
+    return tempo if 0 < tempo < 400 else None
+
+
+def _grace_kind(element: ET.Element) -> str:
+    grace = _child(element, "grace")
+    if grace is not None and grace.attrib.get("slash") == "yes":
+        return "before_beat"
+    return "on_beat"
+
+
+def _tuplet(element: ET.Element) -> int | None:
+    modification = _child(element, "time-modification")
+    actual = _int(_child(modification, "actual-notes"))
+    return actual if 2 <= actual <= 16 else None
+
+
+def _note(element: ET.Element) -> Note | None:
+    if _child(element, "rest") is not None:
+        return None
+    notations = _child(element, "notations")
     technical = _child(notations, "technical")
-    if technical is None:
-        return None
     string_text = _text(_child(technical, "string"))
     fret_text = _text(_child(technical, "fret"))
-    if not string_text or fret_text == "":
+    if not string_text or not fret_text:
         return None
-    return int(string_text), int(fret_text)
-
-
-def tuning_label(midi: int) -> str:
-    return midi_to_name(midi)
+    notehead = _child(element, "notehead")
+    harmonic = _child(technical, "harmonic")
+    bend_alter = _child(_child(technical, "bend"), "bend-alter")
+    ornaments = _child(notations, "ornaments")
+    articulations = _child(notations, "articulations")
+    ties = [tie.attrib.get("type") for tie in _children(element, "tie")]
+    slide: str | None = None
+    if _child(notations, "slide") is not None:
+        slide = "legato"
+    elif _child(notations, "glissando") is not None:
+        slide = "shift"
+    bend: float | None = None
+    if bend_alter is not None:
+        try:
+            value = abs(float(_text(bend_alter)))
+            bend = min(value, 4.0) if value > 0 else None
+        except ValueError:
+            bend = None
+    return Note(
+        string=max(0, int(string_text) - 1),
+        fret=max(0, min(99, int(fret_text))),
+        dead=_text(notehead) == "x",
+        ghost=notehead is not None and notehead.attrib.get("parentheses") == "yes",
+        tie="stop" in ties,
+        hammer=any(
+            item is not None and item.attrib.get("type", "start") == "start"
+            for item in (_child(technical, "hammer-on"), _child(technical, "pull-off"))
+        ),
+        slide=slide,  # type: ignore[arg-type]
+        vibrato=ornaments is not None
+        and (_child(ornaments, "wavy-line") is not None or _child(ornaments, "vibrato") is not None),
+        harmonic=("artificial" if _child(harmonic, "artificial") is not None else "natural")
+        if harmonic is not None
+        else None,
+        bend=bend,
+        staccato=_child(articulations, "staccato") is not None,
+    )

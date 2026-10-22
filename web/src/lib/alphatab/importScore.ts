@@ -1,93 +1,172 @@
 import * as alphaTab from "@coderline/alphatab";
 
-import type { Beat, Note, ScoreDocument, Track } from "../types";
-
-const QUARTER = 960;
+import type { Bar, Beat, GraceKind, HarmonicKind, Note, ScoreDocument, SlideKind, Track, TrackBar } from "../types";
 
 /**
- * alphaTab's `note.string` is 1 on the lowest string. Our index 0 is the
- * highest, matching Songsterr and `tuning_midi`. `staff.tuning[0]` is the
- * top tab line, so it is copied as-is.
+ * alphaTab's model to a Fretbook document (Guitar Pro import).
+ *
+ * - alphaTab's `note.string` is 1 on the lowest string; our index 0 is the
+ *   highest. `staff.tuning[0]` is already the highest string.
+ * - alphaTab ticks are 960 per quarter, the same as ours.
+ * - Master bars become song-level bars; each track keeps all its voices.
  */
-export function scoreToDocument(score: alphaTab.model.Score): {
-  title: string;
-  artist: string;
-  document: ScoreDocument;
-} {
+
+const { GraceType, HarmonicType, SlideInType, SlideOutType, VibratoType } = alphaTab.model;
+
+function slide(note: alphaTab.model.Note): SlideKind | null {
+  switch (note.slideOutType) {
+    case SlideOutType.Shift:
+      return "shift";
+    case SlideOutType.Legato:
+      return "legato";
+    case SlideOutType.OutUp:
+      return "out_up";
+    case SlideOutType.OutDown:
+      return "out_down";
+  }
+  if (note.slideInType === SlideInType.IntoFromBelow) return "in_below";
+  if (note.slideInType === SlideInType.IntoFromAbove) return "in_above";
+  return null;
+}
+
+function harmonic(note: alphaTab.model.Note): HarmonicKind | null {
+  switch (note.harmonicType) {
+    case HarmonicType.Natural:
+      return "natural";
+    case HarmonicType.Artificial:
+      return "artificial";
+    case HarmonicType.Pinch:
+      return "pinch";
+    case HarmonicType.Tap:
+      return "tap";
+    case HarmonicType.Semi:
+      return "semi";
+  }
+  return null;
+}
+
+function grace(beat: alphaTab.model.Beat): GraceKind | null {
+  switch (beat.graceType) {
+    case GraceType.OnBeat:
+      return "on_beat";
+    case GraceType.BeforeBeat:
+      return "before_beat";
+    case GraceType.BendGrace:
+      return "bend";
+  }
+  return null;
+}
+
+function bendSemitones(note: alphaTab.model.Note): number | null {
+  const points = note.bendPoints ?? [];
+  if (!note.hasBend || points.length === 0) return null;
+  // Bend values are quarter tones.
+  const peak = Math.max(...points.map((point) => point.value)) / 2;
+  return peak > 0 ? Math.min(4, peak) : null;
+}
+
+function convertNote(note: alphaTab.model.Note, strings: number): Note | null {
+  if (!note.isStringed) return null;
+  const index = strings - note.string;
+  if (index < 0 || index >= strings) return null;
+  return {
+    string: index,
+    fret: Math.max(0, Math.min(99, note.fret)),
+    dead: note.isDead,
+    tie: note.isTieDestination,
+    ghost: note.isGhost,
+    hammer: note.isHammerPullOrigin,
+    slide: slide(note),
+    vibrato: note.vibrato !== VibratoType.None,
+    harmonic: harmonic(note),
+    bend: bendSemitones(note),
+    palm_mute: note.isPalmMute,
+    let_ring: note.isLetRing,
+    staccato: note.isStaccato,
+    extras: {},
+  };
+}
+
+function convertBeat(beat: alphaTab.model.Beat, strings: number): Beat {
+  const kind = grace(beat);
+  const notes = beat.isRest
+    ? []
+    : beat.notes.map((note) => convertNote(note, strings)).filter((note): note is Note => note !== null);
+  return {
+    position: Math.max(0, kind ? beat.displayStart : beat.playbackStart),
+    duration: Math.max(1, kind ? beat.displayDuration : beat.playbackDuration),
+    notes,
+    grace: kind,
+    tuplet: beat.hasTuplet ? beat.tupletNumerator : null,
+    extras: {},
+  };
+}
+
+function convertBars(score: alphaTab.model.Score): { bpm: number; bars: Bar[] } {
+  let bpm = score.tempo || 120;
+  const bars = score.masterBars.map((master, index): Bar => {
+    const tempo = (master.tempoAutomations ?? []).find((mark) => mark.value > 0)?.value ?? null;
+    if (index === 0 && tempo) bpm = tempo;
+    const endings: number[] = [];
+    for (let ending = 0; ending < 8; ending += 1) {
+      if (master.alternateEndings & (1 << ending)) endings.push(ending + 1);
+    }
+    return {
+      signature: [master.timeSignatureNumerator || 4, master.timeSignatureDenominator || 4],
+      tempo: index > 0 ? tempo : null,
+      repeat_start: master.isRepeatStart,
+      repeat_end: master.isRepeatEnd ? Math.max(2, master.repeatCount) : 0,
+      alternate_endings: endings,
+      section: master.section?.text || null,
+      extras: {},
+    };
+  });
+  return { bpm, bars };
+}
+
+export function scoreToDocument(score: alphaTab.model.Score): { title: string; artist: string; document: ScoreDocument } {
+  const { bpm, bars } = convertBars(score);
   const tracks: Track[] = [];
   score.tracks.forEach((source, index) => {
     if (source.isPercussion) return;
     const staff = source.staves.find((item) => item.tuning.length > 0 && !item.isPercussion);
     if (!staff) return;
     const tuning = [...staff.tuning];
-    const measures = staff.bars.map((bar, barIndex) => {
-      const master = score.masterBars[barIndex];
-      const signature: [number, number] = [
-        master?.timeSignatureNumerator || 4,
-        master?.timeSignatureDenominator || 4,
-      ];
-      const beats: Beat[] = [];
-      for (const beat of bar.voices[0]?.beats ?? []) {
-        if (beat.isEmpty && beat.notes.length === 0) continue;
-        const grace = beat.graceType !== alphaTab.model.GraceType.None;
-        const notes: Note[] = [];
-        for (const note of beat.notes) {
-          if (!note.isStringed) continue;
-          const stringIndex = tuning.length - note.string;
-          if (stringIndex < 0 || stringIndex >= tuning.length) continue;
-          notes.push({
-            string: stringIndex,
-            fret: note.fret,
-            dead: note.isDead,
-            tie: note.isTieDestination,
-            extras: {},
-          });
-        }
-        const quarters = Math.max(beat.playbackDuration, beat.displayDuration) / QUARTER;
-        beats.push({
-          position: Math.max(0, (grace ? beat.displayStart : beat.playbackStart) / QUARTER),
-          duration: Math.max(0.01, Math.round(quarters * 10000) / 10000),
-          notes,
-          rest: notes.length === 0 || beat.isRest,
-          extras: grace ? { graceNote: alphaTab.model.GraceType[beat.graceType] } : {},
-        });
-      }
-      return {
-        signature,
-        extras: {},
-        voices: [{ beats }],
-      };
+    const trackBars: TrackBar[] = bars.map((_, barIndex) => {
+      const bar = staff.bars[barIndex];
+      const voices = (bar?.voices ?? [])
+        .map((voice) => ({
+          beats: voice.beats
+            .filter((beat) => !(beat.isEmpty && beat.notes.length === 0))
+            .map((beat) => convertBeat(beat, tuning.length)),
+        }))
+        .filter((voice, voiceIndex) => voiceIndex === 0 || voice.beats.some((beat) => beat.notes.length > 0));
+      return { voices: voices.length ? voices : [{ beats: [] }], extras: {} };
     });
-    const program = source.playbackInfo.program;
     tracks.push({
       id: `trk_gp_${index}`,
       name: source.name || `Track ${index + 1}`,
-      instrument: instrumentName(program, tuning.length),
+      instrument: instrumentName(source.playbackInfo.program, tuning.length),
       capo: staff.capo || 0,
       tuning_midi: tuning,
       preferred: false,
-      measures: measures.length ? measures : [{ signature: [4, 4], extras: {}, voices: [{ beats: [] }] }],
+      bars: trackBars,
     });
   });
   if (!tracks.length) throw new Error("no fretted tracks in this file");
-  tracks[0].preferred = true;
-  const tempos = score.masterBars.flatMap((bar, index) =>
-    (bar.tempoAutomations ?? [])
-      .filter((mark) => mark.value > 0)
-      .map((mark) => ({ bpm: mark.value, measure: index })),
-  );
-  const bpm = tempos[0]?.bpm || score.tempo || 120;
   return {
     title: score.title || "Untitled",
     artist: score.artist || "",
-    document: {
-      version: 1,
-      bpm,
-      tempos: tempos.length ? tempos : [{ bpm, measure: 0 }],
-      tracks,
-      sync: { video_id: null, points: [], anchors: {} },
-    },
+    document: { version: 1, bpm, bars, tracks, sync: { video_id: null, points: [], anchors: {} } },
   };
+}
+
+/** Mark the first track of the preferred family (bass or guitar) as preferred. */
+export function choosePreferred(document: ScoreDocument, family: "bass" | "guitar" | null): void {
+  const index = family ? document.tracks.findIndex((track) => track.instrument.includes("bass") === (family === "bass")) : -1;
+  document.tracks.forEach((track, position) => {
+    track.preferred = position === (index >= 0 ? index : 0);
+  });
 }
 
 function instrumentName(program: number, strings: number): string {
@@ -97,7 +176,8 @@ function instrumentName(program: number, strings: number): string {
   return "guitar";
 }
 
-export function documentFromGuitarPro(data: Uint8Array): ReturnType<typeof scoreToDocument> {
-  const score = alphaTab.importer.ScoreLoader.loadScoreFromBytes(data);
-  return scoreToDocument(score);
+export function documentFromGuitarPro(data: Uint8Array, family: "bass" | "guitar" | null = null) {
+  const parsed = scoreToDocument(alphaTab.importer.ScoreLoader.loadScoreFromBytes(data));
+  choosePreferred(parsed.document, family);
+  return parsed;
 }

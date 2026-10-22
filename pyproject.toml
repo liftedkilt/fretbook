@@ -9,6 +9,11 @@ readme = "README.md"
 testpaths = ["tests"]
 addopts = "-q"
 pythonpath = ["."]
+# An unclosed SQLite connection is a bug (every store method uses db.connection.session).
+filterwarnings = [
+    "error::ResourceWarning",
+    "error::pytest.PytestUnraisableExceptionWarning",
+]
 
 [tool.ruff]
 line-length = 120
