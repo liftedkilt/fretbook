@@ -9,12 +9,25 @@ from pathlib import Path
 from typing import Literal
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from fretbook import __version__
 from fretbook.api.deps import context, principal, require_song
 from fretbook.api.errors import api_error
+from fretbook.api.schemas import (
+    AUTH_RESPONSES,
+    Health,
+    ImportPreview,
+    Job,
+    JobAccepted,
+    Me,
+    Meta,
+    Settings,
+    SongDetail,
+    SongExport,
+    SongSummary,
+)
 from fretbook.auth.base import Principal
 from fretbook.chords import chordpro
 from fretbook.context import AppContext
@@ -26,6 +39,11 @@ from fretbook.score.model import ScoreDocument
 from fretbook.storage.repository import RevisionConflict
 
 router = APIRouter()
+
+_AUDIO_SCHEMA: dict[str, dict[str, dict[str, str]]] = {
+    media: {"schema": {"type": "string", "format": "binary"}}
+    for media in ("audio/mpeg", "audio/wav", "audio/ogg", "audio/mp4", "audio/flac", "audio/webm")
+}
 
 _AUDIO_TYPES = {
     ".mp3": "audio/mpeg",
@@ -137,49 +155,70 @@ def _safe_name(filename: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]+", "-", Path(filename).name)[:80] or "upload"
 
 
-@router.get("/api/health")
-def health() -> dict[str, object]:
-    return {"ok": True, "name": "Fretbook", "version": __version__}
+def _json(payload: object, status_code: int = 200) -> JSONResponse:
+    """Return ``payload`` unchanged.
+
+    ``response_model`` documents the body in OpenAPI. Returning a
+    ``JSONResponse`` skips the response-model serializer, so the bytes stay
+    the ones the handlers already produced.
+    """
+    return JSONResponse(payload, status_code=status_code)
 
 
-@router.get("/api/meta")
-def meta(ctx: AppContext = Depends(_ctx)) -> dict[str, object]:
-    return {
-        "name": "Fretbook",
-        "tagline": "Self-hosted tabs, chord sheets, and sheet music for bass and guitar.",
-        "version": __version__,
-        "auth_mode": ctx.settings.auth_mode,
-        "exporters": ["json", "musicxml", "chordpro", "print"],
-        "instruments": presets_payload(),
-    }
+@router.get("/api/health", response_model=Health, tags=["meta"])
+def health() -> JSONResponse:
+    """Liveness. No authentication."""
+    return _json({"ok": True, "name": "Fretbook", "version": __version__})
 
 
-@router.get("/api/me")
-def me(ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> dict[str, object]:
-    return {
-        "user_id": user.user_id,
-        "display_name": user.display_name,
-        "authenticated": user.authenticated,
-        "settings": ctx.songs.get_settings(user.user_id),
-    }
+@router.get("/api/meta", response_model=Meta, tags=["meta"])
+def meta(ctx: AppContext = Depends(_ctx)) -> JSONResponse:
+    """Name, version, auth mode, exporters, and instrument presets. No authentication."""
+    return _json(
+        {
+            "name": "Fretbook",
+            "tagline": "Self-hosted tabs, chord sheets, and sheet music for bass and guitar.",
+            "version": __version__,
+            "auth_mode": ctx.settings.auth_mode,
+            "exporters": ["json", "musicxml", "chordpro", "print"],
+            "instruments": presets_payload(),
+        }
+    )
 
 
-@router.put("/api/me/settings")
+@router.get("/api/me", response_model=Me, tags=["auth"], responses=AUTH_RESPONSES)
+def me(ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> JSONResponse:
+    """The caller and their settings."""
+    return _json(
+        {
+            "user_id": user.user_id,
+            "display_name": user.display_name,
+            "authenticated": user.authenticated,
+            "settings": ctx.songs.get_settings(user.user_id),
+        }
+    )
+
+
+@router.put("/api/me/settings", response_model=Settings, tags=["auth"], responses=AUTH_RESPONSES)
 def update_settings(
     body: SettingsBody, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)
-) -> dict[str, object]:
+) -> JSONResponse:
+    """Replace the caller's default instrument preset."""
     if not is_preset(body.default_instrument):
         raise api_error(400, "settings.unknownInstrument", "unknown instrument preset", preset=body.default_instrument)
-    return ctx.songs.update_settings(user.user_id, default_instrument=body.default_instrument)
+    return _json(ctx.songs.update_settings(user.user_id, default_instrument=body.default_instrument))
 
 
-@router.get("/api/songs")
-def list_songs(ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> list[dict]:
-    return ctx.songs.list_songs(user.user_id)
+@router.get("/api/songs", response_model=list[SongSummary], tags=["songs"], responses=AUTH_RESPONSES)
+def list_songs(ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> JSONResponse:
+    """Songs owned by the caller, newest first. Summaries omit the score and ChordPro text."""
+    return _json(ctx.songs.list_songs(user.user_id))
 
 
-@router.post("/api/songs", status_code=201)
-def create_song(body: CreateSongBody, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> dict:
+@router.post("/api/songs", status_code=201, response_model=SongDetail, tags=["songs"], responses=AUTH_RESPONSES)
+def create_song(
+    body: CreateSongBody, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)
+) -> JSONResponse:
     title = body.title.strip() or "Untitled"
     artist = body.artist.strip()
     if body.content_kind == "chords":
@@ -188,12 +227,15 @@ def create_song(body: CreateSongBody, ctx: AppContext = Depends(_ctx), user: Pri
         except ValueError as exc:
             raise api_error(400, "chords.tooLong", str(exc), limit=chordpro.MAX_CHARS) from exc
         found = chordpro.metadata(text)
-        return ctx.songs.create_song(
-            user.user_id,
-            title=title if body.title.strip() else found.get("title", title),
-            artist=artist or found.get("artist", ""),
-            chordpro=text,
-            source_kind="manual",
+        return _json(
+            ctx.songs.create_song(
+                user.user_id,
+                title=title if body.title.strip() else found.get("title", title),
+                artist=artist or found.get("artist", ""),
+                chordpro=text,
+                source_kind="manual",
+            ),
+            status_code=201,
         )
     preset = body.preset or ctx.songs.get_settings(user.user_id)["default_instrument"]
     if not is_preset(preset):
@@ -201,29 +243,34 @@ def create_song(body: CreateSongBody, ctx: AppContext = Depends(_ctx), user: Pri
     numerator, denominator = body.signature
     if not 1 <= numerator <= 32 or denominator not in {1, 2, 4, 8, 16, 32}:
         raise api_error(400, "song.badSignature", "invalid time signature")
-    return ctx.songs.create_blank(
-        user.user_id,
-        title=title,
-        artist=artist,
-        preset_id=preset,
-        bpm=body.bpm,
-        measures=body.measures,
-        signature=(numerator, denominator),
+    return _json(
+        ctx.songs.create_blank(
+            user.user_id,
+            title=title,
+            artist=artist,
+            preset_id=preset,
+            bpm=body.bpm,
+            measures=body.measures,
+            signature=(numerator, denominator),
+        ),
+        status_code=201,
     )
 
 
-@router.get("/api/songs/{song_id}")
-def get_song(song_id: str, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> dict:
-    return require_song(ctx, user.user_id, song_id)
+@router.get("/api/songs/{song_id}", response_model=SongDetail, tags=["songs"], responses=AUTH_RESPONSES)
+def get_song(song_id: str, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> JSONResponse:
+    """One song, including its score document or ChordPro text."""
+    return _json(require_song(ctx, user.user_id, song_id))
 
 
-@router.put("/api/songs/{song_id}")
+@router.put("/api/songs/{song_id}", response_model=SongDetail, tags=["songs"], responses=AUTH_RESPONSES)
 def update_song(
     song_id: str,
     body: UpdateSongBody,
     ctx: AppContext = Depends(_ctx),
     user: Principal = Depends(_user),
-) -> dict:
+) -> JSONResponse:
+    """Replace title, artist, and content. Send the revision you loaded; a stale one is 409."""
     song = require_song(ctx, user.user_id, song_id)
     chordpro_text: str | None = None
     if song["content_kind"] == "tab":
@@ -247,16 +294,17 @@ def update_song(
         raise api_error(409, "song.conflict", "this song changed since you opened it", current=exc.current) from exc
     if updated is None:
         raise api_error(404, "song.notFound", "song not found")
-    return updated
+    return _json(updated)
 
 
-@router.patch("/api/songs/{song_id}/sync")
+@router.patch("/api/songs/{song_id}/sync", response_model=SongDetail, tags=["songs"], responses=AUTH_RESPONSES)
 def update_sync(
     song_id: str,
     body: SyncBody,
     ctx: AppContext = Depends(_ctx),
     user: Principal = Depends(_user),
-) -> dict:
+) -> JSONResponse:
+    """Set the opening tempo and tapped bar anchors on a tab."""
     require_song(ctx, user.user_id, song_id)
     try:
         updated = ctx.songs.update_sync(user.user_id, song_id, bpm=body.bpm, anchors=body.anchors)
@@ -264,10 +312,16 @@ def update_sync(
         raise api_error(400, "sync.badAnchor", "anchor keys must be bar indexes of this song") from exc
     if updated is None:
         raise api_error(400, "sync.notTab", "only tabs have sync marks")
-    return updated
+    return _json(updated)
 
 
-@router.delete("/api/songs/{song_id}", status_code=204)
+@router.delete(
+    "/api/songs/{song_id}",
+    status_code=204,
+    response_model=None,
+    tags=["songs"],
+    responses=AUTH_RESPONSES,
+)
 def delete_song(song_id: str, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> Response:
     require_song(ctx, user.user_id, song_id)
     ctx.media.delete_song_files(user.user_id, song_id)
@@ -275,13 +329,19 @@ def delete_song(song_id: str, ctx: AppContext = Depends(_ctx), user: Principal =
     return Response(status_code=204)
 
 
-@router.post("/api/songs/{song_id}/audio")
+@router.post(
+    "/api/songs/{song_id}/audio",
+    response_model=SongDetail,
+    tags=["songs"],
+    responses=AUTH_RESPONSES,
+)
 async def upload_audio(
     song_id: str,
     file: UploadFile = File(...),
     ctx: AppContext = Depends(_ctx),
     user: Principal = Depends(_user),
-) -> dict:
+) -> JSONResponse:
+    """Replace the song's audio. The extension picks the content type, not the client."""
     require_song(ctx, user.user_id, song_id)
     filename = file.filename or "audio.mp3"
     suffix = Path(filename).suffix.lower()
@@ -302,10 +362,17 @@ async def upload_audio(
         )
     finally:
         staging.unlink(missing_ok=True)
-    return require_song(ctx, user.user_id, song_id)
+    return _json(require_song(ctx, user.user_id, song_id))
 
 
-@router.get("/api/songs/{song_id}/audio")
+@router.get(
+    "/api/songs/{song_id}/audio",
+    tags=["songs"],
+    responses={
+        **AUTH_RESPONSES,
+        200: {"description": "The song's audio file.", "content": _AUDIO_SCHEMA},
+    },
+)
 def download_audio(song_id: str, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> FileResponse:
     require_song(ctx, user.user_id, song_id)
     row = ctx.media.audio_for(user.user_id, song_id)
@@ -317,8 +384,14 @@ def download_audio(song_id: str, ctx: AppContext = Depends(_ctx), user: Principa
     return FileResponse(path, media_type=row["content_type"], filename=row["filename"])
 
 
-@router.get("/api/songs/{song_id}/export.json")
+@router.get(
+    "/api/songs/{song_id}/export.json",
+    response_model=SongExport,
+    tags=["songs"],
+    responses=AUTH_RESPONSES,
+)
 def export_json(song_id: str, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> Response:
+    """Download the song as Fretbook JSON. Returned as written, with a Content-Disposition filename."""
     song = require_song(ctx, user.user_id, song_id)
     payload = {
         "format": "fretbook-song",
@@ -338,7 +411,17 @@ def export_json(song_id: str, ctx: AppContext = Depends(_ctx), user: Principal =
     )
 
 
-@router.get("/api/songs/{song_id}/export.musicxml")
+@router.get(
+    "/api/songs/{song_id}/export.musicxml",
+    tags=["songs"],
+    responses={
+        **AUTH_RESPONSES,
+        200: {
+            "description": "MusicXML for a tab, as an attachment.",
+            "content": {"application/vnd.recordare.musicxml+xml": {"schema": {"type": "string"}}},
+        },
+    },
+)
 def export_musicxml(song_id: str, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> Response:
     song = require_song(ctx, user.user_id, song_id)
     if song["content_kind"] != "tab":
@@ -351,7 +434,17 @@ def export_musicxml(song_id: str, ctx: AppContext = Depends(_ctx), user: Princip
     )
 
 
-@router.get("/api/songs/{song_id}/export.cho")
+@router.get(
+    "/api/songs/{song_id}/export.cho",
+    tags=["songs"],
+    responses={
+        **AUTH_RESPONSES,
+        200: {
+            "description": "ChordPro text for a chord sheet, as an attachment.",
+            "content": {"text/plain": {"schema": {"type": "string"}}},
+        },
+    },
+)
 def export_chordpro(song_id: str, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> Response:
     song = require_song(ctx, user.user_id, song_id)
     if song["content_kind"] != "chords":
@@ -363,8 +456,8 @@ def export_chordpro(song_id: str, ctx: AppContext = Depends(_ctx), user: Princip
     )
 
 
-@router.post("/api/imports/preview")
-def preview_import(body: PreviewBody, user: Principal = Depends(_user)) -> dict[str, object]:
+@router.post("/api/imports/preview", response_model=ImportPreview, tags=["imports"], responses=AUTH_RESPONSES)
+def preview_import(body: PreviewBody, user: Principal = Depends(_user)) -> JSONResponse:
     """Fretted tracks on a link, so the library can ask which ones to import.
 
     Songsterr is the importer that has a preview. Others are refused with the
@@ -380,15 +473,22 @@ def preview_import(body: PreviewBody, user: Principal = Depends(_user)) -> dict[
     if not callable(preview):
         raise api_error(400, "import.noPreview", "this import has no track list")
     try:
-        return preview(request)
+        return _json(preview(request))
     except ImportError as exc:
         raise _import_error(exc) from exc
 
 
-@router.post("/api/imports", status_code=202)
+@router.post(
+    "/api/imports",
+    status_code=202,
+    response_model=JobAccepted,
+    tags=["imports"],
+    responses=AUTH_RESPONSES,
+)
 def import_url(
     body: ImportUrlBody, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)
-) -> dict[str, str]:
+) -> JSONResponse:
+    """Queue a Songsterr or YouTube-frame import. Returns a job id."""
     url = body.url.strip()
     request = ImportRequest(owner_id=user.user_id, url=url, kind=body.kind)
     try:
@@ -413,16 +513,23 @@ def import_url(
             "prefer": _prefer(ctx, user),
         },
     )
-    return {"job_id": job_id}
+    return _json({"job_id": job_id}, status_code=202)
 
 
-@router.post("/api/imports/file", status_code=202)
+@router.post(
+    "/api/imports/file",
+    status_code=202,
+    response_model=JobAccepted,
+    tags=["imports"],
+    responses=AUTH_RESPONSES,
+)
 async def import_file(
     file: UploadFile = File(...),
     kind: str | None = Form(default=None),
     ctx: AppContext = Depends(_ctx),
     user: Principal = Depends(_user),
-) -> dict[str, str]:
+) -> JSONResponse:
+    """Queue a MusicXML, ChordPro, or Fretbook JSON upload. Guitar Pro is read in the browser."""
     filename = file.filename or "upload"
     if Path(filename).suffix.lower() in _GUITAR_PRO:
         raise api_error(
@@ -443,31 +550,41 @@ async def import_file(
         "import.file",
         {"path": str(path), "filename": filename, "kind": kind, "prefer": _prefer(ctx, user)},
     )
-    return {"job_id": job_id}
+    return _json({"job_id": job_id}, status_code=202)
 
 
-@router.post("/api/songs/import-document", status_code=201)
+@router.post(
+    "/api/songs/import-document",
+    status_code=201,
+    response_model=SongDetail,
+    tags=["imports"],
+    responses=AUTH_RESPONSES,
+)
 def import_document(
     body: ImportDocumentBody, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)
-) -> dict:
+) -> JSONResponse:
     """Save a document the browser built (Guitar Pro via alphaTab)."""
     title = body.title.strip() or "Untitled"
-    return ctx.songs.create_song(
-        user.user_id,
-        title=title,
-        artist=body.artist.strip(),
-        document=body.document,
-        source_kind=body.source_kind,
-        source_ref={},
-        slug=body.slug or title,
+    return _json(
+        ctx.songs.create_song(
+            user.user_id,
+            title=title,
+            artist=body.artist.strip(),
+            document=body.document,
+            source_kind=body.source_kind,
+            source_ref={},
+            slug=body.slug or title,
+        ),
+        status_code=201,
     )
 
 
-@router.get("/api/jobs/{job_id}")
-def get_job(job_id: str, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> dict:
+@router.get("/api/jobs/{job_id}", response_model=Job, tags=["jobs"], responses=AUTH_RESPONSES)
+def get_job(job_id: str, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> JSONResponse:
+    """Job status. `owner_id`, `payload`, and `attempts` are not returned."""
     job = ctx.jobs.get(user.user_id, job_id)
     if job is None:
         raise api_error(404, "job.notFound", "job not found")
     for private in ("owner_id", "payload", "attempts"):
         job.pop(private, None)
-    return job
+    return _json(job)

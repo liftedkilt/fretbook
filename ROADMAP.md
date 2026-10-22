@@ -13,8 +13,7 @@ These are already being worked on. Coordinate with them before touching the same
 | UI redesign | In progress |
 | PDF export of tabs and sheet music | [#3](https://github.com/liftedkilt/fretbook/issues/3) |
 | Multi-user sign-in with OIDC (Pocket ID) | [#5](https://github.com/liftedkilt/fretbook/issues/5), [PR #10](https://github.com/liftedkilt/fretbook/pull/10) |
-| Importing tabs from YouTube lesson videos | [#6](https://github.com/liftedkilt/fretbook/issues/6) |
-| API contract guardrail (keeping the server API and the web client in step) | In progress |
+| Importing tabs from YouTube lesson videos (design and spike: [docs/design/youtube-tab-import.md](docs/design/youtube-tab-import.md)) | [#6](https://github.com/liftedkilt/fretbook/issues/6) |
 
 ## Essential
 

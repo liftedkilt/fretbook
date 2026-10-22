@@ -1,0 +1,3351 @@
+{
+  "components": {
+    "schemas": {
+      "Bar": {
+        "description": "One song-level bar (alphaTab's master bar).",
+        "properties": {
+          "alternate_endings": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Alternate Endings",
+            "type": "array"
+          },
+          "extras": {
+            "additionalProperties": true,
+            "title": "Extras",
+            "type": "object"
+          },
+          "repeat_end": {
+            "default": 0,
+            "maximum": 32.0,
+            "minimum": 0.0,
+            "title": "Repeat End",
+            "type": "integer"
+          },
+          "repeat_start": {
+            "default": false,
+            "title": "Repeat Start",
+            "type": "boolean"
+          },
+          "section": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section"
+          },
+          "signature": {
+            "default": [
+              4,
+              4
+            ],
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Signature",
+            "type": "array"
+          },
+          "tempo": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 400.0,
+                "exclusiveMinimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tempo"
+          }
+        },
+        "title": "Bar",
+        "type": "object"
+      },
+      "Beat": {
+        "properties": {
+          "duration": {
+            "exclusiveMinimum": 0.0,
+            "title": "Duration",
+            "type": "integer"
+          },
+          "extras": {
+            "additionalProperties": true,
+            "title": "Extras",
+            "type": "object"
+          },
+          "grace": {
+            "anyOf": [
+              {
+                "enum": [
+                  "on_beat",
+                  "before_beat",
+                  "bend"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grace"
+          },
+          "notes": {
+            "items": {
+              "$ref": "#/components/schemas/Note"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "position": {
+            "minimum": 0.0,
+            "title": "Position",
+            "type": "integer"
+          },
+          "tuplet": {
+            "anyOf": [
+              {
+                "maximum": 16.0,
+                "minimum": 2.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tuplet"
+          }
+        },
+        "required": [
+          "position",
+          "duration"
+        ],
+        "title": "Beat",
+        "type": "object"
+      },
+      "Body_import_file_api_imports_file_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_import_file_api_imports_file_post",
+        "type": "object"
+      },
+      "Body_upload_audio_api_songs__song_id__audio_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_audio_api_songs__song_id__audio_post",
+        "type": "object"
+      },
+      "CreateSongBody": {
+        "properties": {
+          "artist": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Artist",
+            "type": "string"
+          },
+          "bpm": {
+            "default": 120,
+            "exclusiveMaximum": 400.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Bpm",
+            "type": "number"
+          },
+          "chordpro": {
+            "anyOf": [
+              {
+                "maxLength": 200000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chordpro"
+          },
+          "content_kind": {
+            "default": "tab",
+            "enum": [
+              "tab",
+              "chords"
+            ],
+            "title": "Content Kind",
+            "type": "string"
+          },
+          "measures": {
+            "default": 4,
+            "maximum": 500.0,
+            "minimum": 1.0,
+            "title": "Measures",
+            "type": "integer"
+          },
+          "preset": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preset"
+          },
+          "signature": {
+            "default": [
+              4,
+              4
+            ],
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Signature",
+            "type": "array"
+          },
+          "title": {
+            "default": "Untitled",
+            "maxLength": 300,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "title": "CreateSongBody",
+        "type": "object"
+      },
+      "ErrorBody": {
+        "description": "Error response. ``detail`` is ``{key, message, params}``.",
+        "examples": [
+          {
+            "detail": {
+              "key": "song.notFound",
+              "message": "song not found",
+              "params": {}
+            }
+          }
+        ],
+        "properties": {
+          "detail": {
+            "$ref": "#/components/schemas/ErrorDetail"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "ErrorBody",
+        "type": "object"
+      },
+      "ErrorDetail": {
+        "description": "Translatable message. Shape: ``{key, message, params}``.\n\nThe UI looks ``key`` up under ``errors`` in its catalogs and falls back to\nthe English ``message``. ``params`` fills ``{name}`` placeholders.",
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "params": {
+            "additionalProperties": true,
+            "title": "Params",
+            "type": "object"
+          }
+        },
+        "required": [
+          "key",
+          "message"
+        ],
+        "title": "ErrorDetail",
+        "type": "object"
+      },
+      "Health": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ok",
+          "name",
+          "version"
+        ],
+        "title": "Health",
+        "type": "object"
+      },
+      "ImportDocumentBody": {
+        "properties": {
+          "artist": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Artist",
+            "type": "string"
+          },
+          "document": {
+            "$ref": "#/components/schemas/ScoreDocument"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "maxLength": 60,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          },
+          "source_kind": {
+            "default": "file",
+            "enum": [
+              "file",
+              "guitarpro",
+              "musicxml",
+              "fretbook-json",
+              "manual"
+            ],
+            "title": "Source Kind",
+            "type": "string"
+          },
+          "title": {
+            "default": "Untitled",
+            "maxLength": 300,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "document"
+        ],
+        "title": "ImportDocumentBody",
+        "type": "object"
+      },
+      "ImportPreview": {
+        "description": "Fretted tracks on a Songsterr link, before the import is queued.",
+        "properties": {
+          "artist": {
+            "title": "Artist",
+            "type": "string"
+          },
+          "song_id": {
+            "title": "Song Id",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "tracks": {
+            "items": {
+              "$ref": "#/components/schemas/SongsterrTrackChoice"
+            },
+            "title": "Tracks",
+            "type": "array"
+          }
+        },
+        "required": [
+          "title",
+          "artist",
+          "song_id",
+          "tracks"
+        ],
+        "title": "ImportPreview",
+        "type": "object"
+      },
+      "ImportUrlBody": {
+        "properties": {
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "part_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Part Ids"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "maxLength": 60,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          },
+          "url": {
+            "maxLength": 2000,
+            "title": "Url",
+            "type": "string"
+          },
+          "video_id": {
+            "anyOf": [
+              {
+                "maxLength": 11,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Video Id"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "ImportUrlBody",
+        "type": "object"
+      },
+      "InstrumentPreset": {
+        "properties": {
+          "family": {
+            "enum": [
+              "bass",
+              "guitar"
+            ],
+            "title": "Family",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "instrument": {
+            "title": "Instrument",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "label_key": {
+            "title": "Label Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "string_count": {
+            "title": "String Count",
+            "type": "integer"
+          },
+          "tuning_midi": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Tuning Midi",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "label_key",
+          "label",
+          "instrument",
+          "name",
+          "tuning_midi",
+          "string_count",
+          "family"
+        ],
+        "title": "InstrumentPreset",
+        "type": "object"
+      },
+      "Job": {
+        "description": "Background import. ``error_key`` is an ``errors`` catalog key; ``progress_key`` is a catalog key.",
+        "properties": {
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "error_key": {
+            "title": "Error Key",
+            "type": "string"
+          },
+          "error_params": {
+            "additionalProperties": true,
+            "title": "Error Params",
+            "type": "object"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "progress": {
+            "title": "Progress",
+            "type": "string"
+          },
+          "progress_key": {
+            "title": "Progress Key",
+            "type": "string"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JobResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "done",
+              "error"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "result",
+          "error",
+          "error_key",
+          "error_params",
+          "progress",
+          "progress_key",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "Job",
+        "type": "object"
+      },
+      "JobAccepted": {
+        "description": "Accepted import. Poll ``GET /api/jobs/{job_id}``.",
+        "properties": {
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id"
+        ],
+        "title": "JobAccepted",
+        "type": "object"
+      },
+      "JobResult": {
+        "additionalProperties": true,
+        "properties": {
+          "content_kind": {
+            "anyOf": [
+              {
+                "enum": [
+                  "tab",
+                  "chords"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Kind"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          },
+          "song_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Song Id"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/ErrorDetail"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "title": "JobResult",
+        "type": "object"
+      },
+      "Me": {
+        "description": "The caller. In single-user mode this is the ``local`` user and ``authenticated`` is false.",
+        "properties": {
+          "authenticated": {
+            "title": "Authenticated",
+            "type": "boolean"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/Settings"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "display_name",
+          "authenticated",
+          "settings"
+        ],
+        "title": "Me",
+        "type": "object"
+      },
+      "Meta": {
+        "description": "Server identity. ``auth_mode`` is ``single`` or ``oidc``.",
+        "properties": {
+          "auth_mode": {
+            "title": "Auth Mode",
+            "type": "string"
+          },
+          "exporters": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Exporters",
+            "type": "array"
+          },
+          "instruments": {
+            "items": {
+              "$ref": "#/components/schemas/InstrumentPreset"
+            },
+            "title": "Instruments",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "tagline": {
+            "title": "Tagline",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "tagline",
+          "version",
+          "auth_mode",
+          "exporters",
+          "instruments"
+        ],
+        "title": "Meta",
+        "type": "object"
+      },
+      "Note": {
+        "properties": {
+          "bend": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 4.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bend"
+          },
+          "dead": {
+            "default": false,
+            "title": "Dead",
+            "type": "boolean"
+          },
+          "extras": {
+            "additionalProperties": true,
+            "title": "Extras",
+            "type": "object"
+          },
+          "fret": {
+            "maximum": 99.0,
+            "minimum": 0.0,
+            "title": "Fret",
+            "type": "integer"
+          },
+          "ghost": {
+            "default": false,
+            "title": "Ghost",
+            "type": "boolean"
+          },
+          "hammer": {
+            "default": false,
+            "title": "Hammer",
+            "type": "boolean"
+          },
+          "harmonic": {
+            "anyOf": [
+              {
+                "enum": [
+                  "natural",
+                  "artificial",
+                  "pinch",
+                  "tap",
+                  "semi"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Harmonic"
+          },
+          "let_ring": {
+            "default": false,
+            "title": "Let Ring",
+            "type": "boolean"
+          },
+          "palm_mute": {
+            "default": false,
+            "title": "Palm Mute",
+            "type": "boolean"
+          },
+          "slide": {
+            "anyOf": [
+              {
+                "enum": [
+                  "shift",
+                  "legato",
+                  "in_below",
+                  "in_above",
+                  "out_down",
+                  "out_up"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slide"
+          },
+          "staccato": {
+            "default": false,
+            "title": "Staccato",
+            "type": "boolean"
+          },
+          "string": {
+            "minimum": 0.0,
+            "title": "String",
+            "type": "integer"
+          },
+          "tie": {
+            "default": false,
+            "title": "Tie",
+            "type": "boolean"
+          },
+          "vibrato": {
+            "default": false,
+            "title": "Vibrato",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "string",
+          "fret"
+        ],
+        "title": "Note",
+        "type": "object"
+      },
+      "PlainErrorBody": {
+        "description": "An error whose ``detail`` is a plain string (OIDC is not implemented, HTTP 501).",
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "PlainErrorBody",
+        "type": "object"
+      },
+      "PreviewBody": {
+        "properties": {
+          "url": {
+            "maxLength": 2000,
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "PreviewBody",
+        "type": "object"
+      },
+      "ScoreDocument": {
+        "properties": {
+          "bars": {
+            "items": {
+              "$ref": "#/components/schemas/Bar"
+            },
+            "minItems": 1,
+            "title": "Bars",
+            "type": "array"
+          },
+          "bpm": {
+            "default": 120,
+            "exclusiveMaximum": 400.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Bpm",
+            "type": "number"
+          },
+          "sync": {
+            "$ref": "#/components/schemas/SyncMap"
+          },
+          "tracks": {
+            "items": {
+              "$ref": "#/components/schemas/Track"
+            },
+            "minItems": 1,
+            "title": "Tracks",
+            "type": "array"
+          },
+          "version": {
+            "const": 1,
+            "default": 1,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "bars",
+          "tracks"
+        ],
+        "title": "ScoreDocument",
+        "type": "object"
+      },
+      "Settings": {
+        "description": "Per-user preferences. ``default_instrument`` is a preset id from ``GET /api/meta``.",
+        "properties": {
+          "default_instrument": {
+            "title": "Default Instrument",
+            "type": "string"
+          }
+        },
+        "required": [
+          "default_instrument"
+        ],
+        "title": "Settings",
+        "type": "object"
+      },
+      "SettingsBody": {
+        "properties": {
+          "default_instrument": {
+            "title": "Default Instrument",
+            "type": "string"
+          }
+        },
+        "required": [
+          "default_instrument"
+        ],
+        "title": "SettingsBody",
+        "type": "object"
+      },
+      "SongDetail": {
+        "properties": {
+          "artist": {
+            "title": "Artist",
+            "type": "string"
+          },
+          "audio_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Url"
+          },
+          "bpm": {
+            "title": "Bpm",
+            "type": "number"
+          },
+          "chordpro": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chordpro"
+          },
+          "content_kind": {
+            "enum": [
+              "tab",
+              "chords"
+            ],
+            "title": "Content Kind",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "document": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScoreDocument"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "duration": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration"
+          },
+          "has_audio": {
+            "title": "Has Audio",
+            "type": "boolean"
+          },
+          "has_sync": {
+            "title": "Has Sync",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "measure_count": {
+            "title": "Measure Count",
+            "type": "integer"
+          },
+          "preferred_instrument": {
+            "title": "Preferred Instrument",
+            "type": "string"
+          },
+          "preferred_track_id": {
+            "title": "Preferred Track Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "source_kind": {
+            "title": "Source Kind",
+            "type": "string"
+          },
+          "source_ref": {
+            "additionalProperties": true,
+            "title": "Source Ref",
+            "type": "object"
+          },
+          "string_count": {
+            "title": "String Count",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "track_count": {
+            "title": "Track Count",
+            "type": "integer"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "title",
+          "artist",
+          "content_kind",
+          "source_kind",
+          "revision",
+          "bpm",
+          "measure_count",
+          "track_count",
+          "string_count",
+          "preferred_instrument",
+          "has_sync",
+          "has_audio",
+          "duration",
+          "updated_at",
+          "source_ref",
+          "document",
+          "chordpro",
+          "created_at",
+          "audio_url",
+          "preferred_track_id"
+        ],
+        "title": "SongDetail",
+        "type": "object"
+      },
+      "SongExport": {
+        "description": "Attachment from ``GET /api/songs/{song_id}/export.json``.\n\nA tab includes ``document`` and omits ``chordpro``. A chord sheet does the opposite.",
+        "properties": {
+          "artist": {
+            "title": "Artist",
+            "type": "string"
+          },
+          "chordpro": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chordpro"
+          },
+          "content_kind": {
+            "enum": [
+              "tab",
+              "chords"
+            ],
+            "title": "Content Kind",
+            "type": "string"
+          },
+          "document": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScoreDocument"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "format": {
+            "const": "fretbook-song",
+            "title": "Format",
+            "type": "string"
+          },
+          "format_version": {
+            "const": 1,
+            "title": "Format Version",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "format",
+          "format_version",
+          "content_kind",
+          "title",
+          "artist"
+        ],
+        "title": "SongExport",
+        "type": "object"
+      },
+      "SongSummary": {
+        "properties": {
+          "artist": {
+            "title": "Artist",
+            "type": "string"
+          },
+          "bpm": {
+            "title": "Bpm",
+            "type": "number"
+          },
+          "content_kind": {
+            "enum": [
+              "tab",
+              "chords"
+            ],
+            "title": "Content Kind",
+            "type": "string"
+          },
+          "duration": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration"
+          },
+          "has_audio": {
+            "title": "Has Audio",
+            "type": "boolean"
+          },
+          "has_sync": {
+            "title": "Has Sync",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "measure_count": {
+            "title": "Measure Count",
+            "type": "integer"
+          },
+          "preferred_instrument": {
+            "title": "Preferred Instrument",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "source_kind": {
+            "title": "Source Kind",
+            "type": "string"
+          },
+          "string_count": {
+            "title": "String Count",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "track_count": {
+            "title": "Track Count",
+            "type": "integer"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "title",
+          "artist",
+          "content_kind",
+          "source_kind",
+          "revision",
+          "bpm",
+          "measure_count",
+          "track_count",
+          "string_count",
+          "preferred_instrument",
+          "has_sync",
+          "has_audio",
+          "duration",
+          "updated_at"
+        ],
+        "title": "SongSummary",
+        "type": "object"
+      },
+      "SongsterrTrackChoice": {
+        "description": "One fretted Songsterr part from ``POST /api/imports/preview``.",
+        "properties": {
+          "canonical_instrument": {
+            "title": "Canonical Instrument",
+            "type": "string"
+          },
+          "capo": {
+            "title": "Capo",
+            "type": "integer"
+          },
+          "instrument": {
+            "title": "Instrument",
+            "type": "string"
+          },
+          "is_bass": {
+            "title": "Is Bass",
+            "type": "boolean"
+          },
+          "is_guitar": {
+            "title": "Is Guitar",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "part_id": {
+            "title": "Part Id",
+            "type": "integer"
+          },
+          "string_count": {
+            "title": "String Count",
+            "type": "integer"
+          },
+          "tuning": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Tuning",
+            "type": "array"
+          }
+        },
+        "required": [
+          "part_id",
+          "name",
+          "instrument",
+          "canonical_instrument",
+          "is_bass",
+          "is_guitar",
+          "tuning",
+          "string_count",
+          "capo"
+        ],
+        "title": "SongsterrTrackChoice",
+        "type": "object"
+      },
+      "SyncBody": {
+        "properties": {
+          "anchors": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Anchors",
+            "type": "object"
+          },
+          "bpm": {
+            "exclusiveMaximum": 400.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Bpm",
+            "type": "number"
+          }
+        },
+        "required": [
+          "bpm"
+        ],
+        "title": "SyncBody",
+        "type": "object"
+      },
+      "SyncMap": {
+        "description": "Backing-track alignment, keyed by song-level bar index.\n\n``points`` are source timestamps in seconds (Songsterr video points), one\nper bar; ``None`` means the source had none for that bar. ``anchors`` are\nthe user's taps, keyed by bar index. Playback uses anchors when present,\notherwise points. Repeats are not rendered yet, so the bar index is also\nthe playback index; once they are, anchors need a play-through occurrence.",
+        "properties": {
+          "anchors": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Anchors",
+            "type": "object"
+          },
+          "points": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Points",
+            "type": "array"
+          },
+          "video_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Video Id"
+          }
+        },
+        "title": "SyncMap",
+        "type": "object"
+      },
+      "Track": {
+        "properties": {
+          "bars": {
+            "items": {
+              "$ref": "#/components/schemas/TrackBar"
+            },
+            "minItems": 1,
+            "title": "Bars",
+            "type": "array"
+          },
+          "capo": {
+            "default": 0,
+            "maximum": 24.0,
+            "minimum": 0.0,
+            "title": "Capo",
+            "type": "integer"
+          },
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "instrument": {
+            "title": "Instrument",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "preferred": {
+            "default": false,
+            "title": "Preferred",
+            "type": "boolean"
+          },
+          "tuning_midi": {
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 16,
+            "minItems": 1,
+            "title": "Tuning Midi",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "instrument",
+          "tuning_midi",
+          "bars"
+        ],
+        "title": "Track",
+        "type": "object"
+      },
+      "TrackBar": {
+        "description": "One track's content for one song-level bar. No voices, or empty voices, is a full-bar rest.",
+        "properties": {
+          "extras": {
+            "additionalProperties": true,
+            "title": "Extras",
+            "type": "object"
+          },
+          "voices": {
+            "items": {
+              "$ref": "#/components/schemas/Voice"
+            },
+            "title": "Voices",
+            "type": "array"
+          }
+        },
+        "title": "TrackBar",
+        "type": "object"
+      },
+      "UpdateSongBody": {
+        "properties": {
+          "artist": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Artist",
+            "type": "string"
+          },
+          "chordpro": {
+            "anyOf": [
+              {
+                "maxLength": 200000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chordpro"
+          },
+          "document": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScoreDocument"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "title": {
+            "maxLength": 300,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "revision"
+        ],
+        "title": "UpdateSongBody",
+        "type": "object"
+      },
+      "ValidationBody": {
+        "description": "Request validation failed (HTTP 422). ``detail`` is a list of issues, not a keyed error.",
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationIssue"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "ValidationBody",
+        "type": "object"
+      },
+      "ValidationIssue": {
+        "description": "One rejected field. The handler omits the submitted value.",
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Loc",
+            "type": "array"
+          },
+          "msg": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Msg"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type"
+          }
+        },
+        "title": "ValidationIssue",
+        "type": "object"
+      },
+      "Voice": {
+        "properties": {
+          "beats": {
+            "items": {
+              "$ref": "#/components/schemas/Beat"
+            },
+            "title": "Beats",
+            "type": "array"
+          }
+        },
+        "title": "Voice",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "description": "JSON API for the web app. Every route is under /api. Errors use the shape {\"detail\": {\"key\", \"message\", \"params\"}}; the UI looks `key` up under `errors` and falls back to the English `message`. Auth today is GET /api/me and PUT /api/me/settings. Single-user mode has no login redirect: every request is the local user. OIDC (GET /auth/login, GET /auth/callback, POST /auth/logout) is not implemented; setting FRETBOOK_AUTH_MODE=oidc makes authenticated routes return 501.",
+    "title": "Fretbook",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/health": {
+      "get": {
+        "description": "Liveness. No authentication.",
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health",
+        "tags": [
+          "meta"
+        ]
+      }
+    },
+    "/api/imports": {
+      "post": {
+        "description": "Queue a Songsterr or YouTube-frame import. Returns a job id.",
+        "operationId": "import_url_api_imports_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportUrlBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlainErrorBody"
+                }
+              }
+            },
+            "description": "OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode."
+          }
+        },
+        "summary": "Import Url",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
+    "/api/imports/file": {
+      "post": {
+        "description": "Queue a MusicXML, ChordPro, or Fretbook JSON upload. Guitar Pro is read in the browser.",
+        "operationId": "import_file_api_imports_file_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_file_api_imports_file_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlainErrorBody"
+                }
+              }
+            },
+            "description": "OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode."
+          }
+        },
+        "summary": "Import File",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
+    "/api/imports/preview": {
+      "post": {
+        "description": "Fretted tracks on a link, so the library can ask which ones to import.\n\nSongsterr is the importer that has a preview. Others are refused with the\nsame error a direct import would use.",
+        "operationId": "preview_import_api_imports_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportPreview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlainErrorBody"
+                }
+              }
+            },
+            "description": "OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode."
+          }
+        },
+        "summary": "Preview Import",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
+    "/api/jobs/{job_id}": {
+      "get": {
+        "description": "Job status. `owner_id`, `payload`, and `attempts` are not returned.",
+        "operationId": "get_job_api_jobs__job_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlainErrorBody"
+                }
+              }
+            },
+            "description": "OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode."
+          }
+        },
+        "summary": "Get Job",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/api/me": {
+      "get": {
+        "description": "The caller and their settings.",
+        "operationId": "me_api_me_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlainErrorBody"
+                }
+              }
+            },
+            "description": "OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode."
+          }
+        },
+        "summary": "Me",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/me/settings": {
+      "put": {
+        "description": "Replace the caller's default instrument preset.",
+        "operationId": "update_settings_api_me_settings_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Settings"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlainErrorBody"
+                }
+              }
+            },
+            "description": "OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode."
+          }
+        },
+        "summary": "Update Settings",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/meta": {
+      "get": {
+        "description": "Name, version, auth mode, exporters, and instrument presets. No authentication.",
+        "operationId": "meta_api_meta_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Meta"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Meta",
+        "tags": [
+          "meta"
+        ]
+      }
+    },
+    "/api/songs": {
+      "get": {
+        "description": "Songs owned by the caller, newest first. Summaries omit the score and ChordPro text.",
+        "operationId": "list_songs_api_songs_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SongSummary"
+                  },
+                  "title": "Response List Songs Api Songs Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlainErrorBody"
+                }
+              }
+            },
+            "description": "OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode."
+          }
+        },
+        "summary": "List Songs",
+        "tags": [
+          "songs"
+        ]
+      },
+      "post": {
+        "operationId": "create_song_api_songs_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSongBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SongDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlainErrorBody"
+                }
+              }
+            },
+            "description": "OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode."
+          }
+        },
+        "summary": "Create Song",
+        "tags": [
+          "songs"
+        ]
+      }
+    },
+    "/api/songs/import-document": {
+      "post": {
+        "description": "Save a document the browser built (Guitar Pro via alphaTab).",
+        "operationId": "import_document_api_songs_import_document_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportDocumentBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SongDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlainErrorBody"
+                }
+              }
+            },
+            "description": "OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode."
+          }
+        },
+        "summary": "Import Document",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
+    "/api/songs/{song_id}": {
+      "delete": {
+        "operationId": "delete_song_api_songs__song_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "song_id",
+            "required": true,
+            "schema": {
+              "title": "Song Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlainErrorBody"
+                }
+              }
+            },
+            "description": "OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode."
+          }
+        },
+        "summary": "Delete Song",
+        "tags": [
+          "songs"
+        ]
+      },
+      "get": {
+        "description": "One song, including its score document or ChordPro text.",
+        "operationId": "get_song_api_songs__song_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "song_id",
+            "required": true,
+            "schema": {
+              "title": "Song Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SongDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlainErrorBody"
+                }
+              }
+            },
+            "description": "OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode."
+          }
+        },
+        "summary": "Get Song",
+        "tags": [
+          "songs"
+        ]
+      },
+      "put": {
+        "description": "Replace title, artist, and content. Send the revision you loaded; a stale one is 409.",
+        "operationId": "update_song_api_songs__song_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "song_id",
+            "required": true,
+            "schema": {
+              "title": "Song Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSongBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SongDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlainErrorBody"
+                }
+              }
+            },
+            "description": "OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode."
+          }
+        },
+        "summary": "Update Song",
+        "tags": [
+          "songs"
+        ]
+      }
+    },
+    "/api/songs/{song_id}/audio": {
+      "get": {
+        "operationId": "download_audio_api_songs__song_id__audio_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "song_id",
+            "required": true,
+            "schema": {
+              "title": "Song Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "audio/flac": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              },
+              "audio/mp4": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              },
+              "audio/mpeg": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              },
+              "audio/ogg": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              },
+              "audio/wav": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              },
+              "audio/webm": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "The song's audio file."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlainErrorBody"
+                }
+              }
+            },
+            "description": "OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode."
+          }
+        },
+        "summary": "Download Audio",
+        "tags": [
+          "songs"
+        ]
+      },
+      "post": {
+        "description": "Replace the song's audio. The extension picks the content type, not the client.",
+        "operationId": "upload_audio_api_songs__song_id__audio_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "song_id",
+            "required": true,
+            "schema": {
+              "title": "Song Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_audio_api_songs__song_id__audio_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SongDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlainErrorBody"
+                }
+              }
+            },
+            "description": "OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode."
+          }
+        },
+        "summary": "Upload Audio",
+        "tags": [
+          "songs"
+        ]
+      }
+    },
+    "/api/songs/{song_id}/export.cho": {
+      "get": {
+        "operationId": "export_chordpro_api_songs__song_id__export_cho_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "song_id",
+            "required": true,
+            "schema": {
+              "title": "Song Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "ChordPro text for a chord sheet, as an attachment."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlainErrorBody"
+                }
+              }
+            },
+            "description": "OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode."
+          }
+        },
+        "summary": "Export Chordpro",
+        "tags": [
+          "songs"
+        ]
+      }
+    },
+    "/api/songs/{song_id}/export.json": {
+      "get": {
+        "description": "Download the song as Fretbook JSON. Returned as written, with a Content-Disposition filename.",
+        "operationId": "export_json_api_songs__song_id__export_json_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "song_id",
+            "required": true,
+            "schema": {
+              "title": "Song Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SongExport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlainErrorBody"
+                }
+              }
+            },
+            "description": "OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode."
+          }
+        },
+        "summary": "Export Json",
+        "tags": [
+          "songs"
+        ]
+      }
+    },
+    "/api/songs/{song_id}/export.musicxml": {
+      "get": {
+        "operationId": "export_musicxml_api_songs__song_id__export_musicxml_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "song_id",
+            "required": true,
+            "schema": {
+              "title": "Song Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/vnd.recordare.musicxml+xml": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "MusicXML for a tab, as an attachment."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlainErrorBody"
+                }
+              }
+            },
+            "description": "OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode."
+          }
+        },
+        "summary": "Export Musicxml",
+        "tags": [
+          "songs"
+        ]
+      }
+    },
+    "/api/songs/{song_id}/sync": {
+      "patch": {
+        "description": "Set the opening tempo and tapped bar anchors on a tab.",
+        "operationId": "update_sync_api_songs__song_id__sync_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "song_id",
+            "required": true,
+            "schema": {
+              "title": "Song Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SyncBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SongDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlainErrorBody"
+                }
+              }
+            },
+            "description": "OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode."
+          }
+        },
+        "summary": "Update Sync",
+        "tags": [
+          "songs"
+        ]
+      }
+    }
+  },
+  "tags": [
+    {
+      "description": "Server identity, instrument presets, and auth mode.",
+      "name": "meta"
+    },
+    {
+      "description": "Current user and per-user settings. This is the auth surface until OIDC lands.",
+      "name": "auth"
+    },
+    {
+      "description": "Library, score documents, chord sheets, audio, and exports.",
+      "name": "songs"
+    },
+    {
+      "description": "Start a background import. Poll GET /api/jobs/{job_id}.",
+      "name": "imports"
+    },
+    {
+      "description": "Background job status, progress keys, and errors.",
+      "name": "jobs"
+    }
+  ]
+}

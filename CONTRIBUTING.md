@@ -19,10 +19,15 @@ CI runs the same commands:
 ```sh
 .venv/bin/ruff check fretbook tests
 .venv/bin/python -m pytest
-cd web && npm run check && npm test && npm run build
+.venv/bin/python -m fretbook.openapi --check
+cd web && npm run api-types:check && npm run check && npm test && npm run build
 ```
 
 The Python tests fail on an unclosed database connection, and check that the English catalog has every error and progress key the server sends. A Vitest test checks that every locale has every key the UI passes to `t()`, and that the locale files share the same keys.
+
+## API contract
+
+The HTTP contract is the committed `openapi.json`. Regenerate it with `python -m fretbook.openapi` (or `make openapi`) and the TypeScript types with `npm run api-types --prefix web` (or `make api-types`). CI fails if either is stale. A pull request labeled `ui-only` may only touch `web/`; the rules are in [web/README.md](web/README.md).
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how the pieces fit together and [ROADMAP.md](ROADMAP.md) for what is planned.
 
