@@ -108,7 +108,13 @@
     "flats": "Bemóis",
     "size": "Tamanho",
     "exportChordPro": "Exportar ChordPro",
-    "chorus": "Refrão"
+    "chorus": "Refrão",
+    "print": "Imprimir",
+    "controls": "Controles da cifra",
+    "smaller": "Texto menor",
+    "larger": "Texto maior",
+    "write": "Escrever",
+    "preview": "Visualizar"
   },
   "player": {
     "play": "Tocar",
@@ -143,7 +149,14 @@
     "needAudio": "Os pontos de sincronia foram salvos, mas ainda não há arquivo de áudio. Envie um mp3 ou wav.",
     "synth": "Não há arquivo de áudio, então a reprodução usa o sintetizador interno.",
     "keys": "Espaço toca. As setas mudam de compasso. T marca o próximo.",
-    "loopRange": "A{a}–B{b}"
+    "loopRange": "A{a}–B{b}",
+    "export": "Exportar",
+    "syncPanel": "Sincronia e áudio",
+    "syncMarks": "Marcas de sincronia",
+    "loop": "Repetição",
+    "previousBar": "Compasso anterior",
+    "nextBar": "Próximo compasso",
+    "position": "Posição"
   },
   "editor": {
     "heading": "Editar",
@@ -184,7 +197,11 @@
     "preferred": "Preferida",
     "capo": "Capotraste",
     "fretHint": "Vazio significa sem nota. 0 é a corda solta.",
-    "play": "Tocar"
+    "play": "Tocar",
+    "songCard": "Música",
+    "trackCard": "Faixa",
+    "tuning": "Afinação",
+    "bars": "Compassos"
   },
   "durations": {
     "whole": "Semibreve",

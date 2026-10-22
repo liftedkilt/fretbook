@@ -108,7 +108,13 @@
     "flats": "Flats",
     "size": "Size",
     "exportChordPro": "Export ChordPro",
-    "chorus": "Chorus"
+    "chorus": "Chorus",
+    "print": "Print",
+    "controls": "Chord sheet controls",
+    "smaller": "Smaller text",
+    "larger": "Larger text",
+    "write": "Write",
+    "preview": "Preview"
   },
   "player": {
     "play": "Play",
@@ -143,7 +149,14 @@
     "needAudio": "Sync points are saved, but there is no audio file yet. Upload an mp3 or wav.",
     "synth": "No audio file, so playback uses the built-in synth.",
     "keys": "Space plays. Arrows move a bar. T taps the next mark.",
-    "loopRange": "A{a}–B{b}"
+    "loopRange": "A{a}–B{b}",
+    "export": "Export",
+    "syncPanel": "Sync & audio",
+    "syncMarks": "Sync marks",
+    "loop": "Loop",
+    "previousBar": "Previous bar",
+    "nextBar": "Next bar",
+    "position": "Position"
   },
   "editor": {
     "heading": "Edit",
@@ -184,7 +197,11 @@
     "preferred": "Preferred",
     "capo": "Capo",
     "fretHint": "Empty means no note. 0 is the open string.",
-    "play": "Play"
+    "play": "Play",
+    "songCard": "Song",
+    "trackCard": "Track",
+    "tuning": "Tuning",
+    "bars": "Bars"
   },
   "durations": {
     "whole": "Whole",

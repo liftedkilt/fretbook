@@ -112,14 +112,16 @@
       {#each visible as song (song.id)}
         <article class="song-card">
           <a class="song-link" href={hrefFor(`/songs/${song.id}`)} onclick={(event) => followLink(event, `/songs/${song.id}`)}>
-            <Cover id={song.id} title={song.title} kind={song.content_kind} strings={song.string_count} />
-            <span class="song-kind">
-              <Icon name={song.content_kind === "chords" ? "chords" : "tab"} size={14} />{kindLabel(song)}
+            <span class="song-art">
+              <Cover id={song.id} title={song.title} kind={song.content_kind} strings={song.string_count} />
+              <span class="song-kind">
+                <Icon name={song.content_kind === "chords" ? "chords" : "tab"} size={14} />{kindLabel(song)}
+              </span>
+              {#if song.has_audio}
+                <span class="song-audio" title={t("library.audio")}><Icon name="waveform" size={14} /></span>
+              {/if}
+              <span class="song-play" aria-hidden="true"><Icon name="play" size={20} /></span>
             </span>
-            {#if song.has_audio}
-              <span class="song-audio" title={t("library.audio")}><Icon name="waveform" size={14} /></span>
-            {/if}
-            <span class="song-play" aria-hidden="true"><Icon name="play" size={20} /></span>
             <span class="song-text">
               <strong class="song-title">{song.title}</strong>
               <span class="song-artist">{song.artist || "—"}</span>
