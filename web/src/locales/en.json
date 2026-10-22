@@ -4,7 +4,8 @@
     "tagline": "Self-hosted tabs, chord sheets, and sheet music for bass and guitar.",
     "notFound": "That page is not in the book.",
     "loading": "Loading…",
-    "back": "Library"
+    "back": "Library",
+    "edition": "Tabs · Chords · Sync"
   },
   "language": {
     "label": "Language",
@@ -13,7 +14,12 @@
   },
   "settings": {
     "defaultInstrument": "Default instrument",
-    "defaultInstrumentHint": "Used for new tabs and added tracks, and to pick the part when importing from Songsterr, Guitar Pro, or MusicXML."
+    "defaultInstrumentHint": "Used for new tabs and added tracks, and to pick the part when importing from Songsterr, Guitar Pro, or MusicXML.",
+    "heading": "Settings",
+    "theme": "Appearance",
+    "themeSystem": "System",
+    "themeDark": "Dark",
+    "themeLight": "Light"
   },
   "library": {
     "heading": "Library",
@@ -22,8 +28,14 @@
     "edit": "Edit",
     "delete": "Delete",
     "confirmDelete": "Delete {title}?",
-    "measures": { "one": "{count} bar", "other": "{count} bars" },
-    "strings": { "one": "{count} string", "other": "{count} strings" },
+    "measures": {
+      "one": "{count} bar",
+      "other": "{count} bars"
+    },
+    "strings": {
+      "one": "{count} string",
+      "other": "{count} strings"
+    },
     "audio": "Audio",
     "noAudio": "No audio",
     "chordSheet": "Chord sheet",
@@ -55,7 +67,19 @@
     "importing": "Importing…",
     "warnings": "Imported with warnings: {warnings}",
     "untitled": "Untitled",
-    "tempo": "{bpm} BPM"
+    "tempo": "{bpm} BPM",
+    "welcome": "Your library",
+    "count": {
+      "one": "{count} song",
+      "other": "{count} songs"
+    },
+    "search": "Search songs and artists",
+    "sort": "Sort",
+    "sortRecent": "Recently updated",
+    "sortTitle": "Title",
+    "sortArtist": "Artist",
+    "filterChords": "Chord sheets",
+    "emptyTitle": "Start your songbook"
   },
   "instrument": {
     "bass4": "4-string bass",
@@ -304,5 +328,29 @@
       "notText": "The chord sheet is not UTF-8 text.",
       "tooLong": "The chord sheet is longer than {limit} characters."
     }
+  },
+  "ui": {
+    "close": "Close",
+    "beatsPerBar": "Beats per bar",
+    "beatUnit": "Beat unit"
+  },
+  "nav": {
+    "recent": "Recently updated",
+    "main": "Main"
+  },
+  "add": {
+    "button": "New",
+    "heading": "Add to your library",
+    "subtitle": "Import a tab, upload a file, or start from scratch.",
+    "link": "Songsterr link",
+    "linkHint": "Import tracks and synced audio",
+    "file": "Upload a file",
+    "fileHint": "Guitar Pro, MusicXML, ChordPro",
+    "tab": "Blank tab",
+    "tabHint": "Write a tab from scratch",
+    "chords": "Chord sheet",
+    "chordsHint": "Paste chords over lyrics",
+    "dropTitle": "Drop a file here",
+    "browse": "Choose a file"
   }
 }

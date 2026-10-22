@@ -4,7 +4,8 @@
     "tagline": "Tablaturas, cifras e partituras auto-hospedadas para baixo e guitarra.",
     "notFound": "Essa página não está no caderno.",
     "loading": "Carregando…",
-    "back": "Biblioteca"
+    "back": "Biblioteca",
+    "edition": "Tablaturas · Cifras · Sincronia"
   },
   "language": {
     "label": "Idioma",
@@ -13,7 +14,12 @@
   },
   "settings": {
     "defaultInstrument": "Instrumento padrão",
-    "defaultInstrumentHint": "Usado em tablaturas novas e faixas adicionadas, e para escolher a parte ao importar do Songsterr, do Guitar Pro ou de MusicXML."
+    "defaultInstrumentHint": "Usado em tablaturas novas e faixas adicionadas, e para escolher a parte ao importar do Songsterr, do Guitar Pro ou de MusicXML.",
+    "heading": "Configurações",
+    "theme": "Aparência",
+    "themeSystem": "Sistema",
+    "themeDark": "Escuro",
+    "themeLight": "Claro"
   },
   "library": {
     "heading": "Biblioteca",
@@ -22,8 +28,14 @@
     "edit": "Editar",
     "delete": "Excluir",
     "confirmDelete": "Excluir {title}?",
-    "measures": { "one": "{count} compasso", "other": "{count} compassos" },
-    "strings": { "one": "{count} corda", "other": "{count} cordas" },
+    "measures": {
+      "one": "{count} compasso",
+      "other": "{count} compassos"
+    },
+    "strings": {
+      "one": "{count} corda",
+      "other": "{count} cordas"
+    },
     "audio": "Áudio",
     "noAudio": "Sem áudio",
     "chordSheet": "Cifra",
@@ -55,7 +67,19 @@
     "importing": "Importando…",
     "warnings": "Importado com avisos: {warnings}",
     "untitled": "Sem título",
-    "tempo": "{bpm} BPM"
+    "tempo": "{bpm} BPM",
+    "welcome": "Sua biblioteca",
+    "count": {
+      "one": "{count} música",
+      "other": "{count} músicas"
+    },
+    "search": "Buscar músicas e artistas",
+    "sort": "Ordenar",
+    "sortRecent": "Atualizadas recentemente",
+    "sortTitle": "Título",
+    "sortArtist": "Artista",
+    "filterChords": "Cifras",
+    "emptyTitle": "Comece seu caderno de músicas"
   },
   "instrument": {
     "bass4": "Baixo de 4 cordas",
@@ -304,5 +328,29 @@
       "notText": "A cifra não é texto UTF-8.",
       "tooLong": "A cifra tem mais de {limit} caracteres."
     }
+  },
+  "ui": {
+    "close": "Fechar",
+    "beatsPerBar": "Tempos por compasso",
+    "beatUnit": "Unidade de tempo"
+  },
+  "nav": {
+    "recent": "Atualizadas recentemente",
+    "main": "Principal"
+  },
+  "add": {
+    "button": "Nova",
+    "heading": "Adicionar à biblioteca",
+    "subtitle": "Importe uma tablatura, envie um arquivo ou comece do zero.",
+    "link": "Link do Songsterr",
+    "linkHint": "Importe faixas e áudio sincronizado",
+    "file": "Enviar arquivo",
+    "fileHint": "Guitar Pro, MusicXML, ChordPro",
+    "tab": "Tablatura em branco",
+    "tabHint": "Escreva uma tablatura do zero",
+    "chords": "Cifra",
+    "chordsHint": "Cole acordes sobre a letra",
+    "dropTitle": "Solte um arquivo aqui",
+    "browse": "Escolher arquivo"
   }
 }
