@@ -282,8 +282,30 @@
     }
   }
 
+  let exporting = $state(false);
+
   function exportUrl(kind: string): string {
     return new URL(`api/songs/${song.id}/export.${kind}`, document.baseURI).toString();
+  }
+
+  async function exportPdf() {
+    exporting = true;
+    error = "";
+    const current = track;
+    try {
+      const { downloadTrackPdf } = await import("../lib/export/pdf");
+      await downloadTrackPdf({
+        document: song.document,
+        trackId: current.id,
+        title: song.title,
+        artist: song.artist,
+        capoLabel: current.capo > 0 ? t("player.capo", { fret: current.capo }) : "",
+      });
+    } catch {
+      error = t("player.exportPdfFailed");
+    } finally {
+      exporting = false;
+    }
   }
 </script>
 
@@ -304,7 +326,9 @@
     <a class="button" href={hrefFor(`/songs/${song.id}/edit`)} onclick={(event) => followLink(event, `/songs/${song.id}/edit`)}>{t("player.edit")}</a>
     <a class="button" href={exportUrl("musicxml")}>{t("player.exportMusicXml")}</a>
     <a class="button" href={exportUrl("json")}>{t("player.exportJson")}</a>
-    <button onclick={() => player.api?.print()}>{t("player.print")}</button>
+    <button disabled={exporting} onclick={() => void exportPdf()}>
+      {exporting ? t("player.exportingPdf") : song.document.tracks.length > 1 ? t("player.exportPdfTrack", { name: track.name }) : t("player.exportPdf")}
+    </button>
   </div>
 </div>
 
