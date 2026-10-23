@@ -5,14 +5,25 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
 
+# A new push to a pull request cancels the run it supersedes. Pushes to
+# branches (including main) always run to completion.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   backend:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
           cache: pip
       - run: pip install -r requirements-dev.txt
       - run: ruff check fretbook tests
@@ -20,6 +31,7 @@ jobs:
 
   frontend:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: web
@@ -39,6 +51,7 @@ jobs:
 
   openapi:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -49,8 +62,20 @@ jobs:
       - name: Committed OpenAPI contract is current
         run: python -m fretbook.openapi --check
 
+  repo-checks:
+    # Cheap guards for files that parallel pull requests collide on.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Migration numbers are unique and have no gaps
+        run: python3 scripts/check_migrations.py
+      - name: Locale files are valid and consistently formatted
+        run: python3 scripts/check_locales.py
+
   ui-only:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
         with:
@@ -109,3 +134,22 @@ jobs:
             web/test-results/
             web/playwright-report/
           retention-days: 7
+
+  ci-ok:
+    # The single check to require in branch protection. Add every new job to
+    # `needs` so the required check keeps covering it without editing the
+    # branch-protection settings.
+    if: always()
+    needs: [backend, frontend, openapi, repo-checks, ui-only, e2e]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every job succeeded
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          echo "$NEEDS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          if echo "$NEEDS" | jq -e 'any(.[]; .result != "success")' > /dev/null; then
+            echo "::error::At least one required job did not succeed (failed, cancelled or skipped)."
+            exit 1
+          fi

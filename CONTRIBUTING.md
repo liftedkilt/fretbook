@@ -31,6 +31,15 @@ CI runs the same commands:
 cd web && npm run api-types:check && npm run check && npm test && npm run build
 ```
 
+The `repo-checks` CI job also runs two cheap guards you can run locally:
+
+```sh
+python scripts/check_migrations.py   # no duplicate or skipped numbers in fretbook/db/migrations/
+python scripts/check_locales.py      # locale files are valid JSON, LF, one trailing newline, same top-level key order
+```
+
+If another pull request took your migration number, `check_migrations.py` fails with the duplicate; rebase on `main` and rename your file to the next free number.
+
 ### End-to-end tests
 
 Playwright drives Chromium against a real `python -m fretbook` that serves the built web app. Each test starts its own server on a free port with an empty temporary data directory and seeds it through the API. The suite is in `web/e2e/` and takes about 15 seconds locally; CI runs it as the `e2e` job and uploads traces and videos when it fails.
@@ -44,6 +53,16 @@ npm run e2e           # builds the web app, then runs the suite
 `npm run e2e:run` skips the build, and `npx playwright test --ui` opens the trace viewer. See [web/README.md](web/README.md#end-to-end-tests) for how to add a test.
 
 The Python tests fail on an unclosed database connection, and check that the English catalog has every error and progress key the server sends. A Vitest test checks that every locale has every key the UI passes to `t()`, and that the locale files share the same keys.
+
+## CI and branch protection
+
+`.github/workflows/ci.yml` runs `backend` (Python 3.12 and 3.13), `frontend`, `openapi`, `repo-checks`, `ui-only` and `e2e`, each with a timeout. A final `ci-ok` job `needs:` all of them and fails if any did not succeed, so it is the one check to require; add new CI jobs to its `needs:` list. A new push to a pull request cancels the superseded run (pushes to branches are never cancelled).
+
+Suggested branch-protection settings for `main`:
+
+- Require status checks to pass before merging: **`ci-ok`** and **`Docker / image`** (the `Docker` workflow's `image` job; it has no `ci-ok` equivalent because it is a separate workflow). Require branches to be up to date before merging.
+- Require linear history, and allow only squash merging (or rebase merging).
+- Do not require the individual `backend (3.12)` style checks: matrix names change, which is what `ci-ok` avoids.
 
 ## API contract
 
