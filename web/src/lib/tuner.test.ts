@@ -4,6 +4,7 @@ import {
   playReferenceTone,
   A4_MAX,
   A4_MIN,
+  INSTRUMENTS,
   PRESETS,
   PitchSmoother,
   TuneTracker,
@@ -17,6 +18,7 @@ import {
   needlePosition,
   withCapo,
 } from "./tuner";
+import { nameToMidi, parseCustomTuning } from "./tuning";
 
 const STANDARD = PRESETS.find((p) => p.id === "standard")!.midi;
 
@@ -245,5 +247,38 @@ describe("playReferenceTone", () => {
     expect(oscillator.stop).toHaveBeenCalledWith(expect.closeTo(1.06));
     vi.advanceTimersByTime(200);
     expect(close).toHaveBeenCalled();
+  });
+});
+
+describe("instruments and custom tuning", () => {
+  it("provides definitions for guitar, bass, ukulele and chromatic", () => {
+    expect(INSTRUMENTS.map((i) => i.id)).toEqual([
+      "guitar6",
+      "guitar7",
+      "bass4",
+      "bass5",
+      "ukulele",
+      "chromatic",
+    ]);
+  });
+
+  it("converts note names to MIDI numbers", () => {
+    expect(nameToMidi("E4")).toBe(64);
+    expect(nameToMidi("B3")).toBe(59);
+    expect(nameToMidi("G3")).toBe(55);
+    expect(nameToMidi("D3")).toBe(50);
+    expect(nameToMidi("A2")).toBe(45);
+    expect(nameToMidi("E2")).toBe(40);
+    expect(nameToMidi("Eb4")).toBe(63);
+    expect(nameToMidi("D#4")).toBe(63);
+    expect(nameToMidi("B0")).toBe(23);
+    expect(nameToMidi("invalid")).toBeNull();
+  });
+
+  it("parses custom tuning strings", () => {
+    expect(parseCustomTuning("E4 B3 G3 D3 A2 E2")).toEqual([64, 59, 55, 50, 45, 40]);
+    expect(parseCustomTuning("D4, A3, G3, D3, A2, D2")).toEqual([62, 57, 55, 50, 45, 38]);
+    expect(parseCustomTuning("")).toBeNull();
+    expect(parseCustomTuning("E4 Foo G3")).toBeNull();
   });
 });

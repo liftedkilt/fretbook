@@ -45,6 +45,73 @@ export const PRESETS: TunerPreset[] = [
   { id: "bass6", labelKey: "tuner.preset.bass6", midi: [48, 43, 38, 33, 28, 23] },
 ];
 
+export interface InstrumentTuning {
+  id: string;
+  labelKey: string;
+  midi: number[];
+}
+
+export interface InstrumentDefinition {
+  id: string;
+  labelKey: string;
+  tunings: InstrumentTuning[];
+}
+
+export const INSTRUMENTS: InstrumentDefinition[] = [
+  {
+    id: "guitar6",
+    labelKey: "tools.instruments.guitar6",
+    tunings: [
+      { id: "standard", labelKey: "tools.tunings.standard", midi: [64, 59, 55, 50, 45, 40] },
+      { id: "dropD", labelKey: "tools.tunings.dropD", midi: [64, 59, 55, 50, 45, 38] },
+      { id: "halfStepDown", labelKey: "tools.tunings.halfStepDown", midi: [63, 58, 54, 49, 44, 39] },
+      { id: "dadgad", labelKey: "tools.tunings.dadgad", midi: [62, 57, 55, 50, 45, 38] },
+      { id: "openG", labelKey: "tools.tunings.openG", midi: [62, 59, 55, 50, 43, 38] },
+      { id: "openD", labelKey: "tools.tunings.openD", midi: [62, 57, 54, 50, 45, 38] },
+    ],
+  },
+  {
+    id: "guitar7",
+    labelKey: "tools.instruments.guitar7",
+    tunings: [
+      { id: "standard", labelKey: "tools.tunings.standard", midi: [64, 59, 55, 50, 45, 40, 35] },
+      { id: "dropA", labelKey: "tools.tunings.dropA", midi: [64, 59, 55, 50, 45, 40, 33] },
+      { id: "halfStepDown", labelKey: "tools.tunings.halfStepDown", midi: [63, 58, 54, 49, 44, 39, 34] },
+    ],
+  },
+  {
+    id: "bass4",
+    labelKey: "tools.instruments.bass4",
+    tunings: [
+      { id: "standard", labelKey: "tools.tunings.standard", midi: [43, 38, 33, 28] },
+      { id: "dropD", labelKey: "tools.tunings.dropD", midi: [43, 38, 33, 26] },
+      { id: "halfStepDown", labelKey: "tools.tunings.halfStepDown", midi: [42, 37, 32, 27] },
+    ],
+  },
+  {
+    id: "bass5",
+    labelKey: "tools.instruments.bass5",
+    tunings: [
+      { id: "standard", labelKey: "tools.tunings.standard", midi: [43, 38, 33, 28, 23] },
+      { id: "halfStepDown", labelKey: "tools.tunings.halfStepDown", midi: [42, 37, 32, 27, 22] },
+      { id: "dropA", labelKey: "tools.tunings.dropA", midi: [43, 38, 33, 28, 21] },
+    ],
+  },
+  {
+    id: "ukulele",
+    labelKey: "tools.instruments.ukulele",
+    tunings: [
+      { id: "standard", labelKey: "tools.tunings.standard", midi: [69, 64, 60, 67] },
+      { id: "lowG", labelKey: "tools.tunings.lowG", midi: [69, 64, 60, 55] },
+    ],
+  },
+  {
+    id: "chromatic",
+    labelKey: "tools.instruments.chromatic",
+    tunings: [],
+  },
+];
+
 export function clampA4(value: number): number {
   if (!Number.isFinite(value)) return DEFAULT_A4;
   return Math.min(A4_MAX, Math.max(A4_MIN, Math.round(value)));

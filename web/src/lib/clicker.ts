@@ -1,3 +1,5 @@
+export type ClickType = "accent" | "normal" | "subdivision";
+
 /** Metronome and count-in clicks from the Web Audio API, scheduled ahead on the audio clock. */
 export class Clicker {
   private context: AudioContext | null = null;
@@ -19,16 +21,32 @@ export class Clicker {
     if (context && context.state === "suspended") void context.resume();
   }
 
+  /** The audio clock time in seconds, or 0 if audio is unavailable. */
+  get currentTime(): number {
+    return this.ensure()?.currentTime ?? 0;
+  }
+
   /** Plays one click `delay` seconds from now. */
-  click(delay: number, accent: boolean, volume: number): void {
+  click(
+    delay: number,
+    accent: boolean,
+    volume: number,
+    type: ClickType = accent ? "accent" : "normal",
+  ): void {
     const context = this.ensure();
     if (!context || volume <= 0) return;
     const start = context.currentTime + Math.max(0, delay);
     const oscillator = context.createOscillator();
     const gain = context.createGain();
     oscillator.type = "square";
-    oscillator.frequency.value = accent ? 1600 : 1100;
-    const peak = volume * (accent ? 0.6 : 0.4);
+    if (type === "accent") {
+      oscillator.frequency.value = 1600;
+    } else if (type === "subdivision") {
+      oscillator.frequency.value = 850;
+    } else {
+      oscillator.frequency.value = 1100;
+    }
+    const peak = volume * (type === "accent" ? 0.6 : type === "subdivision" ? 0.25 : 0.4);
     gain.gain.setValueAtTime(peak, start);
     gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.05);
     oscillator.connect(gain).connect(context.destination);
