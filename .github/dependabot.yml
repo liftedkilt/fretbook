@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://json.schemastore.org/dependabot-2.0.json
+version: 2
+
+updates:
+  # Docker base images in Dockerfile (e.g. node and python slim base images).
+  # Grouped weekly to limit PR noise.
+  - package-ecosystem: docker
+    directory: "/"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      docker-base-images:
+        patterns:
+          - "*"
+
+  # GitHub Actions workflows in .github/workflows/.
+  # Grouped weekly to limit PR noise.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "ci(deps)"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  # Frontend dependencies in web/package.json.
+  # Grouped weekly to limit PR noise.
+  - package-ecosystem: npm
+    directory: "/web"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+    groups:
+      # @coderline/alphatab and @coderline/alphatab-vite must stay on matching
+      # versions. Minor and patch updates are grouped together into one PR.
+      alphatab:
+        patterns:
+          - "@coderline/alphatab"
+          - "@coderline/alphatab-vite"
+        update-types:
+          - minor
+          - patch
+      npm-dependencies:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "@coderline/alphatab"
+          - "@coderline/alphatab-vite"
+
+  # Python dependencies in requirements.txt, requirements-dev.txt, requirements-vision.txt.
+  #
+  # yt-dlp gets its own daily update, since YouTube changes frequently and breaks
+  # older extractors. The ecosystem is checked daily so yt-dlp is updated immediately;
+  # other Python dependencies are collected into a single group PR to limit noise.
+  #
+  # Deliberate exact pins:
+  # fastapi and pydantic are deliberately pinned to exact versions in requirements.txt
+  # to keep openapi.json stable across environments. When Dependabot (or a developer)
+  # updates fastapi or pydantic, the OpenAPI contract and TypeScript types MUST be
+  # regenerated:
+  #   make openapi api-types
+  # (or python -m fretbook.openapi && npm run api-types --prefix web)
+  # and both openapi.json and web/src/lib/api-types.ts committed.
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: daily
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      python-dependencies:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "yt-dlp"

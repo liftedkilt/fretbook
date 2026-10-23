@@ -51,6 +51,13 @@ The HTTP contract is the committed `openapi.json`. Regenerate it with `python -m
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how the pieces fit together and [ROADMAP.md](ROADMAP.md) for what is planned.
 
+## Dependency updates
+
+Dependabot (`.github/dependabot.yml`) checks for updates across Docker base images, GitHub Actions, npm dependencies (`web/`), and Python packages (`requirements.txt`). Updates are grouped weekly to limit PR noise, except `yt-dlp` which checks daily because YouTube frequently breaks older extractors.
+
+`fastapi` and `pydantic` are deliberately pinned to exact versions in `requirements.txt` to keep `openapi.json` stable. When updating either dependency, regenerate the OpenAPI contract and TypeScript types (`make openapi api-types`) and commit the updated `openapi.json` and `web/src/lib/api-types.ts`.
+
+
 ## Adding a locale
 
 English (`en`) and Brazilian Portuguese (`pt-BR`) live in `web/src/locales/`. The UI reads them through `t()` in `web/src/lib/i18n.svelte.ts`. `<html lang>` follows the active locale.
