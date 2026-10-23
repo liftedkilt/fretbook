@@ -1,0 +1,10 @@
+{t: Corpus Directives}
+{st: Fretbook Fixtures}
+{c: Capo 2}
+# a comment line
+{sov}
+[Dm7]Short directive [G7]forms
+{eov}
+{soc}
+[Cmaj7]Chorus with [Am9/E]slash chords
+{eoc}

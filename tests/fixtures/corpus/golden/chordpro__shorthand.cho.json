@@ -1,0 +1,13 @@
+{
+  "artist": "Fretbook Fixtures",
+  "chordpro": "{t: Corpus Directives}\n{st: Fretbook Fixtures}\n{c: Capo 2}\n# a comment line\n{sov}\n[Dm7]Short directive [G7]forms\n{eov}\n{soc}\n[Cmaj7]Chorus with [Am9/E]slash chords\n{eoc}\n",
+  "content_kind": "chords",
+  "document": null,
+  "slug": "shorthand",
+  "source_kind": "chordpro",
+  "source_ref": {
+    "filename": "shorthand.cho"
+  },
+  "title": "Corpus Directives",
+  "warnings": []
+}

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<score-timewise version="4.0">
+  <work><work-title>Corpus Riff</work-title></work>
+  <part-list><score-part id="P1"><part-name>Bass</part-name></score-part></part-list>
+  <measure number="1">
+    <part id="P1">
+      <attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+      <note><pitch><step>E</step><octave>1</octave></pitch><duration>4</duration><notations><technical><string>4</string><fret>0</fret></technical></notations></note>
+    </part>
+  </measure>
+</score-timewise>

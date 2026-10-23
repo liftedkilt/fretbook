@@ -125,7 +125,8 @@
           <div>
             <strong>{t("about.label")}</strong>
             <p class="muted">
-              {t("about.version", { version: ui.version })}{#if ui.commit} · {t("about.commit", { commit: ui.commit.slice(0, 7) })}{/if}
+              {t("about.version", { version: ui.version })}{#if ui.commit}
+                · {t("about.commit", { commit: ui.commit.slice(0, 7) })}{/if}
             </p>
           </div>
         </div>

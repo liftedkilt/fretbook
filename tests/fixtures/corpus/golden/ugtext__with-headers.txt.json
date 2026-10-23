@@ -1,0 +1,13 @@
+{
+  "artist": "",
+  "chordpro": "{title: with-headers}\nTitle: Corpus Plain Sheet\nArtist: Fretbook Fixtures\n\n{comment: Verse}\n[G]Simple lyrics[D] made up here\n[Em]Nothing borro[C]wed at all\n",
+  "content_kind": "chords",
+  "document": null,
+  "slug": "with-headers",
+  "source_kind": "chordpro",
+  "source_ref": {
+    "filename": "with-headers.txt"
+  },
+  "title": "with-headers",
+  "warnings": []
+}

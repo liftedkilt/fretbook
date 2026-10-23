@@ -1,0 +1,13 @@
+{
+  "artist": "",
+  "chordpro": "{title: chords-over-lyrics}\n[Em7]Original wo[G]rds for the fixture\nWritten f[Dsus4]or this corpus alon[A7sus4]e\n\n{comment: Chorus}\n[C] [D] [Em] x2\n",
+  "content_kind": "chords",
+  "document": null,
+  "slug": "chords-over-lyrics",
+  "source_kind": "chordpro",
+  "source_ref": {
+    "filename": "chords-over-lyrics.txt"
+  },
+  "title": "chords-over-lyrics",
+  "warnings": []
+}

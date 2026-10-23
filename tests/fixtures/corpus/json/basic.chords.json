@@ -1,0 +1,6 @@
+{
+  "title": "Corpus Chords",
+  "artist": "Fretbook Fixtures",
+  "content_kind": "chords",
+  "chordpro": "{title: Corpus Chords}\n{artist: Fretbook Fixtures}\n{key: C}\n\n{start_of_verse: Verse 1}\n[C]Walking down the [G]garden path\n[Am]Counting every [F]stone\n{end_of_verse}\n\n{start_of_chorus}\n[F]Home is [C]where the [G]chords are\n{end_of_chorus}\n"
+}
