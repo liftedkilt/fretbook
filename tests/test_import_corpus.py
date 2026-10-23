@@ -5,17 +5,20 @@ committed snapshot in ``corpus/golden``. After an intended change, review the di
 
     pytest tests/test_import_corpus.py --update-golden
 
-Guitar Pro files have no server importer (alphaTab reads them in the browser; see
-``web/src/lib/alphatab/importScore.test.ts``), so here they pin that the server does not claim them.
+Guitar Pro files go through the Node converter (``npm run build:gp-cli`` in ``web/``); without it they
+are skipped here, and in CI (``CI`` is set) a missing converter fails instead. ``tests/test_guitarpro.py``
+compares them with the browser's snapshots in ``corpus/golden-web``.
 """
 
 import json
+import os
 import shutil
 from pathlib import Path
 
 import pytest
 
 from fretbook.export.musicxml import to_musicxml
+from fretbook.importers import guitarpro
 from fretbook.importers.base import ImportError, ImportRequest, ImportResult, silent_progress
 from fretbook.importers.registry import resolve_importer
 
@@ -26,6 +29,14 @@ SKIP = {".py", ".md"}
 FILES = sorted(
     p for p in CORPUS.rglob("*") if p.is_file() and p.suffix not in SKIP and not SNAPSHOT_DIRS & set(p.parents)
 )
+
+
+def require_converter() -> None:
+    if guitarpro.available():
+        return
+    if os.environ.get("CI"):
+        pytest.fail("the Guitar Pro converter is not built: run `npm run build:gp-cli` in web/")
+    pytest.skip("the Guitar Pro converter is not built (npm run build:gp-cli in web/)")
 
 
 def snapshot_name(path: Path) -> str:
@@ -68,6 +79,8 @@ def test_corpus_is_complete() -> None:
 
 @pytest.mark.parametrize("path", FILES, ids=lambda p: str(p.relative_to(CORPUS)))
 def test_golden(path: Path, tmp_path: Path, request: pytest.FixtureRequest) -> None:
+    if path.parent.name == "gp":
+        require_converter()
     actual = json.dumps(normalize(path, tmp_path), indent=2, sort_keys=True, ensure_ascii=False) + "\n"
     snapshot = GOLDEN / snapshot_name(path)
     if request.config.getoption("--update-golden"):

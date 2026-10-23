@@ -55,7 +55,6 @@ _AUDIO_SCHEMA: dict[str, dict[str, dict[str, str]]] = {
 }
 
 _AUDIO_TYPES = AUDIO_TYPES
-_GUITAR_PRO = {".gp", ".gp3", ".gp4", ".gp5", ".gpx"}
 _CHUNK = 1024 * 1024
 
 
@@ -581,14 +580,8 @@ async def import_file(
     ctx: AppContext = Depends(_ctx),
     user: Principal = Depends(_user),
 ) -> JSONResponse:
-    """Queue a MusicXML, ChordPro, or Fretbook JSON upload. Guitar Pro is read in the browser."""
+    """Queue a Guitar Pro, MusicXML, ChordPro, or Fretbook JSON upload."""
     filename = file.filename or "upload"
-    if Path(filename).suffix.lower() in _GUITAR_PRO:
-        raise api_error(
-            400,
-            "import.guitarProInBrowser",
-            "Guitar Pro files are read in the browser by alphaTab. Use the import button in Fretbook.",
-        )
     request = ImportRequest(owner_id=user.user_id, filename=filename, kind=kind)
     try:
         resolve_importer(request)
@@ -615,7 +608,7 @@ async def import_file(
 def import_document(
     body: ImportDocumentBody, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)
 ) -> JSONResponse:
-    """Save a document the browser built (Guitar Pro via alphaTab)."""
+    """Save a document the browser built (the browser reads Guitar Pro with alphaTab)."""
     title = body.title.strip() or "Untitled"
     return _json(
         ctx.songs.create_song(

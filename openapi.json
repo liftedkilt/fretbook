@@ -2868,7 +2868,7 @@
     },
     "/api/imports/file": {
       "post": {
-        "description": "Queue a MusicXML, ChordPro, or Fretbook JSON upload. Guitar Pro is read in the browser.",
+        "description": "Queue a Guitar Pro, MusicXML, ChordPro, or Fretbook JSON upload.",
         "operationId": "import_file_api_imports_file_post",
         "requestBody": {
           "content": {
@@ -4154,7 +4154,7 @@
     },
     "/api/songs/import-document": {
       "post": {
-        "description": "Save a document the browser built (Guitar Pro via alphaTab).",
+        "description": "Save a document the browser built (the browser reads Guitar Pro with alphaTab).",
         "operationId": "import_document_api_songs_import_document_post",
         "requestBody": {
           "content": {

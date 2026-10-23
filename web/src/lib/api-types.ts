@@ -203,7 +203,7 @@ export interface paths {
         put?: never;
         /**
          * Import File
-         * @description Queue a MusicXML, ChordPro, or Fretbook JSON upload. Guitar Pro is read in the browser.
+         * @description Queue a Guitar Pro, MusicXML, ChordPro, or Fretbook JSON upload.
          */
         post: operations["import_file_api_imports_file_post"];
         delete?: never;
@@ -596,7 +596,7 @@ export interface paths {
         put?: never;
         /**
          * Import Document
-         * @description Save a document the browser built (Guitar Pro via alphaTab).
+         * @description Save a document the browser built (the browser reads Guitar Pro with alphaTab).
          */
         post: operations["import_document_api_songs_import_document_post"];
         delete?: never;

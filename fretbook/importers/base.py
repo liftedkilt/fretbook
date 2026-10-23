@@ -5,8 +5,8 @@ chord sheets, ChordPro text). Slow work (network, audio, a future frame scan)
 runs inside a background job; the importer itself stays callable from tests
 with a fake fetcher.
 
-Guitar Pro bytes are parsed in the browser by alphaTab (see
-``web/src/lib/alphatab/importScore.ts``) and then saved as a normal document.
+Guitar Pro bytes are parsed by alphaTab: in the browser (``web/src/lib/alphatab/importScore.ts``)
+or on the server, through Node (``guitarpro.py``). Both share one converter.
 """
 
 from __future__ import annotations

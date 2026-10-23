@@ -110,8 +110,6 @@ def test_audio_file_becomes_a_song_with_audio_and_a_blank_tab(tmp_path: Path) ->
 def test_unsupported_and_unknown_files_are_refused_and_cleaned_up(tmp_path: Path) -> None:
     with _client(tmp_path) as client:
         cases = {
-            "song.gp5": (b"\x18FICHIER GUITAR PRO v5.00" + b"\x00" * 40, "import.guitarProInBrowser"),
-            "tab": (_zipped("Content/score.gpif"), "import.guitarProInBrowser"),
             "riff.mid": (b"MThd\x00\x00\x00\x06\x00\x01\x00\x01\x01\xe0", "import.notYetSupported"),
             "scan.pdf": (b"%PDF-1.4 ...", "import.notYetSupported"),
             "photo.png": (b"\x89PNG\r\n\x1a\n" + b"\x00" * 16, "import.notYetSupported"),
@@ -242,16 +240,6 @@ def test_page_with_nothing_usable(tmp_path: Path) -> None:
         job = _wait(client, response.json()["job_id"])
         assert job["status"] == "error"
         assert job["error_key"] == "import.noFileImporter"
-
-
-def test_guitar_pro_by_link_asks_for_a_download(tmp_path: Path) -> None:
-    fetcher = _fetcher(
-        {"files.example/riff.gp5": ("application/octet-stream", b"\x18FICHIER GUITAR PRO v5.00" + b"\x00" * 30)}
-    )
-    with _client(tmp_path, fetcher) as client:
-        job = _wait(client, _auto(client, data={"url": "https://files.example/riff.gp5"}).json()["job_id"])
-        assert job["status"] == "error"
-        assert job["error_key"] == "import.guitarProInBrowser"
 
 
 def test_private_links_fail_the_job(tmp_path: Path) -> None:

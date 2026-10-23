@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:gp-cli": "vite build -c vite.gp-cli.config.ts",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
