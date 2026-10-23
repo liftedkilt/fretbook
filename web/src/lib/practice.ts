@@ -25,6 +25,15 @@ export interface PracticeSettings {
     synth: number;
     tracks: Record<string, TrackMix>;
   };
+  /** Wait mode options. Whether it is on is not remembered: it needs a click to open the microphone. */
+  wait: {
+    /** Count the right note in any octave. */
+    anyOctave: boolean;
+    /** Mute the synth entirely; otherwise the other tracks play as backing. */
+    silent: boolean;
+    /** Seconds on one beat before the hint shows the string and fret. */
+    hintSeconds: number;
+  };
 }
 
 export interface Click {
@@ -44,6 +53,7 @@ export function defaultPractice(): PracticeSettings {
     metronome: { on: false, volume: 0.7 },
     countIn: { bars: 0, beforeLoops: false },
     mix: { audio: 1, synth: 1, tracks: {} },
+    wait: { anyOctave: true, silent: false, hintSeconds: 5 },
   };
 }
 
@@ -61,7 +71,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 export function parsePractice(raw: unknown): PracticeSettings {
   const result = defaultPractice();
   if (!isRecord(raw)) return result;
-  const { metronome, countIn, mix } = raw;
+  const { metronome, countIn, mix, wait } = raw;
   if (isRecord(metronome)) {
     result.metronome.on = metronome.on === true;
     result.metronome.volume = clamp01(metronome.volume, result.metronome.volume);
@@ -83,6 +93,13 @@ export function parsePractice(raw: unknown): PracticeSettings {
         };
       }
     }
+  }
+  if (isRecord(wait)) {
+    result.wait.anyOctave = wait.anyOctave !== false;
+    result.wait.silent = wait.silent === true;
+    const seconds = wait.hintSeconds;
+    if (typeof seconds === "number" && Number.isFinite(seconds))
+      result.wait.hintSeconds = Math.min(30, Math.max(1, Math.round(seconds)));
   }
   return result;
 }
