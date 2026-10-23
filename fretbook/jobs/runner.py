@@ -15,8 +15,11 @@ import json
 import logging
 import sqlite3
 import threading
+import time
 import uuid
 from collections.abc import Callable, Iterable
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 from fretbook.config import Settings
@@ -64,8 +67,87 @@ class JobRunner:
             ).fetchone()
         return _job(row) if row else None
 
+    def list_jobs(self, owner_id: str, *, status: str | None = None, limit: int = 50) -> list[dict[str, Any]]:
+        query = "SELECT * FROM jobs WHERE owner_id = ?"
+        params: list[Any] = [owner_id]
+        if status is not None:
+            query += " AND status = ?"
+            params.append(status)
+        query += " ORDER BY created_at DESC LIMIT ?"
+        params.append(limit)
+        with self._session() as conn:
+            rows = conn.execute(query, params).fetchall()
+        return [_job(row) for row in rows]
+
+    def retry(self, owner_id: str, job_id: str) -> dict[str, Any] | None:
+        job = self.get(owner_id, job_id)
+        if job is None:
+            return None
+        if job["status"] != "error":
+            raise ValueError("only failed jobs can be retried")
+        file_path = job["payload"].get("path")
+        if file_path and not Path(file_path).exists():
+            raise FileNotFoundError(f"uploaded file {file_path} is no longer available")
+        now = utcnow()
+        with self._session(immediate=True) as conn:
+            conn.execute(
+                """
+                UPDATE jobs
+                SET status = 'queued',
+                    attempts = 0,
+                    error = NULL,
+                    error_key = '',
+                    error_params = '{}',
+                    progress = '',
+                    progress_key = '',
+                    updated_at = ?
+                WHERE id = ? AND owner_id = ?
+                """,
+                (now, job_id, owner_id),
+            )
+        return self.get(owner_id, job_id)
+
+    def dismiss(self, owner_id: str, job_id: str) -> bool:
+        job = self.get(owner_id, job_id)
+        if job is None:
+            return False
+        file_path = job["payload"].get("path")
+        if file_path:
+            Path(file_path).unlink(missing_ok=True)
+        with self._session(immediate=True) as conn:
+            cursor = conn.execute(
+                "DELETE FROM jobs WHERE id = ? AND owner_id = ?",
+                (job_id, owner_id),
+            )
+            return cursor.rowcount > 0
+
+    def cleanup_failed_uploads(self, max_age_days: int | None = None) -> int:
+        """Clean up uploaded files for failed jobs older than N days."""
+        if max_age_days is None:
+            max_age_days = self.settings.failed_upload_retention_days
+        cutoff = (datetime.now(UTC) - timedelta(days=max_age_days)).isoformat()
+        cleaned = 0
+        with self._session(immediate=True) as conn:
+            rows = conn.execute(
+                "SELECT id, payload FROM jobs WHERE status = 'error' AND updated_at <= ?",
+                (cutoff,),
+            ).fetchall()
+            for row in rows:
+                try:
+                    payload = json.loads(row["payload"])
+                    path = payload.get("path")
+                    if path:
+                        p = Path(path)
+                        if p.exists():
+                            p.unlink(missing_ok=True)
+                            cleaned += 1
+                except Exception:
+                    logger.exception("failed to clean up upload for job %s", row["id"])
+        return cleaned
+
     def recover(self) -> int:
         """Requeue jobs a restart interrupted; give up on ones interrupted twice."""
+        self.cleanup_failed_uploads()
         with self._session(immediate=True) as conn:
             conn.execute(
                 """
@@ -96,8 +178,12 @@ class JobRunner:
             self._thread.join(timeout=5)
 
     def _loop(self) -> None:
+        last_cleanup = time.monotonic()
         while not self._stop.wait(0.4):
             try:
+                if time.monotonic() - last_cleanup > 3600:
+                    self.cleanup_failed_uploads()
+                    last_cleanup = time.monotonic()
                 while self.run_once() and not self._stop.is_set():
                     pass
             except Exception:

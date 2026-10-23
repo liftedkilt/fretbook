@@ -233,6 +233,7 @@ class Job(BaseModel):
     id: str
     kind: str
     status: Literal["queued", "running", "done", "error"]
+    label: str = ""
     # Null until the job finishes successfully. The key is always present.
     result: JobResult | None
     error: str | None

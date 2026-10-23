@@ -96,8 +96,8 @@ def test_file_job_cleans_the_inbox_and_isolates_owners(tmp_path: Path) -> None:
     assert all(row["title"] != "Secret" for row in songs.list_songs("local")["items"])
 
 
-def test_failed_file_job_still_cleans_the_inbox(tmp_path: Path) -> None:
-    jobs, _songs, settings = _runner(tmp_path)
+def test_failed_file_job_keeps_upload_for_retry(tmp_path: Path) -> None:
+    jobs, songs, settings = _runner(tmp_path)
     settings.inbox_dir.mkdir(parents=True, exist_ok=True)
     path = settings.inbox_dir / "abc-bad.musicxml"
     path.write_text("<not-xml", encoding="utf-8")
@@ -106,6 +106,72 @@ def test_failed_file_job_still_cleans_the_inbox(tmp_path: Path) -> None:
     job = jobs.get("local", job_id)
     assert job is not None and job["status"] == "error"
     assert job["error_key"] == "musicxml.parse"
+    assert path.exists()
+
+    # Retrying with the same bad content fails again and still keeps the file
+    jobs.retry("local", job_id)
+    jobs.run_once()
+    job = jobs.get("local", job_id)
+    assert job is not None and job["status"] == "error"
+    assert path.exists()
+
+    # Fixing the file content and retrying succeeds, then removes the inbox upload
+    path.write_text(XML, encoding="utf-8")
+    jobs.retry("local", job_id)
+    jobs.run_once()
+    done = jobs.get("local", job_id)
+    assert done is not None and done["status"] == "done"
+    assert not path.exists()
+
+
+def test_dismiss_failed_job_removes_uploaded_file(tmp_path: Path) -> None:
+    jobs, _songs, settings = _runner(tmp_path)
+    settings.inbox_dir.mkdir(parents=True, exist_ok=True)
+    path = settings.inbox_dir / "abc-bad.musicxml"
+    path.write_text("<not-xml", encoding="utf-8")
+    job_id = jobs.enqueue("local", "import.file", {"path": str(path), "filename": "bad.musicxml"})
+    jobs.run_once()
+    assert path.exists()
+
+    assert jobs.dismiss("local", job_id) is True
+    assert not path.exists()
+    assert jobs.get("local", job_id) is None
+
+
+def test_retry_validations(tmp_path: Path) -> None:
+    jobs, _songs, settings = _runner(tmp_path)
+    settings.inbox_dir.mkdir(parents=True, exist_ok=True)
+    path = settings.inbox_dir / "abc-bad.musicxml"
+    path.write_text("<not-xml", encoding="utf-8")
+    job_id = jobs.enqueue("local", "import.file", {"path": str(path), "filename": "bad.musicxml"})
+
+    # Cannot retry queued job
+    import pytest
+
+    with pytest.raises(ValueError, match="only failed jobs"):
+        jobs.retry("local", job_id)
+
+    jobs.run_once()
+    assert jobs.get("local", job_id)["status"] == "error"
+
+    # If upload expired/deleted, retry raises FileNotFoundError
+    path.unlink()
+    with pytest.raises(FileNotFoundError):
+        jobs.retry("local", job_id)
+
+
+def test_cleanup_failed_uploads(tmp_path: Path) -> None:
+    jobs, _songs, settings = _runner(tmp_path)
+    settings.inbox_dir.mkdir(parents=True, exist_ok=True)
+    path = settings.inbox_dir / "abc-expired.musicxml"
+    path.write_text("<not-xml", encoding="utf-8")
+    jobs.enqueue("local", "import.file", {"path": str(path), "filename": "expired.musicxml"})
+    jobs.run_once()
+    assert path.exists()
+
+    # Default retention is 7 days; max_age_days=0 will clean it up immediately
+    cleaned = jobs.cleanup_failed_uploads(max_age_days=0)
+    assert cleaned >= 1
     assert not path.exists()
 
 

@@ -1,6 +1,7 @@
 <script lang="ts">
   import Cover from "./Cover.svelte";
   import Icon from "./Icon.svelte";
+  import RecentImports from "./RecentImports.svelte";
   import { deleteSong } from "../lib/api";
   import { t } from "../lib/i18n.svelte";
   import { instrumentLabel } from "../lib/instruments";
@@ -110,6 +111,8 @@
       ><Icon name="plus" />{t("add.button")}</button
     >
   </header>
+
+  <RecentImports />
 
   {#if countFor("all") > 0}
     <div class="toolbar">

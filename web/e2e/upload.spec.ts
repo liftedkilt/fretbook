@@ -32,3 +32,24 @@ test("a file that is not a score is refused with a message", async ({ page }) =>
   await expect(page.getByTestId("add-error")).toBeVisible();
   await expect(page).toHaveURL(/\/$/);
 });
+
+test("failed import appears in recent imports and can be dismissed", async ({ page }) => {
+  await page.goto("/");
+  await page.getByTestId("add-song").click();
+  await page.getByTestId("add-mode-file").click();
+  await page.getByTestId("add-file-input").setInputFiles({
+    name: "bad-riff.musicxml",
+    mimeType: "application/xml",
+    buffer: Buffer.from("<not-a-score/>"),
+  });
+  await expect(page.getByTestId("add-error")).toBeVisible();
+  await page.getByTestId("add-sheet-close").click();
+
+  await expect(page.getByTestId("recent-imports-panel")).toBeVisible();
+  await expect(page.getByTestId("job-label")).toHaveText("bad-riff.musicxml");
+  await expect(page.getByTestId("job-retry")).toBeVisible();
+  await expect(page.getByTestId("job-dismiss")).toBeVisible();
+
+  await page.getByTestId("job-dismiss").click();
+  await expect(page.getByTestId("recent-imports-panel")).toBeHidden();
+});

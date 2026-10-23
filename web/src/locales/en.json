@@ -429,7 +429,10 @@
       "failed": "The import failed.",
       "interrupted": "The server restarted during this import. Start it again.",
       "noHandler": "This kind of import is not available.",
-      "timeout": "The import is taking too long."
+      "timeout": "The import is taking too long.",
+      "notFailed": "Only failed imports can be retried.",
+      "uploadExpired": "The uploaded file is no longer available. Please upload it again.",
+      "cannotRetry": "This import cannot be retried."
     },
     "backup": {
       "notArchive": "That file is not a Fretbook backup.",
@@ -582,5 +585,15 @@
       "busy": "The audio input is in use by another app or could not be opened.",
       "other": "Could not start listening to the microphone."
     }
+  },
+  "recentImports": {
+    "heading": "Recent imports",
+    "retry": "Retry",
+    "dismiss": "Dismiss",
+    "queued": "Queued",
+    "retrying": "Retrying…",
+    "dismissing": "Dismissing…",
+    "completed": "Ready",
+    "viewSong": "View song"
   }
 }

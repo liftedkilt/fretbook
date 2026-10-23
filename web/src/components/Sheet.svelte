@@ -51,8 +51,11 @@
         <h2 class="display">{title}</h2>
         {#if subtitle}<p class="muted">{subtitle}</p>{/if}
       </div>
-      <button class="icon-button ghost" onclick={onclose} aria-label={t("ui.close")}
-        ><Icon name="close" /></button
+      <button
+        class="icon-button ghost"
+        data-testid={testid ? `${testid}-close` : "sheet-close"}
+        onclick={onclose}
+        aria-label={t("ui.close")}><Icon name="close" /></button
       >
     </header>
     {@render children()}
