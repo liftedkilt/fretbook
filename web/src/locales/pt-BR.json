@@ -791,5 +791,41 @@
     "lastUsed": "Último uso em {date}",
     "neverUsed": "Nunca usado",
     "sessionRequired": "Entre no aplicativo web para gerenciar tokens."
+  },
+  "calibration": {
+    "title": "Calibração de latência de áudio",
+    "description": "Compense o atraso de ida e volta entre a saída de som e a entrada do microfone.",
+    "defaultDevice": "Dispositivo padrão",
+    "button": "Calibrar latência de áudio…",
+    "openWizard": "Calibrar latência de áudio",
+    "manualSlider": "Deslocamento manual",
+    "manualSliderHint": "Ajuste a compensação de latência de ida e volta manualmente.",
+    "currentLatency": "Deslocamento: {offset} ms",
+    "currentJitter": "Variação: ±{jitter} ms",
+    "notCalibrated": "Não calibrado",
+    "devicePair": "Saída: {output} · Entrada: {input}",
+    "outputDevice": "Saída de áudio",
+    "inputDevice": "Entrada de áudio",
+    "wizardHeading": "Assistente de calibração de latência de áudio",
+    "wizardIntro": "Este assistente mede a latência de ida e volta da sua configuração de áudio. Clique em \"Iniciar\" para tocar uma série de cliques e toque junto no instrumento a cada clique (ou deixe o microfone ouvir seus alto-falantes).",
+    "start": "Iniciar calibração",
+    "cancel": "Cancelar",
+    "stop": "Parar",
+    "tryAgain": "Tentar novamente",
+    "save": "Salvar calibração",
+    "leadIn": "Ouça o andamento…",
+    "calibrating": "Toque a cada clique ({current} de {total})",
+    "tapDetected": "Toque detectado!",
+    "resultsHeading": "Resultados da calibração",
+    "measuredOffset": "Deslocamento medido: {offset} ms",
+    "measuredJitter": "Variação: ±{jitter} ms",
+    "sampleCount": {
+      "one": "{count} toque gravado",
+      "other": "{count} toques gravados"
+    },
+    "noTaps": "Nenhum toque foi detectado. Verifique se o microfone está ativo, confira o volume e tente novamente.",
+    "bluetoothWarning": "Dispositivo de áudio Bluetooth detectado. O Bluetooth adiciona latência considerável e variável. Para melhores resultados, recomendamos fones ou caixas com fio.",
+    "highJitterWarning": "Alta variação de tempo detectada (±{jitter} ms). Isso pode ocorrer devido a toques inconsistentes, ruído ambiente ou lentidão do sistema.",
+    "saved": "Calibração salva"
   }
 }

@@ -113,6 +113,25 @@ class Settings(BaseModel):
     default_instrument: str
 
 
+class AudioCalibration(BaseModel):
+    """Measured or manual audio latency calibration for an output/input device pair."""
+
+    output_device: str
+    input_device: str
+    offset_ms: float
+    jitter_ms: float | None = None
+    updated_at: str
+
+
+class AudioCalibrationBody(BaseModel):
+    """Request body to record or update an audio latency calibration."""
+
+    output_device: str = "default"
+    input_device: str = "default"
+    offset_ms: float
+    jitter_ms: float | None = None
+
+
 class Me(BaseModel):
     """The caller. In single-user mode this is the ``local`` user and ``authenticated`` is false.
 

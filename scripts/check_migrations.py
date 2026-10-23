@@ -42,8 +42,7 @@ def check(directory: Path) -> list[str]:
         expected = set(range(1, max(by_number) + 1))
         for number in sorted(expected - set(by_number)):
             errors.append(
-                f"missing migration number {number:03d}: numbers must run 001..{max(by_number):03d} "
-                "with no gaps."
+                f"missing migration number {number:03d}: numbers must run 001..{max(by_number):03d} with no gaps."
             )
     return errors
 

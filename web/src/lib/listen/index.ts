@@ -14,3 +14,19 @@ export {
   type ListenSession,
 } from "./input";
 export { centsBetween, describePitch, midiToFrequency } from "./notes";
+export {
+  CalibrationWizard,
+  computeJitter,
+  computeMedian,
+  filterOutliers,
+  getLocalCalibration,
+  isBluetoothDevice,
+  isHighJitter,
+  listOutputDevices,
+  scheduleClick,
+  setLocalCalibration,
+  type AudioDevice,
+  type CalibrationOptions,
+  type CalibrationProgress,
+  type CalibrationResult,
+} from "./calibration";

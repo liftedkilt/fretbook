@@ -4,6 +4,8 @@ import type {
   ApiTokenCreated,
   AsciiTabBody,
   AsciiTabPreview as ContractAsciiTabPreview,
+  AudioCalibration as ContractAudioCalibration,
+  AudioCalibrationBody as ContractAudioCalibrationBody,
   AutoImportAccepted,
   BulkImportAccepted as ContractBulkImportAccepted,
   ErrorDetail,
@@ -28,6 +30,8 @@ import { songsPath } from "./songQuery";
 import type {
   AdminUser,
   AsciiTabPreview,
+  AudioCalibration,
+  AudioCalibrationBody,
   BulkImportAccepted,
   DuplicateAction,
   ImportPreview,
@@ -56,6 +60,8 @@ type _matchesContract = [
   AssertAssignable<ContractTagCount, TagCount>,
   AssertAssignable<ContractImportPreview, ImportPreview>,
   AssertAssignable<ContractAdminUser, AdminUser>,
+  AssertAssignable<ContractAudioCalibration, AudioCalibration>,
+  AssertAssignable<ContractAudioCalibrationBody, AudioCalibrationBody>,
 ];
 
 // Score documents and jobs are parsed as the contract types, then viewed through
@@ -159,6 +165,30 @@ export function getMe(): Promise<Me> {
 
 export function saveSettings(settings: Settings): Promise<Settings> {
   return request<ContractSettings>("/api/me/settings", json("PUT", settings));
+}
+
+export function listCalibrations(): Promise<AudioCalibration[]> {
+  return request<ContractAudioCalibration[]>("/api/me/calibrations");
+}
+
+export function getCalibration(
+  outputDevice = "default",
+  inputDevice = "default",
+): Promise<AudioCalibration | null> {
+  const params = new URLSearchParams({ output_device: outputDevice, input_device: inputDevice });
+  return request<ContractAudioCalibration | null>(`/api/me/calibration?${params.toString()}`);
+}
+
+export function saveCalibration(body: AudioCalibrationBody): Promise<AudioCalibration> {
+  return request<ContractAudioCalibration>("/api/me/calibration", json("PUT", body));
+}
+
+export function deleteCalibration(
+  outputDevice = "default",
+  inputDevice = "default",
+): Promise<void> {
+  const params = new URLSearchParams({ output_device: outputDevice, input_device: inputDevice });
+  return request<void>(`/api/me/calibration?${params.toString()}`, { method: "DELETE" });
 }
 
 /** One page of the library. */

@@ -33,7 +33,7 @@ Practice controls (metronome, count-in, mixer, pitch-preserving slowdown) are do
 Features that use the microphone to hear the instrument, in the order to build them. They all run in the browser and share one piece of pitch detection, which is built (`web/src/lib/listen/`) and now drives the tuner and wait mode. Browsers only allow the microphone on HTTPS pages (or `localhost`), so the README has to tell self-hosters to put Fretbook behind HTTPS to use them.
 
 - **Chords in wait mode**: compare the sound's overall pitch content against the chord's expected notes instead of transcribing every string. It is less reliable than single notes, so make it lenient and let the player skip a beat.
-- **Scored play-along**: play along with the recording without stopping, and get each note marked hit, early, late or missed, with a score at the end and in the practice log. It needs a calibration step that measures the input and output latency, and headphones so the microphone doesn't hear the recording.
+- **Scored play-along**: play along with the recording without stopping, and get each note marked hit, early, late or missed, with a score at the end and in the practice log. Audio latency calibration measures input and output latency per device pair, with headphones so the microphone doesn't hear the recording.
 
 ### Organising
 

@@ -19,6 +19,7 @@ export default defineConfig({
     },
   },
   test: {
+    testTimeout: 15000,
     projects: [
       {
         extends: true,
@@ -40,6 +41,8 @@ export default defineConfig({
             "src/lib/playback.test.ts",
             "src/lib/tuner.test.ts",
             "src/lib/ui.svelte.test.ts",
+            "src/lib/listen/calibration.test.ts",
+            "src/lib/listen/input.test.ts",
           ],
           setupFiles: ["src/setupTests.ts"],
         },

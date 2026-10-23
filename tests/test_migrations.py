@@ -383,6 +383,69 @@ def verify_v6(conn: sqlite3.Connection) -> None:
     assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
 
 
+def seed_v7(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        INSERT INTO users (id, external_subject, display_name, created_at)
+        VALUES ('user-v7', 'sub-v7', 'User V7', '2026-01-07T00:00:00Z')
+        """
+    )
+    conn.execute(
+        """
+        INSERT INTO audio_calibrations (
+            id, owner_id, output_device, input_device, offset_ms, jitter_ms, created_at, updated_at
+        ) VALUES (
+            'cal-v7', 'user-v7', 'default', 'default', 45.0, 3.2, '2026-01-07T00:00:00Z', '2026-01-07T00:00:00Z'
+        )
+        """
+    )
+    conn.commit()
+
+
+def verify_v7(conn: sqlite3.Connection) -> None:
+    row = conn.execute("SELECT offset_ms, jitter_ms FROM audio_calibrations WHERE id = 'cal-v7'").fetchone()
+    assert row is not None
+    assert row["offset_ms"] == 45.0
+    assert row["jitter_ms"] == 3.2
+    assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+
+
+def test_migration_007_creates_audio_calibrations_table(tmp_path: Path) -> None:
+    db_path = tmp_path / "migration7_test.sqlite"
+    migrate(db_path, target_version=6)
+    conn = connect(db_path)
+    try:
+        conn.execute(
+            """
+            INSERT INTO users (id, external_subject, display_name, created_at)
+            VALUES ('u1', 'sub1', 'User 1', '2026-01-01T00:00:00Z')
+            """
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    migrate(db_path, target_version=7)
+    conn = connect(db_path)
+    try:
+        conn.execute(
+            """
+            INSERT INTO audio_calibrations (
+                id, owner_id, output_device, input_device, offset_ms, jitter_ms, created_at, updated_at
+            ) VALUES (
+                'c1', 'u1', 'headphone-1', 'mic-1', 52.5, 2.1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'
+            )
+            """
+        )
+        conn.commit()
+        row = conn.execute("SELECT offset_ms, jitter_ms FROM audio_calibrations WHERE id = 'c1'").fetchone()
+        assert row is not None
+        assert row["offset_ms"] == 52.5
+        assert row["jitter_ms"] == 2.1
+    finally:
+        conn.close()
+
+
 SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.Connection], None]]] = {
     1: (seed_v1, verify_v1),
     2: (seed_v2, verify_v2),
@@ -390,6 +453,7 @@ SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.C
     4: (seed_v4, verify_v4),
     5: (seed_v5, verify_v5),
     6: (seed_v6, verify_v6),
+    7: (seed_v7, verify_v7),
 }
 
 
