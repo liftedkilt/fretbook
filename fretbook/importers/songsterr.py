@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 import re
 from fractions import Fraction
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol
 from urllib.parse import quote
 
 from fretbook.importers.base import AudioFetch, ImportError, ImportRequest, ImportResult, Notice, Progress
@@ -30,6 +30,7 @@ from fretbook.score.model import (
     TrackBar,
     Voice,
 )
+from fretbook.score.playback import played_bars
 
 URL_RE = re.compile(r"^https://www\.songsterr\.com/a/wsa/[\w-]+-s(\d+)(?:t\d+)?/?(?:[?#].*)?$")
 DEFAULT_CDN = "dqsljvtekg760.cloudfront.net"
@@ -380,13 +381,18 @@ class SongsterrImporter:
             raise ImportError("Songsterr sync points had an unexpected shape", "songsterr.badJson", what="sync points")
         video = pick_video(listing, request.options.get("video_id") or None)
         points: list[float | None] = []
+        keyed_by: Literal["written", "played"] = "written"
         chosen_video: str | None = None
         if video:
             chosen_video = str(video["videoId"])
             if not VIDEO_ID_RE.fullmatch(chosen_video):
                 raise ImportError("unexpected video id", "songsterr.badVideo")
             points = [float(point) for point in video["points"]]
-            if len(points) != len(bars):
+            # A video follows the song as played. Points that count the played bars (repeats
+            # expanded) are already in the order Fretbook keys sync marks by.
+            if len(points) != len(bars) and len(points) == len(played_bars(bars)):
+                keyed_by = "played"
+            elif len(points) != len(bars):
                 warnings.append(
                     Notice(
                         "import.syncCountMismatch",
@@ -400,7 +406,12 @@ class SongsterrImporter:
         slug = str(request.options.get("slug") or slug_from_url(url))
         if not re.fullmatch(r"[\w-]+", slug):
             raise ImportError("invalid slug", "import.badSlug")
-        document = ScoreDocument(bpm=bpm, bars=bars, tracks=tracks, sync=SyncMap(video_id=chosen_video, points=points))
+        document = ScoreDocument(
+            bpm=bpm,
+            bars=bars,
+            tracks=tracks,
+            sync=SyncMap(video_id=chosen_video, points=points, keyed_by=keyed_by),
+        )
         progress("Tab ready", "import.tabReady")
         return ImportResult(
             title=str(meta.get("title") or "Untitled"),

@@ -14,6 +14,7 @@
   import { barTicks } from "../lib/durations";
   import { t } from "../lib/i18n.svelte";
   import { instrumentLabel } from "../lib/instruments";
+  import { followPlayed, playedBars } from "../lib/playback";
   import {
     ClickScheduler,
     clamp01,
@@ -73,7 +74,10 @@
   const track = $derived(
     document_.tracks.find((item) => item.id === trackId) ?? preferredTrack(document_),
   );
-  const barCount = $derived(document_.bars.length);
+  // Bars are played in the expanded order: repeats, voltas and jumps. Everything the player
+  // keeps (position, loop, sync marks) is a played bar index, so `barCount` is the played count.
+  const order = $derived(playedBars(document_.bars));
+  const barCount = $derived(order.length);
   const audioSrc = $derived(
     song.audio_url ? new URL(song.audio_url, document.baseURI).toString() : "",
   );
@@ -135,7 +139,7 @@
   function applySync() {
     const instance = player.api;
     if (!instance?.score || barCount <= 0) return;
-    const built = flatSyncPoints(startsNow());
+    const built = flatSyncPoints(startsNow(), order);
     shiftMs = built.shiftMs;
     instance.score.applyFlatSyncPoints(built.points);
     instance.updateSyncPoints();
@@ -204,7 +208,13 @@
     });
     // Without audio, alphaTab's own events say where playback is, tempo changes included.
     instance.playedBeatChanged.on((beat) => {
-      if (!useAudio) currentMeasure = beat.voice.bar.index;
+      if (!useAudio) {
+        currentMeasure = followPlayed(
+          playedBars(untrack(() => song.document.bars)),
+          beat.voice.bar.index,
+          currentMeasure,
+        );
+      }
     });
     instance.playerPositionChanged.on((event) => {
       if (!useAudio) clock = formatTime(event.currentTime / 1000);
@@ -433,9 +443,10 @@
     if (song.has_audio && audioEl) {
       audioEl.currentTime = Math.max(0, startsNow()[index] ?? 0);
     } else if (player.api) {
+      // alphaTab's ticks run through the expanded song, so sum the bars as played.
       let tick = 0;
       for (let cursor = 0; cursor < index; cursor += 1)
-        tick += barTicks(song.document.bars[cursor].signature);
+        tick += barTicks(song.document.bars[order[cursor]].signature);
       player.api.tickPosition = tick;
       currentMeasure = index;
     }
@@ -559,7 +570,7 @@
             >{track.capo > 0 ? t("player.capo", { fret: track.capo }) : t("player.noCapo")}</span
           >
           <span class="pill">{t("library.tempo", { bpm: song.document.bpm })}</span>
-          <span class="pill">{t("library.measures", { count: barCount })}</span>
+          <span class="pill">{t("library.measures", { count: document_.bars.length })}</span>
           {#if song.source_ref.rhythm_estimated}<span
               class="pill"
               data-testid="rhythm-estimated-pill"

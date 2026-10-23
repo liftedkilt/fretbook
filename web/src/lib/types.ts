@@ -3,6 +3,27 @@
 export type SlideKind = "shift" | "legato" | "in_below" | "in_above" | "out_down" | "out_up";
 export type HarmonicKind = "natural" | "artificial" | "pinch" | "tap" | "semi";
 export type GraceKind = "on_beat" | "before_beat" | "bend";
+/** Navigation marks on a bar: targets (segno, coda, fine) and jumps (D.C., D.S., to coda). */
+export type DirectionKind =
+  | "fine"
+  | "segno"
+  | "segno_segno"
+  | "coda"
+  | "double_coda"
+  | "da_capo"
+  | "da_capo_al_coda"
+  | "da_capo_al_double_coda"
+  | "da_capo_al_fine"
+  | "dal_segno"
+  | "dal_segno_al_coda"
+  | "dal_segno_al_double_coda"
+  | "dal_segno_al_fine"
+  | "dal_segno_segno"
+  | "dal_segno_segno_al_coda"
+  | "dal_segno_segno_al_double_coda"
+  | "dal_segno_segno_al_fine"
+  | "da_coda"
+  | "da_double_coda";
 
 export interface Note {
   /** 0 is the highest string. */
@@ -44,7 +65,9 @@ export interface Bar {
   tempo?: number | null;
   repeat_start?: boolean;
   repeat_end?: number;
+  /** Volta: the passes (1-based) of the repeat this bar plays on; holds until the next bar that sets its own. */
   alternate_endings?: number[];
+  directions?: DirectionKind[];
   section?: string | null;
   extras?: Record<string, unknown>;
 }
@@ -66,12 +89,15 @@ export interface Track {
   bars: TrackBar[];
 }
 
+/** Sync marks are keyed by *played* bar index: the written bars expanded through repeats and jumps. */
 export interface SyncMap {
   video_id: string | null;
-  /** Published bar start times in seconds; null where the source had none. */
+  /** Published bar start times in seconds, one per played bar; null where the source had none. */
   points: (number | null)[];
-  /** Tapped bar start times, keyed by bar index. */
+  /** Tapped bar start times, keyed by played bar index. */
   anchors: Record<string, number>;
+  /** The server converts older documents (`written`) to `played` when it loads them. */
+  keyed_by?: "written" | "played";
 }
 
 export interface ScoreDocument {

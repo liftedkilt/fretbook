@@ -6,9 +6,11 @@
   import { barTicks, EDITOR_DURATIONS } from "../lib/durations";
   import { t, tOr } from "../lib/i18n.svelte";
   import { followLink, hrefFor } from "../lib/router.svelte";
+  import BarRepeats from "./BarRepeats.svelte";
   import { remapSync } from "../lib/sync";
   import { midiToName } from "../lib/tuning";
   import type {
+    Bar,
     Beat,
     GraceKind,
     HarmonicKind,
@@ -42,6 +44,10 @@
   let loadedBpm = untrack(() => initial.document.bpm);
   let baseSync: SyncMap = untrack(
     () => structuredClone($state.snapshot(initial.document.sync)) as SyncMap,
+  );
+  // The written bars the sync map is keyed against, to re-key marks when bars or repeats change.
+  let baseBars: Bar[] = untrack(
+    () => structuredClone($state.snapshot(initial.document.bars)) as Bar[],
   );
   let origin = $state<(number | null)[]>(
     untrack(() => initial.document.bars.map((_, index) => index)),
@@ -229,7 +235,7 @@
     const document: ScoreDocument = {
       ...$state.snapshot(song.document),
       bpm,
-      sync: remapSync(sync, origin),
+      sync: remapSync(sync, origin, baseBars, $state.snapshot(song.document.bars) as Bar[]),
     };
     return updateSong(song.id, {
       title: song.title.trim() || t("library.untitled"),
@@ -263,6 +269,7 @@
       loadedContent = contentKey(saved.document!);
       loadedBpm = saved.document!.bpm;
       baseSync = structuredClone(saved.document!.sync);
+      baseBars = structuredClone(saved.document!.bars);
       origin = song.document.bars.map((_, index) => index);
       status = t("editor.saved");
     } catch (err) {
@@ -277,6 +284,7 @@
     loadedContent = contentKey(latest.document);
     loadedBpm = latest.document.bpm;
     baseSync = structuredClone(latest.document.sync);
+    baseBars = structuredClone(latest.document.bars);
     origin = latest.document.bars.map((_, index) => index);
     barIndex = Math.min(barIndex, latest.document.bars.length - 1);
     conflict = false;
@@ -494,6 +502,7 @@
               onchange={(event) => (bar.section = event.currentTarget.value.trim() || null)}
             />
           </label>
+          <BarRepeats {bar} />
           <div class="button-row bar-buttons">
             <button class="small-button" data-testid="editor-add-measure" onclick={insertBar}
               ><Icon name="plus" size={16} />{t("editor.addMeasure")}</button

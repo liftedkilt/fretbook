@@ -712,6 +712,8 @@ export interface components {
         Bar: {
             /** Alternate Endings */
             alternate_endings?: number[];
+            /** Directions */
+            directions?: ("fine" | "segno" | "segno_segno" | "coda" | "double_coda" | "da_capo" | "da_capo_al_coda" | "da_capo_al_double_coda" | "da_capo_al_fine" | "dal_segno" | "dal_segno_al_coda" | "dal_segno_al_double_coda" | "dal_segno_al_fine" | "dal_segno_segno" | "dal_segno_segno_al_coda" | "dal_segno_segno_al_double_coda" | "dal_segno_segno_al_fine" | "da_coda" | "da_double_coda")[];
             /** Extras */
             extras?: {
                 [key: string]: unknown;
@@ -1342,19 +1344,32 @@ export interface components {
         };
         /**
          * SyncMap
-         * @description Backing-track alignment, keyed by song-level bar index.
+         * @description Backing-track alignment, keyed by *played* bar index.
          *
-         *     ``points`` are source timestamps in seconds (Songsterr video points), one
-         *     per bar; ``None`` means the source had none for that bar. ``anchors`` are
-         *     the user's taps, keyed by bar index. Playback uses anchors when present,
-         *     otherwise points. Repeats are not rendered yet, so the bar index is also
-         *     the playback index; once they are, anchors need a play-through occurrence.
+         *     The played order is the written bars expanded through repeats, voltas and
+         *     D.S./D.C. jumps (``fretbook.score.playback``); with no repeats it is the
+         *     written order. ``points`` are source timestamps in seconds (Songsterr video
+         *     points), one per played bar; ``None`` means the source had none for that
+         *     bar. ``anchors`` are the user's taps, keyed by played bar index. Playback
+         *     uses anchors when present, otherwise points.
+         *
+         *     ``keyed_by`` says which index the keys use. Documents saved before repeats
+         *     were rendered are ``"written"`` (the field is absent, so it defaults to
+         *     that): validating one converts the marks to the first play of each written
+         *     bar and sets ``"played"``. That conversion is the migration of existing
+         *     marks; it is exact because nothing used to render repeats.
          */
         SyncMap: {
             /** Anchors */
             anchors?: {
                 [key: string]: number;
             };
+            /**
+             * Keyed By
+             * @default written
+             * @enum {string}
+             */
+            keyed_by: "written" | "played";
             /** Points */
             points?: (number | null)[];
             /** Video Id */

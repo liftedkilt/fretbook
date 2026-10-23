@@ -256,3 +256,38 @@ def test_export_round_trips(tmp_path: Path) -> None:
     assert [(beat.position, beat.duration) for beat in second] == [(960, 1920)]
     # A part with only rests has no tab data and is skipped.
     assert len(again.tracks) == 1
+
+
+def test_musicxml_repeats_voltas_and_directions_round_trip(tmp_path: Path) -> None:
+    doc = ScoreDocument(
+        bpm=120,
+        bars=[
+            Bar(signature=(4, 4), directions=["segno"]),
+            Bar(signature=(4, 4), repeat_start=True),
+            Bar(signature=(4, 4), alternate_endings=[1], repeat_end=2),
+            Bar(signature=(4, 4), alternate_endings=[2], directions=["da_coda"]),
+            Bar(signature=(4, 4), directions=["dal_segno_al_coda"]),
+            Bar(signature=(4, 4), directions=["coda", "fine"]),
+        ],
+        tracks=[
+            Track(
+                id="t1",
+                name="Bass",
+                instrument="bass-guitar",
+                tuning_midi=[43, 38, 33, 28],
+                bars=[
+                    TrackBar(voices=[Voice(beats=[Beat(position=0, duration=3840, notes=[Note(string=0, fret=2)])])])
+                    for _ in range(6)
+                ],
+            )
+        ],
+    )
+    xml = to_musicxml(doc, title="Directions Riff", artist="Ada")
+    back = _import(tmp_path, "directions.musicxml", xml).document
+    assert len(back.bars) == 6
+    assert back.bars[0].directions == ["segno"]
+    assert back.bars[1].repeat_start is True
+    assert back.bars[2].alternate_endings == [1] and back.bars[2].repeat_end == 2
+    assert back.bars[3].alternate_endings == [2] and back.bars[3].directions == ["da_coda"]
+    assert back.bars[4].directions == ["dal_segno_al_coda"]
+    assert sorted(back.bars[5].directions) == ["coda", "fine"]

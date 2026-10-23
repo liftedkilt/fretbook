@@ -17,6 +17,7 @@ get backwards:
 from __future__ import annotations
 
 import io
+import re
 import xml.etree.ElementTree as ET
 import zipfile
 from collections import defaultdict
@@ -228,6 +229,7 @@ def _read_part(part: ET.Element, names: dict[str, str], index: int) -> _Part:
     track_bars: list[TrackBar] = []
     has_tab = False
     highest_string = 0
+    marks: defaultdict[int, set[str]] = defaultdict(set)
 
     for measure_index, measure in enumerate(_children(part, "measure")):
         bar_fields: dict[str, Any] = {}
@@ -259,6 +261,7 @@ def _read_part(part: ET.Element, names: dict[str, str], index: int) -> _Part:
             elif tag == "forward":
                 cursor += _ticks(element, divisions)
             elif tag == "direction":
+                marks[measure_index] |= _direction_marks(element)
                 rehearsal = element.find(".//{*}rehearsal")
                 if rehearsal is None:
                     rehearsal = element.find(".//rehearsal")
@@ -266,6 +269,7 @@ def _read_part(part: ET.Element, names: dict[str, str], index: int) -> _Part:
                     bar_fields["section"] = _text(rehearsal)
                 tempo = tempo or _sound_tempo(element)
             elif tag == "sound":
+                marks[measure_index] |= _sound_marks(element)
                 tempo = tempo or _sound_tempo(element)
             elif tag == "barline":
                 repeat = _child(element, "repeat")
@@ -336,6 +340,8 @@ def _read_part(part: ET.Element, names: dict[str, str], index: int) -> _Part:
             )
         )
 
+    for bar, directions in zip(bars, _directions([marks[index] for index in range(len(bars))]), strict=True):
+        bar.directions = directions  # type: ignore[assignment]
     if tuning_by_line:
         tuning = [tuning_by_line[line] for line in sorted(tuning_by_line, reverse=True)]
     else:
@@ -367,6 +373,114 @@ def _sound_tempo(element: ET.Element) -> float | None:
     except ValueError:
         return None
     return tempo if 0 < tempo < 400 else None
+
+
+_SEGNO_IDS = {"segnosegno", "segno2", "doublesegno"}
+_CODA_IDS = {"doublecoda", "coda2"}
+
+
+def _target_id(value: str) -> str:
+    return value.lower().replace("_", "").replace(" ", "").replace("-", "")
+
+
+def _sound_marks(sound: ET.Element) -> set[str]:
+    """Navigation marks from a ``<sound>`` element's ``segno``, ``coda``, ``dalsegno``, ``dacapo``, ``fine``..."""
+    marks: set[str] = set()
+    attrib = sound.attrib
+    if "segno" in attrib:
+        marks.add("segno_segno" if _target_id(attrib["segno"]) in _SEGNO_IDS else "segno")
+    if "coda" in attrib:
+        marks.add("double_coda" if _target_id(attrib["coda"]) in _CODA_IDS else "coda")
+    if "dalsegno" in attrib:
+        marks.add("dss" if _target_id(attrib["dalsegno"]) in _SEGNO_IDS else "ds")
+    if attrib.get("dacapo") == "yes":
+        marks.add("dc")
+    if "fine" in attrib:
+        marks.add("fine")
+    if "tocoda" in attrib:
+        marks.add("to_double_coda" if _target_id(attrib["tocoda"]) in _CODA_IDS else "to_coda")
+    return marks
+
+
+def _words_marks(text: str) -> set[str]:
+    """Navigation marks from direction text such as ``D.C. al Fine`` or ``To Coda``."""
+    words = " ".join(text.lower().replace(".", " ").split())
+    marks: set[str] = set()
+    if "d s s" in words or "dal segno segno" in words:
+        marks.add("dss")
+    elif re.search(r"\bd s\b", words) or "dal segno" in words:
+        marks.add("ds")
+    if re.search(r"\bd c\b", words) or "da capo" in words:
+        marks.add("dc")
+    if "to coda" in words:
+        marks.add("to_coda")
+    if "to double coda" in words:
+        marks.add("to_double_coda")
+    if words == "fine":
+        marks.add("fine")
+    if "al double coda" in words:
+        marks.add("al_double_coda")
+    elif "al coda" in words:
+        marks.add("al_coda")
+    if "al fine" in words:
+        marks.add("al_fine")
+    return marks
+
+
+def _direction_marks(direction: ET.Element) -> set[str]:
+    marks: set[str] = set()
+    for kind in _children(direction, "direction-type"):
+        for item in kind:
+            tag = _local(item.tag)
+            if tag == "segno":
+                marks.add("segno")
+            elif tag == "coda":
+                marks.add("coda")
+            elif tag == "words":
+                marks |= _words_marks(_text(item))
+    sound = _child(direction, "sound")
+    if sound is not None:
+        marks |= _sound_marks(sound)
+    return marks
+
+
+def _directions(marks: list[set[str]]) -> list[list[str]]:
+    """Fretbook bar directions from each measure's marks.
+
+    MusicXML says *that* a bar jumps; whether it is ``al Coda`` or ``al Fine`` comes from the words
+    on that bar, or else from which targets the part has.
+    """
+    everything = set().union(*marks) if marks else set()
+    if "al_double_coda" in everything or "to_double_coda" in everything:
+        fallback = "al_double_coda"
+    elif "al_coda" in everything or "to_coda" in everything:
+        fallback = "al_coda"
+    elif "al_fine" in everything or "fine" in everything:
+        fallback = "al_fine"
+    else:
+        fallback = ""
+    result: list[list[str]] = []
+    for own in marks:
+        found: list[str] = []
+        for mark, target in (
+            ("segno", "segno"),
+            ("segno_segno", "segno_segno"),
+            ("coda", "coda"),
+            ("double_coda", "double_coda"),
+            ("fine", "fine"),
+        ):
+            if mark in own:
+                found.append(target)
+        if "to_coda" in own:
+            found.append("da_coda")
+        if "to_double_coda" in own:
+            found.append("da_double_coda")
+        suffix = next((item for item in ("al_double_coda", "al_coda", "al_fine") if item in own), fallback)
+        for mark, base in (("dc", "da_capo"), ("ds", "dal_segno"), ("dss", "dal_segno_segno")):
+            if mark in own:
+                found.append(f"{base}_{suffix}" if suffix else base)
+        result.append(found)
+    return result
 
 
 def _grace_kind(element: ET.Element) -> str:

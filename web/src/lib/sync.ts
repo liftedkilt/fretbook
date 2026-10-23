@@ -1,5 +1,6 @@
 import { barTicks, TICKS_PER_QUARTER } from "./durations";
-import type { ScoreDocument, SyncMap } from "./types";
+import { occurrences, playedBars } from "./playback";
+import type { Bar, ScoreDocument, SyncMap } from "./types";
 
 /*
  * Same piecewise-linear bar timing as `fretbook/score/sync.py`: anchors pin bar
@@ -11,6 +12,20 @@ export function barSeconds(document: ScoreDocument): number[] {
   let tempo = document.bpm;
   return document.bars.map((bar, index) => {
     if (index > 0 && bar.tempo) tempo = bar.tempo;
+    return (barTicks(bar.signature) / TICKS_PER_QUARTER) * (60 / tempo);
+  });
+}
+
+/**
+ * Length in seconds of each *played* bar: the written bars expanded through repeats and jumps.
+ * The tempo in force follows the playing order, and bar 0 always restarts at the opening tempo.
+ */
+export function playedSeconds(document: ScoreDocument): number[] {
+  let tempo = document.bpm;
+  return playedBars(document.bars).map((index) => {
+    const bar = document.bars[index];
+    if (index === 0) tempo = document.bpm;
+    else if (bar.tempo) tempo = bar.tempo;
     return (barTicks(bar.signature) / TICKS_PER_QUARTER) * (60 / tempo);
   });
 }
@@ -80,8 +95,10 @@ export function playbackAnchors(sync: SyncMap, barCount: number): Record<number,
   return anchors;
 }
 
+/** Start time of each played bar, then the end of the song. */
 export function songStarts(document: ScoreDocument): number[] {
-  return measureStarts(barSeconds(document), playbackAnchors(document.sync, document.bars.length));
+  const seconds = playedSeconds(document);
+  return measureStarts(seconds, playbackAnchors(document.sync, seconds.length));
 }
 
 /**
@@ -105,21 +122,54 @@ export function moveAnchor(
 }
 
 /**
- * Re-key anchors (and points) after the editor inserts or removes bars.
- * `origin[i]` is the bar index the current bar `i` came from, or null for a new bar.
+ * Re-key sync marks after the editor inserts or removes bars or changes repeats.
+ * `origin[i]` is the written bar index the current bar `i` came from, or null for a new bar.
+ * `before` and `after` are the written bars the marks were keyed against and the bars now; a mark
+ * follows the same pass (occurrence) of the same bar.
  */
-export function remapSync(sync: SyncMap, origin: (number | null)[]): SyncMap {
+export function remapSync(
+  sync: SyncMap,
+  origin: (number | null)[],
+  before?: readonly Bar[],
+  after?: readonly Bar[],
+): SyncMap {
+  if (!before || !after) {
+    const anchors: Record<string, number> = {};
+    origin.forEach((source, index) => {
+      if (source != null && sync.anchors[String(source)] != null)
+        anchors[String(index)] = sync.anchors[String(source)];
+    });
+    return {
+      video_id: sync.video_id,
+      points: sync.points.length
+        ? origin.map((source) => (source != null ? (sync.points[source] ?? null) : null))
+        : [],
+      anchors,
+      keyed_by: sync.keyed_by ?? "played",
+    };
+  }
+  const oldOrder = playedBars(before);
+  const newOrder = playedBars(after);
+  const oldSlots = new Map<string, number>();
+  const oldPass = occurrences(oldOrder);
+  oldOrder.forEach((written, played) => oldSlots.set(`${written}:${oldPass[played]}`, played));
+  const newPass = occurrences(newOrder);
+  const source = newOrder.map((written, played) => {
+    const from = origin[written];
+    return from == null ? null : (oldSlots.get(`${from}:${newPass[played]}`) ?? null);
+  });
   const anchors: Record<string, number> = {};
-  origin.forEach((source, index) => {
-    if (source != null && sync.anchors[String(source)] != null)
-      anchors[String(index)] = sync.anchors[String(source)];
+  source.forEach((from, index) => {
+    if (from != null && sync.anchors[String(from)] != null)
+      anchors[String(index)] = sync.anchors[String(from)];
   });
   return {
     video_id: sync.video_id,
     points: sync.points.length
-      ? origin.map((source) => (source != null ? (sync.points[source] ?? null) : null))
+      ? source.map((from) => (from != null ? (sync.points[from] ?? null) : null))
       : [],
     anchors,
+    keyed_by: "played",
   };
 }
 
@@ -130,16 +180,26 @@ export interface FlatSyncPoint {
   millisecondOffset: number;
 }
 
-export function flatSyncPoints(starts: number[]): { points: FlatSyncPoint[]; shiftMs: number } {
+/**
+ * Flat sync points for alphaTab: one per played bar, each naming the written bar and which pass
+ * of it (`barOccurence`) it is, so a repeated bar gets a time for every pass.
+ * `starts` are the played bar starts then the end; `order` is the written bar of each played bar.
+ */
+export function flatSyncPoints(
+  starts: number[],
+  order?: readonly number[],
+): { points: FlatSyncPoint[]; shiftMs: number } {
   const milliseconds = starts.map((start) => Math.round(start * 1000));
   const shiftMs = milliseconds[0] < 0 ? -milliseconds[0] : 0;
   const count = milliseconds.length - 1;
+  const resolvedOrder = order ?? Array.from({ length: Math.max(0, count) }, (_, i) => i);
+  const pass = occurrences(resolvedOrder);
   const points: FlatSyncPoint[] = [];
   for (let index = 0; index < count; index += 1) {
     points.push({
-      barIndex: index,
+      barIndex: resolvedOrder[index],
       barPosition: 0,
-      barOccurence: 0,
+      barOccurence: pass[index],
       millisecondOffset: milliseconds[index] + shiftMs,
     });
   }
@@ -147,7 +207,12 @@ export function flatSyncPoints(starts: number[]): { points: FlatSyncPoint[]; shi
     let end = milliseconds[count] + shiftMs;
     const last = milliseconds[count - 1] + shiftMs;
     if (end <= last) end = last + 1;
-    points.push({ barIndex: count - 1, barPosition: 1, barOccurence: 0, millisecondOffset: end });
+    points.push({
+      barIndex: resolvedOrder[count - 1],
+      barPosition: 1,
+      barOccurence: pass[count - 1],
+      millisecondOffset: end,
+    });
   }
   return { points, shiftMs };
 }

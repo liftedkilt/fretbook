@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 import sqlite3
 import sys
@@ -239,10 +240,93 @@ def verify_v3(conn: sqlite3.Connection) -> None:
     assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
 
 
+def seed_v4(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        INSERT INTO users (id, external_subject, display_name, created_at)
+        VALUES ('user-v4', 'sub-v4', 'User V4', '2026-01-04T00:00:00Z')
+        """
+    )
+    doc = json.dumps(
+        {
+            "bars": [{"signature": [4, 4]}],
+            "tracks": [],
+            "sync": {"anchors": {"0": 1.0}, "points": [1.0], "keyed_by": "played"},
+        }
+    )
+    conn.execute(
+        """
+        INSERT INTO songs (
+            id, owner_id, slug, title, artist, content_kind, source_kind, source_ref,
+            revision, bpm, measure_count, track_count, string_count, preferred_instrument,
+            preferred_track_id, has_sync, duration, document, chordpro, created_at, updated_at
+        ) VALUES (
+            'song-v4', 'user-v4', 'song-v4', 'Repeat Tab', 'V4 Artist', 'tab', 'manual', '{}',
+            1, 120.0, 2, 1, 4, 'bass-4', 't1', 1, 4.0, ?, NULL,
+            '2026-01-04T00:00:00Z', '2026-01-04T00:00:00Z'
+        )
+        """,
+        (doc,),
+    )
+    conn.commit()
+
+
+def verify_v4(conn: sqlite3.Connection) -> None:
+    row = conn.execute("SELECT document FROM songs WHERE id = 'song-v4'").fetchone()
+    assert row is not None
+    doc = json.loads(row["document"])
+    assert doc["sync"]["keyed_by"] == "played"
+    assert doc["sync"]["anchors"] == {"0": 1.0}
+    assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+
+
+def test_migration_004_updates_existing_sync_marks_to_played(tmp_path: Path) -> None:
+    db_path = tmp_path / "migration4_test.sqlite"
+    migrate(db_path, target_version=3)
+    conn = connect(db_path)
+    try:
+        conn.execute(
+            """
+            INSERT INTO users (id, external_subject, display_name, created_at)
+            VALUES ('u1', 'sub1', 'User 1', '2026-01-01T00:00:00Z')
+            """
+        )
+        conn.execute(
+            """
+            INSERT INTO songs (
+                id, owner_id, slug, title, artist, content_kind, source_kind, source_ref,
+                revision, bpm, measure_count, track_count, string_count, preferred_instrument,
+                preferred_track_id, has_sync, duration, document, chordpro, created_at, updated_at
+            ) VALUES (
+                's1', 'u1', 's1', 'Title', 'Artist', 'tab', 'scratch', '{}',
+                1, 120.0, 4, 1, 4, 'bass-4', 't1', 1, 4.0,
+                '{"bars": [], "tracks": [], "sync": {"anchors": {"1": 2.5}, "points": [0.0, 2.5]}}',
+                NULL, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'
+            )
+            """
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    migrate(db_path, target_version=4)
+    conn = connect(db_path)
+    try:
+        row = conn.execute("SELECT document FROM songs WHERE id = 's1'").fetchone()
+        assert row is not None
+        doc = json.loads(row["document"])
+        assert doc["sync"]["keyed_by"] == "played"
+        assert doc["sync"]["anchors"] == {"1": 2.5}
+        assert doc["sync"]["points"] == [0.0, 2.5]
+    finally:
+        conn.close()
+
+
 SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.Connection], None]]] = {
     1: (seed_v1, verify_v1),
     2: (seed_v2, verify_v2),
     3: (seed_v3, verify_v3),
+    4: (seed_v4, verify_v4),
 }
 
 

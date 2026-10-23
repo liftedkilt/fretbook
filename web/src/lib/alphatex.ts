@@ -10,8 +10,9 @@ import { tuningLabel } from "./tuning";
  *   braces after the note, beat effects after the duration.
  * - Metadata arguments sit in parentheses: `\ts (3 4)`, `\tempo (90)`.
  * - Voices: all bars of voice 1, then `\voice` and all bars of voice 2.
- * - Repeats are stored but not rendered, so playback order stays the written
- *   order that sync points are keyed by.
+ * - Repeats (`\ro`, `\rc`), voltas (`\ae`) and directions (`\jump`) are written
+ *   out, so alphaTab draws them and its synth plays the expanded order that
+ *   `playback.ts` computes; sync marks are keyed by that played order.
  */
 
 const SLIDE: Record<string, string> = {
@@ -142,6 +143,11 @@ function barMetadata(document: ScoreDocument, index: number): string[] {
     parts.push(`\\ts (${bar.signature[0]} ${bar.signature[1]})`);
   }
   if (index > 0 && bar.tempo) parts.push(`\\tempo (${Math.round(bar.tempo * 100) / 100})`);
+  if (bar.repeat_start) parts.push("\\ro");
+  if (bar.repeat_end) parts.push(`\\rc ${bar.repeat_end}`);
+  if (bar.alternate_endings?.length) parts.push(`\\ae (${bar.alternate_endings.join(" ")})`);
+  for (const direction of bar.directions ?? [])
+    parts.push(`\\jump ${direction.replaceAll("_", "")}`);
   if (bar.section) parts.push(`\\section ("${escapeTex(bar.section)}")`);
   return parts;
 }

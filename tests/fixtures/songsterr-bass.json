@@ -11,6 +11,7 @@
       "repeat_start": false,
       "repeat_end": 0,
       "alternate_endings": [],
+      "directions": [],
       "section": null,
       "extras": {}
     },
@@ -23,6 +24,7 @@
       "repeat_start": false,
       "repeat_end": 0,
       "alternate_endings": [],
+      "directions": [],
       "section": null,
       "extras": {}
     }
@@ -192,6 +194,7 @@
       0.4,
       2.4
     ],
-    "anchors": {}
+    "anchors": {},
+    "keyed_by": "played"
   }
 }

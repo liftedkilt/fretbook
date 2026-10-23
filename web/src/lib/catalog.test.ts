@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { EDITOR_DURATIONS } from "./durations";
+import { DIRECTIONS } from "./playback";
 
 const sources = import.meta.glob<string>(["../**/*.svelte", "../**/*.ts", "!../**/*.test.ts"], {
   query: "?raw",
@@ -90,6 +91,10 @@ function usedKeys(): string[] {
       const variable = match[2];
       if (prefix === "durations." && variable === "option.key") {
         for (const option of EDITOR_DURATIONS) keys.add(`durations.${option.key}`);
+        continue;
+      }
+      if (prefix === "repeats.direction." && variable === "kind") {
+        for (const direction of DIRECTIONS) keys.add(`repeats.direction.${direction}`);
         continue;
       }
       const items = nearestEach(source, match.index ?? 0, variable);
