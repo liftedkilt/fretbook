@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.2](https://github.com/liftedkilt/fretbook/compare/v0.1.1...v0.1.2) (2026-10-23)
+
+
+### Features
+
+* import plain ASCII tab into a real score ([#114](https://github.com/liftedkilt/fretbook/issues/114)) ([1c9eaa5](https://github.com/liftedkilt/fretbook/commit/1c9eaa585bc7974ebbcd60191547291f2798a586))
+* **jobs:** retry failed imports from the library ([2f109b4](https://github.com/liftedkilt/fretbook/commit/2f109b46017d13356f4b43480a803f259bf2d762))
+* library export/import archive and `backup` command ([39deb90](https://github.com/liftedkilt/fretbook/commit/39deb906a954775554d6b8386c5df937aa9d01bc))
+* library search, sorting, and paging for large libraries ([#108](https://github.com/liftedkilt/fretbook/issues/108)) ([1b9e526](https://github.com/liftedkilt/fretbook/commit/1b9e526e8477e7425efbd16c84da075866ac9d62))
+* metronome, count-in, per-track mixer and pitch-preserving slowdown ([#123](https://github.com/liftedkilt/fretbook/issues/123)) ([0e4d430](https://github.com/liftedkilt/fretbook/commit/0e4d430862f1dec6a7fa0c24953d97c7f14dc3bb))
+* microphone pitch detection engine (AudioWorklet) with an accuracy test harness ([#119](https://github.com/liftedkilt/fretbook/issues/119)) ([d3b6fd5](https://github.com/liftedkilt/fretbook/commit/d3b6fd5579e6b121080b462ac071a237add9f046))
+* universal import for files, pasted text and links ([#122](https://github.com/liftedkilt/fretbook/issues/122)) ([14a2060](https://github.com/liftedkilt/fretbook/commit/14a20608e9587c4844a311342f9a9875becebf67))
+
 ## [0.1.1](https://github.com/liftedkilt/fretbook/compare/v0.1.0...v0.1.1) (2026-10-23)
 
 
