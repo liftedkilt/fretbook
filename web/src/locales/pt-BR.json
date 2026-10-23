@@ -210,7 +210,7 @@
     "usingPublished": "A reprodução está usando os pontos de sincronia publicados. Se o áudio sair do tempo, marque o compasso onde isso começa: os seguintes acompanham.",
     "needAudio": "Os pontos de sincronia foram salvos, mas ainda não há arquivo de áudio. Envie um mp3 ou wav.",
     "synth": "Não há arquivo de áudio, então a reprodução usa o sintetizador interno.",
-    "keys": "Espaço toca. As setas mudam de compasso. T marca o próximo.",
+    "keys": "Espaço toca. As setas mudam de compasso. T marca o próximo ponto. M metrônomo, C contagem, [ ] velocidade, ? todos os atalhos.",
     "loopRange": "A{a}–B{b}",
     "export": "Exportar",
     "syncPanel": "Sincronia e áudio",
@@ -220,6 +220,43 @@
     "nextBar": "Próximo compasso",
     "position": "Posição",
     "notation": "Partitura"
+  },
+  "practice": {
+    "metronome": "Metrônomo",
+    "volume": "Volume",
+    "metronomeVolume": "Volume do metrônomo",
+    "countIn": "Contagem inicial",
+    "countInOff": "Desligada",
+    "countInBars": {
+      "one": "{count} compasso",
+      "other": "{count} compassos"
+    },
+    "countInLoops": "Antes de cada repetição do trecho",
+    "mixer": "Mixer",
+    "recording": "Gravação",
+    "synth": "Sintetizador",
+    "synthOff": "Uma gravação está tocando, então o sintetizador está desligado. Adicione ou remova a gravação para mixar as faixas.",
+    "mute": "Mudo",
+    "solo": "Solo",
+    "muteTrack": "Silenciar {name}",
+    "soloTrack": "Solo em {name}",
+    "trackVolume": "Volume de {name}"
+  },
+  "shortcuts": {
+    "title": "Atalhos de teclado",
+    "toggle": "Tocar ou pausar",
+    "previousBar": "Compasso anterior",
+    "nextBar": "Próximo compasso",
+    "tap": "Marcar o próximo ponto de sincronia",
+    "metronome": "Ligar ou desligar o metrônomo",
+    "countIn": "Contagem: desligada, 1 compasso, 2 compassos",
+    "muteTrack": "Silenciar a faixa exibida (só sintetizador)",
+    "soloTrack": "Solo na faixa exibida (só sintetizador)",
+    "volumeDown": "Diminuir o volume",
+    "volumeUp": "Aumentar o volume",
+    "slower": "Mais devagar",
+    "faster": "Mais rápido",
+    "help": "Mostrar ou ocultar esta lista"
   },
   "editor": {
     "heading": "Editar",
