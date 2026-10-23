@@ -1,5 +1,7 @@
 # Contributing
 
+Coding agents: read [AGENTS.md](AGENTS.md) first. It explains how to pick, claim, and finish an issue alongside other agents.
+
 ## Development setup
 
 Python 3.12, Node 22, and ffmpeg (only for downloading YouTube audio).

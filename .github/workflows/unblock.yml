@@ -1,0 +1,54 @@
+name: Unblock issues
+
+# When an issue closes, remove the `blocked` label from every open issue whose
+# "**Blocked by:** #a, #b" line now lists only closed issues. See AGENTS.md.
+on:
+  issues:
+    types: [closed, reopened, edited]
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: unblock
+  cancel-in-progress: false
+
+permissions:
+  issues: write
+
+jobs:
+  unblock:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const blocked = await github.paginate(github.rest.issues.listForRepo, {
+              owner, repo, state: "open", labels: "blocked", per_page: 100,
+            });
+            const states = new Map();
+            async function isClosed(number) {
+              if (!states.has(number)) {
+                const { data } = await github.rest.issues.get({ owner, repo, issue_number: number });
+                states.set(number, data.state === "closed");
+              }
+              return states.get(number);
+            }
+            for (const issue of blocked) {
+              if (issue.pull_request) continue;
+              const line = (issue.body ?? "").split("\n").find((l) => /^\*\*Blocked by:?\*\*/i.test(l.trim()));
+              if (!line) continue;
+              const blockers = [...line.matchAll(/#(\d+)/g)].map((m) => Number(m[1]));
+              if (blockers.length === 0) continue;
+              const open = [];
+              for (const n of blockers) if (!(await isClosed(n))) open.push(n);
+              if (open.length > 0) continue;
+              await github.rest.issues.removeLabel({ owner, repo, issue_number: issue.number, name: "blocked" });
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: issue.number,
+                body: `Unblocked: ${blockers.map((n) => `#${n}`).join(", ")} ${blockers.length === 1 ? "is" : "are all"} closed. This issue is available to pick up (see AGENTS.md).`,
+              });
+              core.info(`Unblocked #${issue.number}`);
+            }
