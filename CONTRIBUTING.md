@@ -53,6 +53,8 @@ cd web && npm run test:coverage                                         # web/co
 
 The floors are the current totals rounded down: `fail_under` in `pyproject.toml` (server) and `test.coverage.thresholds` in `web/vite.config.ts`. Raise them in the PR that raises coverage; never lower them. Excluded from the web numbers: `api-types.ts` (generated), `main.ts`, and Svelte components (v8 cannot attribute coverage to them under Vitest; Playwright covers them as flows). The vision modules are included because the server imports them.
 
+Don't import source files with `?raw` (or other `?query` suffixes) in tests: Vitest's v8 coverage strips the query when it maps coverage back to sources, so the one-line `?raw` module can replace the real file's transform and randomly drop its coverage (issue #150). Read files with `node:fs` instead.
+
 ### Formatting and pre-commit
 
 Python is formatted with `ruff format` (run `.venv/bin/ruff format fretbook tests`), and `web/` with Prettier (`npm run format --prefix web`) and linted with ESLint (`npm run lint --prefix web`). `api-types.ts` is generated and excluded. [`.editorconfig`](.editorconfig) sets the editor defaults.

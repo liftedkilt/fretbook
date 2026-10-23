@@ -1,13 +1,28 @@
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { describe, expect, it } from "vitest";
 
 import { EDITOR_DURATIONS } from "./durations";
 import { DIRECTIONS } from "./playback";
 
-const sources = import.meta.glob<string>(["../**/*.svelte", "../**/*.ts", "!../**/*.test.ts"], {
-  query: "?raw",
-  import: "default",
-  eager: true,
-});
+// Read with fs, not `import.meta.glob(..., { query: "?raw" })`: Vitest's v8 coverage strips the query from
+// module ids, so a `?raw` copy of a file (one `export default "<source>"` statement) can replace the real
+// module's transform when coverage is remapped, which randomly drops that file's coverage.
+const SRC = fileURLToPath(new URL("..", import.meta.url));
+
+function sourceFiles(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) return sourceFiles(path);
+    return /\.(svelte|ts)$/.test(entry.name) && !entry.name.endsWith(".test.ts") ? [path] : [];
+  });
+}
+
+const sources: Record<string, string> = Object.fromEntries(
+  sourceFiles(SRC).map((path) => [path, readFileSync(path, "utf8")]),
+);
 
 const localeFiles = import.meta.glob<Record<string, unknown>>("../locales/*.json", {
   eager: true,
