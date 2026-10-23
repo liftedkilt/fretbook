@@ -33,7 +33,14 @@ export default defineConfig({
         test: {
           name: "component",
           environment: "jsdom",
-          include: ["src/components/**/*.test.ts"],
+          include: [
+            "src/components/**/*.test.ts",
+            // Components import these too. v8 reports each project separately and the merged figure
+            // follows whichever report wins, so run their tests here as well to keep it steady.
+            "src/lib/playback.test.ts",
+            "src/lib/tuner.test.ts",
+            "src/lib/ui.svelte.test.ts",
+          ],
           setupFiles: ["src/setupTests.ts"],
         },
       },
