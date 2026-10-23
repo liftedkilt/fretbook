@@ -21,9 +21,6 @@ class DatabaseVersionError(RuntimeError):
 SchemaVersionError = DatabaseVersionError
 
 
-SchemaVersionError = DatabaseVersionError
-
-
 def utcnow() -> str:
     return datetime.now(UTC).replace(microsecond=0).isoformat()
 
