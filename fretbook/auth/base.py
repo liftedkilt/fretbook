@@ -24,6 +24,8 @@ class Principal:
     authenticated: bool
     role: Role = "user"
     email: str = ""
+    # True when the request carried a personal API token instead of a session.
+    via_token: bool = False
 
     @property
     def is_admin(self) -> bool:

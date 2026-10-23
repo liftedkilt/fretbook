@@ -3210,6 +3210,30 @@ textarea {
   grid-template-columns: minmax(0, 1fr);
 }
 
+.token-list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.token-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.token-list p {
+  overflow-wrap: anywhere;
+}
+
+.token-secret {
+  width: 100%;
+  font-family: var(--mono, ui-monospace, monospace);
+}
+
 .setting-notice {
   margin-top: 0;
 }

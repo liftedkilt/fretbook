@@ -1,5 +1,7 @@
 import type {
   AdminUser as ContractAdminUser,
+  ApiToken,
+  ApiTokenCreated,
   AsciiTabBody,
   AsciiTabPreview as ContractAsciiTabPreview,
   AutoImportAccepted,
@@ -184,6 +186,26 @@ export async function setSongTags(id: string, tags: string[]): Promise<string[]>
 export async function addTags(songIds: string[], tags: string[]): Promise<number> {
   const body = await request<TagsAdded>("/api/tags/add", json("POST", { song_ids: songIds, tags }));
   return body.updated;
+}
+
+/** The caller's personal API tokens, newest first. Never includes the secrets. */
+export function listApiTokens(): Promise<ApiToken[]> {
+  return request<ApiToken[]>("/api/tokens");
+}
+
+/** Make a token. The `token` secret is in this response only. */
+export function createApiToken(
+  name: string,
+  expiresInDays: number | null,
+): Promise<ApiTokenCreated> {
+  return request<ApiTokenCreated>(
+    "/api/tokens",
+    json("POST", { name, expires_in_days: expiresInDays }),
+  );
+}
+
+export function revokeApiToken(id: string): Promise<void> {
+  return request<void>(`/api/tokens/${id}`, { method: "DELETE" });
 }
 
 export async function setFavourite(id: string, favourite: boolean): Promise<boolean> {

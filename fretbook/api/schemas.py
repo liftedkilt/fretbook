@@ -127,6 +127,23 @@ class Me(BaseModel):
     settings: Settings
 
 
+class ApiToken(BaseModel):
+    """A personal API token. The secret is only in the response that creates it."""
+
+    id: str
+    name: str
+    prefix: str
+    created_at: str
+    expires_at: str | None
+    last_used_at: str | None
+
+
+class ApiTokenCreated(ApiToken):
+    """A new token. ``token`` is the secret to send as `Authorization: Bearer`; it is shown once."""
+
+    token: str
+
+
 class AdminUser(BaseModel):
     """An account as an admin sees it. ``local`` marks the owner of songs from single-user mode."""
 

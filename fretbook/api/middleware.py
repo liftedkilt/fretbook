@@ -82,7 +82,10 @@ class SameOriginMiddleware:
     posts that need no CORS preflight. A write whose Origin host differs from
     the Host it was sent to is refused, so another web page cannot import,
     upload, or delete in a library the viewer can reach. Requests without an
-    Origin (curl, scripts) are allowed; auth decides those.
+    Origin (curl, scripts) are allowed; auth decides those. So are requests with an
+    ``Authorization: Bearer`` header: a page cannot attach one cross-site without a
+    CORS preflight, which this server never grants, and the token is not a cookie
+    the browser sends on its own.
     """
 
     def __init__(self, app: ASGIApp) -> None:
@@ -96,7 +99,8 @@ class SameOriginMiddleware:
         ):
             headers = dict(scope.get("headers") or [])
             origin = headers.get(b"origin")
-            if origin is not None:
+            bearer = headers.get(b"authorization", b"")[:7].lower() == b"bearer "
+            if origin is not None and not bearer:
                 host = headers.get(b"host", b"").decode("latin-1").lower()
                 origin_host = urlsplit(origin.decode("latin-1")).netloc.lower() if origin != b"null" else ""
                 if not origin_host or origin_host != host:
