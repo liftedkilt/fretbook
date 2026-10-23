@@ -282,3 +282,23 @@ def test_youtube_link_without_audio_downloads_enabled(tmp_path: Path) -> None:
         job = _wait(client, _auto(client, data={"url": "https://youtu.be/dQw4w9WgXcQ"}).json()["job_id"])
         assert job["status"] == "error"
         assert job["error_key"] == "import.audioDisabled"
+
+
+def test_fretbook_json_exports_round_trip_through_every_import_path(tmp_path: Path) -> None:
+    with _client(tmp_path) as client:
+        made = client.post("/api/songs", json={"content_kind": "chords", "title": "Chords", "chordpro": SHEET})
+        tab = _done(client, _auto(client, data={"text": TAB}))
+        for song_id, content_kind in ((made.json()["id"], "chords"), (tab["id"], "tab")):
+            exported = client.get(f"/api/songs/{song_id}/export.json").content
+            for send in (
+                lambda data: _auto(client, files={"file": ("download", data, "application/json")}),
+                lambda data: _auto(client, data={"text": data.decode()}),
+                lambda data: client.post("/api/imports/file", files={"file": ("song.json", data)}),
+            ):
+                response = send(exported)
+                assert response.status_code == 202, response.text
+                if "detected" in response.json():
+                    assert response.json()["detected"] == "fretbook-json"
+                copy = _done(client, response)
+                assert copy["content_kind"] == content_kind
+                assert copy["source_kind"] == "fretbook-json"

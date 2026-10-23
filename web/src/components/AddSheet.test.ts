@@ -271,6 +271,19 @@ describe("AddSheet", () => {
       await vi.waitFor(() => expect(ui.sheet).toBe(""));
     });
 
+    it("hands a Songsterr link to the link form so the track picker can ask", async () => {
+      mockPreviewImport.mockResolvedValue({ title: "Song", artist: "Band", tracks: [] });
+      mockImportUrl.mockResolvedValue({ job_id: "job-9" });
+      render(AddSheet);
+      await fireEvent.input(screen.getByTestId("any-text"), {
+        target: { value: "https://www.songsterr.com/a/wsa/band-song-tab-s123" },
+      });
+      await fireEvent.click(screen.getByTestId("any-submit"));
+
+      await vi.waitFor(() => expect(mockPreviewImport).toHaveBeenCalled());
+      expect(mockImportAuto).not.toHaveBeenCalled();
+    });
+
     it("sends other pasted text as text", async () => {
       render(AddSheet);
       await fireEvent.input(screen.getByTestId("any-text"), { target: { value: TAB } });

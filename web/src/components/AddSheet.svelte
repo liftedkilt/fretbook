@@ -304,6 +304,13 @@
       await submitFile(input.file);
       return;
     }
+    // A Songsterr link may have several tracks; the link form asks which ones.
+    if ("url" in input && songsterrUrl.test(input.url)) {
+      mode = "link";
+      url = input.url;
+      await submitUrl();
+      return;
+    }
     error = "";
     notice = "";
     busy = t("library.importing");

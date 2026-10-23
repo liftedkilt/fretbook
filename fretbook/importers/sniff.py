@@ -107,13 +107,16 @@ def sniff_text(text: str) -> str | None:
     stripped = text.strip()
     if not stripped or len(text) > MAX_TEXT_CHARS:
         return None
-    if stripped.startswith(("{", "[")) and not chordpro.looks_like_chordpro(text.lstrip()[:200]):
+    if stripped.startswith("{"):
         try:
             payload = json.loads(stripped)
         except ValueError:
             payload = None
         if isinstance(payload, dict) and (
-            "document" in payload or "content_kind" in payload or {"bars", "tracks"} <= payload.keys()
+            payload.get("format") == "fretbook-song"
+            or "document" in payload
+            or "content_kind" in payload
+            or {"bars", "tracks"} <= payload.keys()
         ):
             return FRETBOOK_JSON
     if stripped.startswith("<") and _MUSICXML_ROOT.search(stripped[:HEAD_BYTES].encode("utf-8", "ignore")):
@@ -122,16 +125,12 @@ def sniff_text(text: str) -> str | None:
         return ASCII_TAB
     if chordpro.looks_like_chordpro(text):
         return CHORDPRO
-    if any(chordpro.is_chord_line(line) and _has_lyric_below(text, line) for line in text.splitlines()[:400]):
-        return CHORDS_OVER_LYRICS
+    lines = text.splitlines()[:400]
+    for index, line in enumerate(lines[:-1]):
+        following = lines[index + 1]
+        if chordpro.is_chord_line(line) and following.strip() and not chordpro.is_chord_line(following):
+            return CHORDS_OVER_LYRICS
     return None
-
-
-def _has_lyric_below(text: str, line: str) -> bool:
-    lines = text.splitlines()
-    index = lines.index(line)
-    following = lines[index + 1] if index + 1 < len(lines) else ""
-    return bool(following.strip()) and not chordpro.is_chord_line(following)
 
 
 def _decode(data: bytes) -> str | None:
