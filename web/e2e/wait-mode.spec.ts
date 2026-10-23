@@ -59,3 +59,25 @@ test("wait mode starts from the bar the player chose", async ({ page, seed }) =>
   await expect(status).toHaveAttribute("data-hits", "2", { timeout: 50_000 });
   await expect(status).toHaveAttribute("data-state", "done");
 });
+
+test("wait mode stays inside the loop range", async ({ page, seed }) => {
+  const song = await seed.musicXmlTab();
+  await page.goto(`/songs/${song.id}`);
+  await expect(page.getByTestId("player-score").locator("svg").first()).toBeVisible();
+
+  await page.getByTestId("player-panel-toggle").click();
+  await page.getByTestId("wait-silent").check();
+  await page.getByTestId("player-next").click();
+  await page.getByTestId("player-next").click();
+  await expect(page.getByTestId("player-status")).toHaveAttribute("data-measure", "2");
+  // Bar 3 only: its one note (A1) has to be played again and again.
+  await page.getByRole("button", { name: "Loop A" }).click();
+  await page.getByRole("button", { name: "Loop B" }).click();
+  await page.getByTestId("wait-toggle").click();
+  await page.getByTestId("player-play").click();
+
+  const status = page.getByTestId("wait-status");
+  await expect(status).toHaveAttribute("data-hits", /^[3-9]$/, { timeout: 50_000 });
+  await expect(status).not.toHaveAttribute("data-state", "done");
+  await expect(page.getByTestId("player-status")).toHaveAttribute("data-measure", "2");
+});
