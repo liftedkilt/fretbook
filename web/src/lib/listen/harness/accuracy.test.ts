@@ -12,7 +12,8 @@ import { decodeWav } from "./wav";
 // fixtures; see fixtures/README.md.
 const RATES = [44100, 48000];
 
-describe("pitch and onset accuracy on synthesized instruments", () => {
+// DSP over synthesized audio is CPU-heavy; shared CI runners can exceed the 5s default.
+describe("pitch and onset accuracy on synthesized instruments", { timeout: 30_000 }, () => {
   for (const sampleRate of RATES) {
     for (const scenario of SCENARIOS) {
       it(`${scenario.name} at ${sampleRate} Hz`, () => {
@@ -42,7 +43,7 @@ describe("pitch and onset accuracy on synthesized instruments", () => {
   });
 });
 
-describe("committed WAV fixtures", () => {
+describe("committed WAV fixtures", { timeout: 30_000 }, () => {
   for (const name of ["bass-riff", "guitar-riff"]) {
     it(name, () => {
       const dir = new URL("../fixtures/", import.meta.url);
