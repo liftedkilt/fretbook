@@ -43,7 +43,7 @@ from fretbook.export.musicxml import to_musicxml
 from fretbook.importers.base import ImportError, ImportRequest
 from fretbook.importers.registry import resolve_importer
 from fretbook.score.instruments import family, get_preset, is_preset, presets_payload
-from fretbook.score.model import ScoreDocument
+from fretbook.score.model import ScoreDocument, content_hash
 from fretbook.storage.media import AUDIO_TYPES
 from fretbook.storage.repository import RevisionConflict
 from fretbook.tags import suggest_tags
@@ -108,6 +108,8 @@ class ImportDocumentBody(_Body):
     source_kind: Literal["file", "guitarpro", "musicxml", "fretbook-json", "manual"] = "file"
     slug: str | None = Field(default=None, max_length=60)
     document: ScoreDocument
+    on_duplicate: Literal["skip", "keep_both", "replace"] = "keep_both"
+    tags: list[str] = Field(default_factory=list)
 
 
 class SettingsBody(_Body):
@@ -621,16 +623,46 @@ def import_document(
 ) -> JSONResponse:
     """Save a document the browser built (the browser reads Guitar Pro with alphaTab)."""
     title = body.title.strip() or "Untitled"
+    hash_val = content_hash(body.document)
+    source_ref: dict[str, Any] = {"content_hash": hash_val}
+    if body.tags:
+        source_ref["tags"] = body.tags
+
+    duplicate = ctx.songs.find_existing_duplicate(
+        user.user_id, content_hash=hash_val, title=title, artist=body.artist.strip()
+    )
+    if duplicate is not None:
+        if body.on_duplicate == "skip":
+            return _json(require_song(ctx, user.user_id, duplicate["id"]), status_code=200)
+        if body.on_duplicate == "replace":
+            updated = ctx.songs.update_song(
+                user.user_id,
+                duplicate["id"],
+                title=title,
+                artist=body.artist.strip(),
+                revision=duplicate["revision"],
+                document=body.document,
+                source_ref=source_ref,
+            )
+            if updated is not None:
+                if body.tags:
+                    ctx.songs.add_tags(user.user_id, [duplicate["id"]], body.tags)
+                return _json(require_song(ctx, user.user_id, duplicate["id"]), status_code=200)
+
     song = ctx.songs.create_song(
         user.user_id,
         title=title,
         artist=body.artist.strip(),
         document=body.document,
         source_kind=body.source_kind,
-        source_ref={},
+        source_ref=source_ref,
         slug=body.slug or title,
     )
-    ctx.songs.add_tags(user.user_id, [song["id"]], suggest_tags(song))
+    tags_to_add = suggest_tags(song)
+    if body.tags:
+        tags_to_add = list(dict.fromkeys([*tags_to_add, *body.tags]))
+    if tags_to_add:
+        ctx.songs.add_tags(user.user_id, [song["id"]], tags_to_add)
     return _json(require_song(ctx, user.user_id, song["id"]), status_code=201)
 
 

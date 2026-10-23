@@ -3,41 +3,67 @@
   import Icon from "./Icon.svelte";
   import { dismissJob, listJobs, retryJob } from "../lib/api";
   import { keyed, t, tOr } from "../lib/i18n.svelte";
+  import { importQueue } from "../lib/importQueue.svelte";
   import type { Job } from "../lib/types";
   import { refreshSongs, ui } from "../lib/ui.svelte";
 
-  let jobs = $state<Job[]>([]);
+  let serverJobs = $state<Job[]>([]);
   let retryingId = $state<string | null>(null);
   let dismissingId = $state<string | null>(null);
   let pollTimer: ReturnType<typeof setInterval> | null = null;
+  let sessionDoneIds = $state<Set<string>>(new Set());
+
+  const allJobs = $derived([...(importQueue.clientJobs ?? []), ...(serverJobs ?? [])]);
+
+  $effect(() => {
+    // Track jobs that started in this session and finished
+    for (const j of allJobs) {
+      if (j.status === "queued" || j.status === "running") {
+        if (!sessionDoneIds.has(j.id)) {
+          sessionDoneIds.add(j.id);
+        }
+      }
+    }
+  });
 
   const activeJobs = $derived(
-    (jobs ?? []).filter(
-      (j) => j.status === "queued" || j.status === "running" || j.status === "error",
+    allJobs.filter(
+      (j) =>
+        j.status === "queued" ||
+        j.status === "running" ||
+        j.status === "error" ||
+        (j.status === "done" &&
+          (sessionDoneIds.has(j.id) ||
+            importQueue.trackedServerJobIds.has(j.id) ||
+            j.id.startsWith("client-"))),
     ),
   );
 
   async function loadJobs() {
     try {
       const res = await listJobs();
-      jobs = res ?? [];
+      serverJobs = res ?? [];
     } catch {
       // ignore network errors when polling
     }
   }
 
   function startPollingIfNeeded() {
-    const list = jobs ?? [];
-    const hasRunning = list.some((j) => j.status === "queued" || j.status === "running");
+    const list = serverJobs ?? [];
+    const clientList = importQueue.clientJobs ?? [];
+    const hasRunning =
+      list.some((j) => j.status === "queued" || j.status === "running") ||
+      clientList.some((j) => j.status === "queued" || j.status === "running");
+
     if (hasRunning && !pollTimer) {
       pollTimer = setInterval(async () => {
-        const prevDoneCount = (jobs ?? []).filter((j) => j.status === "done").length;
+        const prevDoneCount = (serverJobs ?? []).filter((j) => j.status === "done").length;
         await loadJobs();
-        const nextDoneCount = (jobs ?? []).filter((j) => j.status === "done").length;
+        const nextDoneCount = (serverJobs ?? []).filter((j) => j.status === "done").length;
         if (nextDoneCount > prevDoneCount) {
           void refreshSongs();
         }
-        if (!(jobs ?? []).some((j) => j.status === "queued" || j.status === "running")) {
+        if (!(serverJobs ?? []).some((j) => j.status === "queued" || j.status === "running")) {
           if (pollTimer) {
             clearInterval(pollTimer);
             pollTimer = null;
@@ -56,6 +82,12 @@
 
   $effect(() => {
     if (!ui.sheet) {
+      void loadJobs();
+    }
+  });
+
+  $effect(() => {
+    if (importQueue.lastServerRefresh > 0) {
       void loadJobs();
     }
   });
@@ -86,8 +118,14 @@
   async function handleDismiss(job: Job) {
     dismissingId = job.id;
     try {
-      await dismissJob(job.id);
-      jobs = jobs.filter((j) => j.id !== job.id);
+      if (job.id.startsWith("client-")) {
+        importQueue.dismissJob(job.id);
+      } else {
+        importQueue.untrackJobId(job.id);
+        await dismissJob(job.id);
+        serverJobs = serverJobs.filter((j) => j.id !== job.id);
+      }
+      sessionDoneIds.delete(job.id);
     } catch {
       await loadJobs();
     } finally {
@@ -107,6 +145,11 @@
     if (job.status === "running") {
       return tOr(job.progress_key, job.progress || t("library.importing"));
     }
+    if (job.status === "done") {
+      if (job.result?.skipped) return t("recentImports.skippedDuplicate");
+      if (job.result?.replaced) return t("recentImports.replacedDuplicate");
+      return t("recentImports.completed");
+    }
     return "";
   }
 </script>
@@ -123,12 +166,15 @@
         <li
           class="recent-import-item"
           class:is-error={job.status === "error"}
+          class:is-done={job.status === "done"}
           data-testid="recent-import-item"
         >
           <div class="job-info">
             <span class="job-icon">
               {#if job.status === "error"}
                 <Icon name="alert" size={18} />
+              {:else if job.status === "done"}
+                <Icon name="check" size={18} />
               {:else}
                 <span class="spinner" aria-hidden="true"></span>
               {/if}
@@ -143,7 +189,16 @@
             </div>
           </div>
           <div class="job-actions">
-            {#if job.status === "error"}
+            {#if job.status === "done" && job.result?.song_id}
+              <a
+                class="small-button ghost"
+                href={`/songs/${job.result.song_id}`}
+                data-testid="job-link"
+              >
+                {t("recentImports.viewSong")}
+              </a>
+            {/if}
+            {#if job.status === "error" && !job.id.startsWith("client-")}
               <button
                 class="small-button primary"
                 data-testid="job-retry"
@@ -201,6 +256,10 @@
 
   .recent-import-item.is-error .job-icon {
     color: var(--danger);
+  }
+
+  .recent-import-item.is-done .job-icon {
+    color: var(--success, #22c55e);
   }
 
   .job-info {

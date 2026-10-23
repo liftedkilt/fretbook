@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import sqlite3
@@ -19,6 +20,7 @@ from fretbook.score.model import (
     Track,
     TrackBar,
     Voice,
+    content_hash,
     summary_fields,
 )
 from fretbook.tags import MAX_TAGS_PER_SONG, clean_tags, tag_key
@@ -80,6 +82,19 @@ class RevisionConflict(Exception):
     def __init__(self, current: int) -> None:
         super().__init__(f"song is at revision {current}")
         self.current = current
+
+
+def normalize_text(text: str) -> str:
+    """Normalize text for duplicate comparison: lowercase and collapsed whitespace."""
+    return re.sub(r"\s+", " ", text.strip().lower())
+
+
+def song_content_hash(document: ScoreDocument | None, chordpro: str | None) -> str | None:
+    if document is not None:
+        return content_hash(document)
+    if chordpro is not None:
+        return hashlib.sha256(chordpro.strip().encode("utf-8")).hexdigest()
+    return None
 
 
 def _slugify(text: str) -> str:
@@ -259,6 +274,44 @@ class SongRepository:
                 ).fetchone()
                 is not None
             )
+
+    def find_existing_duplicate(
+        self,
+        owner_id: str,
+        *,
+        content_hash: str | None = None,
+        title: str = "",
+        artist: str = "",
+    ) -> dict[str, Any] | None:
+        """Find an existing song matching content_hash, or normalized title and artist."""
+        with self._session() as conn:
+            if content_hash:
+                row = conn.execute(
+                    """
+                    SELECT id FROM songs
+                    WHERE owner_id = ? AND json_extract(source_ref, '$.content_hash') = ?
+                    ORDER BY created_at LIMIT 1
+                    """,
+                    (owner_id, content_hash),
+                ).fetchone()
+                if row:
+                    return self.get_song(owner_id, row["id"])
+
+            norm_title = normalize_text(title)
+            norm_artist = normalize_text(artist)
+            if norm_title and norm_title != "untitled":
+                rows = conn.execute(
+                    """
+                    SELECT id, title, artist FROM songs
+                    WHERE owner_id = ?
+                    ORDER BY created_at
+                    """,
+                    (owner_id,),
+                ).fetchall()
+                for row in rows:
+                    if normalize_text(row["title"]) == norm_title and normalize_text(row["artist"]) == norm_artist:
+                        return self.get_song(owner_id, row["id"])
+        return None
 
     def create_song(
         self,

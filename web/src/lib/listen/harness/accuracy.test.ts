@@ -13,7 +13,7 @@ import { decodeWav } from "./wav";
 const RATES = [44100, 48000];
 
 // DSP over synthesized audio is CPU-heavy; shared CI runners can exceed the 5s default.
-describe("pitch and onset accuracy on synthesized instruments", { timeout: 30_000 }, () => {
+describe("pitch and onset accuracy on synthesized instruments", { timeout: 60_000 }, () => {
   for (const sampleRate of RATES) {
     for (const scenario of SCENARIOS) {
       it(`${scenario.name} at ${sampleRate} Hz`, () => {

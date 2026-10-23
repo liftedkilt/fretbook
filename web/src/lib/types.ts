@@ -275,6 +275,19 @@ export interface ImportPreview {
   tracks: SongsterrTrackChoice[];
 }
 
+export type DuplicateAction = "skip" | "keep_both" | "replace";
+
+export interface BulkImportJobItem {
+  job_id: string;
+  filename: string;
+}
+
+export interface BulkImportAccepted {
+  batch_id: string;
+  total_files: number;
+  jobs?: BulkImportJobItem[];
+}
+
 export interface Job {
   id: string;
   kind: string;
@@ -282,10 +295,13 @@ export interface Job {
   label?: string;
   result: {
     song_id?: string;
+    slug?: string;
     content_kind?: ContentKind;
     warnings?: Keyed[];
     imported?: number | null;
-    skipped?: number | null;
+    skipped?: boolean | number | null;
+    replaced?: boolean | null;
+    duplicate_of?: string | null;
     copied?: number | null;
     failed?: number | null;
   } | null;

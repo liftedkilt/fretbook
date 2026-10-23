@@ -4,6 +4,7 @@
   import Sheet from "./Sheet.svelte";
   import TabPreview from "./TabPreview.svelte";
   import UniversalAdd, { type AddInput } from "./UniversalAdd.svelte";
+  import { extractDroppedFiles, processBulkImport } from "../lib/bulkImport";
   import {
     ApiError,
     createChordSheet,
@@ -300,6 +301,16 @@
 
   /** The Add box: Guitar Pro is read here; everything else is sent for the server to identify. */
   async function submitAny(input: AddInput) {
+    if ("files" in input) {
+      closeSheet();
+      await processBulkImport({
+        files: input.files,
+        duplicates: input.duplicates,
+        tags: input.tags,
+        family: defaultFamily(),
+      });
+      return;
+    }
     if ("file" in input && (await isGuitarProFile(input.file))) {
       await submitFile(input.file);
       return;
@@ -442,27 +453,42 @@
           dragging = true;
         }}
         ondragleave={() => (dragging = false)}
-        ondrop={(event) => {
+        ondrop={async (event) => {
           event.preventDefault();
           dragging = false;
-          const file = event.dataTransfer?.files?.[0];
-          if (file && !busy) void submitFile(file);
+          if (busy || !event.dataTransfer) return;
+          const files = await extractDroppedFiles(event.dataTransfer);
+          if (files.length === 0) return;
+          if (files.length > 1 || files[0].name.toLowerCase().endsWith(".zip")) {
+            closeSheet();
+            void processBulkImport({ files, family: defaultFamily() });
+          } else {
+            void submitFile(files[0]);
+          }
         }}
       >
         <span class="dropzone-icon"><Icon name="upload" size={28} /></span>
         <strong>{t("add.dropTitle")}</strong>
-        <small class="muted">{t("library.file")}</small>
+        <small class="muted">{t("bulk.dropHint")}</small>
         <span class="button">{t("add.browse")}</span>
         <input
           class="visually-hidden"
           data-testid="add-file-input"
           type="file"
+          multiple
           disabled={Boolean(busy)}
-          accept=".musicxml,.xml,.json,.gp,.gp3,.gp4,.gp5,.gpx,.cho,.chordpro,.chopro,.crd,.txt,.tab"
+          accept=".musicxml,.xml,.json,.gp,.gp3,.gp4,.gp5,.gpx,.cho,.chordpro,.chopro,.crd,.txt,.tab,.zip"
           onchange={(event) => {
-            const file = event.currentTarget.files?.[0];
+            const fileList = event.currentTarget.files;
+            if (!fileList || fileList.length === 0) return;
+            const files = Array.from(fileList);
             event.currentTarget.value = "";
-            if (file) void submitFile(file);
+            if (files.length > 1 || files[0].name.toLowerCase().endsWith(".zip")) {
+              closeSheet();
+              void processBulkImport({ files, family: defaultFamily() });
+            } else {
+              void submitFile(files[0]);
+            }
           }}
         />
       </label>

@@ -378,6 +378,7 @@
     "downloadingAudio": "Downloading audio",
     "convertingAudio": "Converting to mp3",
     "ready": "Ready",
+    "skippedDuplicate": "Skipped duplicate",
     "noFrettedTracks": "This file has no fretted tracks."
   },
   "error": {
@@ -481,7 +482,17 @@
       "noSyncPoints": "No sync points are published for this song.",
       "keptEditedCopy": "\"{title}\" was edited since it was imported, so this import was saved as a separate song.",
       "anchorsDropped": "The new import has fewer bars, so some sync marks were dropped.",
-      "rhythmEstimated": "ASCII tab has no rhythm, so note lengths were estimated from the spacing. Check the timing."
+      "rhythmEstimated": "ASCII tab has no rhythm, so note lengths were estimated from the spacing. Check the timing.",
+      "emptyZip": "The zip archive contains no files.",
+      "invalidZip": "This file is not a valid zip archive.",
+      "replacedDuplicate": "Replaced existing song \"{title}\".",
+      "skippedDuplicate": "Skipped duplicate of \"{title}\".",
+      "zipBomb": "The archive looks like a zip bomb.",
+      "zipFileTooLarge": "File in zip exceeds the uncompressed size limit.",
+      "zipPathTraversal": "The archive contains an unsafe file name.",
+      "zipSymlinkNotAllowed": "The archive contains symlinks, which are not allowed.",
+      "zipTooLarge": "The archive is too large when unpacked.",
+      "zipTooManyFiles": "The archive contains too many files."
     },
     "songs": {
       "badCursor": "That page of the library is no longer valid. Reload the list."
@@ -599,11 +610,15 @@
     "heading": "Recent imports",
     "retry": "Retry",
     "dismiss": "Dismiss",
+    "dismissAll": "Dismiss all",
     "queued": "Queued",
     "retrying": "Retrying…",
     "dismissing": "Dismissing…",
     "completed": "Ready",
-    "viewSong": "View song"
+    "done": "Done",
+    "viewSong": "View song",
+    "skippedDuplicate": "Skipped (duplicate)",
+    "replacedDuplicate": "Replaced existing"
   },
   "repeats": {
     "heading": "Repeats and jumps",
@@ -702,5 +717,17 @@
     "progress": "{hits} of {total} notes",
     "done": "Done: {hits} of {total} notes played.",
     "hit": "Right note"
+  },
+  "bulk": {
+    "title": "Bulk import",
+    "dropHint": "Drop a folder, multiple files, or a .zip archive",
+    "duplicates": "If duplicate found",
+    "skip": "Skip",
+    "keepBoth": "Keep both",
+    "replace": "Replace",
+    "tags": "Tags for batch",
+    "tagsPlaceholder": "e.g. rock, live",
+    "parsing": "Parsing Guitar Pro in worker…",
+    "saving": "Saving…"
   }
 }
