@@ -28,10 +28,6 @@ With sign-in on, export and import should work per user, and an admin should be 
 
 Today users build the image themselves. Publish tagged images to GHCR from CI on each release, with a changelog. That makes upgrades a `docker compose pull`, and gives migrations a version to refer to.
 
-### Keeping yt-dlp working
-
-YouTube changes often and yt-dlp breaks with it, which silently stops audio downloads. Make an outdated yt-dlp easy to spot and fix: show its version on `/api/meta`, explain failures in the import result, and either ship frequent image updates or let the container update yt-dlp at start.
-
 ### Repeats and playback order
 
 Repeats are stored in the score but not rendered, so the bar index is also the playback order. Real songs depend on repeats, voltas, D.S. and D.C. Render them, expand them into a playback order, and make sync marks follow the played order rather than the written bar index.

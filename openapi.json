@@ -811,6 +811,9 @@
           "version": {
             "title": "Version",
             "type": "string"
+          },
+          "ytdlp": {
+            "$ref": "#/components/schemas/YtDlpStatus"
           }
         },
         "required": [
@@ -819,7 +822,8 @@
           "version",
           "auth_mode",
           "exporters",
-          "instruments"
+          "instruments",
+          "ytdlp"
         ],
         "title": "Meta",
         "type": "object"
@@ -1670,6 +1674,66 @@
           }
         },
         "title": "Voice",
+        "type": "object"
+      },
+      "YtDlpStatus": {
+        "description": "The yt-dlp that downloads audio. ``stale`` means its release is more than 30 days old.",
+        "properties": {
+          "age_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age Days"
+          },
+          "auto_update": {
+            "title": "Auto Update",
+            "type": "boolean"
+          },
+          "cookies": {
+            "title": "Cookies",
+            "type": "boolean"
+          },
+          "released": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Released"
+          },
+          "stale": {
+            "title": "Stale",
+            "type": "boolean"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          }
+        },
+        "required": [
+          "version",
+          "released",
+          "age_days",
+          "stale",
+          "auto_update",
+          "cookies"
+        ],
+        "title": "YtDlpStatus",
         "type": "object"
       }
     }
@@ -2539,7 +2603,7 @@
     },
     "/api/meta": {
       "get": {
-        "description": "Name, version, auth mode, exporters, and instrument presets.",
+        "description": "Name, version, auth mode, exporters, instrument presets, and the yt-dlp version.",
         "operationId": "meta_api_meta_get",
         "responses": {
           "200": {

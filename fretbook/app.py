@@ -18,6 +18,7 @@ from starlette.responses import Response
 from fretbook import __version__
 from fretbook.api.middleware import BodyLimitMiddleware, SameOriginMiddleware
 from fretbook.api.routes import router
+from fretbook.audio.ytdlp_health import AutoUpdater
 from fretbook.auth import build_auth
 from fretbook.config import Settings
 from fretbook.context import AppContext
@@ -120,6 +121,7 @@ def create_app(settings: Settings | None = None, *, oidc_transport: httpx.AsyncB
     media = MediaStore(settings)
     jobs = JobRunner(settings)
     register_handlers(jobs, songs, media)
+    updater = AutoUpdater(settings)
     ctx = AppContext(
         settings=settings,
         songs=songs,
@@ -137,7 +139,9 @@ def create_app(settings: Settings | None = None, *, oidc_transport: httpx.AsyncB
         if count:
             logger.info("imported %s legacy song(s)", count)
         jobs.start()
+        updater.start()
         yield
+        updater.stop()
         jobs.stop()
 
     app = FastAPI(

@@ -3113,6 +3113,14 @@ textarea {
   background: var(--surface-2);
 }
 
+.setting-stacked {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.setting-notice {
+  margin-top: 0;
+}
+
 .setting-label {
   display: flex;
   align-items: center;

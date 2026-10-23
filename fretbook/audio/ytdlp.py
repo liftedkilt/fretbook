@@ -6,13 +6,21 @@ importer; it only saves an mp3 the player can sync against.
 
 from __future__ import annotations
 
+import logging
 import re
+import shutil
 import subprocess
 import sys
 import threading
+from collections import deque
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
+
+from fretbook.audio.ytdlp_health import classify_failure, subprocess_env
+from fretbook.config import Settings
+
+logger = logging.getLogger(__name__)
 
 
 class AudioDownloadError(RuntimeError):
@@ -28,9 +36,10 @@ def download_audio(
     progress: Callable[[str, str], None],
     *,
     timeout_seconds: int = 600,
+    settings: Settings | None = None,
 ) -> None:
     """Write ``dest`` (an mp3). yt-dlp is killed after ``timeout_seconds``, so a hung download cannot
-    stall the queue.
+    stall the queue. ``settings`` selects the updated yt-dlp and the cookies file, when configured.
     """
     if not re.fullmatch(r"[\w-]{11}", video_id):
         raise AudioDownloadError("unexpected video id", "audio.badVideo")
@@ -55,7 +64,43 @@ def download_audio(
         template,
         f"https://www.youtube.com/watch?v={video_id}",
     ]
-    proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    env = None
+    cookies_copy: Path | None = None
+    if settings is not None:
+        env = subprocess_env(settings)
+        cookies_copy = _stage_cookies(settings, target)
+        if cookies_copy:
+            command[3:3] = ["--cookies", str(cookies_copy)]
+    try:
+        _run(command, env, target, progress, timeout_seconds)
+    finally:
+        if cookies_copy:
+            cookies_copy.unlink(missing_ok=True)
+
+
+def _stage_cookies(settings: Settings, target: Path) -> Path | None:
+    """A private copy of the cookies file, because yt-dlp writes the jar back when it exits."""
+    source = settings.ytdlp_cookies
+    if source is None:
+        return None
+    if not source.is_file():
+        logger.warning("FRETBOOK_YTDLP_COOKIES points at %s, which is not a file", source)
+        return None
+    staged = target.with_name(f"{target.stem}.cookies.txt")
+    shutil.copyfile(source, staged)
+    staged.chmod(0o600)
+    return staged
+
+
+def _run(
+    command: list[str],
+    env: dict[str, str] | None,
+    target: Path,
+    progress: Callable[[str, str], None],
+    timeout_seconds: int,
+) -> None:
+    proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env)
+    tail: deque[str] = deque(maxlen=40)
     timed_out = threading.Event()
 
     def kill() -> None:
@@ -69,6 +114,7 @@ def download_audio(
         assert proc.stdout is not None
         last = -10.0
         for line in proc.stdout:
+            tail.append(line)
             match = re.search(r"\[download\]\s+([\d.]+)%", line)
             if match and float(match.group(1)) >= last + 10:
                 last = float(match.group(1))
@@ -78,6 +124,8 @@ def download_audio(
         code = proc.wait()
     finally:
         watchdog.cancel()
+        if proc.stdout is not None:
+            proc.stdout.close()
     if timed_out.is_set():
         raise AudioDownloadError(
             f"audio download took longer than {timeout_seconds}s; the tab was saved and you can upload an mp3",
@@ -85,6 +133,9 @@ def download_audio(
             seconds=timeout_seconds,
         )
     if code != 0:
-        raise AudioDownloadError("audio download failed; the tab was saved and you can upload an mp3")
+        output = "".join(tail)
+        key = classify_failure(output)
+        logger.warning("yt-dlp exited with %s (%s): %s", code, key, output.strip()[-500:])
+        raise AudioDownloadError("audio download failed; the tab was saved and you can upload an mp3", key)
     if not target.is_file():
         raise AudioDownloadError("yt-dlp finished without writing an mp3")

@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 import uuid
+from dataclasses import asdict
 from pathlib import Path
 from typing import Literal
 
@@ -32,6 +33,7 @@ from fretbook.api.schemas import (
     SongsMoved,
     SongSummary,
 )
+from fretbook.audio.ytdlp_health import status as ytdlp_status
 from fretbook.auth.base import Principal
 from fretbook.chords import chordpro
 from fretbook.context import AppContext
@@ -177,7 +179,7 @@ def health() -> JSONResponse:
 
 @router.get("/api/meta", response_model=Meta, tags=["meta"])
 def meta(ctx: AppContext = Depends(_ctx), _user: Principal = Depends(_user)) -> JSONResponse:
-    """Name, version, auth mode, exporters, and instrument presets."""
+    """Name, version, auth mode, exporters, instrument presets, and the yt-dlp version."""
     return _json(
         {
             "name": "Fretbook",
@@ -186,6 +188,7 @@ def meta(ctx: AppContext = Depends(_ctx), _user: Principal = Depends(_user)) -> 
             "auth_mode": ctx.settings.auth_mode,
             "exporters": ["json", "musicxml", "chordpro", "pdf"],
             "instruments": presets_payload(),
+            "ytdlp": asdict(ytdlp_status(ctx.settings)),
         }
     )
 

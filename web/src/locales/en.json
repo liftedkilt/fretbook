@@ -45,6 +45,16 @@
     "themeDark": "Dark",
     "themeLight": "Light"
   },
+  "ytdlp": {
+    "label": "Audio downloader (yt-dlp)",
+    "hint": "Fretbook uses yt-dlp to download the audio of a synced video. YouTube changes often, so an old version stops working.",
+    "version": "Version {version}",
+    "released": { "one": "Released {date}, {count} day ago.", "other": "Released {date}, {count} days ago." },
+    "unknown": "The version could not be read.",
+    "stale": { "one": "This yt-dlp is {count} day old. Audio downloads may fail. Update it, or set FRETBOOK_YTDLP_AUTO_UPDATE=true, or upload audio instead.", "other": "This yt-dlp is {count} days old. Audio downloads may fail. Update it, or set FRETBOOK_YTDLP_AUTO_UPDATE=true, or upload audio instead." },
+    "autoUpdateOn": "Updates itself at start and once a day.",
+    "autoUpdateOff": "Does not update itself."
+  },
   "library": {
     "heading": "Library",
     "empty": "No songs yet. Import a Songsterr link or a file, start a blank tab, or paste a chord sheet.",
@@ -323,7 +333,11 @@
       "missing": "The audio file is missing.",
       "failed": "Audio download failed. The tab was saved; you can upload an mp3.",
       "timeout": "The audio download took longer than {seconds} seconds. The tab was saved; you can upload an mp3.",
-      "badVideo": "That is not a YouTube video id."
+      "badVideo": "That is not a YouTube video id.",
+      "signIn": "YouTube asked for a sign-in or a bot check, so the audio could not be downloaded. The tab was saved; upload an mp3 instead.",
+      "unavailable": "That video is unavailable, private, or removed, so its audio could not be downloaded. The tab was saved; upload an mp3 instead.",
+      "geoBlocked": "That video is blocked in this server's country, so its audio could not be downloaded. The tab was saved; upload an mp3 instead.",
+      "outdated": "yt-dlp could not read YouTube's page, which usually means yt-dlp is out of date. The tab was saved; update yt-dlp or upload an mp3 instead."
     },
     "export": {
       "notTab": "Only tabs export as MusicXML.",

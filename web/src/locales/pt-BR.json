@@ -45,6 +45,16 @@
     "themeDark": "Escuro",
     "themeLight": "Claro"
   },
+  "ytdlp": {
+    "label": "Baixador de áudio (yt-dlp)",
+    "hint": "O Fretbook usa o yt-dlp para baixar o áudio de um vídeo sincronizado. O YouTube muda com frequência, então uma versão antiga deixa de funcionar.",
+    "version": "Versão {version}",
+    "released": { "one": "Lançada em {date}, há {count} dia.", "other": "Lançada em {date}, há {count} dias." },
+    "unknown": "Não foi possível ler a versão.",
+    "stale": { "one": "Este yt-dlp tem {count} dia. Os downloads de áudio podem falhar. Atualize-o, defina FRETBOOK_YTDLP_AUTO_UPDATE=true ou envie o áudio.", "other": "Este yt-dlp tem {count} dias. Os downloads de áudio podem falhar. Atualize-o, defina FRETBOOK_YTDLP_AUTO_UPDATE=true ou envie o áudio." },
+    "autoUpdateOn": "Atualiza sozinho ao iniciar e uma vez por dia.",
+    "autoUpdateOff": "Não atualiza sozinho."
+  },
   "library": {
     "heading": "Biblioteca",
     "empty": "Nenhuma música ainda. Importe um link do Songsterr ou um arquivo, comece uma tablatura em branco ou cole uma cifra.",
@@ -323,7 +333,11 @@
       "missing": "O arquivo de áudio está faltando.",
       "failed": "O download do áudio falhou. A tablatura foi salva; você pode enviar um mp3.",
       "timeout": "O download do áudio passou de {seconds} segundos. A tablatura foi salva; você pode enviar um mp3.",
-      "badVideo": "Isso não é um id de vídeo do YouTube."
+      "badVideo": "Isso não é um id de vídeo do YouTube.",
+      "signIn": "O YouTube pediu login ou uma verificação anti-robô, então não foi possível baixar o áudio. A tablatura foi salva; envie um mp3.",
+      "unavailable": "Esse vídeo está indisponível, é privado ou foi removido, então não foi possível baixar o áudio. A tablatura foi salva; envie um mp3.",
+      "geoBlocked": "Esse vídeo está bloqueado no país do servidor, então não foi possível baixar o áudio. A tablatura foi salva; envie um mp3.",
+      "outdated": "O yt-dlp não conseguiu ler a página do YouTube, o que costuma indicar que ele está desatualizado. A tablatura foi salva; atualize o yt-dlp ou envie um mp3."
     },
     "export": {
       "notTab": "Só tablaturas são exportadas como MusicXML.",

@@ -79,6 +79,17 @@ class InstrumentPreset(BaseModel):
     family: Literal["bass", "guitar"]
 
 
+class YtDlpStatus(BaseModel):
+    """The yt-dlp that downloads audio. ``stale`` means its release is more than 30 days old."""
+
+    version: str | None
+    released: str | None
+    age_days: int | None
+    stale: bool
+    auto_update: bool
+    cookies: bool
+
+
 class Meta(BaseModel):
     """Server identity. ``auth_mode`` is ``single`` or ``oidc``."""
 
@@ -88,6 +99,7 @@ class Meta(BaseModel):
     auth_mode: str
     exporters: list[str]
     instruments: list[InstrumentPreset]
+    ytdlp: YtDlpStatus
 
 
 class Settings(BaseModel):

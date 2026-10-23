@@ -217,7 +217,7 @@ export interface paths {
         };
         /**
          * Meta
-         * @description Name, version, auth mode, exporters, and instrument presets.
+         * @description Name, version, auth mode, exporters, instrument presets, and the yt-dlp version.
          */
         get: operations["meta_api_meta_get"];
         put?: never;
@@ -733,6 +733,7 @@ export interface components {
             tagline: string;
             /** Version */
             version: string;
+            ytdlp: components["schemas"]["YtDlpStatus"];
         };
         /** Note */
         Note: {
@@ -1085,6 +1086,24 @@ export interface components {
             /** Beats */
             beats?: components["schemas"]["Beat"][];
         };
+        /**
+         * YtDlpStatus
+         * @description The yt-dlp that downloads audio. ``stale`` means its release is more than 30 days old.
+         */
+        YtDlpStatus: {
+            /** Age Days */
+            age_days: number | null;
+            /** Auto Update */
+            auto_update: boolean;
+            /** Cookies */
+            cookies: boolean;
+            /** Released */
+            released: string | null;
+            /** Stale */
+            stale: boolean;
+            /** Version */
+            version: string | null;
+        };
     };
     responses: never;
     parameters: never;
@@ -1129,6 +1148,7 @@ export type UpdateSongBody = components['schemas']['UpdateSongBody'];
 export type ValidationBody = components['schemas']['ValidationBody'];
 export type ValidationIssue = components['schemas']['ValidationIssue'];
 export type Voice = components['schemas']['Voice'];
+export type YtDlpStatus = components['schemas']['YtDlpStatus'];
 export type $defs = Record<string, never>;
 export interface operations {
     admin_adopt_local_api_admin_adopt_local_post: {

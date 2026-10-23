@@ -1,6 +1,6 @@
 import { getMe, getMeta, listSongs, saveSettings } from "./api";
 import { instrumentFamily, type InstrumentFilter } from "./instruments";
-import type { InstrumentPreset, Me, SongSummary } from "./types";
+import type { InstrumentPreset, Me, SongSummary, YtDlpStatus } from "./types";
 
 /*
  * State shared by the app shell and the pages: the library list (the sidebar
@@ -38,6 +38,7 @@ export const ui = $state({
   songs: [] as SongSummary[],
   loaded: false,
   presets: [] as InstrumentPreset[],
+  ytdlp: null as YtDlpStatus | null,
   defaultInstrument: "bass-4",
   filter: "all" as LibraryFilter,
   search: "",
@@ -70,6 +71,7 @@ export async function loadMeta(): Promise<void> {
   const [meta, me] = await Promise.all([getMeta(), getMe()]);
   ui.me = me;
   ui.presets = meta.instruments;
+  ui.ytdlp = meta.ytdlp;
   ui.defaultInstrument = me.settings.default_instrument;
   metaLoaded = true;
 }

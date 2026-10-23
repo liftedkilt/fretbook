@@ -129,6 +129,15 @@ export interface InstrumentPreset {
   family: "bass" | "guitar";
 }
 
+export interface YtDlpStatus {
+  version: string | null;
+  released: string | null;
+  age_days: number | null;
+  stale: boolean;
+  auto_update: boolean;
+  cookies: boolean;
+}
+
 export interface Meta {
   name: string;
   tagline: string;
@@ -136,6 +145,7 @@ export interface Meta {
   auth_mode: string;
   exporters: string[];
   instruments: InstrumentPreset[];
+  ytdlp: YtDlpStatus;
 }
 
 export interface Settings {

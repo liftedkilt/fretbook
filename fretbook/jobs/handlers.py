@@ -171,7 +171,13 @@ def _store_result(
     if result.audio and songs.settings.download_audio:
         tmp = songs.settings.inbox_dir / f"audio-{uuid.uuid4().hex}.mp3"
         try:
-            download_audio(result.audio.video_id, tmp, progress, timeout_seconds=songs.settings.audio_timeout_seconds)
+            download_audio(
+                result.audio.video_id,
+                tmp,
+                progress,
+                timeout_seconds=songs.settings.audio_timeout_seconds,
+                settings=songs.settings,
+            )
             media.save_file(
                 owner_id,
                 saved["id"],

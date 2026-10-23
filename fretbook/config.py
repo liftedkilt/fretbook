@@ -56,6 +56,8 @@ class Settings:
     oidc_admin_group: str = "fretbook_admins"
     oidc_post_logout_redirect_uri: str = ""
     session_max_age: int = 7 * 24 * 3600
+    ytdlp_auto_update: bool = False
+    ytdlp_cookies: Path | None = None
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -64,6 +66,7 @@ class Settings:
         legacy_raw = os.environ.get("FRETBOOK_LEGACY_SONGS_DIR", "songs")
         legacy = Path(legacy_raw).expanduser() if legacy_raw else None
         static_raw = os.environ.get("FRETBOOK_STATIC_DIR")
+        cookies = os.environ.get("FRETBOOK_YTDLP_COOKIES", "").strip()
         return cls(
             host=os.environ.get("FRETBOOK_HOST", "127.0.0.1"),
             port=int(os.environ.get("FRETBOOK_PORT", "8137")),
@@ -89,6 +92,8 @@ class Settings:
             oidc_admin_group=os.environ.get("FRETBOOK_OIDC_ADMIN_GROUP", "fretbook_admins").strip(),
             oidc_post_logout_redirect_uri=os.environ.get("FRETBOOK_OIDC_POST_LOGOUT_REDIRECT_URI", "").strip(),
             session_max_age=int(os.environ.get("FRETBOOK_SESSION_MAX_AGE", str(7 * 24 * 3600))),
+            ytdlp_auto_update=_flag("FRETBOOK_YTDLP_AUTO_UPDATE", False),
+            ytdlp_cookies=Path(cookies).expanduser() if cookies else None,
         )
 
     @classmethod

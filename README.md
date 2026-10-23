@@ -50,6 +50,8 @@ For development, see [CONTRIBUTING.md](CONTRIBUTING.md).
 | `FRETBOOK_FORWARDED_ALLOW_IPS` | `127.0.0.1` | Proxies allowed to send `X-Forwarded-*`. Set it to your proxy's address. |
 | `FRETBOOK_DOWNLOAD_AUDIO` | `true` | Download the audio of the video a Songsterr tab is synced to, with yt-dlp. |
 | `FRETBOOK_AUDIO_TIMEOUT` | `600` | Seconds before a yt-dlp download is abandoned. |
+| `FRETBOOK_YTDLP_AUTO_UPDATE` | `false` | Install the newest yt-dlp into `$DATA_DIR/ytdlp` at start and once a day, and use it. See [Keeping yt-dlp working](#keeping-yt-dlp-working). |
+| `FRETBOOK_YTDLP_COOKIES` | empty | Path to a Netscape-format cookies file for yt-dlp. See the warning below. |
 | `FRETBOOK_MAX_UPLOAD_BYTES` | 80 MB | Largest upload and request body. |
 | `FRETBOOK_STATIC_DIR` | built-in | Serve the web app from another directory. |
 | `FRETBOOK_OIDC_ISSUER` | empty | Provider URL, for example `https://id.example.com`. Setting it turns on sign-in. |
@@ -63,6 +65,16 @@ For development, see [CONTRIBUTING.md](CONTRIBUTING.md).
 | `FRETBOOK_OIDC_SCOPES` | `openid profile email groups` | Requested scopes. |
 | `FRETBOOK_OIDC_POST_LOGOUT_REDIRECT_URI` | empty | Where the provider sends the browser after sign-out. It must be registered with the provider. |
 | `FRETBOOK_SESSION_MAX_AGE` | `604800` | Session length in seconds (7 days). |
+
+### Keeping yt-dlp working
+
+YouTube changes often, and an old yt-dlp stops downloading audio. Fretbook helps in three ways:
+
+- **Version.** `GET /api/meta` reports the yt-dlp version, its release date, its age in days, and whether it is stale (older than 30 days). **Settings** shows the same and warns when it is stale.
+- **Explained failures.** When a download fails, the import result says why: YouTube asked for a sign-in or bot check, the video is unavailable, it is blocked in the server's country, or yt-dlp is out of date. A timeout is reported as before. Each message suggests uploading an mp3 on the song page instead. The tab is always saved.
+- **Updating.** Rebuild or pull the image for a new yt-dlp, or set `FRETBOOK_YTDLP_AUTO_UPDATE=true`. Then the server runs `pip install -U yt-dlp` into `$DATA_DIR/ytdlp` when it starts and once a day, and downloads use that copy whenever it is newer than the one in the image. It is off by default because it fetches and runs code from PyPI; the container needs outbound access to it. A failed update keeps the previous copy. Delete `$DATA_DIR/ytdlp` to go back to the image's version.
+
+**Cookies (optional).** If YouTube keeps asking for a sign-in, set `FRETBOOK_YTDLP_COOKIES` to a Netscape-format cookies file, for example exported from a browser, and mount it into the container (read-only is fine; Fretbook gives yt-dlp a private copy for each download). Warning: the file holds your logged-in session. Anyone who can read it can act as that account, and Google may restrict an account that downloads automatically. Use a throwaway account, never your main one, and keep the file out of version control.
 
 ### Sign-in with Pocket ID
 
