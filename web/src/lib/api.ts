@@ -3,6 +3,7 @@ import type {
   AsciiTabBody,
   AsciiTabPreview as ContractAsciiTabPreview,
   AutoImportAccepted,
+  BulkImportAccepted as ContractBulkImportAccepted,
   ErrorDetail,
   ImportPreview as ContractImportPreview,
   Job as ContractJob,
@@ -25,6 +26,8 @@ import { songsPath } from "./songQuery";
 import type {
   AdminUser,
   AsciiTabPreview,
+  BulkImportAccepted,
+  DuplicateAction,
   ImportPreview,
   Job,
   Keyed,
@@ -319,8 +322,27 @@ export function importDocument(body: {
   artist: string;
   source_kind: string;
   document: ScoreDocument;
+  on_duplicate?: DuplicateAction;
+  tags?: string[];
 }): Promise<SongDetail> {
   return view(request<ContractSongDetail>("/api/songs/import-document", json("POST", body)));
+}
+
+export function importBulk(
+  files: File[],
+  duplicates: DuplicateAction = "skip",
+  tags?: string,
+): Promise<BulkImportAccepted> {
+  const form = new FormData();
+  for (const file of files) {
+    form.append("files", file);
+  }
+  form.set("duplicates", duplicates);
+  if (tags) form.set("tags", tags);
+  return request<ContractBulkImportAccepted>("/api/imports/bulk", {
+    method: "POST",
+    body: form,
+  });
 }
 
 export function listJobs(status?: "queued" | "running" | "done" | "error"): Promise<Job[]> {

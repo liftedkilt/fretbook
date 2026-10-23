@@ -24,6 +24,7 @@ from fretbook.context import AppContext
 from fretbook.importers import remote, sniff
 from fretbook.importers.base import ImportError, ImportRequest
 from fretbook.importers.registry import refuse_by_content, resolve_importer
+from fretbook.importers.zip_safety import safe_extract_zip
 
 router = APIRouter()
 
@@ -88,6 +89,40 @@ async def _from_file(file: UploadFile, ctx: AppContext, user: Principal) -> JSON
     filename = file.filename or "upload"
     path = ctx.settings.inbox_dir / f"{uuid.uuid4().hex}-{_safe_name(filename)}"
     await _spool(file, path, ctx.settings.max_upload_bytes)
+
+    if filename.lower().endswith(".zip"):
+        sniffed = sniff.sniff_path(path, filename).kind
+        if sniffed not in (sniff.GUITAR_PRO, sniff.MXL, sniff.FRETBOOK_ARCHIVE):
+            dest_dir = ctx.settings.inbox_dir / f"bulk-unpacked-{uuid.uuid4().hex}"
+            try:
+                extracted = safe_extract_zip(path, dest_dir)
+            except ImportError as exc:
+                path.unlink(missing_ok=True)
+                raise _fail(exc) from exc
+            finally:
+                path.unlink(missing_ok=True)
+
+            if not extracted:
+                raise api_error(400, "import.emptyZip", "Zip archive contains no files")
+
+            zip_stem = Path(filename).stem
+            first_job_id = None
+            for item in extracted:
+                job_id = ctx.jobs.enqueue(
+                    user.user_id,
+                    "import.file",
+                    {
+                        "path": str(item.path),
+                        "filename": item.filename,
+                        "kind": None,
+                        "prefer": _prefer(ctx, user),
+                        "tags": [zip_stem],
+                    },
+                )
+                if first_job_id is None:
+                    first_job_id = job_id
+            return JSONResponse({"job_id": first_job_id, "detected": "zip"}, status_code=202)
+
     try:
         importer = resolve_importer(ImportRequest(owner_id=user.user_id, filename=filename, file_path=path))
     except ImportError as exc:

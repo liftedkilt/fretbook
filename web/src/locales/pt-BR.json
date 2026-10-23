@@ -378,6 +378,7 @@
     "downloadingAudio": "Baixando o áudio",
     "convertingAudio": "Convertendo para mp3",
     "ready": "Pronto",
+    "skippedDuplicate": "Duplicata ignorada",
     "noFrettedTracks": "Este arquivo não tem faixas de cordas."
   },
   "error": {
@@ -481,7 +482,17 @@
       "keptEditedCopy": "\"{title}\" teve alterações desde a importação, então esta importação foi salva como outra música.",
       "anchorsDropped": "A nova importação tem menos compassos, então algumas marcas de sincronia foram descartadas.",
       "noPreview": "Este link não tem uma lista de faixas para escolher.",
-      "rhythmEstimated": "A tablatura em texto não tem ritmo, então a duração das notas foi estimada pelo espaçamento. Confira o tempo."
+      "rhythmEstimated": "A tablatura em texto não tem ritmo, então a duração das notas foi estimada pelo espaçamento. Confira o tempo.",
+      "emptyZip": "O arquivo zip não contém arquivos.",
+      "invalidZip": "Este arquivo não é um zip válido.",
+      "replacedDuplicate": "Música existente substituída \"{title}\".",
+      "skippedDuplicate": "Duplicata de \"{title}\" ignorada.",
+      "zipBomb": "O arquivo parece ser uma bomba zip.",
+      "zipFileTooLarge": "Arquivo dentro do zip excede o limite de tamanho descompactado.",
+      "zipPathTraversal": "O arquivo contém um nome de arquivo inseguro.",
+      "zipSymlinkNotAllowed": "O arquivo contém links simbólicos, o que não é permitido.",
+      "zipTooLarge": "O arquivo é grande demais quando descompactado.",
+      "zipTooManyFiles": "O arquivo contém arquivos demais."
     },
     "songs": {
       "badCursor": "Essa página da biblioteca não é mais válida. Recarregue a lista."
@@ -599,11 +610,15 @@
     "heading": "Importações recentes",
     "retry": "Tentar novamente",
     "dismiss": "Dispensar",
+    "dismissAll": "Dispensar tudo",
     "queued": "Na fila",
     "retrying": "Tentando novamente…",
     "dismissing": "Dispensando…",
     "completed": "Pronto",
-    "viewSong": "Ver música"
+    "done": "Concluído",
+    "viewSong": "Ver música",
+    "skippedDuplicate": "Ignorado (duplicado)",
+    "replacedDuplicate": "Substituído existente"
   },
   "repeats": {
     "heading": "Repetições e saltos",
@@ -702,5 +717,17 @@
     "progress": "{hits} de {total} notas",
     "done": "Pronto: {hits} de {total} notas tocadas.",
     "hit": "Nota certa"
+  },
+  "bulk": {
+    "title": "Importação em lote",
+    "dropHint": "Solte uma pasta, vários arquivos ou um arquivo .zip",
+    "duplicates": "Se encontrar duplicata",
+    "skip": "Ignorar",
+    "keepBoth": "Manter ambos",
+    "replace": "Substituir",
+    "tags": "Tags para o lote",
+    "tagsPlaceholder": "ex: rock, ao vivo",
+    "parsing": "Processando Guitar Pro no worker…",
+    "saving": "Salvando…"
   }
 }

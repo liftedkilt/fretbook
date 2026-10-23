@@ -192,6 +192,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/imports/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Bulk
+         * @description Import multiple files or a .zip archive at once.
+         *
+         *     Each valid file is queued as a background job.
+         *     Options:
+         *     - duplicates: "skip", "keep_both", or "replace"
+         *     - tags: optional default tags (comma-separated). For a .zip without tags, the archive name is used.
+         */
+        post: operations["import_bulk_api_imports_bulk_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/imports/file": {
         parameters: {
             query?: never;
@@ -857,6 +882,19 @@ export interface components {
             /** Url */
             url?: string | null;
         };
+        /** Body_import_bulk_api_imports_bulk_post */
+        Body_import_bulk_api_imports_bulk_post: {
+            /**
+             * Duplicates
+             * @default skip
+             * @enum {string}
+             */
+            duplicates: "skip" | "keep_both" | "replace";
+            /** Files */
+            files: string[];
+            /** Tags */
+            tags?: string | null;
+        };
         /** Body_import_file_api_imports_file_post */
         Body_import_file_api_imports_file_post: {
             /** File */
@@ -879,6 +917,22 @@ export interface components {
         Body_upload_audio_api_songs__song_id__audio_post: {
             /** File */
             file: string;
+        };
+        /** BulkImportAccepted */
+        BulkImportAccepted: {
+            /** Batch Id */
+            batch_id: string;
+            /** Jobs */
+            jobs?: components["schemas"]["BulkImportJobItem"][];
+            /** Total Files */
+            total_files: number;
+        };
+        /** BulkImportJobItem */
+        BulkImportJobItem: {
+            /** Filename */
+            filename: string;
+            /** Job Id */
+            job_id: string;
         };
         /** CreateSongBody */
         CreateSongBody: {
@@ -982,6 +1036,12 @@ export interface components {
              */
             artist: string;
             document: components["schemas"]["ScoreDocument"];
+            /**
+             * On Duplicate
+             * @default keep_both
+             * @enum {string}
+             */
+            on_duplicate: "skip" | "keep_both" | "replace";
             /** Slug */
             slug?: string | null;
             /**
@@ -990,6 +1050,8 @@ export interface components {
              * @enum {string}
              */
             source_kind: "file" | "guitarpro" | "musicxml" | "fretbook-json" | "manual";
+            /** Tags */
+            tags?: string[];
             /**
              * Title
              * @default Untitled
@@ -1612,9 +1674,12 @@ export type AutoImportAccepted = components['schemas']['AutoImportAccepted'];
 export type Bar = components['schemas']['Bar'];
 export type Beat = components['schemas']['Beat'];
 export type BodyImportAutoApiImportsAutoPost = components['schemas']['Body_import_auto_api_imports_auto_post'];
+export type BodyImportBulkApiImportsBulkPost = components['schemas']['Body_import_bulk_api_imports_bulk_post'];
 export type BodyImportFileApiImportsFilePost = components['schemas']['Body_import_file_api_imports_file_post'];
 export type BodyImportLibraryApiLibraryImportPost = components['schemas']['Body_import_library_api_library_import_post'];
 export type BodyUploadAudioApiSongsSongIdAudioPost = components['schemas']['Body_upload_audio_api_songs__song_id__audio_post'];
+export type BulkImportAccepted = components['schemas']['BulkImportAccepted'];
+export type BulkImportJobItem = components['schemas']['BulkImportJobItem'];
 export type CreateSongBody = components['schemas']['CreateSongBody'];
 export type ErrorBody = components['schemas']['ErrorBody'];
 export type ErrorDetail = components['schemas']['ErrorDetail'];
@@ -2266,6 +2331,84 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AutoImportAccepted"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    import_bulk_api_imports_bulk_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_bulk_api_imports_bulk_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkImportAccepted"];
                 };
             };
             /** @description Keyed error. `detail` is {key, message, params}. */

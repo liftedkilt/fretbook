@@ -33,7 +33,7 @@
       const result = job.result ?? {};
       summary = t("backup.done", {
         imported: result.imported ?? 0,
-        skipped: result.skipped ?? 0,
+        skipped: typeof result.skipped === "number" ? result.skipped : 0,
         copied: result.copied ?? 0,
         failed: result.failed ?? 0,
       });

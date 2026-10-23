@@ -19,6 +19,7 @@ from fretbook import __version__
 from fretbook.api.ascii_tab_routes import router as ascii_tab_router
 from fretbook.api.backup import RESTORE_PATH
 from fretbook.api.backup import router as backup_router
+from fretbook.api.bulk_routes import router as bulk_router
 from fretbook.api.middleware import BodyLimitMiddleware, SameOriginMiddleware
 from fretbook.api.routes import router
 from fretbook.api.tag_routes import router as tag_router
@@ -225,6 +226,7 @@ def create_app(
     app.include_router(ascii_tab_router)
     app.include_router(universal_router)
     app.include_router(tag_router)
+    app.include_router(bulk_router)
     auth_routes = ctx.auth.routes()
     if auth_routes is not None:
         app.include_router(auth_routes)

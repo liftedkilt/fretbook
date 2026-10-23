@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import uuid
 from pathlib import Path
@@ -198,6 +199,12 @@ def _store_result(
     job: dict[str, Any], result: ImportResult, songs: SongRepository, media: MediaStore, progress: Progress
 ) -> dict[str, Any]:
     owner_id = job["owner_id"]
+    payload = job.get("payload") or {}
+    on_duplicate = payload.get("on_duplicate") or "keep_both"
+    tags = payload.get("tags") or []
+    if isinstance(tags, str):
+        tags = [tags]
+
     warnings = list(result.warnings)
     saved: dict[str, Any] | None = None
     if result.source_kind == "songsterr" and result.document is not None:
@@ -205,23 +212,81 @@ def _store_result(
         existing = songs.find_by_source(owner_id, "songsterr", song_id=song_id) if song_id is not None else None
         if existing:
             saved = _reimport(existing, result, songs, owner_id, warnings)
+
     if saved is None:
         source_ref = dict(result.source_ref)
+        hash_val: str | None = None
         if result.document is not None:
-            source_ref["content_hash"] = content_hash(result.document)
-        saved = songs.create_song(
-            owner_id,
-            title=result.title,
-            artist=result.artist,
-            document=result.document,
-            chordpro=result.chordpro,
-            source_kind=result.source_kind,
-            source_ref=source_ref,
-            slug=result.slug,
+            hash_val = content_hash(result.document)
+        elif result.chordpro is not None:
+            hash_val = hashlib.sha256(result.chordpro.strip().encode("utf-8")).hexdigest()
+
+        if hash_val is not None:
+            source_ref["content_hash"] = hash_val
+        if tags:
+            source_ref["tags"] = tags
+
+        duplicate = songs.find_existing_duplicate(
+            owner_id, content_hash=hash_val, title=result.title, artist=result.artist
         )
-        # A new song starts with what the import knows; a re-import keeps the tags the user edited.
-        songs.add_tags(owner_id, [saved["id"]], suggest_tags(saved))
-        saved = songs.get_song(owner_id, saved["id"]) or saved
+        if duplicate is not None:
+            if on_duplicate == "skip":
+                warnings.append(
+                    Notice(
+                        "import.skippedDuplicate",
+                        "Skipped duplicate of '{title}'",
+                        {"title": duplicate["title"]},
+                    )
+                )
+                progress("Skipped duplicate", "import.skippedDuplicate")
+                return {
+                    "song_id": duplicate["id"],
+                    "slug": duplicate["slug"],
+                    "content_kind": duplicate["content_kind"],
+                    "skipped": True,
+                    "duplicate_of": duplicate["id"],
+                    "warnings": [warning.as_dict() for warning in warnings],
+                }
+            if on_duplicate == "replace":
+                saved = songs.update_song(
+                    owner_id,
+                    duplicate["id"],
+                    title=result.title,
+                    artist=result.artist,
+                    revision=duplicate["revision"],
+                    document=result.document,
+                    chordpro=result.chordpro,
+                    source_ref=source_ref,
+                )
+                if tags and saved is not None:
+                    songs.add_tags(owner_id, [duplicate["id"]], tags)
+                    saved = songs.get_song(owner_id, duplicate["id"]) or saved
+                warnings.append(
+                    Notice(
+                        "import.replacedDuplicate",
+                        "Replaced existing song '{title}'",
+                        {"title": duplicate["title"]},
+                    )
+                )
+
+        if saved is None:
+            saved = songs.create_song(
+                owner_id,
+                title=result.title,
+                artist=result.artist,
+                document=result.document,
+                chordpro=result.chordpro,
+                source_kind=result.source_kind,
+                source_ref=source_ref,
+                slug=result.slug,
+            )
+            # A new song starts with what the import knows + any batch tags; a re-import keeps the tags the user edited.
+            tags_to_add = suggest_tags(saved)
+            if tags:
+                tags_to_add = list(dict.fromkeys([*tags_to_add, *tags]))
+            if tags_to_add:
+                songs.add_tags(owner_id, [saved["id"]], tags_to_add)
+            saved = songs.get_song(owner_id, saved["id"]) or saved
     if result.audio_file is not None:
         suffix = next((ext for ext, kind in AUDIO_TYPES.items() if kind == result.audio_content_type), ".mp3")
         media.save_file(

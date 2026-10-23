@@ -449,6 +449,44 @@
         "title": "Body_import_auto_api_imports_auto_post",
         "type": "object"
       },
+      "Body_import_bulk_api_imports_bulk_post": {
+        "properties": {
+          "duplicates": {
+            "default": "skip",
+            "enum": [
+              "skip",
+              "keep_both",
+              "replace"
+            ],
+            "title": "Duplicates",
+            "type": "string"
+          },
+          "files": {
+            "items": {
+              "contentMediaType": "application/octet-stream",
+              "type": "string"
+            },
+            "title": "Files",
+            "type": "array"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags"
+          }
+        },
+        "required": [
+          "files"
+        ],
+        "title": "Body_import_bulk_api_imports_bulk_post",
+        "type": "object"
+      },
       "Body_import_file_api_imports_file_post": {
         "properties": {
           "file": {
@@ -509,6 +547,49 @@
           "file"
         ],
         "title": "Body_upload_audio_api_songs__song_id__audio_post",
+        "type": "object"
+      },
+      "BulkImportAccepted": {
+        "properties": {
+          "batch_id": {
+            "title": "Batch Id",
+            "type": "string"
+          },
+          "jobs": {
+            "items": {
+              "$ref": "#/components/schemas/BulkImportJobItem"
+            },
+            "title": "Jobs",
+            "type": "array"
+          },
+          "total_files": {
+            "title": "Total Files",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "batch_id",
+          "total_files"
+        ],
+        "title": "BulkImportAccepted",
+        "type": "object"
+      },
+      "BulkImportJobItem": {
+        "properties": {
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id",
+          "filename"
+        ],
+        "title": "BulkImportJobItem",
         "type": "object"
       },
       "CreateSongBody": {
@@ -699,6 +780,16 @@
           "document": {
             "$ref": "#/components/schemas/ScoreDocument"
           },
+          "on_duplicate": {
+            "default": "keep_both",
+            "enum": [
+              "skip",
+              "keep_both",
+              "replace"
+            ],
+            "title": "On Duplicate",
+            "type": "string"
+          },
           "slug": {
             "anyOf": [
               {
@@ -722,6 +813,13 @@
             ],
             "title": "Source Kind",
             "type": "string"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tags",
+            "type": "array"
           },
           "title": {
             "default": "Untitled",
@@ -3047,6 +3145,98 @@
           }
         },
         "summary": "Import Auto",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
+    "/api/imports/bulk": {
+      "post": {
+        "description": "Import multiple files or a .zip archive at once.\n\nEach valid file is queued as a background job.\nOptions:\n- duplicates: \"skip\", \"keep_both\", or \"replace\"\n- tags: optional default tags (comma-separated). For a .zip without tags, the archive name is used.",
+        "operationId": "import_bulk_api_imports_bulk_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_bulk_api_imports_bulk_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkImportAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Import Bulk",
         "tags": [
           "imports"
         ]
