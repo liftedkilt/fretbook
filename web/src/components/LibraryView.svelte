@@ -55,16 +55,16 @@
     <div>
       <p class="eyebrow">{t("library.heading")}</p>
       <h1 class="display hero-title">{ui.filter === "all" ? t("library.welcome") : heading}</h1>
-      <p class="muted">{t("library.count", { count: countFor(ui.filter) })}</p>
+      <p class="muted" data-testid="library-count">{t("library.count", { count: countFor(ui.filter) })}</p>
     </div>
-    <button class="primary hero-add" onclick={() => openSheet("add")}><Icon name="plus" />{t("add.button")}</button>
+    <button class="primary hero-add" data-testid="add-song-hero" onclick={() => openSheet("add")}><Icon name="plus" />{t("add.button")}</button>
   </header>
 
   {#if ui.songs.length > 0}
     <div class="toolbar">
       <label class="search">
         <Icon name="search" size={18} />
-        <input type="search" bind:value={ui.search} placeholder={t("library.search")} aria-label={t("library.search")} />
+        <input type="search" data-testid="library-search" bind:value={ui.search} placeholder={t("library.search")} aria-label={t("library.search")} />
       </label>
       <label class="sort">
         <span class="visually-hidden">{t("library.sort")}</span>
@@ -78,7 +78,7 @@
 
     <div class="chips" role="group" aria-label={t("library.filters")}>
       {#each filters as item (item.id)}
-        <button class="chip" aria-pressed={ui.filter === item.id} onclick={() => (ui.filter = item.id)}>
+        <button class="chip" data-testid={`library-filter-${item.id}`} aria-pressed={ui.filter === item.id} onclick={() => (ui.filter = item.id)}>
           {t(item.key)}<span class="chip-count">{countFor(item.id)}</span>
         </button>
       {/each}
@@ -94,7 +94,7 @@
       {/each}
     </div>
   {:else if ui.songs.length === 0}
-    <div class="empty-state">
+    <div class="empty-state" data-testid="library-empty">
       <span class="empty-art"><Icon name="sparkle" size={34} /></span>
       <h2 class="display">{t("library.emptyTitle")}</h2>
       <p class="muted">{t("library.empty")}</p>
@@ -103,15 +103,15 @@
       </div>
     </div>
   {:else if visible.length === 0}
-    <div class="empty-state compact">
+    <div class="empty-state compact" data-testid="library-filter-empty">
       <span class="empty-art"><Icon name="search" size={30} /></span>
       <p class="muted">{t("library.filterEmpty")}</p>
     </div>
   {:else}
     <div class="song-grid">
       {#each visible as song (song.id)}
-        <article class="song-card">
-          <a class="song-link" href={hrefFor(`/songs/${song.id}`)} onclick={(event) => followLink(event, `/songs/${song.id}`)}>
+        <article class="song-card" data-testid="song-card">
+          <a class="song-link" data-testid="song-link" href={hrefFor(`/songs/${song.id}`)} onclick={(event) => followLink(event, `/songs/${song.id}`)}>
             <span class="song-art">
               <Cover id={song.id} title={song.title} kind={song.content_kind} strings={song.string_count} />
               <span class="song-kind">
@@ -123,7 +123,7 @@
               <span class="song-play" aria-hidden="true"><Icon name="play" size={20} /></span>
             </span>
             <span class="song-text">
-              <strong class="song-title">{song.title}</strong>
+              <strong class="song-title" data-testid="song-title">{song.title}</strong>
               <span class="song-artist">{song.artist || "—"}</span>
               {#if song.content_kind === "tab"}
                 <span class="song-meta">
@@ -135,6 +135,7 @@
           <div class="song-actions">
             <a
               class="icon-button glass"
+              data-testid="song-edit"
               href={hrefFor(`/songs/${song.id}/edit`)}
               onclick={(event) => followLink(event, `/songs/${song.id}/edit`)}
               aria-label={`${t("library.edit")}: ${song.title}`}
@@ -142,7 +143,7 @@
             >
               <Icon name="edit" size={16} />
             </a>
-            <button class="icon-button glass" onclick={() => void remove(song)} aria-label={`${t("library.delete")}: ${song.title}`} title={t("library.delete")}>
+            <button class="icon-button glass" data-testid="song-delete" onclick={() => void remove(song)} aria-label={`${t("library.delete")}: ${song.title}`} title={t("library.delete")}>
               <Icon name="trash" size={16} />
             </button>
           </div>

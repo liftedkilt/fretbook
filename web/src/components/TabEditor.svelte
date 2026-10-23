@@ -265,14 +265,14 @@
     <a class="back-link" href={hrefFor(`/songs/${song.id}`)} onclick={(event) => followLink(event, `/songs/${song.id}`)}>
       <Icon name="play" size={14} />{t("editor.play")}
     </a>
-    <h1 class="editor-title">{song.title || t("editor.heading")}</h1>
+    <h1 class="editor-title" data-testid="editor-title">{song.title || t("editor.heading")}</h1>
     <div class="editor-actions">
-      {#if status}<span class="save-status" role="status"><Icon name="check" size={16} />{status}</span>{/if}
-      <button class="primary" onclick={() => void save()}><Icon name="save" size={18} />{t("editor.save")}</button>
+      {#if status}<span class="save-status" role="status" data-testid="editor-status"><Icon name="check" size={16} />{status}</span>{/if}
+      <button class="primary" data-testid="editor-save" onclick={() => void save()}><Icon name="save" size={18} />{t("editor.save")}</button>
     </div>
   </header>
 
-  {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
+  {#if error}<p class="alert" role="alert" data-testid="editor-error"><Icon name="alert" size={18} />{error}</p>{/if}
   {#if conflict}
     <div class="alert alert-action" role="alert">
       <span>{t("editor.conflict")}</span>
@@ -285,7 +285,7 @@
       <section class="card">
         <h2 class="card-title">{t("editor.songCard")}</h2>
         <div class="form-grid">
-          <label class="field span-2"><span>{t("library.title")}</span><input bind:value={song.title} /></label>
+          <label class="field span-2"><span>{t("library.title")}</span><input data-testid="editor-song-title" bind:value={song.title} /></label>
           <label class="field span-2"><span>{t("library.artist")}</span><input bind:value={song.artist} /></label>
           <label class="field"><span>{t("library.bpm")}</span><input type="number" min="1" max="399" bind:value={song.document.bpm} /></label>
         </div>
@@ -352,7 +352,7 @@
             <Icon name="back" />
           </button>
           <div class="bar-current">
-            <strong>{t("editor.measure", { number: barIndex + 1, total: document_.bars.length })}</strong>
+            <strong data-testid="editor-measure" data-bar={barIndex}>{t("editor.measure", { number: barIndex + 1, total: document_.bars.length })}</strong>
             {#if bar.section}<span class="pill pill-accent">{bar.section}</span>{/if}
           </div>
           <button
@@ -367,7 +367,7 @@
         </div>
         <div class="bar-strip" role="group" aria-label={t("editor.bars")}>
           {#each document_.bars as item, index (index)}
-            <button class="bar-chip" class:has-section={Boolean(item.section)} aria-current={index === barIndex ? "true" : undefined} onclick={() => (barIndex = index)} title={item.section ?? undefined}>
+            <button class="bar-chip" data-testid={`bar-chip-${index}`} class:has-section={Boolean(item.section)} aria-current={index === barIndex ? "true" : undefined} onclick={() => (barIndex = index)} title={item.section ?? undefined}>
               {index + 1}
             </button>
           {/each}
@@ -394,7 +394,7 @@
             <input value={bar.section ?? ""} onchange={(event) => (bar.section = event.currentTarget.value.trim() || null)} />
           </label>
           <div class="button-row bar-buttons">
-            <button class="small-button" onclick={insertBar}><Icon name="plus" size={16} />{t("editor.addMeasure")}</button>
+            <button class="small-button" data-testid="editor-add-measure" onclick={insertBar}><Icon name="plus" size={16} />{t("editor.addMeasure")}</button>
             <button class="small-button danger-text" onclick={deleteBar} disabled={document_.bars.length <= 1}><Icon name="trash" size={16} />{t("editor.deleteMeasure")}</button>
           </div>
         </div>
@@ -411,13 +411,13 @@
           <Icon name={used === length ? "check" : "alert"} size={16} />
           {used === length ? t("editor.barFull") : used > length ? t("editor.barOver") : t("editor.barShort")}
         </span>
-        <button class="primary" onclick={addBeat}><Icon name="plus" size={18} />{t("editor.addBeat")}</button>
+        <button class="primary" data-testid="editor-add-beat" onclick={addBeat}><Icon name="plus" size={18} />{t("editor.addBeat")}</button>
       </div>
       <p class="muted small">{t("editor.fretHint")}</p>
 
       <div class="beat-grid">
         {#each beats as beat, beatIndex (beatIndex)}
-          <article class="beat-card">
+          <article class="beat-card" data-testid="beat-card">
             <header class="beat-head">
               <span class="beat-number">{beatIndex + 1}</span>
               <div class="beat-tools">
@@ -461,6 +461,7 @@
                     <span>{midiToName(midi)}</span>
                     <input
                       type="text"
+                      data-testid={`fret-input-${stringIndex}`}
                       inputmode="numeric"
                       value={note?.fret ?? ""}
                       oninput={(event) => setFret(beat, stringIndex, event.currentTarget.value)}

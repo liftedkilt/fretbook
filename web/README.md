@@ -44,6 +44,26 @@ Every user-visible string goes through `t()` in `src/lib/i18n.svelte.ts`. Do not
 
 `npm test` runs `src/lib/catalog.test.ts`, which fails if a `t("...")` key is missing from the English catalog. Server error and progress keys are checked by `tests/test_api.py` (`test_english_catalog_covers_server_keys`).
 
+## End-to-end tests
+
+`e2e/` holds a [Playwright](https://playwright.dev) project (Chromium only). A test gets two fixtures from `e2e/support/fixtures.ts`:
+
+- `server`: `python -m fretbook` on a free port, with an empty temporary `FRETBOOK_DATA_DIR`, serving `web/dist`. It is stopped and its data deleted after the test, so tests never share a library and can run in parallel. `page` is already pointed at it (`page.goto("/")`).
+- `seed`: creates songs through the HTTP API from the small CC0 files in [`tests/fixtures/e2e/`](../tests/fixtures/e2e/README.md): `musicXmlTab()`, `chordSheet()`, `syncedSongWithAudio()` (a Fretbook JSON with sync points plus a short WAV), and `create()` for a blank tab or chord sheet.
+
+```sh
+npm run e2e:install   # once: downloads Chromium
+npm run e2e           # npm run build, then every spec
+npm run e2e:run       # specs only, against the existing web/dist
+npx playwright test e2e/player.spec.ts --headed
+```
+
+`web/dist` must be current, because the server serves the built app, not the Vite dev server. The server runs with `.venv/bin/python` when it exists, otherwise `python3`; set `FRETBOOK_E2E_PYTHON` to use another interpreter. `npm run check:e2e` type-checks the project.
+
+Select elements with `getByTestId(...)`, never by visible text, so tests survive translation. The ids are `data-testid` attributes on the components (`library-search`, `player-play`, `editor-save`, ...). When a flow needs an element that has none, add one rather than matching on a label or a CSS class; alphaTab's own cursor (`.at-cursor-beat`) is the one exception, because the library draws it. The player's `player-status` element also carries `data-measure` (the bar being played, `-1` before playback starts).
+
+`e2e/oidc.spec.ts` runs the server in OIDC mode against a stub provider (`e2e/support/oidc-stub.ts`) that signs the browser in as whoever the test names, and checks that two people see separate libraries. On a failure, Playwright keeps a trace, video, and screenshot under `web/test-results/` (`npx playwright show-trace <trace.zip>`); CI uploads them as the `playwright-failures` artifact.
+
 ## The `ui-only` label
 
 Add the GitHub label `ui-only` to a pull request that only changes the frontend. CI then fails if the diff touches anything outside `web/`. That includes `fretbook/`, `tests/`, `openapi.json`, database migrations, and the Dockerfile. Remove the label when the pull request is meant to change the API.

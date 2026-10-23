@@ -11,6 +11,7 @@
     align = "end",
     up = false,
     disabled = false,
+    testid,
     children,
   }: {
     label: string;
@@ -19,6 +20,7 @@
     align?: "start" | "end";
     up?: boolean;
     disabled?: boolean;
+    testid?: string;
     children: Snippet<[() => void]>;
   } = $props();
 
@@ -49,6 +51,7 @@
 <div class="menu" bind:this={root}>
   <button
     class={showLabel ? "button" : "icon-button"}
+    data-testid={testid}
     aria-haspopup="menu"
     aria-expanded={open}
     aria-label={showLabel ? undefined : label}

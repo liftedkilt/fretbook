@@ -31,6 +31,18 @@ CI runs the same commands:
 cd web && npm run api-types:check && npm run check && npm test && npm run build
 ```
 
+### End-to-end tests
+
+Playwright drives Chromium against a real `python -m fretbook` that serves the built web app. Each test starts its own server on a free port with an empty temporary data directory and seeds it through the API. The suite is in `web/e2e/` and takes about 15 seconds locally; CI runs it as the `e2e` job and uploads traces and videos when it fails.
+
+```sh
+cd web
+npm run e2e:install   # once: downloads Chromium
+npm run e2e           # builds the web app, then runs the suite
+```
+
+`npm run e2e:run` skips the build, and `npx playwright test --ui` opens the trace viewer. See [web/README.md](web/README.md#end-to-end-tests) for how to add a test.
+
 The Python tests fail on an unclosed database connection, and check that the English catalog has every error and progress key the server sends. A Vitest test checks that every locale has every key the UI passes to `t()`, and that the locale files share the same keys.
 
 ## API contract

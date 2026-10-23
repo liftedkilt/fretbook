@@ -59,7 +59,7 @@
       </span>
     </a>
 
-    <button class="primary new-button" onclick={() => openSheet("add")} aria-label={t("add.button")} title={t("add.button")}>
+    <button class="primary new-button" data-testid="add-song" onclick={() => openSheet("add")} aria-label={t("add.button")} title={t("add.button")}>
       <Icon name="plus" /><span class="rail-hide">{t("add.button")}</span>
     </button>
 
@@ -111,7 +111,7 @@
       </a>
     {/if}
 
-    <button class="side-link side-settings" onclick={() => openSheet("settings")} title={t("settings.heading")}>
+    <button class="side-link side-settings" data-testid="open-settings" onclick={() => openSheet("settings")} title={t("settings.heading")}>
       <Icon name="settings" size={19} /><span class="rail-hide">{t("settings.heading")}</span>
     </button>
   </aside>
@@ -122,10 +122,10 @@
       <span class="wordmark" aria-hidden="true">Fret<em>book</em></span>
     </a>
     <div class="topbar-actions">
-      <button class="icon-button ghost" onclick={() => openSheet("settings")} aria-label={t("settings.heading")}>
+      <button class="icon-button ghost" data-testid="open-settings-topbar" onclick={() => openSheet("settings")} aria-label={t("settings.heading")}>
         <Icon name="settings" />
       </button>
-      <button class="icon-button primary" onclick={() => openSheet("add")} aria-label={t("add.button")}>
+      <button class="icon-button primary" data-testid="add-song-topbar" onclick={() => openSheet("add")} aria-label={t("add.button")}>
         <Icon name="plus" />
       </button>
     </div>

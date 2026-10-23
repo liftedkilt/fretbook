@@ -18,7 +18,7 @@
           <div class="chord-line">
             {#each line.segments as segment, segmentIndex (segmentIndex)}
               <span class="chord-segment">
-                <span class="chord-name">{segment.chord ? transposeChord(segment.chord, transpose, flats) : " "}</span>
+                <span class="chord-name" data-testid="chord-name">{segment.chord ? transposeChord(segment.chord, transpose, flats) : " "}</span>
                 <span class="chord-lyric">{segment.text || " "}</span>
               </span>
             {/each}

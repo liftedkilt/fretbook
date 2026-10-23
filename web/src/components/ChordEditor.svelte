@@ -52,8 +52,8 @@
     </a>
     <h1 class="editor-title">{t("chords.editHeading")}</h1>
     <div class="editor-actions">
-      {#if status}<span class="save-status" role="status"><Icon name="check" size={16} />{status}</span>{/if}
-      <button class="primary" onclick={() => void save()}><Icon name="save" size={18} />{t("editor.save")}</button>
+      {#if status}<span class="save-status" role="status" data-testid="editor-status"><Icon name="check" size={16} />{status}</span>{/if}
+      <button class="primary" data-testid="editor-save" onclick={() => void save()}><Icon name="save" size={18} />{t("editor.save")}</button>
     </div>
   </header>
 
@@ -77,7 +77,7 @@
   </div>
 
   <div class="chord-editor" data-pane={pane}>
-    <textarea class="code-input" bind:value={text} spellcheck="false" rows="24" aria-label={t("chords.text")}></textarea>
+    <textarea class="code-input" data-testid="chord-text" bind:value={text} spellcheck="false" rows="24" aria-label={t("chords.text")}></textarea>
     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
     <div class="paper chord-paper" role="region" aria-label={t("chords.preview")} tabindex="0"><ChordSheet {text} /></div>
   </div>

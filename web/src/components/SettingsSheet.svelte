@@ -25,14 +25,14 @@
   }
 </script>
 
-<Sheet open={ui.sheet === "settings"} title={t("settings.heading")} onclose={closeSheet}>
+<Sheet open={ui.sheet === "settings"} title={t("settings.heading")} testid="settings-sheet" onclose={closeSheet}>
   <div class="settings-list">
     {#if ui.me?.authenticated}
       <section class="setting">
         <div class="setting-label">
           <span class="setting-icon"><Icon name="users" /></span>
           <div>
-            <strong>{ui.me.display_name}</strong>
+            <strong data-testid="account-name">{ui.me.display_name}</strong>
             <p class="muted">{ui.me.email}{ui.me.role === "admin" ? ` · ${t("admin.roleAdmin")}` : ""}</p>
           </div>
         </div>
@@ -50,7 +50,7 @@
             </a>
           {/if}
           <form method="post" action={apiUrl("/auth/logout")}>
-            <button type="submit"><Icon name="logout" size={16} />{t("account.signOut")}</button>
+            <button type="submit" data-testid="sign-out"><Icon name="logout" size={16} />{t("account.signOut")}</button>
           </form>
         </div>
       </section>
@@ -80,7 +80,7 @@
         <span class="setting-icon"><Icon name="globe" /></span>
         <strong>{t("language.label")}</strong>
       </div>
-      <select value={currentLocale()} aria-label={t("language.label")} onchange={(event) => setLocale(event.currentTarget.value)}>
+      <select data-testid="language-select" value={currentLocale()} aria-label={t("language.label")} onchange={(event) => setLocale(event.currentTarget.value)}>
         {#each locales as item (item.id)}
           <option value={item.id}>{t(item.labelKey)}</option>
         {/each}

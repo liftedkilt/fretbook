@@ -10,9 +10,10 @@
     open,
     title,
     subtitle = "",
+    testid,
     onclose,
     children,
-  }: { open: boolean; title: string; subtitle?: string; onclose: () => void; children: Snippet } = $props();
+  }: { open: boolean; title: string; subtitle?: string; testid?: string; onclose: () => void; children: Snippet } = $props();
 
   let dialog = $state<HTMLDialogElement | null>(null);
 
@@ -25,6 +26,7 @@
 
 <dialog
   class="sheet"
+  data-testid={testid}
   bind:this={dialog}
   aria-label={title}
   onclose={() => {

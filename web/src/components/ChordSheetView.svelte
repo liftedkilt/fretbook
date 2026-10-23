@@ -46,17 +46,18 @@
       <Cover id={song.id} title={song.title} kind="chords" size="lg" />
       <div class="song-hero-text">
         <p class="eyebrow">{t("library.chordSheet")}</p>
-        <h1 class="display song-heading">{song.title}</h1>
+        <h1 class="display song-heading" data-testid="song-heading">{song.title}</h1>
         {#if song.artist}<p class="song-byline">{song.artist}</p>{/if}
       </div>
       <div class="hero-actions">
-        <a class="button" href={hrefFor(`/songs/${song.id}/edit`)} onclick={(event) => followLink(event, `/songs/${song.id}/edit`)}>
+        <a class="button" data-testid="song-edit-link" href={hrefFor(`/songs/${song.id}/edit`)} onclick={(event) => followLink(event, `/songs/${song.id}/edit`)}>
           <Icon name="edit" size={18} /><span>{t("player.edit")}</span>
         </a>
-        <Menu label={t("player.export")} icon="download">
+        <Menu label={t("player.export")} icon="download" testid="export-menu">
           {#snippet children(close)}
             <button
               class="menu-item"
+              data-testid="export-pdf"
               role="menuitem"
               disabled={exporting}
               onclick={() => {
@@ -76,7 +77,7 @@
             >
               <Icon name="print" size={18} />{t("chords.print")}
             </button>
-            <a class="menu-item" role="menuitem" href={exportUrl("cho")} onclick={close}><Icon name="chords" size={18} />{t("chords.exportChordPro")}</a>
+            <a class="menu-item" data-testid="export-chordpro" role="menuitem" href={exportUrl("cho")} onclick={close}><Icon name="chords" size={18} />{t("chords.exportChordPro")}</a>
             <a class="menu-item" role="menuitem" href={exportUrl("json")} onclick={close}><Icon name="download" size={18} />{t("player.exportJson")}</a>
           {/snippet}
         </Menu>
@@ -92,9 +93,10 @@
   <div class="float-dock no-print" role="toolbar" aria-label={t("chords.controls")}>
     <div class="float-group">
       <span class="float-label">{t("chords.transpose")}</span>
-      <button class="icon-button ghost" onclick={() => (transpose -= 1)} aria-label={t("chords.down")}><Icon name="minus" size={18} /></button>
+      <button class="icon-button ghost" data-testid="transpose-down" onclick={() => (transpose -= 1)} aria-label={t("chords.down")}><Icon name="minus" size={18} /></button>
       <button
         class="float-value"
+        data-testid="transpose-value"
         onclick={() => (transpose = 0)}
         disabled={transpose === 0}
         aria-label={t("chords.reset")}
@@ -102,10 +104,10 @@
       >
         {transpose > 0 ? `+${transpose}` : transpose}
       </button>
-      <button class="icon-button ghost" onclick={() => (transpose += 1)} aria-label={t("chords.up")}><Icon name="plus" size={18} /></button>
+      <button class="icon-button ghost" data-testid="transpose-up" onclick={() => (transpose += 1)} aria-label={t("chords.up")}><Icon name="plus" size={18} /></button>
     </div>
     <span class="float-divider" aria-hidden="true"></span>
-    <button class="toggle" aria-pressed={flats} onclick={() => (flats = !flats)} title={t("chords.flats")}>
+    <button class="toggle" data-testid="chords-flats" aria-pressed={flats} onclick={() => (flats = !flats)} title={t("chords.flats")}>
       <span aria-hidden="true">{flats ? "♭" : "♯"}</span><span class="float-label">{t("chords.flats")}</span>
     </button>
     <span class="float-divider" aria-hidden="true"></span>

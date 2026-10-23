@@ -20,3 +20,7 @@ songs/*
 # Raw Songsterr test data
 source/*.json
 source/*.html
+
+# Playwright
+web/test-results/
+web/playwright-report/

@@ -196,11 +196,12 @@
   }
 </script>
 
-<Sheet {open} title={t("add.heading")} subtitle={t("add.subtitle")} onclose={closeSheet}>
+<Sheet {open} title={t("add.heading")} subtitle={t("add.subtitle")} testid="add-sheet" onclose={closeSheet}>
   <div class="mode-grid" role="tablist" aria-label={t("add.heading")}>
     {#each modes as item (item.id)}
       <button
         class="mode-card"
+        data-testid={`add-mode-${item.id}`}
         role="tab"
         aria-selected={mode === item.id}
         onclick={() => {
@@ -230,7 +231,7 @@
           <span>{t("library.url")}</span>
           <span class="input-icon">
             <Icon name="link" size={18} />
-            <input bind:value={url} placeholder={t("library.urlHint")} inputmode="url" autocomplete="off" />
+            <input data-testid="add-url" bind:value={url} placeholder={t("library.urlHint")} inputmode="url" autocomplete="off" />
           </span>
         </label>
         <label class="field">
@@ -296,6 +297,7 @@
         <span class="button">{t("add.browse")}</span>
         <input
           class="visually-hidden"
+          data-testid="add-file-input"
           type="file"
           disabled={Boolean(busy)}
           accept=".musicxml,.xml,.json,.gp,.gp3,.gp4,.gp5,.gpx,.cho,.chordpro,.chopro,.crd,.txt"
@@ -314,7 +316,7 @@
           void create();
         }}
       >
-        <label class="field span-2"><span>{t("library.title")}</span><input bind:value={title} placeholder={t("library.untitled")} /></label>
+        <label class="field span-2"><span>{t("library.title")}</span><input data-testid="add-tab-title" bind:value={title} placeholder={t("library.untitled")} /></label>
         <label class="field span-2"><span>{t("library.artist")}</span><input bind:value={artist} /></label>
         <label class="field span-2">
           <span>{t("library.preset")}</span>
@@ -337,7 +339,7 @@
           </span>
         </div>
         <div class="span-2 form-actions">
-          <button class="primary" type="submit"><Icon name="sparkle" size={18} />{t("library.create")}</button>
+          <button class="primary" type="submit" data-testid="add-tab-submit"><Icon name="sparkle" size={18} />{t("library.create")}</button>
         </div>
       </form>
     {:else}
@@ -348,14 +350,14 @@
           void createSheet();
         }}
       >
-        <label class="field"><span>{t("library.title")}</span><input bind:value={sheetTitle} /></label>
+        <label class="field"><span>{t("library.title")}</span><input data-testid="add-sheet-title" bind:value={sheetTitle} /></label>
         <label class="field"><span>{t("library.artist")}</span><input bind:value={sheetArtist} /></label>
         <label class="field span-2">
           <span>{t("chords.paste")}</span>
-          <textarea bind:value={sheetText} rows="9" spellcheck="false" placeholder={t("chords.pasteHint")}></textarea>
+          <textarea data-testid="add-sheet-text" bind:value={sheetText} rows="9" spellcheck="false" placeholder={t("chords.pasteHint")}></textarea>
         </label>
         <div class="span-2 form-actions">
-          <button class="primary" type="submit" disabled={!sheetText.trim()}><Icon name="check" size={18} />{t("chords.create")}</button>
+          <button class="primary" type="submit" data-testid="add-sheet-submit" disabled={!sheetText.trim()}><Icon name="check" size={18} />{t("chords.create")}</button>
         </div>
       </form>
     {/if}
@@ -363,7 +365,7 @@
     {#if busy}
       <div class="progress-note" role="status"><span class="spinner"></span>{busy}</div>
     {/if}
-    {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
+    {#if error}<p class="alert" role="alert" data-testid="add-error"><Icon name="alert" size={18} />{error}</p>{/if}
     {#if notice}<p class="notice">{notice}</p>{/if}
   </div>
 </Sheet>

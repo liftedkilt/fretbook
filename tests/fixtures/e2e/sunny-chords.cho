@@ -1,0 +1,12 @@
+{title: Sunny Day Blues}
+{artist: Fretbook Tests}
+{comment: Original words and chords written for the test suite (CC0).}
+
+{start_of_verse: Verse}
+[C]Walking down the [G]road today
+[Am]Nothing left to [F]say
+{end_of_verse}
+
+{start_of_chorus}
+[F]Hey [C]hey, [G]sunny [C]day
+{end_of_chorus}

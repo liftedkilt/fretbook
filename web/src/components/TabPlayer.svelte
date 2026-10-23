@@ -356,7 +356,7 @@
       <Cover id={song.id} title={song.title} strings={track.tuning_midi.length} size="lg" />
       <div class="song-hero-text">
         <p class="eyebrow">{instrumentLabel(track.instrument)}</p>
-        <h1 class="display song-heading">{song.title}</h1>
+        <h1 class="display song-heading" data-testid="song-heading">{song.title}</h1>
         {#if song.artist}<p class="song-byline">{song.artist}</p>{/if}
         <div class="pills">
           <span class="pill">{tuningLabel(track.tuning_midi)}</span>
@@ -367,13 +367,14 @@
         </div>
       </div>
       <div class="hero-actions">
-        <a class="button" href={hrefFor(`/songs/${song.id}/edit`)} onclick={(event) => followLink(event, `/songs/${song.id}/edit`)}>
+        <a class="button" data-testid="song-edit-link" href={hrefFor(`/songs/${song.id}/edit`)} onclick={(event) => followLink(event, `/songs/${song.id}/edit`)}>
           <Icon name="edit" size={18} /><span>{t("player.edit")}</span>
         </a>
-        <Menu label={t("player.export")} icon="download">
+        <Menu label={t("player.export")} icon="download" testid="export-menu">
           {#snippet children(close)}
             <button
               class="menu-item"
+              data-testid="export-pdf"
               role="menuitem"
               disabled={exporting}
               onclick={() => {
@@ -384,8 +385,8 @@
               <Icon name="file" size={18} />
               {exporting ? t("player.exportingPdf") : song.document.tracks.length > 1 ? t("player.exportPdfTrack", { name: track.name }) : t("player.exportPdf")}
             </button>
-            <a class="menu-item" role="menuitem" href={exportUrl("musicxml")} onclick={close}><Icon name="layers" size={18} />{t("player.exportMusicXml")}</a>
-            <a class="menu-item" role="menuitem" href={exportUrl("json")} onclick={close}><Icon name="download" size={18} />{t("player.exportJson")}</a>
+            <a class="menu-item" data-testid="export-musicxml" role="menuitem" href={exportUrl("musicxml")} onclick={close}><Icon name="layers" size={18} />{t("player.exportMusicXml")}</a>
+            <a class="menu-item" data-testid="export-json" role="menuitem" href={exportUrl("json")} onclick={close}><Icon name="download" size={18} />{t("player.exportJson")}</a>
           {/snippet}
         </Menu>
       </div>
@@ -394,11 +395,11 @@
   </header>
 
   {#if song.has_audio}
-    <audio bind:this={audioEl} src={audioSrc} preload="auto"></audio>
+    <audio data-testid="player-audio" bind:this={audioEl} src={audioSrc} preload="auto"></audio>
   {/if}
   <!-- Scrolls on its own, so keyboard users need to be able to focus it. -->
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-  <div class="paper score" bind:this={host} role="region" aria-label={t("player.score")} tabindex="0"></div>
+  <div class="paper score" data-testid="player-score" bind:this={host} role="region" aria-label={t("player.score")} tabindex="0"></div>
 
   <div class="dock">
     {#if panelOpen}
@@ -418,7 +419,7 @@
           <div class="panel-group">
             <h3>{t("player.syncMarks")}</h3>
             <div class="button-row">
-              <button class="accent" onclick={tap}><Icon name="tap" size={18} />{t("player.tap")}</button>
+              <button class="accent" data-testid="player-tap" onclick={tap}><Icon name="tap" size={18} />{t("player.tap")}</button>
               <button onclick={() => nudge(-0.05)}>{t("player.nudgeBack")}</button>
               <button onclick={() => nudge(0.05)}>{t("player.nudgeForward")}</button>
               <button onclick={clearCurrent}>{t("player.clearAnchor")}</button>
@@ -472,20 +473,20 @@
 
     <div class="dock-bar">
       <div class="dock-transport">
-        <button class="icon-button ghost" onclick={() => step(-1)} aria-label={t("player.previousBar")} title={t("player.previousBar")}>
+        <button class="icon-button ghost" data-testid="player-prev" onclick={() => step(-1)} aria-label={t("player.previousBar")} title={t("player.previousBar")}>
           <Icon name="prev" size={18} />
         </button>
-        <button class="play-button" onclick={toggle} aria-label={playing ? t("player.pause") : t("player.play")}>
+        <button class="play-button" data-testid="player-play" data-playing={playing} onclick={toggle} aria-label={playing ? t("player.pause") : t("player.play")}>
           <Icon name={playing ? "pause" : "play"} size={24} />
         </button>
-        <button class="icon-button ghost" onclick={() => step(1)} aria-label={t("player.nextBar")} title={t("player.nextBar")}>
+        <button class="icon-button ghost" data-testid="player-next" onclick={() => step(1)} aria-label={t("player.nextBar")} title={t("player.nextBar")}>
           <Icon name="next" size={18} />
         </button>
       </div>
 
       <div class="dock-progress">
         <div class="dock-status">
-          <span>
+          <span data-testid="player-status" data-measure={currentMeasure}>
             {#if currentMeasure >= 0 && currentMeasure < barCount}
               {t("player.status", { measure: currentMeasure + 1, total: barCount, time: clock })}
             {:else}
@@ -550,6 +551,7 @@
         </button>
         <button
           class="icon-button ghost"
+          data-testid="player-panel-toggle"
           aria-expanded={panelOpen}
           onclick={() => (panelOpen = !panelOpen)}
           aria-label={t("player.syncPanel")}
