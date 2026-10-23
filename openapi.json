@@ -737,6 +737,40 @@
         "title": "JobResult",
         "type": "object"
       },
+      "LibraryCounts": {
+        "description": "Songs in the whole library per filter, unaffected by the search text.",
+        "properties": {
+          "acoustic": {
+            "title": "Acoustic",
+            "type": "integer"
+          },
+          "all": {
+            "title": "All",
+            "type": "integer"
+          },
+          "bass": {
+            "title": "Bass",
+            "type": "integer"
+          },
+          "chords": {
+            "title": "Chords",
+            "type": "integer"
+          },
+          "electric": {
+            "title": "Electric",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "all",
+          "bass",
+          "electric",
+          "acoustic",
+          "chords"
+        ],
+        "title": "LibraryCounts",
+        "type": "object"
+      },
       "Me": {
         "description": "The caller. In single-user mode this is the ``local`` user and ``authenticated`` is false.\n\n``role`` comes from the provider's groups at sign-in; it is always ``user`` in single-user mode.",
         "properties": {
@@ -1261,6 +1295,43 @@
           "artist"
         ],
         "title": "SongExport",
+        "type": "object"
+      },
+      "SongPage": {
+        "properties": {
+          "counts": {
+            "$ref": "#/components/schemas/LibraryCounts"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SongSummary"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "next_cursor",
+          "counts"
+        ],
+        "title": "SongPage",
         "type": "object"
       },
       "SongSummary": {
@@ -2637,18 +2708,108 @@
     },
     "/api/songs": {
       "get": {
-        "description": "Songs owned by the caller, newest first. Summaries omit the score and ChordPro text.",
+        "description": "One page of the caller's songs. Summaries omit the score and ChordPro text.\n\n`sort` defaults to the last edit, newest first; `opened` puts never-opened songs last.",
         "operationId": "list_songs_api_songs_get",
+        "parameters": [
+          {
+            "description": "Words matched as prefixes against title and artist.",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "description": "Words matched as prefixes against title and artist.",
+              "maxLength": 200,
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": "updated",
+              "enum": [
+                "title",
+                "artist",
+                "added",
+                "updated",
+                "opened"
+              ],
+              "title": "Sort",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Defaults to the natural order of `sort`.",
+            "in": "query",
+            "name": "order",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "asc",
+                    "desc"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Defaults to the natural order of `sort`.",
+              "title": "Order"
+            }
+          },
+          {
+            "in": "query",
+            "name": "instrument",
+            "required": false,
+            "schema": {
+              "default": "all",
+              "enum": [
+                "all",
+                "bass",
+                "electric",
+                "acoustic",
+                "chords"
+              ],
+              "title": "Instrument",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 64,
+              "title": "Cursor",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/SongSummary"
-                  },
-                  "title": "Response List Songs Api Songs Get",
-                  "type": "array"
+                  "$ref": "#/components/schemas/SongPage"
                 }
               }
             },
@@ -3675,6 +3836,92 @@
           }
         },
         "summary": "Export Musicxml",
+        "tags": [
+          "songs"
+        ]
+      }
+    },
+    "/api/songs/{song_id}/opened": {
+      "post": {
+        "description": "Record that the caller opened the song, for the \"last opened\" sort.",
+        "operationId": "mark_song_opened_api_songs__song_id__opened_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "song_id",
+            "required": true,
+            "schema": {
+              "title": "Song Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Mark Song Opened",
         "tags": [
           "songs"
         ]

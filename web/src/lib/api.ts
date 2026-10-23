@@ -9,11 +9,13 @@ import type {
   SessionsEnded,
   Settings as ContractSettings,
   SongDetail as ContractSongDetail,
+  SongPage as ContractSongPage,
   SongSummary as ContractSongSummary,
   SongsMoved,
 } from "./api-types";
 import { keyed } from "./i18n.svelte";
 import { currentPath } from "./router.svelte";
+import { songsPath } from "./songQuery";
 import type {
   AdminUser,
   ImportPreview,
@@ -24,6 +26,8 @@ import type {
   ScoreDocument,
   Settings,
   SongDetail,
+  SongPage,
+  SongQuery,
   SongSummary,
 } from "./types";
 
@@ -35,6 +39,7 @@ type _matchesContract = [
   AssertAssignable<ContractMeta, Meta>,
   AssertAssignable<ContractSettings, Settings>,
   AssertAssignable<ContractSongSummary, SongSummary>,
+  AssertAssignable<ContractSongPage, SongPage>,
   AssertAssignable<ContractImportPreview, ImportPreview>,
   AssertAssignable<ContractAdminUser, AdminUser>,
 ];
@@ -142,8 +147,14 @@ export function saveSettings(settings: Settings): Promise<Settings> {
   return request<ContractSettings>("/api/me/settings", json("PUT", settings));
 }
 
-export function listSongs(): Promise<SongSummary[]> {
-  return request<ContractSongSummary[]>("/api/songs");
+/** One page of the library. */
+export function listSongs(query: SongQuery = {}): Promise<SongPage> {
+  return request<ContractSongPage>(songsPath(query));
+}
+
+/** Record that the song was opened, for the "last opened" sort. */
+export function markSongOpened(id: string): Promise<void> {
+  return request(`/api/songs/${id}/opened`, { method: "POST" });
 }
 
 export function getSong(id: string): Promise<SongDetail> {

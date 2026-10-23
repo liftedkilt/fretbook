@@ -129,6 +129,16 @@
     "sortRecent": "Recently updated",
     "sortTitle": "Title",
     "sortArtist": "Artist",
+    "sortAdded": "Date added",
+    "sortOpened": "Last opened",
+    "orderAsc": "Ascending",
+    "orderDesc": "Descending",
+    "order": "Sort order",
+    "loadMore": "Load more",
+    "showing": "Showing {shown} of {total}",
+    "searchEmpty": "No songs match “{query}”.",
+    "clearSearch": "Clear search",
+    "searchShortcut": "Press / to search",
     "filterChords": "Chord sheets",
     "emptyTitle": "Start your songbook"
   },
@@ -382,6 +392,9 @@
       "noSyncPoints": "No sync points are published for this song.",
       "keptEditedCopy": "\"{title}\" was edited since it was imported, so this import was saved as a separate song.",
       "anchorsDropped": "The new import has fewer bars, so some sync marks were dropped."
+    },
+    "songs": {
+      "badCursor": "That page of the library is no longer valid. Reload the list."
     },
     "songsterr": {
       "badUrl": "The link must look like https://www.songsterr.com/a/wsa/<name>-s<digits>.",

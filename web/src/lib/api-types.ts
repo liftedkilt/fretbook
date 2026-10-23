@@ -237,7 +237,9 @@ export interface paths {
         };
         /**
          * List Songs
-         * @description Songs owned by the caller, newest first. Summaries omit the score and ChordPro text.
+         * @description One page of the caller's songs. Summaries omit the score and ChordPro text.
+         *
+         *     `sort` defaults to the last edit, newest first; `opened` puts never-opened songs last.
          */
         get: operations["list_songs_api_songs_get"];
         put?: never;
@@ -343,6 +345,26 @@ export interface paths {
         get: operations["export_musicxml_api_songs__song_id__export_musicxml_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/songs/{song_id}/opened": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark Song Opened
+         * @description Record that the caller opened the song, for the "last opened" sort.
+         */
+        post: operations["mark_song_opened_api_songs__song_id__opened_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -695,6 +717,22 @@ export interface components {
             [key: string]: unknown;
         };
         /**
+         * LibraryCounts
+         * @description Songs in the whole library per filter, unaffected by the search text.
+         */
+        LibraryCounts: {
+            /** Acoustic */
+            acoustic: number;
+            /** All */
+            all: number;
+            /** Bass */
+            bass: number;
+            /** Chords */
+            chords: number;
+            /** Electric */
+            electric: number;
+        };
+        /**
          * Me
          * @description The caller. In single-user mode this is the ``local`` user and ``authenticated`` is false.
          *
@@ -920,6 +958,16 @@ export interface components {
             /** Title */
             title: string;
         };
+        /** SongPage */
+        SongPage: {
+            counts: components["schemas"]["LibraryCounts"];
+            /** Items */
+            items: components["schemas"]["SongSummary"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+            /** Total */
+            total: number;
+        };
         /** SongsMoved */
         SongsMoved: {
             /** Moved */
@@ -1132,6 +1180,7 @@ export type InstrumentPreset = components['schemas']['InstrumentPreset'];
 export type Job = components['schemas']['Job'];
 export type JobAccepted = components['schemas']['JobAccepted'];
 export type JobResult = components['schemas']['JobResult'];
+export type LibraryCounts = components['schemas']['LibraryCounts'];
 export type Me = components['schemas']['Me'];
 export type Meta = components['schemas']['Meta'];
 export type Note = components['schemas']['Note'];
@@ -1142,6 +1191,7 @@ export type Settings = components['schemas']['Settings'];
 export type SettingsBody = components['schemas']['SettingsBody'];
 export type SongDetail = components['schemas']['SongDetail'];
 export type SongExport = components['schemas']['SongExport'];
+export type SongPage = components['schemas']['SongPage'];
 export type SongsMoved = components['schemas']['SongsMoved'];
 export type SongsterrTrackChoice = components['schemas']['SongsterrTrackChoice'];
 export type SongSummary = components['schemas']['SongSummary'];
@@ -1911,7 +1961,16 @@ export interface operations {
     };
     list_songs_api_songs_get: {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                instrument?: "all" | "bass" | "electric" | "acoustic" | "chords";
+                limit?: number;
+                /** @description Defaults to the natural order of `sort`. */
+                order?: ("asc" | "desc") | null;
+                /** @description Words matched as prefixes against title and artist. */
+                q?: string;
+                sort?: "title" | "artist" | "added" | "updated" | "opened";
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1924,7 +1983,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SongSummary"][];
+                    "application/json": components["schemas"]["SongPage"];
                 };
             };
             /** @description Keyed error. `detail` is {key, message, params}. */
@@ -2623,6 +2682,80 @@ export interface operations {
                 content: {
                     "application/vnd.recordare.musicxml+xml": string;
                 };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    mark_song_opened_api_songs__song_id__opened_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                song_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Keyed error. `detail` is {key, message, params}. */
             400: {

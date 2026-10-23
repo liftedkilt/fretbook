@@ -193,9 +193,9 @@ def test_users_cannot_see_each_others_songs(app_factory, provider: MockProvider)
         sign_in(bob, provider, "bob", ["fretbook_users"])
         song = alice.post("/api/songs", json={"title": "Mine", "measures": 1}).json()
         song_id = song["id"]
-        assert [item["id"] for item in alice.get("/api/songs").json()] == [song_id]
+        assert [item["id"] for item in alice.get("/api/songs").json()["items"]] == [song_id]
 
-        assert bob.get("/api/songs").json() == []
+        assert bob.get("/api/songs").json()["items"] == []
         assert bob.get(f"/api/songs/{song_id}").status_code == 404
         assert bob.get(f"/api/songs/{song_id}/export.json").status_code == 404
         assert bob.get(f"/api/songs/{song_id}/audio").status_code == 404
@@ -250,10 +250,10 @@ def test_admin_adopts_single_user_library(app_factory, provider: MockProvider) -
         songs.create_song("local", title="Old", artist="", source_kind="manual", chordpro="[G]Hi")
         mine = admin.post("/api/songs", json={"content_kind": "chords", "title": "Old", "chordpro": "[C]Yo"}).json()
         assert admin.post("/api/admin/adopt-local").json() == {"moved": 1}
-        listed = admin.get("/api/songs").json()
+        listed = admin.get("/api/songs").json()["items"]
         assert sorted(item["slug"] for item in listed) == ["old", "old-2"]
         assert mine["slug"] == "old"
-        assert songs.list_songs("local") == []
+        assert songs.list_songs("local")["items"] == []
 
 
 def test_rejects_forged_or_mismatched_callbacks(app_factory, provider: MockProvider) -> None:

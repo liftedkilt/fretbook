@@ -34,6 +34,40 @@ _EMPTY_SUMMARY: dict[str, Any] = {
 }
 
 
+# ORDER BY fragments per sort key. Missing values (no artist, never opened) sort last either way.
+_SORTS: dict[str, tuple[str, str]] = {
+    "title": ("s.title COLLATE NOCASE {dir}", "asc"),
+    "artist": ("(s.artist = '') ASC, s.artist COLLATE NOCASE {dir}, s.title COLLATE NOCASE ASC", "asc"),
+    "added": ("s.created_at {dir}", "desc"),
+    "updated": ("s.updated_at {dir}", "desc"),
+    "opened": ("(s.last_opened_at IS NULL) ASC, s.last_opened_at {dir}", "desc"),
+}
+
+# Library filters. These mirror ``instrumentFamily`` in web/src/lib/instruments.ts.
+_BASS = "lower(s.preferred_instrument) LIKE '%bass%'"
+_ACOUSTIC = f"lower(s.preferred_instrument) LIKE '%acoustic%' AND NOT ({_BASS})"
+_FILTERS: dict[str, str] = {
+    "bass": f"(s.content_kind = 'tab' AND {_BASS})",
+    "acoustic": f"(s.content_kind = 'tab' AND {_ACOUSTIC})",
+    "electric": (
+        f"(s.content_kind = 'tab' AND lower(s.preferred_instrument) LIKE '%guitar%' "
+        f"AND NOT ({_BASS}) AND lower(s.preferred_instrument) NOT LIKE '%acoustic%')"
+    ),
+    "chords": "s.content_kind = 'chords'",
+}
+
+_SUMMARY_COLUMNS = (
+    "s.id, s.slug, s.title, s.artist, s.content_kind, s.source_kind, s.revision, s.bpm, s.measure_count, "
+    "s.track_count, s.string_count, s.preferred_instrument, s.has_sync, s.duration, s.updated_at"
+)
+
+
+def _fts_query(text: str) -> str:
+    """Turn user text into an FTS5 query: every word is a quoted prefix, all of them required."""
+    words = re.findall(r"\w+", text)
+    return " ".join(f'"{word}"*' for word in words)
+
+
 class RevisionConflict(Exception):
     """The song changed since the caller loaded it."""
 
@@ -96,21 +130,64 @@ class SongRepository:
 
     # --- songs -------------------------------------------------------------
 
-    def list_songs(self, owner_id: str) -> list[dict[str, Any]]:
+    def list_songs(
+        self,
+        owner_id: str,
+        *,
+        q: str = "",
+        sort: str = "updated",
+        order: str | None = None,
+        instrument: str = "all",
+        limit: int = 50,
+        offset: int = 0,
+    ) -> dict[str, Any]:
+        """One page of the owner's songs plus the total match count and per-filter counts.
+
+        ``q`` is matched as word prefixes against title and artist. Summaries come from
+        explicit columns so the score and ChordPro text are never read.
+        """
+        sort_sql, default_order = _SORTS[sort]
+        direction = "DESC" if (order or default_order) == "desc" else "ASC"
+        where = ["s.owner_id = ?"]
+        params: list[Any] = [owner_id]
+        match = _fts_query(q)
+        if match:
+            where.append("s.id IN (SELECT song_id FROM songs_fts WHERE songs_fts MATCH ?)")
+            params.append(match)
+        if instrument != "all":
+            where.append(_FILTERS[instrument])
+        clause = " AND ".join(where)
         with self._session() as conn:
+            total = conn.execute(f"SELECT count(*) FROM songs s WHERE {clause}", params).fetchone()[0]
             rows = conn.execute(
-                """
-                SELECT s.*,
+                f"""
+                SELECT {_SUMMARY_COLUMNS},
                        (SELECT m.id FROM media m
                         WHERE m.song_id = s.id AND m.kind = 'audio'
                         ORDER BY m.created_at DESC LIMIT 1) AS audio_id
                 FROM songs s
-                WHERE s.owner_id = ?
-                ORDER BY s.updated_at DESC
+                WHERE {clause}
+                ORDER BY {sort_sql.format(dir=direction)}, s.id
+                LIMIT ? OFFSET ?
                 """,
-                (owner_id,),
+                [*params, limit, offset],
             ).fetchall()
-        return [_summary(row) for row in rows]
+            counts = {"all": 0, **{name: 0 for name in _FILTERS}}
+            for name, sql in _FILTERS.items():
+                counts[name] = conn.execute(
+                    f"SELECT count(*) FROM songs s WHERE s.owner_id = ? AND {sql}", (owner_id,)
+                ).fetchone()[0]
+            counts["all"] = conn.execute("SELECT count(*) FROM songs WHERE owner_id = ?", (owner_id,)).fetchone()[0]
+        return {"items": [_summary(row) for row in rows], "total": total, "counts": counts}
+
+    def mark_opened(self, owner_id: str, song_id: str) -> bool:
+        """Record that the song was opened. Leaves ``updated_at`` and ``revision`` alone."""
+        with self._session() as conn:
+            cursor = conn.execute(
+                "UPDATE songs SET last_opened_at = ? WHERE owner_id = ? AND id = ?",
+                (utcnow(), owner_id, song_id),
+            )
+            return cursor.rowcount > 0
 
     def get_song(self, owner_id: str, song_id: str) -> dict[str, Any] | None:
         with self._session() as conn:

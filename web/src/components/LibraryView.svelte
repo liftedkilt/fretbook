@@ -5,20 +5,22 @@
   import { t } from "../lib/i18n.svelte";
   import { instrumentLabel } from "../lib/instruments";
   import { followLink, hrefFor } from "../lib/router.svelte";
-  import type { SongSummary } from "../lib/types";
+  import type { LibrarySort, SongSummary } from "../lib/types";
   import {
     countFor,
-    matchesFilter,
+    defaultOrder,
+    loadLibrary,
+    loadMore,
     openSheet,
     refreshSongs,
+    setSort,
     ui,
     type LibraryFilter,
   } from "../lib/ui.svelte";
 
-  type Sort = "recent" | "title" | "artist";
-
   let error = $state("");
-  let sort = $state<Sort>("recent");
+  let searchInput = $state<HTMLInputElement>();
+  let searchSeen = ui.search.trim();
 
   const filters: { id: LibraryFilter; key: string }[] = [
     { id: "all", key: "library.filterAll" },
@@ -28,23 +30,49 @@
     { id: "chords", key: "library.filterChords" },
   ];
 
-  const visible = $derived.by(() => {
-    const query = ui.search.trim().toLocaleLowerCase();
-    const list = ui.songs.filter(
-      (song) =>
-        matchesFilter(song, ui.filter) &&
-        (!query ||
-          song.title.toLocaleLowerCase().includes(query) ||
-          song.artist.toLocaleLowerCase().includes(query)),
-    );
-    if (sort === "title") return [...list].sort((a, b) => a.title.localeCompare(b.title));
-    if (sort === "artist")
-      return [...list].sort(
-        (a, b) =>
-          (a.artist || "~").localeCompare(b.artist || "~") || a.title.localeCompare(b.title),
-      );
-    return [...list].sort((a, b) => b.updated_at.localeCompare(a.updated_at));
+  const sorts: { id: LibrarySort; key: string }[] = [
+    { id: "updated", key: "library.sortRecent" },
+    { id: "title", key: "library.sortTitle" },
+    { id: "artist", key: "library.sortArtist" },
+    { id: "added", key: "library.sortAdded" },
+    { id: "opened", key: "library.sortOpened" },
+  ];
+
+  // The server searches, filters, sorts and pages. Typing waits a moment; the other changes load at once.
+  // App loads the first page; this only reacts to changes once it has.
+  $effect(() => {
+    const text = ui.search.trim();
+    void [ui.filter, ui.sort, ui.order];
+    if (!ui.loaded) return;
+    const delay = text === searchSeen ? 0 : 200;
+    searchSeen = text;
+    const timer = setTimeout(() => {
+      loadLibrary().catch((err: unknown) => {
+        error = err instanceof Error ? err.message : t("error.generic");
+      });
+    }, delay);
+    return () => clearTimeout(timer);
   });
+
+  function onKeydown(event: KeyboardEvent) {
+    if (event.key !== "/" || event.ctrlKey || event.metaKey || event.altKey) return;
+    const target = event.target as HTMLElement | null;
+    if (target?.closest("input, textarea, select, [contenteditable]")) return;
+    event.preventDefault();
+    searchInput?.focus();
+  }
+
+  function flipOrder() {
+    setSort(ui.sort, ui.order === "asc" ? "desc" : "asc");
+  }
+
+  async function more() {
+    try {
+      await loadMore();
+    } catch (err) {
+      error = err instanceof Error ? err.message : t("error.generic");
+    }
+  }
 
   const heading = $derived(
     t(filters.find((item) => item.id === ui.filter)?.key ?? "library.filterAll"),
@@ -67,6 +95,8 @@
   }
 </script>
 
+<svelte:window onkeydown={onKeydown} />
+
 <section class="library">
   <header class="page-hero">
     <div>
@@ -81,26 +111,46 @@
     >
   </header>
 
-  {#if ui.songs.length > 0}
+  {#if countFor("all") > 0}
     <div class="toolbar">
       <label class="search">
         <Icon name="search" size={18} />
         <input
           type="search"
           data-testid="library-search"
+          bind:this={searchInput}
           bind:value={ui.search}
           placeholder={t("library.search")}
           aria-label={t("library.search")}
+          aria-keyshortcuts="/"
+          title={t("library.searchShortcut")}
         />
       </label>
       <label class="sort">
         <span class="visually-hidden">{t("library.sort")}</span>
-        <select bind:value={sort} aria-label={t("library.sort")}>
-          <option value="recent">{t("library.sortRecent")}</option>
-          <option value="title">{t("library.sortTitle")}</option>
-          <option value="artist">{t("library.sortArtist")}</option>
+        <select
+          value={ui.sort}
+          data-testid="library-sort"
+          aria-label={t("library.sort")}
+          onchange={(event) => {
+            const sort = event.currentTarget.value as LibrarySort;
+            setSort(sort, defaultOrder(sort));
+          }}
+        >
+          {#each sorts as item (item.id)}
+            <option value={item.id}>{t(item.key)}</option>
+          {/each}
         </select>
       </label>
+      <button
+        class="icon-button glass sort-order"
+        data-testid="library-order"
+        onclick={flipOrder}
+        aria-label={t("library.order")}
+        title={ui.order === "asc" ? t("library.orderAsc") : t("library.orderDesc")}
+      >
+        <span aria-hidden="true">{ui.order === "asc" ? "↑" : "↓"}</span>
+      </button>
     </div>
 
     <div class="chips" role="group" aria-label={t("library.filters")}>
@@ -128,7 +178,7 @@
         </div>
       {/each}
     </div>
-  {:else if ui.songs.length === 0}
+  {:else if countFor("all") === 0}
     <div class="empty-state" data-testid="library-empty">
       <span class="empty-art"><Icon name="sparkle" size={34} /></span>
       <h2 class="display">{t("library.emptyTitle")}</h2>
@@ -139,14 +189,23 @@
         >
       </div>
     </div>
-  {:else if visible.length === 0}
+  {:else if ui.songs.length === 0}
     <div class="empty-state compact" data-testid="library-filter-empty">
       <span class="empty-art"><Icon name="search" size={30} /></span>
-      <p class="muted">{t("library.filterEmpty")}</p>
+      <p class="muted">
+        {ui.search.trim()
+          ? t("library.searchEmpty", { query: ui.search.trim() })
+          : t("library.filterEmpty")}
+      </p>
+      {#if ui.search.trim()}
+        <button data-testid="library-clear-search" onclick={() => (ui.search = "")}
+          >{t("library.clearSearch")}</button
+        >
+      {/if}
     </div>
   {:else}
     <div class="song-grid">
-      {#each visible as song (song.id)}
+      {#each ui.songs as song (song.id)}
         <article class="song-card" data-testid="song-card">
           <a
             class="song-link"
@@ -209,6 +268,18 @@
           </div>
         </article>
       {/each}
+    </div>
+    <div class="load-more">
+      <p class="muted" data-testid="library-showing">
+        {t("library.showing", { shown: ui.songs.length, total: ui.total })}
+      </p>
+      {#if ui.nextCursor}
+        <button
+          data-testid="library-load-more"
+          disabled={ui.loadingMore}
+          onclick={() => void more()}>{t("library.loadMore")}</button
+        >
+      {/if}
     </div>
   {/if}
 </section>

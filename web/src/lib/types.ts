@@ -104,6 +104,26 @@ export interface SongSummary {
   updated_at: string;
 }
 
+export type LibrarySort = "title" | "artist" | "added" | "updated" | "opened";
+export type SortOrder = "asc" | "desc";
+export type LibraryFilter = "all" | "bass" | "electric" | "acoustic" | "chords";
+
+export interface SongQuery {
+  q?: string;
+  sort?: LibrarySort;
+  order?: SortOrder;
+  instrument?: LibraryFilter;
+  limit?: number;
+  cursor?: string;
+}
+
+export interface SongPage {
+  items: SongSummary[];
+  total: number;
+  next_cursor: string | null;
+  counts: Record<LibraryFilter, number>;
+}
+
 export interface SongDetail extends SongSummary {
   source_ref: Record<string, unknown>;
   document: ScoreDocument | null;

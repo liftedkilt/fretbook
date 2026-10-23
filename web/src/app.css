@@ -1298,6 +1298,20 @@ textarea {
   background-color: var(--surface);
 }
 
+.sort-order {
+  flex: none;
+  width: 46px;
+  height: 46px;
+}
+
+.load-more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 1.6rem 0 0.5rem;
+}
+
 /* Phones: the search gets its own row, so its placeholder is not cut off. */
 @media (max-width: 767px) {
   .toolbar {

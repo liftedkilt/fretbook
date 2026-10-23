@@ -194,14 +194,55 @@ def verify_v2(conn: sqlite3.Connection) -> None:
     song = conn.execute("SELECT * FROM songs WHERE id = 'song-v2'").fetchone()
     assert song is not None
     assert song["title"] == "V2 Title"
+    # Songs that predate the search migration are backfilled into the index and have never been opened.
+    assert song["last_opened_at"] is None
+    hit = conn.execute("SELECT song_id FROM songs_fts WHERE songs_fts MATCH 'v2'").fetchall()
+    assert [row[0] for row in hit] == ["song-v2"]
 
     assert conn.execute("PRAGMA foreign_key_check").fetchall() == []
+    assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+
+
+def seed_v3(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        INSERT INTO users (id, external_subject, display_name, created_at)
+        VALUES ('user-v3', 'sub-v3', 'User V3', '2026-01-03T00:00:00Z')
+        """
+    )
+    conn.execute(
+        """
+        INSERT INTO songs (
+            id, owner_id, slug, title, artist, content_kind, source_kind, source_ref,
+            revision, bpm, measure_count, track_count, string_count, preferred_instrument,
+            preferred_track_id, has_sync, duration, document, chordpro, created_at, updated_at
+        ) VALUES (
+            'song-v3', 'user-v3', 'song-v3', 'Résumé Blues', 'V3 Artist', 'chords', 'manual', '{}',
+            1, 0.0, 0, 0, 0, '', '', 0, NULL, NULL, '[C]Yo',
+            '2026-01-03T00:00:00Z', '2026-01-03T00:00:00Z'
+        )
+        """
+    )
+    conn.commit()
+
+
+def verify_v3(conn: sqlite3.Connection) -> None:
+    assert conn.execute("SELECT last_opened_at FROM songs WHERE id = 'song-v3'").fetchone()[0] is None
+    # Diacritics fold, and the triggers keep the index in step with writes.
+    assert conn.execute("SELECT song_id FROM songs_fts WHERE songs_fts MATCH 'resume'").fetchone()[0] == "song-v3"
+    conn.execute("UPDATE songs SET title = 'Renamed' WHERE id = 'song-v3'")
+    assert conn.execute("SELECT count(*) FROM songs_fts WHERE songs_fts MATCH 'resume'").fetchone()[0] == 0
+    assert conn.execute("SELECT song_id FROM songs_fts WHERE songs_fts MATCH 'renamed'").fetchone()[0] == "song-v3"
+    conn.execute("DELETE FROM songs WHERE id = 'song-v3'")
+    assert conn.execute("SELECT count(*) FROM songs_fts WHERE songs_fts MATCH 'renamed'").fetchone()[0] == 0
+    conn.rollback()
     assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
 
 
 SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.Connection], None]]] = {
     1: (seed_v1, verify_v1),
     2: (seed_v2, verify_v2),
+    3: (seed_v3, verify_v3),
 }
 
 
@@ -282,12 +323,12 @@ def test_backup_created_only_when_pending_migrations(tmp_path: Path) -> None:
     migrate(db_path, target_version=1, backups_dir=backups_dir)
     assert not backups_dir.exists() or len(list(backups_dir.glob("*.sqlite"))) == 0
 
-    # Now run migrate without target_version: detects pending migration 2 on existing database,
-    # takes a backup before applying migration 2.
+    # Now run migrate without target_version: detects the pending migrations on an existing database,
+    # takes one backup before applying them.
     migrate(db_path, backups_dir=backups_dir)
     backups = [p for p in backups_dir.glob("*.sqlite") if _BACKUP_PATTERN.match(p.name)]
     assert len(backups) == 1
-    assert backups[0].name.startswith("pre-migrate-1-2-")
+    assert backups[0].name.startswith(f"pre-migrate-1-{max(v for v, _ in get_available_migrations())}-")
 
     # Running migrate again on the fully migrated database: no new backup taken
     migrate(db_path, backups_dir=backups_dir)

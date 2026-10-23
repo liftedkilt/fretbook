@@ -28,10 +28,6 @@ With sign-in on, export and import should work per user, and an admin should be 
 
 Repeats are stored in the score but not rendered, so the bar index is also the playback order. Real songs depend on repeats, voltas, D.S. and D.C. Render them, expand them into a playback order, and make sync marks follow the played order rather than the written bar index.
 
-### Library search and sorting
-
-The library only filters by instrument. Once it holds more than a screenful of songs it needs search by title and artist, and sorting by title, artist, date added and last opened. Check this against the UI redesign first, since it may already cover it.
-
 ### Practice controls
 
 The basics of a play-along tool:

@@ -169,6 +169,25 @@ class SongSummary(BaseModel):
     updated_at: str
 
 
+class LibraryCounts(BaseModel):
+    """Songs in the whole library per filter, unaffected by the search text."""
+
+    all: int
+    bass: int
+    electric: int
+    acoustic: int
+    chords: int
+
+
+class SongPage(BaseModel):
+    items: list[SongSummary]
+    # Songs matching the search and instrument filter, across all pages.
+    total: int
+    # Opaque. Pass it back as `cursor` for the next page; null on the last page.
+    next_cursor: str | None
+    counts: LibraryCounts
+
+
 class SongDetail(SongSummary):
     source_ref: dict[str, Any]
     # A tab has a document and a null chordpro; a chord sheet is the opposite. Both keys are present.

@@ -107,7 +107,7 @@ def test_tab_lifecycle(tmp_path: Path) -> None:
         bad_anchor = client.patch(f"/api/songs/{song_id}/sync", json={"bpm": 90, "anchors": {"99": 1.0}})
         assert bad_anchor.status_code == 400
 
-        listed = client.get("/api/songs").json()
+        listed = client.get("/api/songs").json()["items"]
         assert listed[0]["id"] == song_id
         assert "document" not in listed[0]
 
@@ -226,7 +226,7 @@ def test_chord_sheets(tmp_path: Path) -> None:
         cho = client.get(f"/api/songs/{song['id']}/export.cho")
         assert cho.status_code == 200 and cho.text.startswith("{title: Hello}")
         assert client.get(f"/api/songs/{song['id']}/export.musicxml").status_code == 400
-        assert client.get("/api/songs").json()[0]["content_kind"] == "chords"
+        assert client.get("/api/songs").json()["items"][0]["content_kind"] == "chords"
 
 
 def test_songsterr_preview_and_selected_guitar(tmp_path: Path, monkeypatch) -> None:
