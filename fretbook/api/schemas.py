@@ -91,11 +91,16 @@ class YtDlpStatus(BaseModel):
 
 
 class Meta(BaseModel):
-    """Server identity. ``auth_mode`` is ``single`` or ``oidc``."""
+    """Server identity. ``auth_mode`` is ``single`` or ``oidc``.
+
+    ``commit`` is the git SHA of a non-release image build. It is ``null`` for a release (``v*`` tag) or a
+    source checkout.
+    """
 
     name: str
     tagline: str
     version: str
+    commit: str | None
     auth_mode: str
     exporters: list[str]
     instruments: list[InstrumentPreset]

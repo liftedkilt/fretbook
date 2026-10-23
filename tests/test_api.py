@@ -6,6 +6,7 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
+from fretbook import __version__
 from fretbook.app import create_app
 from fretbook.config import Settings
 
@@ -64,6 +65,8 @@ def test_tab_lifecycle(tmp_path: Path) -> None:
         meta = client.get("/api/meta").json()
         assert "musicxml" in meta["exporters"]
         assert meta["auth_mode"] == "single"
+        assert meta["version"] == __version__
+        assert meta["commit"] is None
         assert any(item["id"] == "guitar-6" and item["family"] == "guitar" for item in meta["instruments"])
 
         created = client.post(

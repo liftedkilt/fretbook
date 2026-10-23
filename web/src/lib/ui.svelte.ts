@@ -39,6 +39,8 @@ export const ui = $state({
   loaded: false,
   presets: [] as InstrumentPreset[],
   ytdlp: null as YtDlpStatus | null,
+  version: null as string | null,
+  commit: null as string | null,
   defaultInstrument: "bass-4",
   filter: "all" as LibraryFilter,
   search: "",
@@ -72,6 +74,8 @@ export async function loadMeta(): Promise<void> {
   ui.me = me;
   ui.presets = meta.instruments;
   ui.ytdlp = meta.ytdlp;
+  ui.version = meta.version;
+  ui.commit = meta.commit;
   ui.defaultInstrument = me.settings.default_instrument;
   metaLoaded = true;
 }

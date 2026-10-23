@@ -24,10 +24,6 @@ Everything lives in one SQLite file and a media folder, so a lost volume loses t
 
 With sign-in on, export and import should work per user, and an admin should be able to back up everything.
 
-### Published, versioned Docker image
-
-Today users build the image themselves. Publish tagged images to GHCR from CI on each release, with a changelog. That makes upgrades a `docker compose pull`, and gives migrations a version to refer to.
-
 ### Repeats and playback order
 
 Repeats are stored in the score but not rendered, so the bar index is also the playback order. Real songs depend on repeats, voltas, D.S. and D.C. Render them, expand them into a playback order, and make sync marks follow the played order rather than the written bar index.

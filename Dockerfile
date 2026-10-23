@@ -16,7 +16,10 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 COPY fretbook ./fretbook
 COPY --from=web /src/web/dist ./fretbook/static
-ENV FRETBOOK_HOST=0.0.0.0 \
+# Set by CI for builds that are not a release tag, so the app can report which commit it runs.
+ARG GIT_SHA=""
+ENV FRETBOOK_GIT_SHA=$GIT_SHA \
+    FRETBOOK_HOST=0.0.0.0 \
     FRETBOOK_PORT=8137 \
     FRETBOOK_DATA_DIR=/data \
     FRETBOOK_LEGACY_SONGS_DIR=/songs \

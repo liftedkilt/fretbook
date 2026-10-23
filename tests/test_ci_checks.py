@@ -1,9 +1,12 @@
 """The CI guard scripts in scripts/ fail with clear messages on bad input."""
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
+
+import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -89,3 +92,48 @@ def test_locale_key_order_mismatch_fails(tmp_path):
     result = run("check_locales.py", tmp_path)
     assert result.returncode == 1
     assert "same order" in result.stderr
+
+
+def run_pr_title(title: str | None) -> subprocess.CompletedProcess[str]:
+    env = {k: v for k, v in os.environ.items() if k != "PR_TITLE"}
+    if title is not None:
+        env["PR_TITLE"] = title
+    args = [sys.executable, str(ROOT / "scripts" / "check_pr_title.py")]
+    return subprocess.run(args, capture_output=True, text=True, check=False, env=env)
+
+
+@pytest.mark.parametrize(
+    "title",
+    [
+        "feat: add tab export",
+        "fix(player): stop drift",
+        "feat!: drop v1 API",
+        "chore(main): release 0.2.0",
+        "ci: gate on ci-ok",
+    ],
+)
+def test_conventional_pr_title_passes(title):
+    assert run_pr_title(title).returncode == 0
+
+
+@pytest.mark.parametrize(
+    "title", ["Add tab export", "feat add export", "feature: x", "feat:", "feat: x\nbody", "Feat: x"]
+)
+def test_non_conventional_pr_title_fails(title):
+    result = run_pr_title(title)
+    assert result.returncode == 1
+    assert "Conventional Commit" in result.stderr
+
+
+def test_pr_title_skipped_outside_pull_requests():
+    assert run_pr_title(None).returncode == 0
+    assert run_pr_title("").returncode == 0
+
+
+def test_release_please_versions_agree():
+    """The files release-please bumps all start from the manifest version."""
+    version = json.loads((ROOT / ".release-please-manifest.json").read_text())["."]
+    config = json.loads((ROOT / "release-please-config.json").read_text())
+    for entry in config["packages"]["."]["extra-files"]:
+        path = entry if isinstance(entry, str) else entry["path"]
+        assert f'"{version}"' in (ROOT / path).read_text(encoding="utf-8"), path

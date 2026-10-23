@@ -217,7 +217,7 @@ export interface paths {
         };
         /**
          * Meta
-         * @description Name, version, auth mode, exporters, instrument presets, and the yt-dlp version.
+         * @description Name, version, build commit, auth mode, exporters, instrument presets, and the yt-dlp version.
          */
         get: operations["meta_api_meta_get"];
         put?: never;
@@ -719,10 +719,15 @@ export interface components {
         /**
          * Meta
          * @description Server identity. ``auth_mode`` is ``single`` or ``oidc``.
+         *
+         *     ``commit`` is the git SHA of a non-release image build. It is ``null`` for a release (``v*`` tag) or a
+         *     source checkout.
          */
         Meta: {
             /** Auth Mode */
             auth_mode: string;
+            /** Commit */
+            commit: string | null;
             /** Exporters */
             exporters: string[];
             /** Instruments */

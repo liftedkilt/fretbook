@@ -20,11 +20,20 @@ docker compose up --build
 
 Open `http://localhost:8137`. The database and audio live in the `fretbook-data` volume. A `./songs` folder is mounted read-only for bass-tab-sync imports.
 
-Prebuilt images for amd64 and arm64 are published to GHCR on every push to `main` (`latest`) and for each `v*` tag:
+Prebuilt images for amd64 and arm64 are published to GHCR. Each release (`vX.Y.Z`, listed in [CHANGELOG.md](CHANGELOG.md) and on the [releases page](https://github.com/liftedkilt/fretbook/releases)) gets the tags `X.Y.Z` and `X.Y`; every push to `main` gets `latest`, `main` and `sha-<commit>`.
 
 ```sh
-docker pull ghcr.io/liftedkilt/fretbook:latest
+docker pull ghcr.io/liftedkilt/fretbook:latest   # newest main
+docker pull ghcr.io/liftedkilt/fretbook:0.2.0    # a release; pin this one
 ```
+
+**Upgrading.** Fretbook is versioned with [semver](https://semver.org); while it is `0.x`, a minor version may include breaking changes, so read the [changelog](CHANGELOG.md) first. Everything lives in the `/data` volume, so back it up before you upgrade (stop the container and copy the volume, or copy `fretbook.sqlite` and the media folder). Then pull and restart; database migrations run on start and are not reversible, so to roll back, restore the backup and run the older image.
+
+```sh
+docker compose pull && docker compose up -d
+```
+
+(`docker-compose.yml` builds the image locally. To use a published image, replace `build: .` with `image: ghcr.io/liftedkilt/fretbook:<version>`.) **Settings** and `GET /api/meta` show the running version; images built from `main` also show the commit.
 
 ### Locally
 

@@ -142,6 +142,7 @@ export interface Meta {
   name: string;
   tagline: string;
   version: string;
+  commit: string | null;
   auth_mode: string;
   exporters: string[];
   instruments: InstrumentPreset[];

@@ -35,6 +35,7 @@ from fretbook.api.schemas import (
 )
 from fretbook.audio.ytdlp_health import status as ytdlp_status
 from fretbook.auth.base import Principal
+from fretbook.buildinfo import git_sha
 from fretbook.chords import chordpro
 from fretbook.context import AppContext
 from fretbook.export.musicxml import to_musicxml
@@ -179,12 +180,13 @@ def health() -> JSONResponse:
 
 @router.get("/api/meta", response_model=Meta, tags=["meta"])
 def meta(ctx: AppContext = Depends(_ctx), _user: Principal = Depends(_user)) -> JSONResponse:
-    """Name, version, auth mode, exporters, instrument presets, and the yt-dlp version."""
+    """Name, version, build commit, auth mode, exporters, instrument presets, and the yt-dlp version."""
     return _json(
         {
             "name": "Fretbook",
             "tagline": "Self-hosted tabs, chord sheets, and sheet music for bass and guitar.",
             "version": __version__,
+            "commit": git_sha(),
             "auth_mode": ctx.settings.auth_mode,
             "exporters": ["json", "musicxml", "chordpro", "pdf"],
             "instruments": presets_payload(),

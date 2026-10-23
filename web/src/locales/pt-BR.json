@@ -45,6 +45,11 @@
     "themeDark": "Escuro",
     "themeLight": "Claro"
   },
+  "about": {
+    "label": "Sobre o Fretbook",
+    "version": "Versão {version}",
+    "commit": "Build {commit}"
+  },
   "ytdlp": {
     "label": "Baixador de áudio (yt-dlp)",
     "hint": "O Fretbook usa o yt-dlp para baixar o áudio de um vídeo sincronizado. O YouTube muda com frequência, então uma versão antiga deixa de funcionar.",

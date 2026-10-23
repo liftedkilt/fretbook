@@ -73,6 +73,17 @@ jobs:
       - name: Locale files are valid and consistently formatted
         run: python3 scripts/check_locales.py
 
+  pr-title:
+    # Release notes are built from squash-merged PR titles. Passes on pushes.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: PR title is a Conventional Commit
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: python3 scripts/check_pr_title.py
+
   ui-only:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -140,7 +151,7 @@ jobs:
     # `needs` so the required check keeps covering it without editing the
     # branch-protection settings.
     if: always()
-    needs: [backend, frontend, openapi, repo-checks, ui-only, e2e]
+    needs: [backend, frontend, openapi, repo-checks, pr-title, ui-only, e2e]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

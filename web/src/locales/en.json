@@ -45,6 +45,11 @@
     "themeDark": "Dark",
     "themeLight": "Light"
   },
+  "about": {
+    "label": "About Fretbook",
+    "version": "Version {version}",
+    "commit": "Build {commit}"
+  },
   "ytdlp": {
     "label": "Audio downloader (yt-dlp)",
     "hint": "Fretbook uses yt-dlp to download the audio of a synced video. YouTube changes often, so an old version stops working.",

@@ -64,6 +64,15 @@ Suggested branch-protection settings for `main`:
 - Require linear history, and allow only squash merging (or rebase merging).
 - Do not require the individual `backend (3.12)` style checks: matrix names change, which is what `ci-ok` avoids.
 
+## Releases
+
+Versions follow [semver](https://semver.org) and are cut by [release-please](https://github.com/googleapis/release-please) (`.github/workflows/release.yml`). You do not edit the version or `CHANGELOG.md`.
+
+- Use a Conventional Commit PR title (`feat: …`, `fix: …`, `feat!: …` for a breaking change). The `pr-title` CI job enforces it. Pull requests are squash-merged, so the title becomes the commit and the changelog line. `feat` bumps the minor version, `fix` and `perf` the patch; while the version is `0.x`, a breaking change bumps the minor version.
+- release-please keeps one "chore(main): release X.Y.Z" PR open. Merging it bumps `fretbook/__init__.py`, `pyproject.toml`, `web/package.json`, `web/package-lock.json` and `openapi.json`, updates `CHANGELOG.md`, creates the GitHub release and the `vX.Y.Z` tag, and starts the Docker workflow, which publishes the image.
+- Maintainers: pushes made with the default `GITHUB_TOKEN` do not start other workflows, so the release PR gets no CI run unless the repository secret `RELEASE_PLEASE_TOKEN` (a PAT or GitHub App token with `contents` and `pull requests` write access) is set. Without it, release-please still works and the workflow starts the image publish by hand, but the release PR shows no checks until a token is set.
+- Allow GitHub Actions to create pull requests (Settings → Actions → General → Workflow permissions).
+
 ## API contract
 
 The HTTP contract is the committed `openapi.json`. Regenerate it with `python -m fretbook.openapi` (or `make openapi`) and the TypeScript types with `npm run api-types --prefix web` (or `make api-types`). CI fails if either is stale. A pull request labeled `ui-only` may only touch `web/`; the rules are in [web/README.md](web/README.md).

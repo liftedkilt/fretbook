@@ -100,6 +100,19 @@
         {/each}
       </div>
     </section>
+    {#if ui.version}
+      <section class="setting" data-testid="about-setting">
+        <div class="setting-label">
+          <span class="setting-icon"><Icon name="info" /></span>
+          <div>
+            <strong>{t("about.label")}</strong>
+            <p class="muted">
+              {t("about.version", { version: ui.version })}{#if ui.commit} · {t("about.commit", { commit: ui.commit.slice(0, 7) })}{/if}
+            </p>
+          </div>
+        </div>
+      </section>
+    {/if}
     {#if ui.ytdlp}
       <section class="setting setting-stacked" data-testid="ytdlp-setting">
         <div class="setting-label">

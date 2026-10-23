@@ -780,11 +780,22 @@
         "type": "object"
       },
       "Meta": {
-        "description": "Server identity. ``auth_mode`` is ``single`` or ``oidc``.",
+        "description": "Server identity. ``auth_mode`` is ``single`` or ``oidc``.\n\n``commit`` is the git SHA of a non-release image build. It is ``null`` for a release (``v*`` tag) or a\nsource checkout.",
         "properties": {
           "auth_mode": {
             "title": "Auth Mode",
             "type": "string"
+          },
+          "commit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Commit"
           },
           "exporters": {
             "items": {
@@ -820,6 +831,7 @@
           "name",
           "tagline",
           "version",
+          "commit",
           "auth_mode",
           "exporters",
           "instruments",
@@ -2603,7 +2615,7 @@
     },
     "/api/meta": {
       "get": {
-        "description": "Name, version, auth mode, exporters, instrument presets, and the yt-dlp version.",
+        "description": "Name, version, build commit, auth mode, exporters, instrument presets, and the yt-dlp version.",
         "operationId": "meta_api_meta_get",
         "responses": {
           "200": {
