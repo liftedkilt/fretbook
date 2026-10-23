@@ -9,6 +9,7 @@ import type {
   SessionsEnded,
   Settings as ContractSettings,
   SongDetail as ContractSongDetail,
+  SongPage as ContractSongPage,
   SongSummary as ContractSongSummary,
   SongsMoved,
 } from "./api-types";
@@ -24,6 +25,8 @@ import type {
   ScoreDocument,
   Settings,
   SongDetail,
+  SongPage,
+  SongQuery,
   SongSummary,
 } from "./types";
 
@@ -35,6 +38,7 @@ type _matchesContract = [
   AssertAssignable<ContractMeta, Meta>,
   AssertAssignable<ContractSettings, Settings>,
   AssertAssignable<ContractSongSummary, SongSummary>,
+  AssertAssignable<ContractSongPage, SongPage>,
   AssertAssignable<ContractImportPreview, ImportPreview>,
   AssertAssignable<ContractAdminUser, AdminUser>,
 ];
@@ -142,8 +146,19 @@ export function saveSettings(settings: Settings): Promise<Settings> {
   return request<ContractSettings>("/api/me/settings", json("PUT", settings));
 }
 
-export function listSongs(): Promise<SongSummary[]> {
-  return request<ContractSongSummary[]>("/api/songs");
+/** One page of the library. Empty parameters are left to the server's defaults. */
+export function listSongs(query: SongQuery = {}): Promise<SongPage> {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value !== undefined && value !== "") params.set(key, String(value));
+  }
+  const text = params.toString();
+  return request<ContractSongPage>(`/api/songs${text ? `?${text}` : ""}`);
+}
+
+/** Record that the song was opened, for the "last opened" sort. */
+export function markSongOpened(id: string): Promise<void> {
+  return request(`/api/songs/${id}/opened`, { method: "POST" });
 }
 
 export function getSong(id: string): Promise<SongDetail> {

@@ -32,9 +32,7 @@
     { id: "chords", icon: "chords", key: "library.filterChords" },
   ];
 
-  const recent = $derived(
-    [...ui.songs].sort((a, b) => b.updated_at.localeCompare(a.updated_at)).slice(0, 5),
-  );
+  const recent = $derived(ui.recent);
   const activeSong = $derived(edit?.[1] ?? play?.[1] ?? "");
 
   $effect(() => {

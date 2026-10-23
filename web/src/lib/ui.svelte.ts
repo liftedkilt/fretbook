@@ -1,6 +1,14 @@
 import { getMe, getMeta, listSongs, saveSettings } from "./api";
-import { instrumentFamily, type InstrumentFilter } from "./instruments";
-import type { InstrumentPreset, Me, SongSummary, YtDlpStatus } from "./types";
+import type {
+  InstrumentPreset,
+  LibraryFilter,
+  LibrarySort,
+  Me,
+  SongQuery,
+  SongSummary,
+  SortOrder,
+  YtDlpStatus,
+} from "./types";
 
 /*
  * State shared by the app shell and the pages: the library list (the sidebar
@@ -8,12 +16,40 @@ import type { InstrumentPreset, Me, SongSummary, YtDlpStatus } from "./types";
  * search, which sheet is open, the colour theme, and who is signed in.
  */
 
-export type LibraryFilter = "all" | InstrumentFilter | "chords";
+export type { LibraryFilter };
 export type Theme = "system" | "dark" | "light";
 export type Sheet = "" | "add" | "settings";
 
 const THEME_KEY = "fretbook.theme";
 const NOTATION_KEY = "fretbook.notation";
+const SORT_KEY = "fretbook.librarySort";
+
+/** Songs per request. The library shows more through "Load more". */
+export const PAGE_SIZE = 48;
+
+const SORTS: LibrarySort[] = ["title", "artist", "added", "updated", "opened"];
+
+/** The order each sort starts in: newest first for dates, A to Z for text. */
+export function defaultOrder(sort: LibrarySort): SortOrder {
+  return sort === "title" || sort === "artist" ? "asc" : "desc";
+}
+
+function storedSort(): { sort: LibrarySort; order: SortOrder } {
+  const fallback = { sort: "updated" as LibrarySort, order: defaultOrder("updated") };
+  try {
+    const raw = typeof localStorage === "undefined" ? null : localStorage.getItem(SORT_KEY);
+    if (!raw) return fallback;
+    const value = JSON.parse(raw) as { sort?: unknown; order?: unknown };
+    const sort = SORTS.find((item) => item === value.sort);
+    if (!sort) return fallback;
+    return {
+      sort,
+      order: value.order === "asc" || value.order === "desc" ? value.order : defaultOrder(sort),
+    };
+  } catch {
+    return fallback;
+  }
+}
 
 function storedTheme(): Theme {
   try {
@@ -32,11 +68,23 @@ function storedNotation(): boolean {
   }
 }
 
+const initialSort = storedSort();
+
 export const ui = $state({
   /** The caller. `authenticated` is false in single-user mode, where there is no sign-in. */
   me: null as Me | null,
+  /** The loaded pages of the library for the current search, filter and sort. */
   songs: [] as SongSummary[],
+  /** Songs matching the search and filter, including the ones not loaded yet. */
+  total: 0,
+  nextCursor: null as string | null,
+  counts: { all: 0, bass: 0, electric: 0, acoustic: 0, chords: 0 } as Record<LibraryFilter, number>,
+  /** The last few edited songs, for the sidebar. */
+  recent: [] as SongSummary[],
   loaded: false,
+  loadingMore: false,
+  sort: initialSort.sort,
+  order: initialSort.order,
   presets: [] as InstrumentPreset[],
   ytdlp: null as YtDlpStatus | null,
   version: null as string | null,
@@ -51,19 +99,79 @@ export const ui = $state({
   error: "",
 });
 
-export function matchesFilter(song: SongSummary, filter: LibraryFilter): boolean {
-  if (filter === "all") return true;
-  if (filter === "chords") return song.content_kind === "chords";
-  return song.content_kind === "tab" && instrumentFamily(song.preferred_instrument) === filter;
-}
-
 export function countFor(filter: LibraryFilter): number {
-  return ui.songs.filter((song) => matchesFilter(song, filter)).length;
+  return ui.counts[filter];
 }
 
-export async function refreshSongs(): Promise<void> {
-  ui.songs = await listSongs();
+function currentQuery(): SongQuery {
+  return {
+    q: ui.search.trim(),
+    sort: ui.sort,
+    order: ui.order,
+    instrument: ui.filter,
+    limit: PAGE_SIZE,
+  };
+}
+
+function queryKey(query: SongQuery): string {
+  return JSON.stringify(query);
+}
+
+let requestSeq = 0;
+let loadedKey = "";
+
+/** Fetch the first page for the current search, filter and sort. A slower, older response never replaces a newer one. */
+export async function loadLibrary({ force = false } = {}): Promise<void> {
+  const query = currentQuery();
+  const key = queryKey(query);
+  if (!force && key === loadedKey) return;
+  const seq = ++requestSeq;
+  const page = await listSongs(query);
+  if (seq !== requestSeq) return;
+  loadedKey = key;
+  ui.songs = page.items;
+  ui.total = page.total;
+  ui.nextCursor = page.next_cursor;
+  ui.counts = page.counts;
   ui.loaded = true;
+}
+
+export async function loadMore(): Promise<void> {
+  const cursor = ui.nextCursor;
+  if (!cursor || ui.loadingMore) return;
+  const seq = requestSeq;
+  ui.loadingMore = true;
+  try {
+    const page = await listSongs({ ...currentQuery(), cursor });
+    if (seq !== requestSeq) return;
+    const known = ui.songs.map((song) => song.id);
+    ui.songs = [...ui.songs, ...page.items.filter((song) => !known.includes(song.id))];
+    ui.total = page.total;
+    ui.nextCursor = page.next_cursor;
+    ui.counts = page.counts;
+  } finally {
+    ui.loadingMore = false;
+  }
+}
+
+/** Reload the library and the sidebar after the set of songs changed. */
+export async function refreshSongs(): Promise<void> {
+  const [, recent] = await Promise.all([
+    loadLibrary({ force: true }),
+    listSongs({ sort: "updated", order: "desc", limit: 5 }),
+  ]);
+  ui.recent = recent.items;
+}
+
+/** Remember the sort. Without an order, the sort starts in its natural one. */
+export function setSort(sort: LibrarySort, order: SortOrder = defaultOrder(sort)): void {
+  ui.sort = sort;
+  ui.order = order;
+  try {
+    localStorage.setItem(SORT_KEY, JSON.stringify({ sort, order }));
+  } catch {
+    /* storage may be unavailable */
+  }
 }
 
 let metaLoaded = false;

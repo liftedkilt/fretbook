@@ -98,6 +98,7 @@ export class Seeder {
   }
 
   async list(): Promise<SongBody[]> {
-    return this.ok<SongBody[]>(await this.request.get("/api/songs"));
+    return (await this.ok<{ items: SongBody[] }>(await this.request.get("/api/songs?limit=200")))
+      .items;
   }
 }

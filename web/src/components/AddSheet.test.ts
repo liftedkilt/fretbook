@@ -10,6 +10,12 @@ const mockPreviewImport = vi.fn();
 const mockImportFile = vi.fn();
 const mockWaitForJob = vi.fn();
 const mockListSongs = vi.fn();
+const emptyPage = {
+  items: [],
+  total: 0,
+  next_cursor: null,
+  counts: { all: 0, bass: 0, electric: 0, acoustic: 0, chords: 0 },
+};
 
 vi.mock("../lib/api", () => ({
   createTab: (...args: unknown[]) => mockCreateTab(...args),
@@ -64,7 +70,7 @@ describe("AddSheet", () => {
 
   it("switches to blank tab source mode and creates a tab", async () => {
     mockCreateTab.mockResolvedValueOnce({ id: "new-tab-id" });
-    mockListSongs.mockResolvedValueOnce([]);
+    mockListSongs.mockResolvedValue(emptyPage);
 
     render(AddSheet);
 
@@ -88,7 +94,7 @@ describe("AddSheet", () => {
 
   it("switches to chord sheet source mode and creates a chord sheet", async () => {
     mockCreateChordSheet.mockResolvedValueOnce({ id: "new-chord-id" });
-    mockListSongs.mockResolvedValueOnce([]);
+    mockListSongs.mockResolvedValue(emptyPage);
 
     render(AddSheet);
 
@@ -117,7 +123,7 @@ describe("AddSheet", () => {
       status: "done",
       result: { song_id: "imported-song-id" },
     });
-    mockListSongs.mockResolvedValueOnce([]);
+    mockListSongs.mockResolvedValue(emptyPage);
 
     render(AddSheet);
 

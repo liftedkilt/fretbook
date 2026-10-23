@@ -1,7 +1,7 @@
 <script lang="ts">
   import ChordSheetView from "./ChordSheetView.svelte";
   import TabPlayer from "./TabPlayer.svelte";
-  import { getSong } from "../lib/api";
+  import { getSong, markSongOpened } from "../lib/api";
   import { t } from "../lib/i18n.svelte";
   import type { SongDetail, TabSong } from "../lib/types";
 
@@ -17,7 +17,10 @@
     error = "";
     getSong(songId)
       .then((loaded) => {
-        if (!cancel) song = loaded;
+        if (cancel) return;
+        song = loaded;
+        // Best effort: a failure only leaves the "last opened" sort a step behind.
+        markSongOpened(songId).catch(() => {});
       })
       .catch((err: unknown) => {
         if (!cancel) error = err instanceof Error ? err.message : t("error.generic");
