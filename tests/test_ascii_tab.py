@@ -396,7 +396,7 @@ def test_preview_returns_a_document_without_saving(tmp_path: Path) -> None:
         assert body["chordpro"] is None
         assert body["warnings"][0]["key"] == "import.rhythmEstimated"
         ScoreDocument.model_validate(body["document"])
-        assert client.get("/api/songs").json() == []
+        assert client.get("/api/songs").json()["items"] == []
 
 
 def test_preview_routes_chords_over_lyrics_to_chordpro(tmp_path: Path) -> None:
