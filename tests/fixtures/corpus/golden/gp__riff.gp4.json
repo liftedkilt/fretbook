@@ -6,6 +6,7 @@
     "bars": [
       {
         "alternate_endings": [],
+        "directions": [],
         "extras": {},
         "repeat_end": 0,
         "repeat_start": false,
@@ -18,6 +19,7 @@
       },
       {
         "alternate_endings": [],
+        "directions": [],
         "extras": {},
         "repeat_end": 0,
         "repeat_start": false,
@@ -32,6 +34,7 @@
     "bpm": 100.0,
     "sync": {
       "anchors": {},
+      "keyed_by": "played",
       "points": [],
       "video_id": null
     },
