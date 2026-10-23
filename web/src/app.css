@@ -3552,6 +3552,7 @@ kbd {
 .tuner-actions {
   display: flex;
   justify-content: flex-end;
+}
 
 /* Tags and favourites */
 
