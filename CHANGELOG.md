@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.3](https://github.com/liftedkilt/fretbook/compare/v0.1.2...v0.1.3) (2026-10-23)
+
+
+### Features
+
+* **import:** parse Guitar Pro files on the server ([16e9dc0](https://github.com/liftedkilt/fretbook/commit/16e9dc067c625be62885423474ddb2108d25c51f)), closes [#48](https://github.com/liftedkilt/fretbook/issues/48)
+* render repeats, voltas, and D.S./D.C. in expanded order ([c1582d2](https://github.com/liftedkilt/fretbook/commit/c1582d2f1aaabd03e82a8ce0027e849407333873))
+
 ## [0.1.2](https://github.com/liftedkilt/fretbook/compare/v0.1.1...v0.1.2) (2026-10-23)
 
 
