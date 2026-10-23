@@ -568,5 +568,19 @@
     "create": "Create song",
     "rhythmEstimated": "Rhythm estimated",
     "rhythmEstimatedHint": "ASCII tab has no rhythm. Note lengths come from the spacing, so check the timing."
+  },
+  "listen": {
+    "input": "Input device",
+    "defaultDevice": "Default input",
+    "channel": "Channel {n}",
+    "level": "Input level",
+    "problem": {
+      "insecure": "The browser only allows the microphone on HTTPS pages or on localhost. Open Fretbook over HTTPS (put it behind a reverse proxy with a certificate) or from http://localhost.",
+      "unsupported": "This browser cannot record from a microphone.",
+      "denied": "Microphone access was blocked. Allow it for this site in the browser's address bar or site settings, then try again.",
+      "noDevice": "No audio input was found. Plug in a microphone or audio interface and try again.",
+      "busy": "The audio input is in use by another app or could not be opened.",
+      "other": "Could not start listening to the microphone."
+    }
   }
 }

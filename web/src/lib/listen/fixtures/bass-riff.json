@@ -1,0 +1,79 @@
+{
+  "instrument": "bass",
+  "sampleRate": 22050,
+  "notes": [
+    {
+      "midi": 23,
+      "start": 0.3,
+      "duration": 0.55
+    },
+    {
+      "midi": 28,
+      "start": 0.8999999999999999,
+      "duration": 0.55
+    },
+    {
+      "midi": 33,
+      "start": 1.5,
+      "duration": 0.55
+    },
+    {
+      "midi": 38,
+      "start": 2.0999999999999996,
+      "duration": 0.55
+    },
+    {
+      "midi": 28,
+      "start": 2.8,
+      "duration": 0.24
+    },
+    {
+      "midi": 28,
+      "start": 3.05,
+      "duration": 0.24
+    },
+    {
+      "midi": 28,
+      "start": 3.3,
+      "duration": 0.24
+    },
+    {
+      "midi": 28,
+      "start": 3.55,
+      "duration": 0.24
+    },
+    {
+      "midi": 31,
+      "start": 3.9,
+      "duration": 0.3
+    },
+    {
+      "midi": 33,
+      "start": 4.2,
+      "duration": 0.3,
+      "legato": true
+    },
+    {
+      "midi": 31,
+      "start": 4.5,
+      "duration": 0.3,
+      "legato": true
+    },
+    {
+      "midi": 29,
+      "start": 4.8,
+      "duration": 0.3,
+      "legato": true
+    },
+    {
+      "midi": 40,
+      "start": 5.2,
+      "duration": 0.45
+    },
+    {
+      "midi": 36,
+      "start": 5.7,
+      "duration": 0.45
+    }
+  ]
+}
