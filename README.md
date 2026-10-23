@@ -27,7 +27,7 @@ docker pull ghcr.io/liftedkilt/fretbook:latest   # newest main
 docker pull ghcr.io/liftedkilt/fretbook:0.2.0    # a release; pin this one
 ```
 
-**Upgrading.** Fretbook is versioned with [semver](https://semver.org); while it is `0.x`, a minor version may include breaking changes, so read the [changelog](CHANGELOG.md) first. Everything lives in the `/data` volume, so back it up before you upgrade (stop the container and copy the volume, or copy `fretbook.sqlite` and the media folder). Then pull and restart; database migrations run on start and are not reversible, so to roll back, restore the backup and run the older image.
+**Upgrading.** Fretbook is versioned with [semver](https://semver.org); while it is `0.x`, a minor version may include breaking changes, so read the [changelog](CHANGELOG.md) first. Everything lives in the `/data` volume, so back it up before you upgrade (stop the container and copy the volume, or copy `fretbook.sqlite` and the media folder). Then pull and restart; database migrations run on start and are not reversible, so to roll back, restore the backup and run the older image. Before applying database migrations on upgrade, Fretbook also automatically takes a consistent SQLite backup to `data/backups/pre-migrate-<from>-<to>-<timestamp>.sqlite` (keeping the last 5 by default). If the database is from a newer version than the running code, startup is refused.
 
 ```sh
 docker compose pull && docker compose up -d
@@ -53,6 +53,7 @@ For development, see [CONTRIBUTING.md](CONTRIBUTING.md).
 | `FRETBOOK_PORT` | `8137` | Listen port. |
 | `FRETBOOK_DATA_DIR` | `data` | SQLite database, media, and upload inbox. |
 | `FRETBOOK_DATABASE` | `$DATA_DIR/fretbook.sqlite` | Database file. |
+| `FRETBOOK_MIGRATION_BACKUPS_KEEP` | `5` | Number of automatic pre-migration backups to keep in `$DATA_DIR/backups`. |
 | `FRETBOOK_LEGACY_SONGS_DIR` | `songs` | bass-tab-sync `songs/<slug>/` folders to import on start. Empty disables it. |
 | `FRETBOOK_AUTH_MODE` | `single`, or `oidc` when `FRETBOOK_OIDC_ISSUER` is set | `single` (no login, one library) or `oidc` (sign-in, one library per user). |
 | `FRETBOOK_ROOT_PATH` | empty | URL prefix when a reverse proxy strips one, for example `/fretbook`. |

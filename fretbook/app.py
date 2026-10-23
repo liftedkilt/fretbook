@@ -133,7 +133,11 @@ def create_app(settings: Settings | None = None, *, oidc_transport: httpx.AsyncB
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        migrate(settings.database_path)
+        migrate(
+            settings.database_path,
+            backups_dir=settings.backups_dir,
+            backup_keep=settings.migration_backups_keep,
+        )
         songs.ensure_user("local", "Local")
         count = import_legacy(app.state.ctx)
         if count:

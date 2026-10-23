@@ -58,6 +58,7 @@ class Settings:
     session_max_age: int = 7 * 24 * 3600
     ytdlp_auto_update: bool = False
     ytdlp_cookies: Path | None = None
+    migration_backups_keep: int = 5
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -67,6 +68,11 @@ class Settings:
         legacy = Path(legacy_raw).expanduser() if legacy_raw else None
         static_raw = os.environ.get("FRETBOOK_STATIC_DIR")
         cookies = os.environ.get("FRETBOOK_YTDLP_COOKIES", "").strip()
+        backups_keep_raw = os.environ.get("FRETBOOK_MIGRATION_BACKUPS_KEEP", "5").strip()
+        try:
+            backups_keep = int(backups_keep_raw)
+        except ValueError:
+            backups_keep = 5
         return cls(
             host=os.environ.get("FRETBOOK_HOST", "127.0.0.1"),
             port=int(os.environ.get("FRETBOOK_PORT", "8137")),
@@ -94,6 +100,7 @@ class Settings:
             session_max_age=int(os.environ.get("FRETBOOK_SESSION_MAX_AGE", str(7 * 24 * 3600))),
             ytdlp_auto_update=_flag("FRETBOOK_YTDLP_AUTO_UPDATE", False),
             ytdlp_cookies=Path(cookies).expanduser() if cookies else None,
+            migration_backups_keep=backups_keep,
         )
 
     @classmethod
@@ -117,6 +124,7 @@ class Settings:
             oidc_client_secret="",
             oidc_redirect_uri="",
             session_secret="test-secret",
+            migration_backups_keep=5,
         )
 
     @property
@@ -136,3 +144,11 @@ class Settings:
     @property
     def inbox_dir(self) -> Path:
         return self.data_dir / "inbox"
+
+    @property
+    def backups_dir(self) -> Path:
+        return self.data_dir / "backups"
+
+    @property
+    def backup_dir(self) -> Path:
+        return self.backups_dir
