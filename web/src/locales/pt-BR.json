@@ -129,6 +129,16 @@
     "sortRecent": "Atualizadas recentemente",
     "sortTitle": "Título",
     "sortArtist": "Artista",
+    "sortAdded": "Data de inclusão",
+    "sortOpened": "Aberta por último",
+    "orderAsc": "Crescente",
+    "orderDesc": "Decrescente",
+    "order": "Ordem de classificação",
+    "loadMore": "Carregar mais",
+    "showing": "Mostrando {shown} de {total}",
+    "searchEmpty": "Nenhuma música corresponde a “{query}”.",
+    "clearSearch": "Limpar busca",
+    "searchShortcut": "Pressione / para buscar",
     "filterChords": "Cifras",
     "emptyTitle": "Comece seu caderno de músicas"
   },
@@ -382,6 +392,9 @@
       "keptEditedCopy": "\"{title}\" teve alterações desde a importação, então esta importação foi salva como outra música.",
       "anchorsDropped": "A nova importação tem menos compassos, então algumas marcas de sincronia foram descartadas.",
       "noPreview": "Este link não tem uma lista de faixas para escolher."
+    },
+    "songs": {
+      "badCursor": "Essa página da biblioteca não é mais válida. Recarregue a lista."
     },
     "songsterr": {
       "badUrl": "O link precisa ter o formato https://www.songsterr.com/a/wsa/<name>-s<digits>.",

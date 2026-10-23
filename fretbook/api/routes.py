@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import json
 import re
 import uuid
@@ -9,7 +10,7 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Literal
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
@@ -30,8 +31,8 @@ from fretbook.api.schemas import (
     Settings,
     SongDetail,
     SongExport,
+    SongPage,
     SongsMoved,
-    SongSummary,
 )
 from fretbook.audio.ytdlp_health import status as ytdlp_status
 from fretbook.auth.base import Principal
@@ -220,10 +221,58 @@ def update_settings(
     return _json(ctx.songs.update_settings(user.user_id, default_instrument=body.default_instrument))
 
 
-@router.get("/api/songs", response_model=list[SongSummary], tags=["songs"], responses=AUTH_RESPONSES)
-def list_songs(ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> JSONResponse:
-    """Songs owned by the caller, newest first. Summaries omit the score and ChordPro text."""
-    return _json(ctx.songs.list_songs(user.user_id))
+@router.get("/api/songs", response_model=SongPage, tags=["songs"], responses=AUTH_RESPONSES)
+def list_songs(
+    q: str = Query("", max_length=200, description="Words matched as prefixes against title and artist."),
+    sort: Literal["title", "artist", "added", "updated", "opened"] = "updated",
+    order: Literal["asc", "desc"] | None = Query(None, description="Defaults to the natural order of `sort`."),
+    instrument: Literal["all", "bass", "electric", "acoustic", "chords"] = "all",
+    limit: int = Query(50, ge=1, le=200),
+    cursor: str = Query("", max_length=64),
+    ctx: AppContext = Depends(_ctx),
+    user: Principal = Depends(_user),
+) -> JSONResponse:
+    """One page of the caller's songs. Summaries omit the score and ChordPro text.
+
+    `sort` defaults to the last edit, newest first; `opened` puts never-opened songs last.
+    """
+    start = _decode_cursor(cursor)
+    page = ctx.songs.list_songs(
+        user.user_id, q=q, sort=sort, order=order, instrument=instrument, limit=limit, offset=start
+    )
+    end = start + len(page["items"])
+    page["next_cursor"] = _encode_cursor(end) if end < page["total"] else None
+    return _json(page)
+
+
+def _encode_cursor(offset: int) -> str:
+    return base64.urlsafe_b64encode(f"o{offset}".encode()).decode().rstrip("=")
+
+
+def _decode_cursor(cursor: str) -> int:
+    if not cursor:
+        return 0
+    try:
+        text = base64.urlsafe_b64decode(cursor + "=" * (-len(cursor) % 4)).decode()
+        if text.startswith("o") and text[1:].isdigit():
+            return int(text[1:])
+    except ValueError:
+        pass
+    raise api_error(400, "songs.badCursor", "unrecognised page cursor")
+
+
+@router.post(
+    "/api/songs/{song_id}/opened",
+    status_code=204,
+    response_model=None,
+    tags=["songs"],
+    responses=AUTH_RESPONSES,
+)
+def mark_song_opened(song_id: str, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> Response:
+    """Record that the caller opened the song, for the "last opened" sort."""
+    require_song(ctx, user.user_id, song_id)
+    ctx.songs.mark_opened(user.user_id, song_id)
+    return Response(status_code=204)
 
 
 @router.post("/api/songs", status_code=201, response_model=SongDetail, tags=["songs"], responses=AUTH_RESPONSES)

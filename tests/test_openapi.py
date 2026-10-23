@@ -67,7 +67,7 @@ def test_schema_documents_responses_errors_and_auth() -> None:
     assert _ref(users["responses"]["200"]).endswith("/AdminUser")
     assert "403" in users["responses"]
     listed = paths["/api/songs"]["get"]["responses"]["200"]
-    assert _ref(listed).endswith("/SongSummary")
+    assert _ref(listed).endswith("/SongPage")
     health = paths["/api/health"]["get"]["responses"]["200"]
     assert _ref(health).endswith("/Health")
 

@@ -93,7 +93,7 @@ def test_file_job_cleans_the_inbox_and_isolates_owners(tmp_path: Path) -> None:
         "other", title="Secret", artist="", preset_id="guitar-6", bpm=100, measures=1, signature=(4, 4)
     )
     assert songs.get_song("local", own["id"]) is None
-    assert all(row["title"] != "Secret" for row in songs.list_songs("local"))
+    assert all(row["title"] != "Secret" for row in songs.list_songs("local")["items"])
 
 
 def test_failed_file_job_still_cleans_the_inbox(tmp_path: Path) -> None:

@@ -43,7 +43,7 @@ def test_legacy_folder_becomes_a_song(tmp_path: Path) -> None:
     assert import_legacy(ctx) == 0
     # The source folder is left alone (it is mounted read-only in Docker).
     assert (songs / "audio.mp3").is_file()
-    listed = repo.list_songs("local")
+    listed = repo.list_songs("local")["items"]
     assert listed[0]["title"] == "Old Song"
     assert listed[0]["has_audio"] is True
     detail = repo.get_song("local", listed[0]["id"])
