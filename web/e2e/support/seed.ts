@@ -65,6 +65,12 @@ export class Seeder {
     return { id, title: "Sunny Day Blues" };
   }
 
+  /** `wait-riff.json`: two bars (eight notes) of open E on a bass, no audio. */
+  async waitRiff(): Promise<SeededSong> {
+    const id = await this.importFile("wait-riff.json", "application/json");
+    return { id, title: "Wait Riff" };
+  }
+
   /** A blank guitar tab or chord sheet made with `POST /api/songs`. */
   async create(body: {
     title: string;

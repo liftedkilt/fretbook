@@ -628,5 +628,23 @@
       "dal_segno_segno_al_double_coda": "D.S.S. al coda dupla",
       "dal_segno_segno_al_fine": "D.S.S. al Fine"
     }
+  },
+  "waitMode": {
+    "title": "Modo de espera",
+    "about": "O cursor para em cada nota até você tocá-la. O sintetizador marca o tempo; ative o microfone ligando este modo.",
+    "noRecording": "Esta música tem uma gravação, mas o modo de espera toca com o sintetizador.",
+    "octave": "Oitava",
+    "octaveAny": "Qualquer oitava",
+    "octaveExact": "Oitava exata",
+    "hintAfter": "Dica após",
+    "seconds": "{count} s",
+    "backing": "Tocar as outras faixas",
+    "deadNote": "uma nota abafada",
+    "done": "Pronto: {count} notas tocadas.",
+    "waiting": "Esperando {note}",
+    "next": "Próxima: {note}",
+    "hint": "Corda {string}, casa {fret}",
+    "skip": "Pular",
+    "listening": "Ouvindo…"
   }
 }

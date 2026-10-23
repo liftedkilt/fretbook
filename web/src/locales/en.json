@@ -628,5 +628,23 @@
       "dal_segno_segno_al_double_coda": "D.S.S. al double coda",
       "dal_segno_segno_al_fine": "D.S.S. al Fine"
     }
+  },
+  "waitMode": {
+    "title": "Wait mode",
+    "about": "The cursor stops on each note until you play it. The synth keeps time; turn on the microphone by switching this on.",
+    "noRecording": "This song has a recording, but wait mode plays with the synth instead.",
+    "octave": "Octave",
+    "octaveAny": "Any octave",
+    "octaveExact": "Exact octave",
+    "hintAfter": "Hint after",
+    "seconds": "{count} s",
+    "backing": "Play the other tracks",
+    "deadNote": "a muted note",
+    "done": "Done: {count} notes played.",
+    "waiting": "Waiting for {note}",
+    "next": "Next: {note}",
+    "hint": "String {string}, fret {fret}",
+    "skip": "Skip",
+    "listening": "Listening…"
   }
 }

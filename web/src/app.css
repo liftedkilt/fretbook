@@ -3378,3 +3378,52 @@ kbd {
   border-radius: var(--r-md);
   background: var(--surface);
 }
+
+/* Wait mode: the cursor says what the player is up to. */
+.wait-chip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.9rem;
+  padding: 0.4rem 0.9rem;
+  margin-bottom: 0.4rem;
+  border-radius: 999px;
+  background: var(--surface-2, var(--surface));
+  border: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
+.wait-chip[data-phase="waiting"] {
+  border-color: var(--accent);
+}
+
+.wait-hint {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.score[data-wait="waiting"] .at-cursor-beat {
+  animation: wait-pulse 1s ease-in-out infinite;
+}
+
+.score[data-wait="hint"] .at-cursor-beat {
+  background: #f5b82e !important;
+  box-shadow: 0 0 14px rgba(245, 184, 46, 0.8);
+}
+
+.score[data-wait="hit"] .at-cursor-beat {
+  background: #2fbf71 !important;
+  box-shadow: 0 0 14px rgba(47, 191, 113, 0.8);
+}
+
+@keyframes wait-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .score[data-wait="waiting"] .at-cursor-beat {
+    animation: none;
+  }
+}

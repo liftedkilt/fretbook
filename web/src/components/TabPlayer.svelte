@@ -7,6 +7,8 @@
   import Menu from "./Menu.svelte";
   import PracticePanel from "./PracticePanel.svelte";
   import ShortcutHelp from "./ShortcutHelp.svelte";
+  import WaitChip from "./WaitChip.svelte";
+  import WaitPanel from "./WaitPanel.svelte";
   import { ApiError, patchSync, uploadAudio } from "../lib/api";
   import { AudioMedia } from "../lib/alphatab/audioHandler";
   import { preferredTrack, scoreToAlphaTex } from "../lib/alphatex";
@@ -14,6 +16,7 @@
   import { barTicks } from "../lib/durations";
   import { t } from "../lib/i18n.svelte";
   import { instrumentLabel } from "../lib/instruments";
+  import { describeProblem, ListenError, startListening, type ListenSession } from "../lib/listen";
   import { followPlayed, playedBars } from "../lib/playback";
   import {
     ClickScheduler,
@@ -38,6 +41,13 @@
   import { tuningLabel } from "../lib/tuning";
   import type { SongDetail, TabSong } from "../lib/types";
   import { setNotation, ui } from "../lib/ui.svelte";
+  import {
+    WaitController,
+    barStartTicks,
+    buildSteps,
+    loadWaitOptions,
+    saveWaitOptions,
+  } from "../lib/waitMode";
 
   let { song: initial }: { song: TabSong } = $props();
 
@@ -49,6 +59,8 @@
   let audioEl = $state<HTMLAudioElement | null>(null);
   let trackId = $state(untrack(() => song.preferred_track_id || preferredTrack(song.document).id));
   let scoreReady = $state(0);
+  // The synth (or the recording's player) has loaded its sound font and can play.
+  let playerIsReady = $state(false);
   let shiftMs = 0;
   const player: { api: alphaTab.AlphaTabApi | null } = { api: null };
   const clicker = new Clicker();
@@ -70,7 +82,32 @@
   let saveTimer = 0;
   let pendingSync: (() => Promise<void>) | null = null;
 
+  // Wait mode: the synth plays the score and stops at each note until the microphone hears it.
+  let waitOn = $state(false);
+  let waitOptions = $state(loadWaitOptions());
+  let waitFlash = $state(false);
+  // The synth drops a play that comes right after the mixer is set up, so wait mode settles first.
+  let waitSettled = $state(false);
+  let settleTimer = 0;
+  let listener: ListenSession | null = null;
+  let flashTimer = 0;
+  const wait = new WaitController(
+    {
+      pause: () => void player.api?.pause(),
+      play: () => void player.api?.play(),
+      seek: (tick) => {
+        if (player.api) player.api.tickPosition = tick;
+      },
+      expect: (midi) => listener?.setExpectedMidi(midi),
+      changed: (next) => (waitState = next),
+    },
+    untrack(() => waitOptions),
+  );
+  let waitState = $state(wait.state);
+
   const document_ = $derived(song.document);
+  // Wait mode plays with the synth, never the recording.
+  const recording = $derived(song.has_audio && !waitOn);
   const track = $derived(
     document_.tracks.find((item) => item.id === trackId) ?? preferredTrack(document_),
   );
@@ -83,7 +120,7 @@
   );
   // With audio, the <audio> clock and sync points set the pace, so a BPM edit must not rebuild the score.
   // Without audio, alphaTab's synth plays at the written tempo, so it does.
-  const renderBpm = $derived(song.has_audio ? untrack(() => song.document.bpm) : document_.bpm);
+  const renderBpm = $derived(recording ? untrack(() => song.document.bpm) : document_.bpm);
   // Every track is loaded so the synth can play and mix them all; only the chosen one is drawn.
   const tex = $derived(scoreToAlphaTex({ ...document_, bpm: renderBpm }, song.title, song.artist));
   const trackIndex = $derived(Math.max(0, document_.tracks.indexOf(track)));
@@ -138,7 +175,7 @@
 
   function applySync() {
     const instance = player.api;
-    if (!instance?.score || barCount <= 0) return;
+    if (!instance?.score || barCount <= 0 || (song.has_audio && waitOn)) return;
     const built = flatSyncPoints(startsNow(), order);
     shiftMs = built.shiftMs;
     instance.score.applyFlatSyncPoints(built.points);
@@ -146,7 +183,7 @@
   }
 
   function paintAudioClock() {
-    if (!song.has_audio || !audioEl) return;
+    if (!recording || !audioEl) return;
     const seconds = audioEl.currentTime;
     const output = player.api?.player?.output as
       alphaTab.synth.IExternalMediaSynthOutput | undefined;
@@ -172,7 +209,7 @@
   $effect(() => {
     const element = host;
     const source = tex;
-    const useAudio = song.has_audio;
+    const useAudio = recording;
     if (!element) return;
     const settings = new alphaTab.Settings();
     settings.core.fontDirectory = new URL("font/", document.baseURI).href;
@@ -199,6 +236,7 @@
       });
     });
     instance.playerReady.on(() => {
+      playerIsReady = true;
       if (!useAudio || !audioEl) return;
       const output = instance.player?.output as
         alphaTab.synth.IExternalMediaSynthOutput | undefined;
@@ -218,13 +256,16 @@
     });
     instance.playerPositionChanged.on((event) => {
       if (!useAudio) clock = formatTime(event.currentTime / 1000);
+      wait.onTick(event.currentTick, event.isSeek);
     });
     instance.playerStateChanged.on((event) => {
+      wait.setRunning(event.state === alphaTab.synth.PlayerState.Playing);
       if (!useAudio) playing = event.state === alphaTab.synth.PlayerState.Playing;
     });
     instance.tex(source, [untrack(() => trackIndex)]);
     return () => {
       scoreReady = 0;
+      playerIsReady = false;
       player.api = null;
       instance.destroy();
     };
@@ -283,7 +324,10 @@
   });
 
   onMount(() => {
-    const timer = window.setInterval(paintAudioClock, 50);
+    const timer = window.setInterval(() => {
+      paintAudioClock();
+      wait.poll();
+    }, 50);
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       if (target && /INPUT|TEXTAREA|SELECT/.test(target.tagName)) return;
@@ -303,6 +347,11 @@
       window.clearInterval(metronome);
       window.clearTimeout(countInTimer);
       clicker.close();
+      window.clearTimeout(flashTimer);
+      window.clearTimeout(settleTimer);
+      wait.stop();
+      void listener?.stop();
+      listener = null;
       document.removeEventListener("keydown", onKey);
       // Leaving the page must not lose a tap that is still waiting to be saved.
       void flushSync();
@@ -328,7 +377,7 @@
       case "muteTrack":
       case "soloTrack": {
         // Tracks only sound through the synth; a recording plays as one mix.
-        if (song.has_audio) return;
+        if (recording) return;
         const mix = (practice.mix.tracks[track.id] ??= trackMix(practice, track.id));
         if (action === "muteTrack") mix.mute = !mix.mute;
         else mix.solo = !mix.solo;
@@ -336,7 +385,7 @@
       }
       case "volumeDown":
       case "volumeUp": {
-        const key = song.has_audio ? "audio" : "synth";
+        const key = recording ? "audio" : "synth";
         const delta = action === "volumeUp" ? 0.05 : -0.05;
         practice.mix[key] = Math.round(clamp01(practice.mix[key] + delta, 1) * 100) / 100;
         return practiceChanged();
@@ -356,15 +405,17 @@
     if (audioEl) audioEl.volume = practice.mix.audio;
     const api = player.api;
     // A recording plays without the synth, so the synth's own metronome and tracks are silent.
-    if (!api?.score || song.has_audio) return;
+    if (!api?.score || recording) return;
     api.metronomeVolume = practice.metronome.on ? practice.metronome.volume : 0;
-    api.masterVolume = practice.mix.synth;
+    // Wait mode with no backing is silent: the synth only keeps time.
+    api.masterVolume = waitOn && !waitOptions.backing ? 0 : practice.mix.synth;
     api.score.tracks.forEach((item, index) => {
       const id = document_.tracks[index]?.id;
       if (id === undefined) return;
       const mix = trackMix(practice, id);
       api.changeTrackVolume([item], mix.volume);
-      api.changeTrackMute([item], mix.mute);
+      // The player supplies the track they are practising.
+      api.changeTrackMute([item], mix.mute || (waitOn && id === track.id));
       api.changeTrackSolo([item], mix.solo);
     });
   }
@@ -376,7 +427,7 @@
 
   /** Seconds one bar lasts on the wall clock, at the current speed. */
   function barLength(index: number): number {
-    const starts = song.has_audio ? startsNow() : [];
+    const starts = recording ? startsNow() : [];
     const length =
       starts.length > index + 1 ? starts[index + 1] - starts[index] : barSeconds(document_)[index];
     return (length ?? 2) / rate;
@@ -405,8 +456,7 @@
   }
 
   function tickMetronome() {
-    if (!song.has_audio || !audioEl || audioEl.paused || countingIn || !practice.metronome.on)
-      return;
+    if (!recording || !audioEl || audioEl.paused || countingIn || !practice.metronome.on) return;
     const starts = startsNow();
     if (starts.length === 0) return;
     for (const click of scheduler.due(
@@ -423,7 +473,14 @@
     const api = player.api;
     if (!api) return;
     if (countingIn) return cancelCountIn();
-    if (song.has_audio && audioEl) {
+    if (waitOn) {
+      // While it waits for a note, the player — not the button — moves the cursor on.
+      if (waitState.phase === "waiting") return;
+      if (waitState.phase === "done") goToBar(loopA ?? 0);
+      if (api.playerState === alphaTab.synth.PlayerState.Playing) return api.pause();
+      return runCountIn(currentMeasure, () => api.play());
+    }
+    if (recording && audioEl) {
       if (audioEl.paused) runCountIn(currentMeasure, () => api.play());
       else api.pause();
       return;
@@ -440,7 +497,7 @@
     if (barCount <= 0) return;
     const index = Math.min(barCount - 1, Math.max(0, target));
     tapIndex = index;
-    if (song.has_audio && audioEl) {
+    if (recording && audioEl) {
       audioEl.currentTime = Math.max(0, startsNow()[index] ?? 0);
     } else if (player.api) {
       // alphaTab's ticks run through the expanded song, so sum the bars as played.
@@ -449,11 +506,71 @@
         tick += barTicks(song.document.bars[order[cursor]].signature);
       player.api.tickPosition = tick;
       currentMeasure = index;
+      wait.reposition(tick);
     }
   }
 
+  async function toggleWait() {
+    if (waitOn) return stopWait();
+    if (barCount <= 0) return;
+    error = "";
+    if (audioEl) audioEl.pause();
+    try {
+      listener = await startListening({
+        onPitch: (event) => wait.onPitch(event),
+      });
+    } catch (err) {
+      error = err instanceof ListenError ? describeProblem(err.problem) : message(err);
+      return;
+    }
+    wait.setOptions(waitOptions);
+    waitOn = true;
+  }
+
+  async function stopWait() {
+    wait.stop();
+    waitOn = false;
+    waitSettled = false;
+    const session = listener;
+    listener = null;
+    await session?.stop();
+  }
+
+  // The steps follow the score being loaded for the synth, the practised track and the loop.
+  $effect(() => {
+    void track.id;
+    void loopA;
+    void loopB;
+    if (!waitOn || !scoreReady || !playerIsReady) return;
+    untrack(() => {
+      const fresh = wait.state.phase === "idle";
+      const starts = barStartTicks(song.document);
+      const bar = Math.min(Math.max(0, currentMeasure), Math.max(0, barCount - 1));
+      const range =
+        loopA != null && loopB != null ? { start: starts[loopA], end: starts[loopB + 1] } : null;
+      wait.start(buildSteps(song.document, track.id), starts[bar] ?? 0, range);
+      applyPractice();
+      window.clearTimeout(settleTimer);
+      settleTimer = window.setTimeout(() => (waitSettled = true), 800);
+      if (fresh && bar > 0) goToBar(bar);
+    });
+  });
+
+  $effect(() => {
+    if (!waitState.hits) return;
+    waitFlash = true;
+    window.clearTimeout(flashTimer);
+    flashTimer = window.setTimeout(() => (waitFlash = false), 400);
+  });
+
+  function waitChanged() {
+    saveWaitOptions(waitOptions);
+    wait.setOptions(waitOptions);
+    applyPractice();
+  }
+
   function tap() {
-    if (!song.has_audio || !audioEl || barCount <= 0) return;
+    if (!recording || !audioEl || barCount <= 0) return;
     commitAnchors(moveAnchor(seedAnchors(), startsNow(), tapIndex, audioEl.currentTime));
     tapIndex = Math.min(barCount - 1, tapIndex + 1);
   }
@@ -638,6 +755,15 @@
   <div
     class="paper score"
     data-testid="player-score"
+    data-wait={waitOn
+      ? waitFlash
+        ? "hit"
+        : waitState.phase === "waiting"
+          ? waitState.hint
+            ? "hint"
+            : "waiting"
+          : "playing"
+      : undefined}
     bind:this={host}
     role="region"
     aria-label={t("player.score")}
@@ -658,6 +784,7 @@
             {t("player.synth")} {t("player.keys")}
           {/if}
         </p>
+        <WaitPanel options={waitOptions} recording={song.has_audio} onchange={waitChanged} />
         <PracticePanel
           {practice}
           hasAudio={song.has_audio}
@@ -685,6 +812,8 @@
               {t("player.nextTap", { measure: tapIndex + 1 })}{#if saveLabel}&nbsp;· {saveLabel}{/if}
             </p>
           </div>
+        {/if}
+        {#if song.has_audio || waitOn}
           <div class="panel-group">
             <h3>{t("player.loop")}</h3>
             <div class="button-row">
@@ -736,6 +865,7 @@
       </section>
     {/if}
 
+    {#if waitOn}<WaitChip state={waitState} onskip={() => wait.skip()} />{/if}
     <div class="dock-bar">
       <div class="dock-transport">
         <button
@@ -752,6 +882,8 @@
           data-testid="player-play"
           data-playing={playing}
           data-counting={countingIn}
+          data-ready={playerIsReady && (!waitOn || waitSettled)}
+          disabled={waitOn && !waitSettled}
           onclick={toggle}
           aria-label={playing ? t("player.pause") : t("player.play")}
         >
@@ -821,6 +953,16 @@
             {/each}
           </select>
         </label>
+        <button
+          class="icon-button ghost"
+          data-testid="player-wait"
+          aria-pressed={waitOn}
+          onclick={() => void toggleWait()}
+          aria-label={t("waitMode.title")}
+          title={t("waitMode.title")}
+        >
+          <Icon name="mic" size={18} />
+        </button>
         <button
           class="icon-button ghost"
           aria-pressed={ui.notation}
