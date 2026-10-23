@@ -503,3 +503,10 @@ def test_uploaded_tab_files_become_songs(tmp_path: Path) -> None:
             song = client.get(f"/api/songs/{job['result']['song_id']}").json()
             assert song["source_kind"] == "ascii-tab"
             assert song["source_ref"]["rhythm_estimated"] is True
+
+
+def test_a_bar_without_notes_is_a_full_bar_rest() -> None:
+    text = "e|-0-------|---------|\nB|---------|---------|\nG|---------|---------|\nD|---------|---------|\n"
+    document = ascii_tab.parse(text).document
+    assert document.tracks[0].bars[1].voices[0].beats == []
+    assert len(document.bars) == 2

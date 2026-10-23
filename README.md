@@ -2,7 +2,7 @@
 
 Self-hosted tabs, chord sheets, and sheet music for bass and guitar.
 
-- **Tabs**: import from Songsterr, Guitar Pro (3–8), MusicXML, or start blank. Any string count and tuning, several tracks per song, standard notation and tab rendered by [alphaTab](https://alphatab.net).
+- **Tabs**: import from Songsterr, Guitar Pro (3–8), MusicXML, plain ASCII tab (`e|---3---|`), or start blank. Any string count and tuning, several tracks per song, standard notation and tab rendered by [alphaTab](https://alphatab.net).
 - **Play along**: with an audio file (uploaded, or downloaded from the YouTube video Songsterr syncs to), the score follows the recording. Tap `T` on each bar to line it up. Without audio, alphaTab's synth plays the tab.
 - **Chord sheets**: lyrics with chords over them, stored as ChordPro. Paste an Ultimate Guitar style "chords over lyrics" sheet and it is converted. Transpose and print.
 - **Export**: MusicXML (opens in MuseScore, Guitar Pro, and other tab apps), ChordPro, Fretbook JSON, and PDF. The PDF is engraved in the browser by alphaTab, then paged so a staff is never split, with the title, artist, tuning, and track name on every page. Chord sheets export to PDF too.
@@ -135,7 +135,8 @@ Roles are read from the groups claim at each sign-in, so a group change in Pocke
   - If YouTube refuses the audio download (common from datacenter addresses), the tab is still saved and you can upload an mp3 on the song page.
   - Importing the same song again refreshes it and keeps your sync marks. If you edited the tab, the new import is saved as a separate song instead.
 - **Library**: filter by bass, electric guitar, or acoustic guitar. The song page shows the instrument, tuning, and capo.
-- **Files**: MusicXML, ChordPro (`.cho`, `.chordpro`, `.crd`, `.txt`), and Fretbook JSON upload to the server. Guitar Pro files are read in the browser by alphaTab.
+- **Files**: MusicXML, ChordPro (`.cho`, `.chordpro`, `.crd`, `.txt`), ASCII tab (`.tab`, or a `.txt` that contains a tab), and Fretbook JSON upload to the server. Guitar Pro files are read in the browser by alphaTab. A `.txt` file is read as tab when it holds a tab system and as a chord sheet otherwise.
+- **Paste tab**: in the Add sheet, paste ASCII tab (or a chords-over-lyrics sheet, which goes to the chord sheet converter instead) and see it drawn before you save. The importer reads string labels and tunings in either order (`e B G D A E`, `E A D G`, `B E A D G`), multi-digit frets, `h p / \ b r ~ x ( ) < >`, bar lines and repeat signs, `x4` markers, `[Verse]` headers, `PM` rows, and skips chord names and lyrics between systems. ASCII tab has no rhythm, so note lengths are **estimated** from the spacing in each bar on a grid you choose (eighth notes by default; tempo and time signature are optional), and the song is marked "Rhythm estimated". Check the timing before you play along.
 - **Song page**: Space plays, arrows move a bar, `T` marks the start of the next bar against the audio. Loop A/B, speed, and nudge buttons help line up a recording.
 - **Editor**: bars are shared by every track, so time signatures, tempo changes, sections, and inserting or deleting a bar apply to the whole song, and sync marks move with their bars. If the song changed elsewhere since you opened it (for example sync marks tapped in another tab), saving merges your edits on top; real conflicts ask you to reload.
 - **Language**: English and Brazilian Portuguese. The header switcher remembers the choice. With no choice saved, the browser language is used (`pt` and `pt-PT` select `pt-BR`).

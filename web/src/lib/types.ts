@@ -217,6 +217,17 @@ export interface SongsterrTrackChoice {
   capo: number;
 }
 
+/** A pasted tab converted by the server. A tab has `document`; chords over lyrics have `chordpro`. */
+export interface AsciiTabPreview {
+  content_kind: ContentKind;
+  title: string;
+  artist: string;
+  document: ScoreDocument | null;
+  chordpro: string | null;
+  rhythm_estimated: boolean;
+  warnings: Keyed[];
+}
+
 export interface ImportPreview {
   title: string;
   artist: string;

@@ -7,6 +7,8 @@ const mockCreateTab = vi.fn();
 const mockCreateChordSheet = vi.fn();
 const mockImportUrl = vi.fn();
 const mockPreviewImport = vi.fn();
+const mockPreviewAsciiTab = vi.fn();
+const mockImportAsciiTab = vi.fn();
 const mockImportFile = vi.fn();
 const mockWaitForJob = vi.fn();
 const mockListSongs = vi.fn();
@@ -18,15 +20,58 @@ const emptyPage = {
 };
 
 vi.mock("../lib/api", () => ({
+  ApiError: class ApiError extends Error {},
   createTab: (...args: unknown[]) => mockCreateTab(...args),
   createChordSheet: (...args: unknown[]) => mockCreateChordSheet(...args),
   importUrl: (...args: unknown[]) => mockImportUrl(...args),
   previewImport: (...args: unknown[]) => mockPreviewImport(...args),
+  previewAsciiTab: (...args: unknown[]) => mockPreviewAsciiTab(...args),
+  importAsciiTab: (...args: unknown[]) => mockImportAsciiTab(...args),
   importFile: (...args: unknown[]) => mockImportFile(...args),
   waitForJob: (...args: unknown[]) => mockWaitForJob(...args),
   listSongs: (...args: unknown[]) => mockListSongs(...args),
   apiUrl: (p: string) => p,
 }));
+
+// jsdom cannot lay out a score; keep the real model for the Guitar Pro reader and stub the renderer.
+vi.mock("@coderline/alphatab", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@coderline/alphatab")>()),
+  AlphaTabApi: class {
+    tex = vi.fn();
+    destroy = vi.fn();
+  },
+}));
+
+const TAB = "e|-0---3---|\nB|---------|\nG|---------|\nD|---------|\n";
+
+function previewOf(overrides: Record<string, unknown> = {}) {
+  return {
+    content_kind: "tab",
+    title: "Found Title",
+    artist: "",
+    chordpro: null,
+    rhythm_estimated: true,
+    warnings: [{ key: "import.rhythmEstimated", message: "", params: {} }],
+    document: {
+      version: 1,
+      bpm: 120,
+      bars: [{ signature: [4, 4], repeat_start: false, repeat_end: 0, alternate_endings: [] }],
+      tracks: [
+        {
+          id: "trk",
+          name: "Bass",
+          instrument: "bass-guitar",
+          capo: 0,
+          tuning_midi: [43, 38, 33, 28],
+          preferred: true,
+          bars: [{ voices: [{ beats: [] }] }],
+        },
+      ],
+      sync: { video_id: null, points: [], anchors: {} },
+    },
+    ...overrides,
+  };
+}
 
 describe("AddSheet", () => {
   beforeEach(() => {
@@ -136,5 +181,65 @@ describe("AddSheet", () => {
     expect(mockImportUrl).toHaveBeenCalledWith("https://example.com/song.musicxml", "", null);
     expect(mockWaitForJob).toHaveBeenCalledWith("job-123", expect.any(Function));
     expect(ui.sheet).toBe("");
+  });
+
+  it("previews pasted tab, says the rhythm is estimated, and saves it", async () => {
+    mockPreviewAsciiTab.mockResolvedValue(previewOf());
+    mockImportAsciiTab.mockResolvedValueOnce({ id: "pasted-id" });
+    mockListSongs.mockResolvedValueOnce([]);
+
+    render(AddSheet);
+    await fireEvent.click(screen.getByTestId("add-mode-paste"));
+    expect(screen.getByTestId("paste-submit")).toBeDisabled();
+
+    await fireEvent.input(screen.getByTestId("paste-text"), { target: { value: TAB } });
+    await fireEvent.change(screen.getByTestId("paste-grid"), { target: { value: "16" } });
+    await fireEvent.input(screen.getByTestId("paste-bpm"), { target: { value: "90" } });
+
+    expect(await screen.findByTestId("rhythm-estimated")).toBeInTheDocument();
+    expect(await screen.findByTestId("tab-preview")).toBeInTheDocument();
+    expect(mockPreviewAsciiTab).toHaveBeenLastCalledWith(
+      expect.objectContaining({ text: TAB, grid: 16, bpm: 90, signature: [4, 4] }),
+      expect.any(AbortSignal),
+    );
+    expect(screen.getByTestId("paste-title")).toHaveAttribute("placeholder", "Found Title");
+
+    await fireEvent.input(screen.getByTestId("paste-title"), { target: { value: "My Riff" } });
+    await fireEvent.click(screen.getByTestId("paste-submit"));
+
+    await vi.waitFor(() => expect(mockImportAsciiTab).toHaveBeenCalled());
+    expect(mockImportAsciiTab).toHaveBeenCalledWith(
+      expect.objectContaining({ text: TAB, title: "My Riff", grid: 16, bpm: 90 }),
+    );
+    await vi.waitFor(() => expect(ui.sheet).toBe(""));
+  });
+
+  it("tells the reader when pasted text is chords over lyrics", async () => {
+    mockPreviewAsciiTab.mockResolvedValue(
+      previewOf({
+        content_kind: "chords",
+        document: null,
+        chordpro: "[G]Hello my [C]friend\n",
+        rhythm_estimated: false,
+        warnings: [],
+      }),
+    );
+    render(AddSheet);
+    await fireEvent.click(screen.getByTestId("add-mode-paste"));
+    await fireEvent.input(screen.getByTestId("paste-text"), {
+      target: { value: "G        C\nHello my friend\n" },
+    });
+
+    expect(await screen.findByTestId("paste-chords-note")).toBeInTheDocument();
+    expect(screen.queryByTestId("rhythm-estimated")).toBeNull();
+  });
+
+  it("shows the server's message when the pasted text cannot be converted", async () => {
+    mockPreviewAsciiTab.mockRejectedValue(new Error("Bar 1 has too many notes to place."));
+    render(AddSheet);
+    await fireEvent.click(screen.getByTestId("add-mode-paste"));
+    await fireEvent.input(screen.getByTestId("paste-text"), { target: { value: TAB } });
+
+    expect(await screen.findByTestId("paste-error")).toHaveTextContent("too many notes");
   });
 });

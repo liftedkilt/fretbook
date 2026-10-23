@@ -1,25 +1,30 @@
 <script lang="ts">
+  import ChordSheet from "./ChordSheet.svelte";
   import Icon from "./Icon.svelte";
   import Sheet from "./Sheet.svelte";
+  import TabPreview from "./TabPreview.svelte";
   import {
     ApiError,
     createChordSheet,
     createTab,
+    importAsciiTab,
     importDocument,
     importFile,
     importUrl,
+    previewAsciiTab,
     previewImport,
     waitForJob,
   } from "../lib/api";
+  import { asciiTabBody, debounced, DEFAULT_GRID, type Grid } from "../lib/asciiTab";
   import { documentFromGuitarPro } from "../lib/alphatab/importScore";
   import { keyed, t, tOr } from "../lib/i18n.svelte";
   import { instrumentLabel } from "../lib/instruments";
   import { navigate } from "../lib/router.svelte";
   import { tuningLabel } from "../lib/tuning";
-  import type { ImportPreview, InstrumentPreset, Job } from "../lib/types";
+  import type { AsciiTabPreview, ImportPreview, InstrumentPreset, Job } from "../lib/types";
   import { closeSheet, defaultFamily, refreshSongs, ui } from "../lib/ui.svelte";
 
-  type Mode = "link" | "file" | "tab" | "chords";
+  type Mode = "link" | "file" | "paste" | "tab" | "chords";
 
   let mode = $state<Mode>("link");
   let error = $state("");
@@ -41,6 +46,16 @@
   let previewUrl = $state("");
   let selected = $state<number[]>([]);
   let dragging = $state(false);
+  let pasteText = $state("");
+  let pasteTitle = $state("");
+  let pasteArtist = $state("");
+  let pasteGrid = $state<Grid>(DEFAULT_GRID);
+  let pasteBpm = $state<number | null>(null);
+  let pasteNumerator = $state(4);
+  let pasteDenominator = $state(4);
+  let pastePreview = $state<AsciiTabPreview | null>(null);
+  let pasteBusy = $state(false);
+  let pasteError = $state("");
 
   const open = $derived(ui.sheet === "add");
   const chosenPreset = $derived(preset || ui.defaultInstrument);
@@ -48,8 +63,16 @@
   const modes: { id: Mode; icon: string; label: string; hint: string }[] = $derived([
     { id: "link", icon: "link", label: t("add.link"), hint: t("add.linkHint") },
     { id: "file", icon: "upload", label: t("add.file"), hint: t("add.fileHint") },
+    { id: "paste", icon: "file", label: t("asciiTab.mode"), hint: t("asciiTab.modeHint") },
     { id: "tab", icon: "tab", label: t("add.tab"), hint: t("add.tabHint") },
     { id: "chords", icon: "chords", label: t("add.chords"), hint: t("add.chordsHint") },
+  ]);
+
+  const gridOptions: { value: Grid; label: string }[] = $derived([
+    { value: 4, label: t("asciiTab.grid4") },
+    { value: 8, label: t("asciiTab.grid8") },
+    { value: 16, label: t("asciiTab.grid16") },
+    { value: 32, label: t("asciiTab.grid32") },
   ]);
 
   function message(err: unknown): string {
@@ -97,6 +120,74 @@
     } catch (err) {
       error = message(err);
     }
+  }
+
+  const pasteBody = $derived(
+    asciiTabBody({
+      text: pasteText,
+      title: pasteTitle,
+      artist: pasteArtist,
+      grid: pasteGrid,
+      bpm: pasteBpm,
+      numerator: pasteNumerator,
+      denominator: pasteDenominator,
+    }),
+  );
+
+  // Convert the pasted text a moment after typing stops, so the preview follows the box.
+  $effect(() => {
+    const body = mode === "paste" && open ? pasteBody : null;
+    if (!body) {
+      pastePreview = null;
+      pasteError = "";
+      pasteBusy = false;
+      return;
+    }
+    const controller = new AbortController();
+    const delayed = debounced(async () => {
+      pasteBusy = true;
+      try {
+        const converted = await previewAsciiTab(body, controller.signal);
+        pastePreview = converted;
+        pasteError = "";
+      } catch (err) {
+        if (controller.signal.aborted) return;
+        pastePreview = null;
+        pasteError = message(err);
+      } finally {
+        if (!controller.signal.aborted) pasteBusy = false;
+      }
+    }, 400);
+    delayed.call();
+    return () => {
+      delayed.cancel();
+      controller.abort();
+    };
+  });
+
+  async function createFromPaste() {
+    const body = pasteBody;
+    if (!body) return;
+    error = "";
+    busy = t("library.importing");
+    try {
+      const song = await importAsciiTab(body);
+      pasteText = "";
+      pasteTitle = "";
+      pasteArtist = "";
+      finish(`/songs/${song.id}`);
+    } catch (err) {
+      error = message(err);
+    } finally {
+      busy = "";
+    }
+  }
+
+  function pasteWarnings(converted: AsciiTabPreview): string {
+    return converted.warnings
+      .filter((item) => item.key !== "import.rhythmEstimated")
+      .map((item) => keyed(item))
+      .join(" ");
   }
 
   function progress(job: Job) {
@@ -343,6 +434,105 @@
           }}
         />
       </label>
+    {:else if mode === "paste"}
+      <form
+        class="form-grid"
+        onsubmit={(event) => {
+          event.preventDefault();
+          void createFromPaste();
+        }}
+      >
+        <label class="field">
+          <span>{t("library.title")}</span>
+          <input
+            data-testid="paste-title"
+            bind:value={pasteTitle}
+            placeholder={pastePreview?.title || t("library.untitled")}
+          />
+        </label>
+        <label class="field">
+          <span>{t("library.artist")}</span>
+          <input bind:value={pasteArtist} placeholder={pastePreview?.artist ?? ""} />
+        </label>
+        <label class="field span-2">
+          <span>{t("asciiTab.paste")}</span>
+          <textarea
+            data-testid="paste-text"
+            bind:value={pasteText}
+            rows="9"
+            spellcheck="false"
+            placeholder={t("asciiTab.pasteHint")}></textarea>
+        </label>
+        <label class="field">
+          <span>{t("asciiTab.grid")}</span>
+          <select data-testid="paste-grid" bind:value={pasteGrid}>
+            {#each gridOptions as option (option.value)}
+              <option value={option.value}>{option.label}</option>
+            {/each}
+          </select>
+        </label>
+        <label class="field">
+          <span>{t("asciiTab.bpm")}</span>
+          <input
+            data-testid="paste-bpm"
+            type="number"
+            min="1"
+            max="399"
+            placeholder={t("asciiTab.bpmAuto")}
+            bind:value={pasteBpm}
+          />
+        </label>
+        <div class="field span-2">
+          <span>{t("library.signature")}</span>
+          <span class="signature">
+            <input
+              type="number"
+              min="1"
+              max="32"
+              bind:value={pasteNumerator}
+              aria-label={t("ui.beatsPerBar")}
+            />
+            <span class="signature-slash">/</span>
+            <select bind:value={pasteDenominator} aria-label={t("ui.beatUnit")}>
+              {#each [1, 2, 4, 8, 16, 32] as value (value)}<option {value}>{value}</option>{/each}
+            </select>
+          </span>
+        </div>
+        <div class="span-2 paste-preview" data-testid="paste-preview" aria-live="polite">
+          <h3>{t("asciiTab.preview")}</h3>
+          {#if pasteError}
+            <p class="alert" role="alert" data-testid="paste-error">
+              <Icon name="alert" size={18} />{pasteError}
+            </p>
+          {:else if pasteBusy && !pastePreview}
+            <p class="muted"><span class="spinner"></span>{t("asciiTab.previewLoading")}</p>
+          {:else if !pastePreview}
+            <p class="muted">{t("asciiTab.previewEmpty")}</p>
+          {:else if pastePreview.content_kind === "chords"}
+            <p class="notice" data-testid="paste-chords-note">{t("asciiTab.chordsDetected")}</p>
+            <ChordSheet text={pastePreview.chordpro ?? ""} />
+          {:else if pastePreview.document}
+            <p class="notice" data-testid="rhythm-estimated">
+              <strong>{t("asciiTab.rhythmEstimated")}.</strong>
+              {t("asciiTab.rhythmEstimatedHint")}
+              {pasteWarnings(pastePreview)}
+            </p>
+            <TabPreview
+              score={pastePreview.document}
+              title={pasteTitle.trim() || pastePreview.title}
+            />
+          {/if}
+        </div>
+        <div class="span-2 form-actions">
+          <button
+            class="primary"
+            type="submit"
+            data-testid="paste-submit"
+            disabled={Boolean(busy) || !pasteBody}
+            ><Icon name="check" size={18} />{t("asciiTab.create")}</button
+          >
+        </div>
+      </form>
     {:else if mode === "tab"}
       <form
         class="form-grid"

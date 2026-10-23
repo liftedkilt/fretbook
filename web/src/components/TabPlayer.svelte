@@ -384,6 +384,11 @@
           >
           <span class="pill">{t("library.tempo", { bpm: song.document.bpm })}</span>
           <span class="pill">{t("library.measures", { count: barCount })}</span>
+          {#if song.source_ref.rhythm_estimated}<span
+              class="pill"
+              data-testid="rhythm-estimated-pill"
+              title={t("asciiTab.rhythmEstimatedHint")}>{t("asciiTab.rhythmEstimated")}</span
+            >{/if}
           {#if song.has_audio}<span class="pill pill-accent"
               ><Icon name="waveform" size={14} />{t("library.audio")}</span
             >{/if}

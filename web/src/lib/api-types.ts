@@ -125,6 +125,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/imports/ascii-tab": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Ascii Tab
+         * @description Save pasted ASCII tab as a song (a chord sheet when the text is chords over lyrics).
+         *
+         *     A tab is stored with ``source_ref.rhythm_estimated`` set, so the song page can say the timing is a guess.
+         */
+        post: operations["import_ascii_tab_api_imports_ascii_tab_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/imports/ascii-tab/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Ascii Tab
+         * @description Convert pasted ASCII tab without saving it, so the browser can draw it before the song is created.
+         *
+         *     Text that is chords over lyrics comes back as a chord sheet. Rhythm in a tab is estimated from spacing.
+         */
+        post: operations["preview_ascii_tab_api_imports_ascii_tab_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/imports/file": {
         parameters: {
             query?: never;
@@ -504,6 +548,62 @@ export interface components {
             session_count: number;
             /** Song Count */
             song_count: number;
+        };
+        /** AsciiTabBody */
+        AsciiTabBody: {
+            /**
+             * Artist
+             * @default
+             */
+            artist: string;
+            /** Bpm */
+            bpm?: number | null;
+            /**
+             * Grid
+             * @default 8
+             * @enum {integer}
+             */
+            grid: 4 | 8 | 16 | 32;
+            /**
+             * Signature
+             * @default [
+             *       4,
+             *       4
+             *     ]
+             */
+            signature: [
+                number,
+                number
+            ];
+            /** Text */
+            text: string;
+            /**
+             * Title
+             * @default
+             */
+            title: string;
+        };
+        /**
+         * AsciiTabPreview
+         * @description What the pasted text becomes. A tab has ``document``; a chord sheet has ``chordpro``.
+         */
+        AsciiTabPreview: {
+            /** Artist */
+            artist: string;
+            /** Chordpro */
+            chordpro: string | null;
+            /**
+             * Content Kind
+             * @enum {string}
+             */
+            content_kind: "tab" | "chords";
+            document: components["schemas"]["ScoreDocument"] | null;
+            /** Rhythm Estimated */
+            rhythm_estimated: boolean;
+            /** Title */
+            title: string;
+            /** Warnings */
+            warnings: components["schemas"]["ErrorDetail"][];
         };
         /**
          * Bar
@@ -1247,6 +1347,8 @@ export interface components {
     pathItems: never;
 }
 export type AdminUser = components['schemas']['AdminUser'];
+export type AsciiTabBody = components['schemas']['AsciiTabBody'];
+export type AsciiTabPreview = components['schemas']['AsciiTabPreview'];
 export type Bar = components['schemas']['Bar'];
 export type Beat = components['schemas']['Beat'];
 export type BodyImportFileApiImportsFilePost = components['schemas']['Body_import_file_api_imports_file_post'];
@@ -1663,6 +1765,162 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JobAccepted"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    import_ascii_tab_api_imports_ascii_tab_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AsciiTabBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SongDetail"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    preview_ascii_tab_api_imports_ascii_tab_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AsciiTabBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AsciiTabPreview"];
                 };
             };
             /** @description Keyed error. `detail` is {key, message, params}. */
