@@ -3365,3 +3365,16 @@ kbd {
   font-size: 0.85rem;
   text-align: center;
 }
+
+.paste-preview h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+.tab-preview {
+  max-height: 22rem;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}

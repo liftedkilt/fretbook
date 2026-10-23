@@ -220,6 +220,11 @@ class JobResult(BaseModel):
     slug: str | None = None
     content_kind: ContentKind | None = None
     warnings: list[ErrorDetail] = Field(default_factory=list)
+    imported: int | None = None
+    """Library restore only: songs added, skipped as duplicates, added as copies, and not restorable."""
+    skipped: int | None = None
+    copied: int | None = None
+    failed: int | None = None
 
 
 class Job(BaseModel):

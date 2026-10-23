@@ -217,6 +217,17 @@ export interface SongsterrTrackChoice {
   capo: number;
 }
 
+/** A pasted tab converted by the server. A tab has `document`; chords over lyrics have `chordpro`. */
+export interface AsciiTabPreview {
+  content_kind: ContentKind;
+  title: string;
+  artist: string;
+  document: ScoreDocument | null;
+  chordpro: string | null;
+  rhythm_estimated: boolean;
+  warnings: Keyed[];
+}
+
 export interface ImportPreview {
   title: string;
   artist: string;
@@ -228,7 +239,15 @@ export interface Job {
   id: string;
   kind: string;
   status: "queued" | "running" | "done" | "error";
-  result: { song_id?: string; content_kind?: ContentKind; warnings?: Keyed[] } | null;
+  result: {
+    song_id?: string;
+    content_kind?: ContentKind;
+    warnings?: Keyed[];
+    imported?: number | null;
+    skipped?: number | null;
+    copied?: number | null;
+    failed?: number | null;
+  } | null;
   error: string | null;
   error_key: string;
   error_params: Record<string, string | number>;

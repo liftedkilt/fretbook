@@ -326,3 +326,36 @@ def test_configuration(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     assert Settings.from_env().auth_mode == "oidc"
     monkeypatch.setenv("FRETBOOK_AUTH_MODE", "single")
     assert Settings.from_env().auth_mode == "single"
+
+
+def test_library_export_is_per_user_and_admins_export_everything(app_factory, provider: MockProvider) -> None:
+    import io
+    import zipfile
+
+    app = app_factory()
+
+    def titles(response: httpx.Response) -> set[str]:
+        assert response.status_code == 200
+        with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
+            return {song["title"] for song in json.loads(archive.read("manifest.json"))["songs"]}
+
+    with TestClient(app) as alice, TestClient(app) as bob, TestClient(app) as root, TestClient(app) as anon:
+        sign_in(alice, provider, "alice", ["fretbook_users"])
+        sign_in(bob, provider, "bob", ["fretbook_users"])
+        sign_in(root, provider, "root", ["fretbook_users", "fretbook_admins"])
+        alice.post("/api/songs", json={"title": "Alice song", "measures": 1})
+        bob.post("/api/songs", json={"title": "Bob song", "measures": 1})
+
+        assert titles(alice.get("/api/library/export")) == {"Alice song"}
+        assert titles(bob.get("/api/library/export")) == {"Bob song"}
+        assert alice.get("/api/admin/library/export").status_code == 403
+        assert titles(root.get("/api/admin/library/export")) == {"Alice song", "Bob song"}
+        assert anon.get("/api/library/export").status_code == 401
+
+        # Restoring lands in the caller's own library only.
+        archive = root.get("/api/admin/library/export").content
+        accepted = bob.post("/api/library/import", files={"file": ("a.zip", archive)}, data={"mode": "skip"})
+        assert accepted.status_code == 202
+        app.state.ctx.jobs.run_once()
+        assert {song["title"] for song in bob.get("/api/songs").json()["items"]} == {"Bob song", "Alice song"}
+        assert {song["title"] for song in alice.get("/api/songs").json()["items"]} == {"Alice song"}

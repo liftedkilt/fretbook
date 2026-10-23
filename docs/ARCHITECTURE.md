@@ -33,6 +33,11 @@ A song is either a **tab** or a **chord sheet**.
 - `GET /api/songs` is paged and searched on the server: `q` (word prefixes over title and artist, matched with the `songs_fts` FTS5 table that triggers keep in step), `sort` (`title`, `artist`, `added`, `updated`, `opened`), `order`, `instrument`, `limit` (1 to 200) and an opaque `cursor`. It returns `{items, total, next_cursor, counts}`, where `counts` covers the whole library for the filter chips. The cursor is an offset, so a song added between two page requests can shift the next page by one. `POST /api/songs/{id}/opened` records `last_opened_at` without touching `revision` or `updated_at`.
 - Errors are `{"detail": {"key", "message", "params"}}`. The web app shows `errors.<key>` from its catalog and falls back to the English message, so server errors can be translated. Job progress uses keys too.
 - Schema changes are numbered SQL files in `fretbook/db/migrations/`, each applied in one transaction. Before applying pending migrations on start, a consistent SQLite snapshot is backed up to `data/backups/pre-migrate-<from>-<to>-<timestamp>.sqlite` (keeping the last N). The server refuses to start if the database schema is newer than the code.
+- Backups: `fretbook/backup/` writes and restores the library zip (`manifest.json` plus `songs/<id>/…`; restore is the `library.import` job and never extracts by archive name), and `python -m fretbook backup` takes the cron snapshot (`snapshot.py`).
+
+## ASCII tab
+
+`fretbook/importers/ascii_tab.py` turns `e|---3---|` text into a score document. Rhythm is estimated, not read: a bar's notes are placed by their position between the bar lines, snapped to a grid (eighth notes by default), and each note lasts until the next one, rounded down to a length the notation can draw, with rests for the rest of the gap. The song is stored with `source_ref.rhythm_estimated = true`, which the song page shows as a badge. `looks_like_ascii_tab` is the one test that tells a tab from a chords-over-lyrics sheet; the importer registry uses it for `.txt` files and `POST /api/imports/ascii-tab[/preview]` for pasted text.
 
 ## Background jobs
 

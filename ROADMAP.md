@@ -15,15 +15,6 @@ These are already being worked on. Coordinate with them before touching the same
 
 ## Essential
 
-### Backup and restore
-
-Everything lives in one SQLite file and a media folder, so a lost volume loses the whole library. Add:
-- a full export: one archive with every song as Fretbook JSON and its audio
-- a matching import that restores it into an empty or existing library
-- a `python -m fretbook backup` command that takes a consistent SQLite snapshot (the online backup API, not a file copy) for cron or a container sidecar
-
-With sign-in on, export and import should work per user, and an admin should be able to back up everything.
-
 ### Repeats and playback order
 
 Repeats are stored in the score but not rendered, so the bar index is also the playback order. Real songs depend on repeats, voltas, D.S. and D.C. Render them, expand them into a playback order, and make sync marks follow the played order rather than the written bar index.
@@ -64,7 +55,6 @@ Features that use the microphone to hear the instrument, in the order to build t
 
 ### Importing and editing
 
-- Paste plain ASCII tab (the `e|---3---|` style) and convert it to a score.
 - More file formats, such as Power Tab (`.ptb`) and MIDI.
 - Retune or transpose a tab, for example from standard to drop D, or from 4-string to 5-string bass.
 - Chord diagrams on chord sheets, for guitar and ukulele.

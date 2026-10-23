@@ -12,6 +12,16 @@ from fretbook.config import Settings
 from fretbook.db.connection import session
 from fretbook.db.migrate import utcnow
 
+# Served back with this type, so it is chosen from the extension rather than taken from a client or an archive.
+AUDIO_TYPES = {
+    ".mp3": "audio/mpeg",
+    ".wav": "audio/wav",
+    ".ogg": "audio/ogg",
+    ".m4a": "audio/mp4",
+    ".flac": "audio/flac",
+    ".webm": "audio/webm",
+}
+
 _SAFE_ID = re.compile(r"[A-Za-z0-9_-]{1,64}")
 
 

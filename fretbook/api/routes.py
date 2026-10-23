@@ -44,6 +44,7 @@ from fretbook.importers.base import ImportError, ImportRequest
 from fretbook.importers.registry import resolve_importer
 from fretbook.score.instruments import family, get_preset, is_preset, presets_payload
 from fretbook.score.model import ScoreDocument
+from fretbook.storage.media import AUDIO_TYPES
 from fretbook.storage.repository import RevisionConflict
 
 router = APIRouter()
@@ -53,14 +54,7 @@ _AUDIO_SCHEMA: dict[str, dict[str, dict[str, str]]] = {
     for media in ("audio/mpeg", "audio/wav", "audio/ogg", "audio/mp4", "audio/flac", "audio/webm")
 }
 
-_AUDIO_TYPES = {
-    ".mp3": "audio/mpeg",
-    ".wav": "audio/wav",
-    ".ogg": "audio/ogg",
-    ".m4a": "audio/mp4",
-    ".flac": "audio/flac",
-    ".webm": "audio/webm",
-}
+_AUDIO_TYPES = AUDIO_TYPES
 _GUITAR_PRO = {".gp", ".gp3", ".gp4", ".gp5", ".gpx"}
 _CHUNK = 1024 * 1024
 

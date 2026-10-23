@@ -16,10 +16,14 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Redirect
 from starlette.responses import Response
 
 from fretbook import __version__
+from fretbook.api.ascii_tab_routes import router as ascii_tab_router
+from fretbook.api.backup import RESTORE_PATH
+from fretbook.api.backup import router as backup_router
 from fretbook.api.middleware import BodyLimitMiddleware, SameOriginMiddleware
 from fretbook.api.routes import router
 from fretbook.audio.ytdlp_health import AutoUpdater
 from fretbook.auth import build_auth
+from fretbook.backup.restore import register_restore_handler
 from fretbook.config import Settings
 from fretbook.context import AppContext
 from fretbook.db.migrate import migrate
@@ -121,6 +125,7 @@ def create_app(settings: Settings | None = None, *, oidc_transport: httpx.AsyncB
     media = MediaStore(settings)
     jobs = JobRunner(settings)
     register_handlers(jobs, songs, media)
+    register_restore_handler(jobs, songs, media)
     updater = AutoUpdater(settings)
     ctx = AppContext(
         settings=settings,
@@ -183,6 +188,10 @@ def create_app(settings: Settings | None = None, *, oidc_transport: httpx.AsyncB
                 "description": "Start a background import. Poll GET /api/jobs/{job_id}.",
             },
             {
+                "name": "library",
+                "description": "Export the whole library as a zip and restore one. Restore is a background job.",
+            },
+            {
                 "name": "jobs",
                 "description": "Background job status, progress keys, and errors.",
             },
@@ -194,8 +203,14 @@ def create_app(settings: Settings | None = None, *, oidc_transport: httpx.AsyncB
     app.add_exception_handler(RequestValidationError, _validation_error)
     app.add_middleware(SameOriginMiddleware)
     # Room for multipart framing around the largest allowed upload.
-    app.add_middleware(BodyLimitMiddleware, max_bytes=settings.max_upload_bytes + 1024 * 1024)
+    app.add_middleware(
+        BodyLimitMiddleware,
+        max_bytes=settings.max_upload_bytes + 1024 * 1024,
+        path_limits={RESTORE_PATH: settings.max_restore_bytes + 1024 * 1024},
+    )
     app.include_router(router)
+    app.include_router(backup_router)
+    app.include_router(ascii_tab_router)
     auth_routes = ctx.auth.routes()
     if auth_routes is not None:
         app.include_router(auth_routes)
