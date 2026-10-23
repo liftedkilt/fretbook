@@ -664,5 +664,25 @@
     "start": "Iniciar",
     "starting": "Iniciando…",
     "stop": "Parar"
+  },
+  "tags": {
+    "heading": "Etiquetas",
+    "filters": "Filtrar por etiqueta",
+    "favourites": "Favoritas",
+    "favourite": "Adicionar às favoritas",
+    "unfavourite": "Remover das favoritas",
+    "add": "Adicionar etiqueta",
+    "addPlaceholder": "Adicionar uma etiqueta…",
+    "remove": "Remover etiqueta {tag}",
+    "select": "Selecionar",
+    "selected": { "one": "{count} selecionada", "other": "{count} selecionadas" },
+    "selectAll": "Selecionar todas as exibidas",
+    "selectSong": "Selecionar música",
+    "bulkAdd": "Adicionar etiqueta às selecionadas",
+    "bulkDone": {
+      "one": "Etiqueta “{tag}” adicionada a {count} música.",
+      "other": "Etiqueta “{tag}” adicionada a {count} músicas."
+    },
+    "clearFilters": "Limpar filtros de etiqueta"
   }
 }

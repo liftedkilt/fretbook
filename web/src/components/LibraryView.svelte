@@ -2,7 +2,7 @@
   import Cover from "./Cover.svelte";
   import Icon from "./Icon.svelte";
   import RecentImports from "./RecentImports.svelte";
-  import { deleteSong } from "../lib/api";
+  import { addTags, deleteSong } from "../lib/api";
   import { t } from "../lib/i18n.svelte";
   import { instrumentLabel } from "../lib/instruments";
   import { followLink, hrefFor } from "../lib/router.svelte";
@@ -15,6 +15,8 @@
     openSheet,
     refreshSongs,
     setSort,
+    starSong,
+    toggleTagFilter,
     ui,
     type LibraryFilter,
   } from "../lib/ui.svelte";
@@ -43,7 +45,7 @@
   // App loads the first page; this only reacts to changes once it has.
   $effect(() => {
     const text = ui.search.trim();
-    void [ui.filter, ui.sort, ui.order];
+    void [ui.filter, ui.sort, ui.order, ui.tags, ui.favouritesOnly];
     if (!ui.loaded) return;
     const delay = text === searchSeen ? 0 : 200;
     searchSeen = text;
@@ -87,6 +89,48 @@
     } catch (err) {
       error = err instanceof Error ? err.message : t("error.generic");
     }
+  }
+
+  let selecting = $state(false);
+  let selected = $state<string[]>([]);
+  let bulkTag = $state("");
+  let bulkNotice = $state("");
+
+  function toggleSelecting() {
+    selecting = !selecting;
+    selected = [];
+    bulkTag = "";
+    bulkNotice = "";
+  }
+
+  function toggleSelected(id: string) {
+    selected = selected.includes(id) ? selected.filter((item) => item !== id) : [...selected, id];
+  }
+
+  async function tagSelected() {
+    const tag = bulkTag.trim();
+    if (!tag || selected.length === 0) return;
+    try {
+      const count = await addTags(selected, [tag]);
+      bulkNotice = t("tags.bulkDone", { count, tag });
+      selected = [];
+      bulkTag = "";
+      await refreshSongs();
+    } catch (err) {
+      error = err instanceof Error ? err.message : t("error.generic");
+    }
+  }
+
+  async function toggleStar(song: SongSummary) {
+    try {
+      await starSong(song.id, !song.favourite);
+    } catch (err) {
+      error = err instanceof Error ? err.message : t("error.generic");
+    }
+  }
+
+  function tagSelectedFilter(tag: string): boolean {
+    return ui.tags.some((item) => item.toLowerCase() === tag.toLowerCase());
   }
 
   function kindLabel(song: SongSummary): string {
@@ -146,6 +190,14 @@
         </select>
       </label>
       <button
+        class="chip select-toggle"
+        data-testid="library-select"
+        aria-pressed={selecting}
+        onclick={toggleSelecting}
+      >
+        {t("tags.select")}
+      </button>
+      <button
         class="icon-button glass sort-order"
         data-testid="library-order"
         onclick={flipOrder}
@@ -167,7 +219,71 @@
           {t(item.key)}<span class="chip-count">{countFor(item.id)}</span>
         </button>
       {/each}
+      <button
+        class="chip"
+        data-testid="library-filter-favourites"
+        aria-pressed={ui.favouritesOnly}
+        onclick={() => (ui.favouritesOnly = !ui.favouritesOnly)}
+      >
+        <Icon name={ui.favouritesOnly ? "starFilled" : "star"} size={14} />{t(
+          "tags.favourites",
+        )}<span class="chip-count">{countFor("favourites")}</span>
+      </button>
     </div>
+
+    {#if ui.tagList.length}
+      <div class="chips tag-chips" role="group" aria-label={t("tags.filters")}>
+        {#each ui.tagList as item (item.tag)}
+          <button
+            class="chip"
+            data-testid="library-tag"
+            aria-pressed={tagSelectedFilter(item.tag)}
+            onclick={() => toggleTagFilter(item.tag)}
+          >
+            <Icon name="tag" size={13} />{item.tag}<span class="chip-count">{item.count}</span>
+          </button>
+        {/each}
+      </div>
+    {/if}
+
+    {#if selecting}
+      <form
+        class="bulk-bar"
+        data-testid="library-bulk"
+        onsubmit={(event) => {
+          event.preventDefault();
+          void tagSelected();
+        }}
+      >
+        <span data-testid="library-selected">{t("tags.selected", { count: selected.length })}</span>
+        <button
+          type="button"
+          data-testid="library-select-all"
+          onclick={() => (selected = ui.songs.map((song) => song.id))}>{t("tags.selectAll")}</button
+        >
+        <input
+          type="text"
+          data-testid="library-bulk-tag"
+          list="library-tag-suggestions"
+          maxlength="40"
+          bind:value={bulkTag}
+          placeholder={t("tags.addPlaceholder")}
+          aria-label={t("tags.bulkAdd")}
+        />
+        <datalist id="library-tag-suggestions">
+          {#each ui.tagList as item (item.tag)}<option value={item.tag}></option>{/each}
+        </datalist>
+        <button
+          class="primary"
+          type="submit"
+          data-testid="library-bulk-apply"
+          disabled={!bulkTag.trim() || selected.length === 0}>{t("tags.bulkAdd")}</button
+        >
+      </form>
+    {/if}
+    {#if bulkNotice}<p class="muted" role="status" data-testid="library-bulk-notice">
+        {bulkNotice}
+      </p>{/if}
   {/if}
 
   {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
@@ -200,6 +316,15 @@
           ? t("library.searchEmpty", { query: ui.search.trim() })
           : t("library.filterEmpty")}
       </p>
+      {#if ui.tags.length || ui.favouritesOnly}
+        <button
+          data-testid="library-clear-tags"
+          onclick={() => {
+            ui.tags = [];
+            ui.favouritesOnly = false;
+          }}>{t("tags.clearFilters")}</button
+        >
+      {/if}
       {#if ui.search.trim()}
         <button data-testid="library-clear-search" onclick={() => (ui.search = "")}
           >{t("library.clearSearch")}</button
@@ -246,9 +371,39 @@
                   })} · {t("library.tempo", { bpm: song.bpm })}
                 </span>
               {/if}
+              {#if song.tags.length}
+                <span class="song-tag-row" data-testid="song-card-tags">
+                  {#each song.tags.slice(0, 3) as tag (tag)}<span class="tag-mini">{tag}</span
+                    >{/each}
+                  {#if song.tags.length > 3}<span class="tag-mini">+{song.tags.length - 3}</span
+                    >{/if}
+                </span>
+              {/if}
             </span>
           </a>
-          <div class="song-actions">
+          {#if selecting}
+            <label class="song-select">
+              <input
+                type="checkbox"
+                data-testid="song-select"
+                checked={selected.includes(song.id)}
+                onchange={() => toggleSelected(song.id)}
+                aria-label={`${t("tags.selectSong")}: ${song.title}`}
+              />
+            </label>
+          {/if}
+          <div class="song-actions" class:starred={song.favourite}>
+            <button
+              class="icon-button glass song-star"
+              class:on={song.favourite}
+              data-testid="song-star"
+              aria-pressed={song.favourite}
+              onclick={() => void toggleStar(song)}
+              aria-label={`${song.favourite ? t("tags.unfavourite") : t("tags.favourite")}: ${song.title}`}
+              title={song.favourite ? t("tags.unfavourite") : t("tags.favourite")}
+            >
+              <Icon name={song.favourite ? "starFilled" : "star"} size={16} />
+            </button>
             <a
               class="icon-button glass"
               data-testid="song-edit"

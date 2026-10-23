@@ -34,6 +34,9 @@ vi.mock("../lib/api", () => ({
   importDocument: (...args: unknown[]) => mockImportDocument(...args),
   waitForJob: (...args: unknown[]) => mockWaitForJob(...args),
   listSongs: (...args: unknown[]) => mockListSongs(...args),
+  listTags: vi.fn().mockResolvedValue([]),
+  setFavourite: vi.fn(),
+  addTags: vi.fn(),
   apiUrl: (p: string) => p,
 }));
 

@@ -664,5 +664,25 @@
     "start": "Start",
     "starting": "Starting…",
     "stop": "Stop"
+  },
+  "tags": {
+    "heading": "Tags",
+    "filters": "Filter by tag",
+    "favourites": "Favourites",
+    "favourite": "Add to favourites",
+    "unfavourite": "Remove from favourites",
+    "add": "Add tag",
+    "addPlaceholder": "Add a tag…",
+    "remove": "Remove tag {tag}",
+    "select": "Select",
+    "selected": { "one": "{count} selected", "other": "{count} selected" },
+    "selectAll": "Select all shown",
+    "selectSong": "Select song",
+    "bulkAdd": "Add tag to selected",
+    "bulkDone": {
+      "one": "Added “{tag}” to {count} song.",
+      "other": "Added “{tag}” to {count} songs."
+    },
+    "clearFilters": "Clear tag filters"
   }
 }

@@ -1,5 +1,6 @@
 <script lang="ts">
   import ChordSheetView from "./ChordSheetView.svelte";
+  import SongTags from "./SongTags.svelte";
   import TabPlayer from "./TabPlayer.svelte";
   import { getSong, markSongOpened } from "../lib/api";
   import { t } from "../lib/i18n.svelte";
@@ -36,10 +37,15 @@
   {#if !error}<div class="loading" role="status">
       <span class="spinner"></span>{t("app.loading")}
     </div>{/if}
-{:else if song.content_kind === "chords"}
-  <ChordSheetView {song} />
 {:else}
   {#key song.id}
-    <TabPlayer song={song as TabSong} />
+    <SongTags {song} />
   {/key}
+  {#if song.content_kind === "chords"}
+    <ChordSheetView {song} />
+  {:else}
+    {#key song.id}
+      <TabPlayer song={song as TabSong} />
+    {/key}
+  {/if}
 {/if}
