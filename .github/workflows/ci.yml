@@ -28,6 +28,7 @@ jobs:
       - run: pip install -r requirements-dev.txt
       - run: ruff check fretbook tests
       - run: ruff format --check fretbook tests
+      - run: mypy
       - run: python -m pytest
 
   frontend:

@@ -32,7 +32,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 TICKS_PER_QUARTER = 960
-VERSION = 1
+VERSION: Literal[1] = 1
 
 SlideKind = Literal["shift", "legato", "in_below", "in_above", "out_down", "out_up"]
 HarmonicKind = Literal["natural", "artificial", "pinch", "tap", "semi"]
@@ -168,8 +168,8 @@ class ScoreDocument(_Model):
             if len(track.bars) != count:
                 raise ValueError(f"track {track.name} has {len(track.bars)} bars; the song has {count}")
             strings = len(track.tuning_midi)
-            for index, bar in enumerate(track.bars):
-                for voice in bar.voices:
+            for index, track_bar in enumerate(track.bars):
+                for voice in track_bar.voices:
                     for beat in voice.beats:
                         for note in beat.notes:
                             if note.string >= strings:

@@ -21,6 +21,19 @@ filterwarnings = [
     "error::pytest.PytestUnraisableExceptionWarning",
 ]
 
+[tool.mypy]
+python_version = "3.12"
+files = ["fretbook"]
+warn_unused_ignores = true
+warn_redundant_casts = true
+no_implicit_optional = true
+check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+# Optional dependencies (requirements-vision.txt) ship without type stubs.
+module = ["cv2.*", "pytesseract.*", "PIL.*"]
+ignore_missing_imports = true
+
 [tool.ruff]
 line-length = 120
 target-version = "py312"

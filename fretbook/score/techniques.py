@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from .model import GraceKind
+
 NOTE_KEYS = {"hp", "slide", "ghost", "vibrato", "harmonic", "bend", "palmMute", "letRing", "staccato"}
 BEAT_KEYS = {"graceNote", "tuplet", "palmMute", "letRing"}
 
@@ -39,7 +41,7 @@ def harmonic_kind(raw: Any) -> str | None:
     return "natural"
 
 
-def grace_kind(raw: Any) -> str | None:
+def grace_kind(raw: Any) -> GraceKind | None:
     if not raw:
         return None
     text = str(raw).lower().replace("_", "")

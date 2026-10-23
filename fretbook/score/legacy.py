@@ -55,7 +55,7 @@ def legacy_document(tab: dict[str, Any], preset: dict[str, Any] | None = None) -
         bars.append(Bar())
         track_bars.append(TrackBar())
     bpm = float(tab.get("bpm") or 120)
-    points = [float(point) for point in (preset.get("points") or [])]
+    points: list[float | None] = [float(point) for point in (preset.get("points") or [])]
     return ScoreDocument(
         bpm=bpm,
         bars=bars,

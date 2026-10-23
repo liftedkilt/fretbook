@@ -210,7 +210,7 @@ def _voice_notes(measure: ET.Element, track_bar: TrackBar, bar: Bar, track: Trac
                 _sub(forward, "duration", beat.position - cursor)
                 _sub(forward, "voice", number)
                 cursor = beat.position
-            notes = sorted(beat.notes, key=lambda item: item.string) or [None]
+            notes: list[Note | None] = [*sorted(beat.notes, key=lambda item: item.string)] or [None]
             for position, note in enumerate(notes):
                 _note_element(measure, beat=beat, note=note, chord=position > 0, voice=number, track=track)
             if beat.grace is None:

@@ -243,10 +243,10 @@ class OIDCAuth:
         self.users.create_session(user_id, token_hash=_hash_token(token), role=role, id_token=id_token)
         logger.info("signed in %s as %s", user_id, role)
 
-        response = RedirectResponse(self.base + str(pending.get("next") or ""), status_code=302)
-        self._clear_cookie(response, LOGIN_COOKIE)
-        self._set_cookie(response, SESSION_COOKIE, token, self.settings.session_max_age)
-        return response
+        redirect = RedirectResponse(self.base + str(pending.get("next") or ""), status_code=302)
+        self._clear_cookie(redirect, LOGIN_COOKIE)
+        self._set_cookie(redirect, SESSION_COOKIE, token, self.settings.session_max_age)
+        return redirect
 
     async def logout(self, request: Request) -> Response:
         token = request.cookies.get(SESSION_COOKIE)
@@ -324,7 +324,7 @@ class OIDCAuth:
             "code_verifier": verifier,
             "client_id": self.settings.oidc_client_id,
         }
-        auth = None
+        auth: httpx.BasicAuth | None = None
         if self.settings.oidc_client_secret:
             if provider.basic_auth:
                 auth = httpx.BasicAuth(
@@ -333,7 +333,7 @@ class OIDCAuth:
             else:
                 form["client_secret"] = self.settings.oidc_client_secret
         async with self._client() as client:
-            response = await client.post(provider.token_endpoint, data=form, auth=auth)
+            response = await client.post(provider.token_endpoint, data=form, auth=auth or httpx.USE_CLIENT_DEFAULT)
         if response.status_code != 200:
             logger.warning("OIDC token exchange failed: %s %s", response.status_code, response.text[:300])
             raise SignInError(400, "The provider refused the sign-in code.")

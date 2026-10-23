@@ -224,6 +224,10 @@ def _from_segment(segment: dict[str, Any]) -> RecognizedTab:
     )
 
 
+def _print_progress(message: str, key: str = "") -> None:
+    print(message)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Spike: read an on-screen tab into a Fretbook score")
     parser.add_argument("path", nargs="?", help="Local video or a folder of frames")
@@ -242,7 +246,7 @@ def main(argv: list[str] | None = None) -> int:
     importer = YouTubeFrameImporter()
     result = importer.import_score(
         ImportRequest(owner_id="local", file_path=Path(args.path), filename=Path(args.path).name),
-        lambda message, key="": print(message),
+        _print_progress,
     )
     document = result.document
     assert document is not None

@@ -251,7 +251,7 @@ class ImportPreview(BaseModel):
 
 _KEYED = "Keyed error. `detail` is {key, message, params}."
 
-ERROR_RESPONSES: dict[int, dict[str, Any]] = {
+ERROR_RESPONSES: dict[int | str, dict[str, Any]] = {
     400: {"model": ErrorBody, "description": _KEYED},
     404: {"model": ErrorBody, "description": _KEYED},
     409: {"model": ErrorBody, "description": _KEYED + " `params.current` is the stored revision."},
@@ -263,12 +263,12 @@ ERROR_RESPONSES: dict[int, dict[str, Any]] = {
 }
 
 # With sign-in (OIDC mode), a request without a live session gets 401 ``auth.required``.
-AUTH_RESPONSES: dict[int, dict[str, Any]] = {
+AUTH_RESPONSES: dict[int | str, dict[str, Any]] = {
     **ERROR_RESPONSES,
     401: {"model": ErrorBody, "description": _KEYED + " `auth.required`: no session; sign in at `/auth/login`."},
 }
 
-ADMIN_RESPONSES: dict[int, dict[str, Any]] = {
+ADMIN_RESPONSES: dict[int | str, dict[str, Any]] = {
     **AUTH_RESPONSES,
     403: {"model": ErrorBody, "description": _KEYED + " `auth.adminOnly`: the caller is not an admin."},
 }
