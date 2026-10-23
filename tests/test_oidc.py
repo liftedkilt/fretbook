@@ -357,5 +357,5 @@ def test_library_export_is_per_user_and_admins_export_everything(app_factory, pr
         accepted = bob.post("/api/library/import", files={"file": ("a.zip", archive)}, data={"mode": "skip"})
         assert accepted.status_code == 202
         app.state.ctx.jobs.run_once()
-        assert {song["title"] for song in bob.get("/api/songs").json()} == {"Bob song", "Alice song"}
-        assert {song["title"] for song in alice.get("/api/songs").json()} == {"Alice song"}
+        assert {song["title"] for song in bob.get("/api/songs").json()["items"]} == {"Bob song", "Alice song"}
+        assert {song["title"] for song in alice.get("/api/songs").json()["items"]} == {"Alice song"}

@@ -95,7 +95,7 @@ def test_round_trip_into_a_fresh_library(tmp_path: Path) -> None:
     assert job["status"] == "done", job
     assert (job["result"]["imported"], job["result"]["skipped"], job["result"]["failed"]) == (2, 0, 0)
 
-    restored = {song["title"]: song for song in target.get("/api/songs").json()}
+    restored = {song["title"]: song for song in target.get("/api/songs").json()["items"]}
     tab = target.get(f"/api/songs/{restored['Riff']['id']}").json()
     assert tab["document"] == songs["tab"]["document"]
     assert tab["artist"] == "Me"
@@ -114,11 +114,11 @@ def test_existing_songs_are_skipped_or_kept_as_copies(tmp_path: Path) -> None:
 
     skipped = _restore(client, archive, "skip")["result"]
     assert (skipped["imported"], skipped["skipped"], skipped["copied"]) == (0, 2, 0)
-    assert len(client.get("/api/songs").json()) == 2
+    assert len(client.get("/api/songs").json()["items"]) == 2
 
     copied = _restore(client, archive, "copy")["result"]
     assert (copied["imported"], copied["skipped"], copied["copied"]) == (0, 0, 2)
-    songs = client.get("/api/songs").json()
+    songs = client.get("/api/songs").json()["items"]
     assert len(songs) == 4
     assert len({song["id"] for song in songs}) == 4
     assert len({song["slug"] for song in songs}) == 4
@@ -147,7 +147,7 @@ def test_rejects_files_that_are_not_archives(tmp_path: Path) -> None:
         assert response.status_code == 400, key
         assert response.json()["detail"]["key"] == key
     assert list(client.app.state.ctx.settings.inbox_dir.glob("*")) == []
-    assert client.get("/api/songs").json() == []
+    assert client.get("/api/songs").json()["items"] == []
 
 
 @pytest.mark.parametrize("name", ["../evil.json", "/etc/passwd", "songs/..\\x", "songs/a/../../b", "C:evil"])
@@ -194,7 +194,7 @@ def test_a_bad_song_is_reported_and_the_rest_restore(tmp_path: Path) -> None:
     assert job["status"] == "done"
     assert (job["result"]["imported"], job["result"]["failed"]) == (1, 1)
     assert job["result"]["warnings"][0]["key"] == "backup.songFailed"
-    assert [song["title"] for song in target.get("/api/songs").json()] == ["Hello"]
+    assert [song["title"] for song in target.get("/api/songs").json()["items"]] == ["Hello"]
 
 
 def test_audio_type_comes_from_the_extension_not_the_archive(tmp_path: Path) -> None:
