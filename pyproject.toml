@@ -2,6 +2,7 @@
 name = "fretbook"
 version = "0.1.1"
 description = "Self-hosted tabs and sheet music for bass and guitar."
+license = "MIT"
 requires-python = ">=3.12"
 readme = "README.md"
 

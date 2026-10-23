@@ -157,3 +157,7 @@ Features that listen to your instrument (the pitch-detection engine in `web/src/
 - [CONTRIBUTING.md](CONTRIBUTING.md): development setup, checks, working on an issue, dependency updates, and adding a locale.
 - [AGENTS.md](AGENTS.md) ([CLAUDE.md](CLAUDE.md)): how coding agents pick up, claim, and finish issues, plus the [PR template](.github/pull_request_template.md) and [issue templates](.github/ISSUE_TEMPLATE/).
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): how the app is built, the stored score format, and API conventions.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
