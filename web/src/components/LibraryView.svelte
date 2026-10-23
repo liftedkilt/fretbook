@@ -1,375 +1,153 @@
 <script lang="ts">
-  import {
-    ApiError,
-    createChordSheet,
-    createTab,
-    deleteSong,
-    getMe,
-    getMeta,
-    importDocument,
-    importFile,
-    importUrl,
-    listSongs,
-    previewImport,
-    saveSettings,
-    waitForJob,
-  } from "../lib/api";
-  import { documentFromGuitarPro } from "../lib/alphatab/importScore";
-  import { keyed, t, tOr } from "../lib/i18n.svelte";
-  import { instrumentFamily, instrumentLabel, type InstrumentFilter } from "../lib/instruments";
-  import { followLink, hrefFor, navigate } from "../lib/router.svelte";
-  import { tuningLabel } from "../lib/tuning";
-  import type { ImportPreview, InstrumentPreset, Job, SongSummary } from "../lib/types";
+  import Cover from "./Cover.svelte";
+  import Icon from "./Icon.svelte";
+  import { deleteSong } from "../lib/api";
+  import { t } from "../lib/i18n.svelte";
+  import { instrumentLabel } from "../lib/instruments";
+  import { followLink, hrefFor } from "../lib/router.svelte";
+  import type { SongSummary } from "../lib/types";
+  import { countFor, matchesFilter, openSheet, refreshSongs, ui, type LibraryFilter } from "../lib/ui.svelte";
 
-  let songs = $state<SongSummary[]>([]);
-  let presets = $state<InstrumentPreset[]>([]);
-  let defaultInstrument = $state("bass-4");
+  type Sort = "recent" | "title" | "artist";
+
   let error = $state("");
-  let notice = $state("");
-  let busy = $state("");
-  let title = $state("");
-  let artist = $state("");
-  let preset = $state("bass-4");
-  let bpm = $state(120);
-  let measures = $state(4);
-  let numerator = $state(4);
-  let denominator = $state(4);
-  let url = $state("");
-  let videoId = $state("");
-  let sheetTitle = $state("");
-  let sheetArtist = $state("");
-  let sheetText = $state("");
-  let filter = $state<"all" | InstrumentFilter>("all");
-  let picker = $state<ImportPreview | null>(null);
-  let previewUrl = $state("");
-  let selected = $state<number[]>([]);
+  let sort = $state<Sort>("recent");
 
-  const family = $derived(presets.find((item) => item.id === defaultInstrument)?.family ?? "bass");
-  const visible = $derived(
-    songs.filter((song) => filter === "all" || (song.content_kind === "tab" && instrumentFamily(song.preferred_instrument) === filter)),
-  );
+  const filters: { id: LibraryFilter; key: string }[] = [
+    { id: "all", key: "library.filterAll" },
+    { id: "bass", key: "library.filterBass" },
+    { id: "electric", key: "library.filterElectric" },
+    { id: "acoustic", key: "library.filterAcoustic" },
+    { id: "chords", key: "library.filterChords" },
+  ];
 
-  function message(err: unknown): string {
-    if (err instanceof ApiError || err instanceof Error) return err.message;
-    return t("error.generic");
-  }
-
-  $effect(() => {
-    Promise.all([getMeta(), getMe()])
-      .then(([meta, me]) => {
-        presets = meta.instruments;
-        defaultInstrument = me.settings.default_instrument;
-        preset = me.settings.default_instrument;
-      })
-      .catch((err: unknown) => {
-        error = message(err);
-      });
-    void refresh();
+  const visible = $derived.by(() => {
+    const query = ui.search.trim().toLocaleLowerCase();
+    const list = ui.songs.filter(
+      (song) =>
+        matchesFilter(song, ui.filter) &&
+        (!query || song.title.toLocaleLowerCase().includes(query) || song.artist.toLocaleLowerCase().includes(query)),
+    );
+    if (sort === "title") return [...list].sort((a, b) => a.title.localeCompare(b.title));
+    if (sort === "artist") return [...list].sort((a, b) => (a.artist || "~").localeCompare(b.artist || "~") || a.title.localeCompare(b.title));
+    return [...list].sort((a, b) => b.updated_at.localeCompare(a.updated_at));
   });
 
-  async function refresh() {
-    songs = await listSongs();
-  }
-
-  async function changeDefault(next: string) {
-    error = "";
-    try {
-      defaultInstrument = (await saveSettings({ default_instrument: next })).default_instrument;
-      preset = defaultInstrument;
-    } catch (err) {
-      error = message(err);
-    }
-  }
-
-  async function create() {
-    error = "";
-    try {
-      const song = await createTab({
-        title: title.trim() || t("library.untitled"),
-        artist: artist.trim(),
-        preset,
-        bpm,
-        measures,
-        signature: [numerator, denominator],
-      });
-      navigate(`/songs/${song.id}/edit`);
-    } catch (err) {
-      error = message(err);
-    }
-  }
-
-  async function createSheet() {
-    error = "";
-    try {
-      const song = await createChordSheet({ title: sheetTitle.trim(), artist: sheetArtist.trim(), chordpro: sheetText });
-      navigate(`/songs/${song.id}`);
-    } catch (err) {
-      error = message(err);
-    }
-  }
-
-  function progress(job: Job) {
-    busy = tOr(job.progress_key, job.progress || t("library.importing"));
-  }
-
-  async function runJob(jobId: string) {
-    const job = await waitForJob(jobId, progress);
-    if (job.status === "error") {
-      throw new Error(keyed({ key: job.error_key, message: job.error ?? "", params: job.error_params }));
-    }
-    const warnings = job.result?.warnings ?? [];
-    if (warnings.length) notice = t("library.warnings", { warnings: warnings.map((item) => keyed(item)).join(" ") });
-    if (job.result?.song_id) navigate(`/songs/${job.result.song_id}`);
-  }
-
-  const songsterrUrl = /^https:\/\/www\.songsterr\.com\/a\/wsa\/[\w-]+-s\d+/i;
-
-  function togglePart(partId: number, checked: boolean) {
-    selected = checked ? [...selected, partId] : selected.filter((id) => id !== partId);
-  }
-
-  async function startImport(target: string, partIds: number[] | null) {
-    error = "";
-    notice = "";
-    busy = t("library.importing");
-    try {
-      const started = await importUrl(target, videoId.trim(), partIds);
-      await runJob(started.job_id);
-      picker = null;
-    } catch (err) {
-      error = message(err);
-    } finally {
-      busy = "";
-    }
-  }
-
-  async function submitUrl() {
-    error = "";
-    notice = "";
-    picker = null;
-    const target = url.trim();
-    if (!target) return;
-    if (!songsterrUrl.test(target)) {
-      await startImport(target, null);
-      return;
-    }
-    busy = t("library.checkingTracks");
-    let preview: ImportPreview;
-    try {
-      preview = await previewImport(target);
-    } catch (err) {
-      error = message(err);
-      busy = "";
-      return;
-    }
-    if (preview.tracks.length <= 1) {
-      await startImport(target, null);
-      return;
-    }
-    previewUrl = target;
-    picker = preview;
-    const matching = preview.tracks.filter((track) => (track.is_bass ? "bass" : "guitar") === family);
-    const initial = matching.length ? matching : preview.tracks.slice(0, 1);
-    selected = initial.map((track) => track.part_id);
-    busy = "";
-  }
-
-  async function submitFile(file: File) {
-    error = "";
-    notice = "";
-    busy = t("library.importing");
-    try {
-      if (/\.(gp|gp3|gp4|gp5|gpx)$/i.test(file.name)) {
-        const parsed = documentFromGuitarPro(new Uint8Array(await file.arrayBuffer()), family);
-        const saved = await importDocument({
-          title: parsed.title,
-          artist: parsed.artist,
-          source_kind: "guitarpro",
-          document: parsed.document,
-        });
-        navigate(`/songs/${saved.id}`);
-        return;
-      }
-      const started = await importFile(file);
-      await runJob(started.job_id);
-    } catch (err) {
-      error = message(err);
-    } finally {
-      busy = "";
-    }
-  }
+  const heading = $derived(t(filters.find((item) => item.id === ui.filter)?.key ?? "library.filterAll"));
 
   async function remove(song: SongSummary) {
     if (!confirm(t("library.confirmDelete", { title: song.title }))) return;
     try {
       await deleteSong(song.id);
-      await refresh();
+      await refreshSongs();
     } catch (err) {
-      error = message(err);
+      error = err instanceof Error ? err.message : t("error.generic");
     }
   }
 
-  function presetLabel(item: InstrumentPreset): string {
-    return tOr(item.label_key, item.label);
+  function kindLabel(song: SongSummary): string {
+    return song.content_kind === "chords" ? t("library.chordSheet") : instrumentLabel(song.preferred_instrument);
   }
 </script>
 
-<div class="stack">
-  <section class="panel">
-    <div class="row">
-      <label class="field">
-        {t("settings.defaultInstrument")}
-        <select value={defaultInstrument} onchange={(event) => void changeDefault(event.currentTarget.value)}>
-          {#each presets as item (item.id)}
-            <option value={item.id}>{presetLabel(item)}</option>
-          {/each}
+<section class="library">
+  <header class="page-hero">
+    <div>
+      <p class="eyebrow">{t("library.heading")}</p>
+      <h1 class="display hero-title">{ui.filter === "all" ? t("library.welcome") : heading}</h1>
+      <p class="muted">{t("library.count", { count: countFor(ui.filter) })}</p>
+    </div>
+    <button class="primary hero-add" onclick={() => openSheet("add")}><Icon name="plus" />{t("add.button")}</button>
+  </header>
+
+  {#if ui.songs.length > 0}
+    <div class="toolbar">
+      <label class="search">
+        <Icon name="search" size={18} />
+        <input type="search" bind:value={ui.search} placeholder={t("library.search")} aria-label={t("library.search")} />
+      </label>
+      <label class="sort">
+        <span class="visually-hidden">{t("library.sort")}</span>
+        <select bind:value={sort} aria-label={t("library.sort")}>
+          <option value="recent">{t("library.sortRecent")}</option>
+          <option value="title">{t("library.sortTitle")}</option>
+          <option value="artist">{t("library.sortArtist")}</option>
         </select>
       </label>
-      <p class="hint" style="margin:0">{t("settings.defaultInstrumentHint")}</p>
     </div>
-  </section>
 
-  <section class="panel">
-    <h2 class="section-title" style="margin-top:0">{t("library.importHeading")}</h2>
-    <div class="row">
-      <label class="field" style="flex:1">
-        {t("library.url")}
-        <input bind:value={url} placeholder={t("library.urlHint")} onkeydown={(event) => { if (event.key === "Enter") void submitUrl(); }} />
-      </label>
-      <label class="field">
-        {t("library.videoId")}
-        <input bind:value={videoId} maxlength="11" />
-      </label>
-      <button class="primary" disabled={Boolean(busy) || !url.trim()} onclick={() => void submitUrl()}>{t("library.importUrl")}</button>
+    <div class="chips" role="group" aria-label={t("library.filters")}>
+      {#each filters as item (item.id)}
+        <button class="chip" aria-pressed={ui.filter === item.id} onclick={() => (ui.filter = item.id)}>
+          {t(item.key)}<span class="chip-count">{countFor(item.id)}</span>
+        </button>
+      {/each}
     </div>
-    {#if picker}
-      <div class="track-picker">
-        <h3 class="section-title" style="margin-top:0.8rem">{t("library.pickTracks")}</h3>
-        <p class="hint" style="margin-top:0">{t("library.pickTracksHint", { title: picker.title || picker.artist })}</p>
-        {#each picker.tracks as track (track.part_id)}
-          <label class="track-choice">
-            <input
-              type="checkbox"
-              checked={selected.includes(track.part_id)}
-              onchange={(event) => togglePart(track.part_id, event.currentTarget.checked)}
-            />
-            <span>
-              {track.name || instrumentLabel(track.canonical_instrument || track.instrument)}
-              · {instrumentLabel(track.canonical_instrument || track.instrument)}
-              · {tuningLabel(track.tuning)}
-              {#if track.capo > 0}· {t("player.capo", { fret: track.capo })}{/if}
-            </span>
-          </label>
-        {/each}
-        <div class="row" style="margin-top:0.6rem">
-          <button class="primary" disabled={Boolean(busy) || selected.length === 0} onclick={() => void startImport(previewUrl, selected)}>
-            {t("library.importSelected")}
-          </button>
-          <button type="button" onclick={() => (picker = null)}>{t("library.cancel")}</button>
-        </div>
+  {/if}
+
+  {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
+
+  {#if !ui.loaded}
+    <div class="song-grid" aria-busy="true">
+      {#each [0, 1, 2, 3, 4, 5] as index (index)}
+        <div class="song-card skeleton"><div class="cover cover-md"></div><span></span><span></span></div>
+      {/each}
+    </div>
+  {:else if ui.songs.length === 0}
+    <div class="empty-state">
+      <span class="empty-art"><Icon name="sparkle" size={34} /></span>
+      <h2 class="display">{t("library.emptyTitle")}</h2>
+      <p class="muted">{t("library.empty")}</p>
+      <div class="empty-actions">
+        <button class="primary" onclick={() => openSheet("add")}><Icon name="plus" />{t("add.button")}</button>
       </div>
-    {/if}
-    <div class="row" style="margin-top:0.7rem">
-      <label class="field">
-        {t("library.file")}
-        <input
-          type="file"
-          accept=".musicxml,.xml,.json,.gp,.gp3,.gp4,.gp5,.gpx,.cho,.chordpro,.chopro,.crd,.txt"
-          onchange={(event) => {
-            const file = event.currentTarget.files?.[0];
-            event.currentTarget.value = "";
-            if (file) void submitFile(file);
-          }}
-        />
-      </label>
-      {#if busy}<span class="hint">{busy}</span>{/if}
     </div>
-  </section>
-
-  <section class="panel">
-    <h2 class="section-title" style="margin-top:0">{t("library.createHeading")}</h2>
-    <div class="row">
-      <label class="field">{t("library.title")}<input bind:value={title} /></label>
-      <label class="field">{t("library.artist")}<input bind:value={artist} /></label>
-      <label class="field">
-        {t("library.preset")}
-        <select bind:value={preset}>
-          {#each presets as item (item.id)}
-            <option value={item.id}>{presetLabel(item)}</option>
-          {/each}
-        </select>
-      </label>
-      <label class="field">{t("library.bpm")}<input type="number" min="1" max="399" bind:value={bpm} /></label>
-      <label class="field">{t("library.measureCount")}<input type="number" min="1" max="500" bind:value={measures} /></label>
-      <label class="field">
-        {t("library.signature")}
-        <span class="row">
-          <input type="number" min="1" max="32" bind:value={numerator} />
-          <select bind:value={denominator}>
-            {#each [1, 2, 4, 8, 16, 32] as value (value)}<option {value}>{value}</option>{/each}
-          </select>
-        </span>
-      </label>
-      <button class="primary" onclick={() => void create()}>{t("library.create")}</button>
+  {:else if visible.length === 0}
+    <div class="empty-state compact">
+      <span class="empty-art"><Icon name="search" size={30} /></span>
+      <p class="muted">{t("library.filterEmpty")}</p>
     </div>
-  </section>
-
-  <section class="panel">
-    <h2 class="section-title" style="margin-top:0">{t("chords.createHeading")}</h2>
-    <div class="row">
-      <label class="field">{t("library.title")}<input bind:value={sheetTitle} /></label>
-      <label class="field">{t("library.artist")}<input bind:value={sheetArtist} /></label>
-    </div>
-    <label class="field" style="margin-top:0.6rem">
-      {t("chords.paste")}
-      <textarea bind:value={sheetText} rows="6" spellcheck="false" placeholder={t("chords.pasteHint")}></textarea>
-    </label>
-    <div class="row" style="margin-top:0.6rem">
-      <button class="primary" disabled={!sheetText.trim()} onclick={() => void createSheet()}>{t("chords.create")}</button>
-    </div>
-  </section>
-
-  {#if error}<p class="error">{error}</p>{/if}
-  {#if notice}<p class="hint">{notice}</p>{/if}
-
-  <h2>{t("library.heading")}</h2>
-  {#if songs.length === 0}
-    <p class="hint">{t("library.empty")}</p>
   {:else}
-    <div class="filter-row" role="group" aria-label={t("library.filters")}>
-      <button type="button" aria-pressed={filter === "all"} onclick={() => (filter = "all")}>{t("library.filterAll")}</button>
-      <button type="button" aria-pressed={filter === "bass"} onclick={() => (filter = "bass")}>{t("library.filterBass")}</button>
-      <button type="button" aria-pressed={filter === "electric"} onclick={() => (filter = "electric")}>{t("library.filterElectric")}</button>
-      <button type="button" aria-pressed={filter === "acoustic"} onclick={() => (filter = "acoustic")}>{t("library.filterAcoustic")}</button>
-    </div>
-    {#if visible.length === 0}
-      <p class="hint">{t("library.filterEmpty")}</p>
-    {/if}
-    <div class="song-list">
+    <div class="song-grid">
       {#each visible as song (song.id)}
-        <article class="song">
-          <div>
-            <h2>{song.title}</h2>
-            <div class="meta">
-              {#if song.artist}{song.artist} · {/if}
-              {#if song.content_kind === "chords"}
-                <span class="badge">{t("library.chordSheet")}</span>
-              {:else}
-                <span class="badge">{instrumentLabel(song.preferred_instrument)}</span>
-                {t("library.strings", { count: song.string_count })}
-                · {t("library.measures", { count: song.measure_count })}
-                · {t("library.tempo", { bpm: song.bpm })}
-                · {song.has_audio ? t("library.audio") : t("library.noAudio")}
+        <article class="song-card">
+          <a class="song-link" href={hrefFor(`/songs/${song.id}`)} onclick={(event) => followLink(event, `/songs/${song.id}`)}>
+            <span class="song-art">
+              <Cover id={song.id} title={song.title} kind={song.content_kind} strings={song.string_count} />
+              <span class="song-kind">
+                <Icon name={song.content_kind === "chords" ? "chords" : "tab"} size={14} />{kindLabel(song)}
+              </span>
+              {#if song.has_audio}
+                <span class="song-audio" title={t("library.audio")}><Icon name="waveform" size={14} /></span>
               {/if}
-            </div>
-          </div>
-          <div class="actions">
-            <a class="button" href={hrefFor(`/songs/${song.id}`)} onclick={(event) => followLink(event, `/songs/${song.id}`)}>{t("library.open")}</a>
-            <a class="button" href={hrefFor(`/songs/${song.id}/edit`)} onclick={(event) => followLink(event, `/songs/${song.id}/edit`)}>{t("library.edit")}</a>
-            <button onclick={() => void remove(song)}>{t("library.delete")}</button>
+              <span class="song-play" aria-hidden="true"><Icon name="play" size={20} /></span>
+            </span>
+            <span class="song-text">
+              <strong class="song-title">{song.title}</strong>
+              <span class="song-artist">{song.artist || "—"}</span>
+              {#if song.content_kind === "tab"}
+                <span class="song-meta">
+                  {t("library.strings", { count: song.string_count })} · {t("library.measures", { count: song.measure_count })} · {t("library.tempo", { bpm: song.bpm })}
+                </span>
+              {/if}
+            </span>
+          </a>
+          <div class="song-actions">
+            <a
+              class="icon-button glass"
+              href={hrefFor(`/songs/${song.id}/edit`)}
+              onclick={(event) => followLink(event, `/songs/${song.id}/edit`)}
+              aria-label={`${t("library.edit")}: ${song.title}`}
+              title={t("library.edit")}
+            >
+              <Icon name="edit" size={16} />
+            </a>
+            <button class="icon-button glass" onclick={() => void remove(song)} aria-label={`${t("library.delete")}: ${song.title}`} title={t("library.delete")}>
+              <Icon name="trash" size={16} />
+            </button>
           </div>
         </article>
       {/each}
     </div>
   {/if}
-</div>
+</section>

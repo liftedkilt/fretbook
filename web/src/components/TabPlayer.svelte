@@ -2,6 +2,9 @@
   import * as alphaTab from "@coderline/alphatab";
   import { onMount, untrack } from "svelte";
 
+  import Cover from "./Cover.svelte";
+  import Icon from "./Icon.svelte";
+  import Menu from "./Menu.svelte";
   import { ApiError, patchSync, uploadAudio } from "../lib/api";
   import { AudioMedia } from "../lib/alphatab/audioHandler";
   import { preferredTrack, trackToAlphaTex } from "../lib/alphatex";
@@ -170,6 +173,20 @@
     applySync();
   });
 
+  // Follow scrolls inside the score, so the score itself must sit clear of the
+  // floating dock; its scroll-margin-bottom in app.css leaves room for the dock.
+  $effect(() => {
+    if (!playing || !follow || !host) return;
+    const score = host;
+    untrack(() => {
+      const dock = document.querySelector(".dock-bar")?.getBoundingClientRect();
+      const box = score.getBoundingClientRect();
+      if (box.top >= 0 && (!dock || box.bottom <= dock.top)) return;
+      const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      score.scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" });
+    });
+  });
+
   onMount(() => {
     const timer = window.setInterval(paintAudioClock, 50);
     const onKey = (event: KeyboardEvent) => {
@@ -214,7 +231,12 @@
   }
 
   function step(direction: number) {
-    const index = Math.min(barCount - 1, Math.max(0, (currentMeasure < 0 ? 0 : currentMeasure) + direction));
+    goToBar((currentMeasure < 0 ? 0 : currentMeasure) + direction);
+  }
+
+  function goToBar(target: number) {
+    if (barCount <= 0) return;
+    const index = Math.min(barCount - 1, Math.max(0, target));
     tapIndex = index;
     if (song.has_audio && audioEl) {
       audioEl.currentTime = Math.max(0, startsNow()[index] ?? 0);
@@ -282,117 +304,239 @@
     }
   }
 
+  let exporting = $state(false);
+  let panelOpen = $state(false);
+  const loopStyle = $derived(
+    loopA != null && loopB != null && barCount > 1
+      ? `left:${(loopA / barCount) * 100}%;width:${((loopB - loopA + 1) / barCount) * 100}%`
+      : "",
+  );
+
   function exportUrl(kind: string): string {
     return new URL(`api/songs/${song.id}/export.${kind}`, document.baseURI).toString();
   }
+
+  async function exportPdf() {
+    exporting = true;
+    error = "";
+    const current = track;
+    try {
+      const { downloadTrackPdf } = await import("../lib/export/pdf");
+      await downloadTrackPdf({
+        document: song.document,
+        trackId: current.id,
+        title: song.title,
+        artist: song.artist,
+        capoLabel: current.capo > 0 ? t("player.capo", { fret: current.capo }) : "",
+      });
+    } catch {
+      error = t("player.exportPdfFailed");
+    } finally {
+      exporting = false;
+    }
+  }
 </script>
 
-{#if error}<p class="error">{error}</p>{/if}
-<div class="row" style="justify-content:space-between">
-  <div>
-    <h2 style="margin:0">{song.title}</h2>
-    <p class="hint" style="margin:0.2rem 0 0">
-      {song.artist}
-      {#if song.artist}·{/if}
-      {instrumentLabel(track.instrument)}
-      · {tuningLabel(track.tuning_midi)}
-      · {track.capo > 0 ? t("player.capo", { fret: track.capo }) : t("player.noCapo")}
-    </p>
-  </div>
-  <div class="actions">
-    <a class="button" href={hrefFor("/")} onclick={(event) => followLink(event, "/")}>{t("app.back")}</a>
-    <a class="button" href={hrefFor(`/songs/${song.id}/edit`)} onclick={(event) => followLink(event, `/songs/${song.id}/edit`)}>{t("player.edit")}</a>
-    <a class="button" href={exportUrl("musicxml")}>{t("player.exportMusicXml")}</a>
-    <a class="button" href={exportUrl("json")}>{t("player.exportJson")}</a>
-    <button onclick={() => player.api?.print()}>{t("player.print")}</button>
+<div class="song-page player-page">
+  <header class="song-header">
+    <a class="back-link" href={hrefFor("/")} onclick={(event) => followLink(event, "/")}><Icon name="back" size={18} />{t("app.back")}</a>
+    <div class="song-hero">
+      <Cover id={song.id} title={song.title} strings={track.tuning_midi.length} size="lg" />
+      <div class="song-hero-text">
+        <p class="eyebrow">{instrumentLabel(track.instrument)}</p>
+        <h1 class="display song-heading">{song.title}</h1>
+        {#if song.artist}<p class="song-byline">{song.artist}</p>{/if}
+        <div class="pills">
+          <span class="pill">{tuningLabel(track.tuning_midi)}</span>
+          <span class="pill">{track.capo > 0 ? t("player.capo", { fret: track.capo }) : t("player.noCapo")}</span>
+          <span class="pill">{t("library.tempo", { bpm: song.document.bpm })}</span>
+          <span class="pill">{t("library.measures", { count: barCount })}</span>
+          {#if song.has_audio}<span class="pill pill-accent"><Icon name="waveform" size={14} />{t("library.audio")}</span>{/if}
+        </div>
+      </div>
+      <div class="hero-actions">
+        <a class="button" href={hrefFor(`/songs/${song.id}/edit`)} onclick={(event) => followLink(event, `/songs/${song.id}/edit`)}>
+          <Icon name="edit" size={18} /><span>{t("player.edit")}</span>
+        </a>
+        <Menu label={t("player.export")} icon="download">
+          {#snippet children(close)}
+            <button
+              class="menu-item"
+              role="menuitem"
+              disabled={exporting}
+              onclick={() => {
+                close();
+                void exportPdf();
+              }}
+            >
+              <Icon name="file" size={18} />
+              {exporting ? t("player.exportingPdf") : song.document.tracks.length > 1 ? t("player.exportPdfTrack", { name: track.name }) : t("player.exportPdf")}
+            </button>
+            <a class="menu-item" role="menuitem" href={exportUrl("musicxml")} onclick={close}><Icon name="layers" size={18} />{t("player.exportMusicXml")}</a>
+            <a class="menu-item" role="menuitem" href={exportUrl("json")} onclick={close}><Icon name="download" size={18} />{t("player.exportJson")}</a>
+          {/snippet}
+        </Menu>
+      </div>
+    </div>
+    {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
+  </header>
+
+  {#if song.has_audio}
+    <audio bind:this={audioEl} src={audioSrc} preload="auto"></audio>
+  {/if}
+  <!-- Scrolls on its own, so keyboard users need to be able to focus it. -->
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+  <div class="paper score" bind:this={host} role="region" aria-label={t("player.score")} tabindex="0"></div>
+
+  <div class="dock">
+    {#if panelOpen}
+      <section class="dock-panel" aria-label={t("player.syncPanel")}>
+        <p class="panel-hint">
+          {#if song.has_audio && Object.keys(song.document.sync.anchors).length === 0 && song.document.sync.points.some((point) => point != null)}
+            {t("player.usingPublished")}
+          {:else if song.has_audio}
+            {t("player.keys")}
+          {:else if song.document.sync.points.length || song.document.sync.video_id}
+            {t("player.needAudio")}
+          {:else}
+            {t("player.synth")} {t("player.keys")}
+          {/if}
+        </p>
+        {#if song.has_audio}
+          <div class="panel-group">
+            <h3>{t("player.syncMarks")}</h3>
+            <div class="button-row">
+              <button class="accent" onclick={tap}><Icon name="tap" size={18} />{t("player.tap")}</button>
+              <button onclick={() => nudge(-0.05)}>{t("player.nudgeBack")}</button>
+              <button onclick={() => nudge(0.05)}>{t("player.nudgeForward")}</button>
+              <button onclick={clearCurrent}>{t("player.clearAnchor")}</button>
+              <button onclick={() => commitAnchors(pointAnchors(song.document.sync, barCount))}>{t("player.restore")}</button>
+              <button class="danger-text" onclick={() => commitAnchors({})}>{t("player.clearAll")}</button>
+            </div>
+            <p class="muted small">
+              {t("player.nextTap", { measure: tapIndex + 1 })}{#if saveLabel}&nbsp;· {saveLabel}{/if}
+            </p>
+          </div>
+          <div class="panel-group">
+            <h3>{t("player.loop")}</h3>
+            <div class="button-row">
+              <button onclick={() => setLoop("a")}><Icon name="repeat" size={16} />{t("player.loopA")}</button>
+              <button onclick={() => setLoop("b")}>{t("player.loopB")}</button>
+              <button onclick={() => { loopA = null; loopB = null; }} disabled={loopA == null}>{t("player.clearLoop")}</button>
+              {#if loopA != null && loopB != null}<span class="pill pill-accent">{t("player.loopRange", { a: loopA + 1, b: loopB + 1 })}</span>{/if}
+            </div>
+          </div>
+        {/if}
+        <div class="panel-group panel-inline">
+          <label class="field compact-field">
+            <span>{t("player.bpm")}</span>
+            <input
+              type="number"
+              min="1"
+              max="399"
+              value={song.document.bpm}
+              onchange={(event) => {
+                const bpm = Number(event.currentTarget.value);
+                if (bpm > 0 && bpm < 400) commitAnchors({ ...song.document.sync.anchors }, bpm);
+              }}
+            />
+          </label>
+          <label class="button file-button">
+            <Icon name="upload" size={18} />{t("player.upload")}
+            <input
+              class="visually-hidden"
+              type="file"
+              accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.webm"
+              onchange={(event) => {
+                const file = event.currentTarget.files?.[0];
+                event.currentTarget.value = "";
+                if (file) void onUpload(file);
+              }}
+            />
+          </label>
+        </div>
+      </section>
+    {/if}
+
+    <div class="dock-bar">
+      <div class="dock-transport">
+        <button class="icon-button ghost" onclick={() => step(-1)} aria-label={t("player.previousBar")} title={t("player.previousBar")}>
+          <Icon name="prev" size={18} />
+        </button>
+        <button class="play-button" onclick={toggle} aria-label={playing ? t("player.pause") : t("player.play")}>
+          <Icon name={playing ? "pause" : "play"} size={24} />
+        </button>
+        <button class="icon-button ghost" onclick={() => step(1)} aria-label={t("player.nextBar")} title={t("player.nextBar")}>
+          <Icon name="next" size={18} />
+        </button>
+      </div>
+
+      <div class="dock-progress">
+        <div class="dock-status">
+          <span>
+            {#if currentMeasure >= 0 && currentMeasure < barCount}
+              {t("player.status", { measure: currentMeasure + 1, total: barCount, time: clock })}
+            {:else}
+              {t("player.statusIdle", { time: clock })}
+            {/if}
+          </span>
+          {#if saveLabel}<span class="muted">{saveLabel}</span>{/if}
+        </div>
+        <div class="scrubber">
+          {#if loopStyle}<span class="scrubber-loop" style={loopStyle}></span>{/if}
+          <input
+            type="range"
+            min="0"
+            max={Math.max(0, barCount - 1)}
+            step="1"
+            value={Math.max(0, currentMeasure)}
+            style="--fill:{barCount > 1 ? (Math.max(0, currentMeasure) / (barCount - 1)) * 100 : 0}%"
+            aria-label={t("player.position")}
+            oninput={(event) => goToBar(Number(event.currentTarget.value))}
+          />
+        </div>
+      </div>
+
+      <div class="dock-tools">
+        {#if song.document.tracks.length > 1}
+          <label class="dock-select">
+            <span class="visually-hidden">{t("player.track")}</span>
+            <Icon name="layers" size={16} />
+            <select bind:value={trackId} aria-label={t("player.track")}>
+              {#each song.document.tracks as item (item.id)}
+                <option value={item.id}>{item.name}</option>
+              {/each}
+            </select>
+          </label>
+        {/if}
+        <label class="dock-select">
+          <span class="visually-hidden">{t("player.rate")}</span>
+          <Icon name="gauge" size={16} />
+          <select value={rate} aria-label={t("player.rate")} onchange={(event) => setRate(Number(event.currentTarget.value))}>
+            {#each [0.5, 0.75, 1, 1.25, 1.5] as value (value)}
+              <option {value}>{value}×</option>
+            {/each}
+          </select>
+        </label>
+        <button
+          class="icon-button ghost"
+          aria-pressed={follow}
+          onclick={() => setFollow(!follow)}
+          aria-label={t("player.follow")}
+          title={t("player.follow")}
+        >
+          <Icon name="follow" size={18} />
+        </button>
+        <button
+          class="icon-button ghost"
+          aria-expanded={panelOpen}
+          onclick={() => (panelOpen = !panelOpen)}
+          aria-label={t("player.syncPanel")}
+          title={t("player.syncPanel")}
+        >
+          <Icon name="sliders" size={18} />
+        </button>
+      </div>
+    </div>
   </div>
 </div>
-
-<div class="transport">
-  <button class="primary" onclick={toggle}>{playing ? t("player.pause") : t("player.play")}</button>
-  {#if song.document.tracks.length > 1}
-    <label class="field">
-      {t("player.track")}
-      <select bind:value={trackId}>
-        {#each song.document.tracks as item (item.id)}
-          <option value={item.id}>{item.name}</option>
-        {/each}
-      </select>
-    </label>
-  {/if}
-  <label class="field">
-    {t("player.bpm")}
-    <input
-      type="number"
-      min="1"
-      max="399"
-      value={song.document.bpm}
-      onchange={(event) => {
-        const bpm = Number(event.currentTarget.value);
-        if (bpm > 0 && bpm < 400) commitAnchors({ ...song.document.sync.anchors }, bpm);
-      }}
-    />
-  </label>
-  <label class="field">
-    {t("player.rate")}
-    <select value={rate} onchange={(event) => setRate(Number(event.currentTarget.value))}>
-      {#each [0.5, 0.75, 1, 1.25, 1.5] as value (value)}
-        <option {value}>{value}</option>
-      {/each}
-    </select>
-  </label>
-  <label class="field" style="align-items:center">
-    <span>{t("player.follow")}</span>
-    <input type="checkbox" checked={follow} onchange={(event) => setFollow(event.currentTarget.checked)} />
-  </label>
-  {#if song.has_audio}
-    <button onclick={tap}>{t("player.tap")}</button>
-    <button onclick={() => nudge(-0.05)}>{t("player.nudgeBack")}</button>
-    <button onclick={() => nudge(0.05)}>{t("player.nudgeForward")}</button>
-    <button onclick={clearCurrent}>{t("player.clearAnchor")}</button>
-    <button onclick={() => setLoop("a")}>{t("player.loopA")}</button>
-    <button onclick={() => setLoop("b")}>{t("player.loopB")}</button>
-    <button onclick={() => { loopA = null; loopB = null; }}>{t("player.clearLoop")}</button>
-    <button onclick={() => commitAnchors(pointAnchors(song.document.sync, barCount))}>{t("player.restore")}</button>
-    <button onclick={() => commitAnchors({})}>{t("player.clearAll")}</button>
-  {/if}
-  <label class="field">
-    {t("player.upload")}
-    <input
-      type="file"
-      accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.webm"
-      onchange={(event) => {
-        const file = event.currentTarget.files?.[0];
-        event.currentTarget.value = "";
-        if (file) void onUpload(file);
-      }}
-    />
-  </label>
-</div>
-
-<p class="hint">
-  {#if currentMeasure >= 0 && currentMeasure < barCount}
-    {t("player.status", { measure: currentMeasure + 1, total: barCount, time: clock })}
-  {:else}
-    {t("player.statusIdle", { time: clock })}
-  {/if}
-  {#if song.has_audio}
-    · {t("player.nextTap", { measure: tapIndex + 1 })}
-  {/if}
-  {#if saveLabel}· {saveLabel}{/if}
-  {#if loopA != null && loopB != null}· {t("player.loopRange", { a: loopA + 1, b: loopB + 1 })}{/if}
-</p>
-{#if song.has_audio && Object.keys(song.document.sync.anchors).length === 0 && song.document.sync.points.some((point) => point != null)}
-  <p class="hint">{t("player.usingPublished")}</p>
-{:else if song.has_audio}
-  <p class="hint">{t("player.keys")}</p>
-{:else if song.document.sync.points.length || song.document.sync.video_id}
-  <p class="hint">{t("player.needAudio")}</p>
-{:else}
-  <p class="hint">{t("player.synth")} {t("player.keys")}</p>
-{/if}
-
-{#if song.has_audio}
-  <audio bind:this={audioEl} src={audioSrc} preload="auto"></audio>
-{/if}
-<div class="paper" bind:this={host}></div>

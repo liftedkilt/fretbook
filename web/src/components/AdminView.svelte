@@ -1,6 +1,8 @@
 <script lang="ts">
+  import Icon from "./Icon.svelte";
   import { ApiError, adoptLocal, listUsers, signOutUser } from "../lib/api";
   import { t } from "../lib/i18n.svelte";
+  import { refreshSongs } from "../lib/ui.svelte";
   import type { AdminUser } from "../lib/types";
 
   let { self }: { self: string } = $props();
@@ -50,17 +52,23 @@
     try {
       const { moved } = await adoptLocal();
       notice = t("admin.adopted", { count: moved });
-      await refresh();
+      await Promise.all([refresh(), refreshSongs()]);
     } catch (err) {
       error = message(err);
     }
   }
 </script>
 
-<div class="stack">
-  <section class="panel">
-    <h2 class="section-title" style="margin-top:0">{t("admin.heading")}</h2>
-    <p class="hint">{t("admin.hint")}</p>
+<div class="admin-page">
+  <header>
+    <h1 class="display">{t("admin.heading")}</h1>
+    <p class="muted">{t("admin.hint")}</p>
+  </header>
+
+  {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
+  {#if notice}<p class="muted" role="status">{notice}</p>{/if}
+
+  <section class="card">
     <div class="table-scroll">
       <table class="user-table">
         <thead>
@@ -77,16 +85,22 @@
           {#each people as user (user.id)}
             <tr>
               <td>{user.display_name}</td>
-              <td>{user.email}</td>
-              <td><span class="badge">{user.role === "admin" ? t("admin.roleAdmin") : t("admin.roleUser")}</span></td>
+              <td class="muted">{user.email}</td>
+              <td>
+                <span class="pill" class:pill-accent={user.role === "admin"}>
+                  {user.role === "admin" ? t("admin.roleAdmin") : t("admin.roleUser")}
+                </span>
+              </td>
               <td>{user.song_count}</td>
               <td>
                 {when(user.last_login_at)}
-                <div class="hint">{t("admin.sessions", { count: user.session_count })}</div>
+                <div class="muted">{t("admin.sessions", { count: user.session_count })}</div>
               </td>
               <td>
                 {#if user.session_count > 0 && user.id !== self}
-                  <button onclick={() => void endSessions(user)}>{t("admin.signOut")}</button>
+                  <button class="ghost" onclick={() => void endSessions(user)}>
+                    <Icon name="logout" size={16} />{t("admin.signOut")}
+                  </button>
                 {/if}
               </td>
             </tr>
@@ -97,13 +111,12 @@
   </section>
 
   {#if localSongs > 0}
-    <section class="panel">
-      <h2 class="section-title" style="margin-top:0">{t("admin.adoptHeading")}</h2>
-      <p class="hint">{t("admin.adoptHint", { count: localSongs })}</p>
-      <button class="primary" onclick={() => void adopt()}>{t("admin.adopt")}</button>
+    <section class="card">
+      <h2 class="card-title">{t("admin.adoptHeading")}</h2>
+      <p class="muted">{t("admin.adoptHint", { count: localSongs })}</p>
+      <div class="button-row">
+        <button class="primary" onclick={() => void adopt()}>{t("admin.adopt")}</button>
+      </div>
     </section>
   {/if}
-
-  {#if error}<p class="error">{error}</p>{/if}
-  {#if notice}<p class="hint">{notice}</p>{/if}
 </div>

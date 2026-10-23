@@ -184,7 +184,7 @@ def meta(ctx: AppContext = Depends(_ctx), _user: Principal = Depends(_user)) -> 
             "tagline": "Self-hosted tabs, chord sheets, and sheet music for bass and guitar.",
             "version": __version__,
             "auth_mode": ctx.settings.auth_mode,
-            "exporters": ["json", "musicxml", "chordpro", "print"],
+            "exporters": ["json", "musicxml", "chordpro", "pdf"],
             "instruments": presets_payload(),
         }
     )

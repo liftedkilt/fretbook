@@ -28,9 +28,9 @@
   });
 </script>
 
-{#if error}<p class="error">{error}</p>{/if}
+{#if error}<p class="alert" role="alert">{error}</p>{/if}
 {#if !song}
-  {#if !error}<p class="hint">{t("app.loading")}</p>{/if}
+  {#if !error}<div class="loading" role="status"><span class="spinner"></span>{t("app.loading")}</div>{/if}
 {:else if song.content_kind === "chords"}
   <ChordSheetView {song} />
 {:else}
