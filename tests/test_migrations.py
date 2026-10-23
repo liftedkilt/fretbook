@@ -446,6 +446,43 @@ def test_migration_007_creates_audio_calibrations_table(tmp_path: Path) -> None:
         conn.close()
 
 
+def seed_v8(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        INSERT INTO users (id, external_subject, display_name, created_at)
+        VALUES ('user-v8', 'sub-v8', 'User V8', '2026-01-08T00:00:00Z')
+        """
+    )
+    conn.execute(
+        """
+        INSERT INTO songs (
+            id, owner_id, slug, title, artist, content_kind, source_kind, source_ref,
+            revision, bpm, measure_count, track_count, string_count, preferred_instrument,
+            preferred_track_id, has_sync, duration, document, chordpro, created_at, updated_at
+        ) VALUES (
+            'song-v8', 'user-v8', 'song-v8', 'Gig Song', '', 'chords', 'manual', '{}',
+            1, 0, 0, 0, 0, '', '', 0, NULL, NULL, '[G]Hi', '2026-01-08T00:00:00Z', '2026-01-08T00:00:00Z'
+        )
+        """
+    )
+    conn.commit()
+
+
+def verify_v8(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        "INSERT INTO setlists (id, owner_id, name, created_at, updated_at) "
+        "VALUES ('sl', 'user-v8', 'Friday', '2026-01-08T00:00:00Z', '2026-01-08T00:00:00Z')"
+    )
+    conn.execute("INSERT INTO setlist_entries (id, setlist_id, song_id, position) VALUES ('e1', 'sl', 'song-v8', 0)")
+    row = conn.execute("SELECT note, transpose FROM setlist_entries WHERE id = 'e1'").fetchone()
+    assert (row["note"], row["transpose"]) == ("", 0)
+    # Deleting the song takes its entries with it, and deleting the setlist takes the rest.
+    conn.execute("DELETE FROM songs WHERE id = 'song-v8'")
+    assert conn.execute("SELECT count(*) FROM setlist_entries").fetchone()[0] == 0
+    conn.rollback()
+    assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+
+
 SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.Connection], None]]] = {
     1: (seed_v1, verify_v1),
     2: (seed_v2, verify_v2),
@@ -454,6 +491,7 @@ SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.C
     5: (seed_v5, verify_v5),
     6: (seed_v6, verify_v6),
     7: (seed_v7, verify_v7),
+    8: (seed_v8, verify_v8),
 }
 
 

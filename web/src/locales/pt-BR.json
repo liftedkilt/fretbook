@@ -453,7 +453,9 @@
       "badManifest": "O manifesto desse backup não é válido.",
       "newerFormat": "Esse backup foi feito por uma versão mais nova do Fretbook.",
       "songFailed": "Não foi possível restaurar {title}.",
-      "mediaFailed": "Não foi possível restaurar um arquivo de {title}."
+      "mediaFailed": "Não foi possível restaurar um arquivo de {title}.",
+      "setlistEntriesDropped": "{count} músicas de {name} não puderam voltar ao repertório.",
+      "setlistFailed": "Não foi possível restaurar o repertório {name}."
     },
     "import": {
       "failed": "A importação falhou.",
@@ -539,6 +541,11 @@
       "nameRequired": "Dê um nome ao token.",
       "tooMany": "Você tem tokens demais. Revogue um primeiro.",
       "notFound": "Esse token não foi encontrado."
+    },
+    "setlist": {
+      "notFound": "Esse repertório não foi encontrado.",
+      "unknownSong": "Uma música do repertório não está na sua biblioteca.",
+      "tooManyEntries": "Um repertório comporta no máximo {limit} músicas."
     }
   },
   "ui": {
@@ -827,5 +834,56 @@
     "bluetoothWarning": "Dispositivo de áudio Bluetooth detectado. O Bluetooth adiciona latência considerável e variável. Para melhores resultados, recomendamos fones ou caixas com fio.",
     "highJitterWarning": "Alta variação de tempo detectada (±{jitter} ms). Isso pode ocorrer devido a toques inconsistentes, ruído ambiente ou lentidão do sistema.",
     "saved": "Calibração salva"
+  },
+  "setlists": {
+    "heading": "Repertórios",
+    "nav": "Repertórios",
+    "count": {
+      "one": "{count} música",
+      "other": "{count} músicas"
+    },
+    "empty": "Nenhum repertório ainda. Crie um para um ensaio ou um show.",
+    "newLabel": "Nome do novo repertório",
+    "newPlaceholder": "Show de sexta",
+    "create": "Criar repertório",
+    "open": "Abrir",
+    "delete": "Excluir repertório",
+    "confirmDelete": "Excluir o repertório {name}? As músicas continuam na sua biblioteca.",
+    "back": "Todos os repertórios",
+    "rename": "Nome do repertório",
+    "play": "Tocar em ordem",
+    "exportPdf": "Exportar PDF",
+    "exportingPdf": "Preparando o PDF…",
+    "exportFailed": "Não foi possível gerar o PDF.",
+    "pdfContents": "Repertório",
+    "pdfTranspose": "Transpor {semitones}",
+    "addHeading": "Adicionar músicas",
+    "addSearch": "Pesquisar na biblioteca",
+    "addButton": "Adicionar {title}",
+    "addEmpty": "Nenhuma música encontrada.",
+    "entriesEmpty": "Este repertório está vazio. Pesquise abaixo para adicionar músicas.",
+    "entries": "Ordem de execução",
+    "dragHandle": "Arraste para reordenar {title}",
+    "moveUp": "Mover {title} para cima",
+    "moveDown": "Mover {title} para baixo",
+    "reorderHint": "Arraste uma música, ou foque nela e pressione Alt com a seta para cima ou para baixo, para mudar a ordem.",
+    "moved": "{title} movida para a posição {position} de {total}.",
+    "added": "{title} adicionada na posição {position}.",
+    "remove": "Remover {title}",
+    "note": "Nota de {title}",
+    "notePlaceholder": "Tom, capotraste, pular solo…",
+    "transpose": "Transpor",
+    "transposeFor": "Transpor {title}",
+    "transposeDown": "Um semitom para baixo",
+    "transposeUp": "Um semitom para cima",
+    "position": "Música {position} de {total}",
+    "previous": "Música anterior",
+    "next": "Próxima música",
+    "finish": "Voltar ao repertório",
+    "keysHint": "Alt com ← ou → troca de música.",
+    "playNote": "Nota",
+    "playTranspose": "Transposta {semitones}",
+    "playEmpty": "Este repertório não tem músicas para tocar.",
+    "playNav": "Navegação do repertório"
   }
 }

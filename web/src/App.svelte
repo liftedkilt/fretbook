@@ -6,6 +6,9 @@
   import EditorView from "./components/EditorView.svelte";
   import Icon from "./components/Icon.svelte";
   import LibraryView from "./components/LibraryView.svelte";
+  import SetlistPlayView from "./components/SetlistPlayView.svelte";
+  import SetlistsView from "./components/SetlistsView.svelte";
+  import SetlistView from "./components/SetlistView.svelte";
   import SettingsSheet from "./components/SettingsSheet.svelte";
   import SongView from "./components/SongView.svelte";
   import TunerSheet from "./components/TunerSheet.svelte";
@@ -24,6 +27,9 @@
   const path = $derived(routePath());
   const edit = $derived(path.match(/^\/songs\/([^/]+)\/edit\/?$/));
   const play = $derived(path.match(/^\/songs\/([^/]+)\/?$/));
+  const setlistPlay = $derived(path.match(/^\/setlists\/([^/]+)\/play(?:\/([^/]+))?\/?$/));
+  const setlistPage = $derived(path.match(/^\/setlists\/([^/]+)\/?$/));
+  const isSetlists = $derived(path === "/setlists" || path === "/setlists/");
   const isLibrary = $derived(path === "/");
   const isAdmin = $derived(ui.me?.role === "admin");
 
@@ -94,6 +100,17 @@
         </button>
       {/each}
     </nav>
+
+    <a
+      class="side-link"
+      data-testid="nav-setlists"
+      href={hrefFor("/setlists")}
+      aria-current={path.startsWith("/setlists") ? "page" : undefined}
+      onclick={(event) => followLink(event, "/setlists")}
+      title={t("setlists.nav")}
+    >
+      <Icon name="list" size={19} /><span class="rail-hide">{t("setlists.nav")}</span>
+    </a>
 
     {#if recent.length}
       <nav class="side-recent rail-hide" aria-label={t("nav.recent")}>
@@ -214,6 +231,12 @@
       <AdminView self={ui.me.user_id} />
     {:else if path === "/admin" && !ui.me}
       <p class="muted">{t("app.loading")}</p>
+    {:else if isSetlists}
+      <SetlistsView />
+    {:else if setlistPlay}
+      <SetlistPlayView id={setlistPlay[1]} position={setlistPlay[2]} />
+    {:else if setlistPage}
+      <SetlistView id={setlistPage[1]} />
     {:else if edit}
       <EditorView id={edit[1]} />
     {:else if play}

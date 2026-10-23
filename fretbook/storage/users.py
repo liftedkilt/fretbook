@@ -148,6 +148,7 @@ class UserStore:
                 slug = _unique_slug(conn, user_id, row["slug"])
                 conn.execute("UPDATE songs SET owner_id = ?, slug = ? WHERE id = ?", (user_id, slug, row["id"]))
             conn.execute("UPDATE media SET owner_id = ? WHERE owner_id = ?", (user_id, LOCAL_USER))
+            conn.execute("UPDATE setlists SET owner_id = ? WHERE owner_id = ?", (user_id, LOCAL_USER))
         return len(rows)
 
     # --- personal API tokens --------------------------------------------------

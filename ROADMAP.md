@@ -37,7 +37,6 @@ Features that use the microphone to hear the instrument, in the order to build t
 
 ### Organising
 
-- Setlists, with an ordered play-through for rehearsal or a gig.
 - Sharing, once multi-user lands: a read-only link to a song, and shared libraries for a band.
 
 ### Importing and editing

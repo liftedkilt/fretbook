@@ -67,3 +67,11 @@ Imports run on a single job thread in the web process, reading the `jobs` table.
 ## Fretboard
 
 `web/src/components/Fretboard.svelte` only draws: it takes the tuning (4 to 8 strings), capo, fret count, the notes lit now and the faded upcoming ones, a label mode and a handedness flag, so the tuner, wait mode and trainers can reuse it. `web/src/lib/fretboard.ts` holds the pure parts: `buildFretEvents` (beats of a track in played order), `focusAt` (current and next notes at a bar and tick), `positionInBar` (a recording's clock to ticks), fret spacing and the dot labels. Frets count from the capo, so the capo is the nut. The options live in the per-song practice settings (`fretboard`).
+
+## Setlists
+
+A setlist (`setlists` table) is a named, ordered list of entries (`setlist_entries`: song, position, a free-text `note`, and a `transpose` in semitones that applies to chord sheets). An entry has its own id, so a song can be in many setlists and twice in one. Both tables cascade, so deleting a song or a setlist removes its entries; `adopt-local` moves a user's setlists with their songs. `fretbook/storage/setlists.py` holds the queries and `api/setlist_routes.py` the routes. Every query is scoped by owner, a write names only songs the caller owns, and reads join songs on the setlist's owner, so titles never leak across users. Reordering and editing send the whole list (`PUT /api/setlists/{id}/entries`), which is saved in one transaction.
+
+The backup manifest gains a `setlists` array (`id`, `name`, entries as `song_id`, `note`, `transpose`). It is additive, so `format_version` stays 1 and older readers ignore it. Restore keeps a map from archive song ids to the ids the songs ended up with (a skipped song maps to the one already in the library; a copy may get a new id) and drops entries it cannot map, with a warning.
+
+In the web app, `SetlistsView`, `SetlistView` (rename, add songs, drag or Alt+arrow reorder with an `aria-live` announcement, notes, transpose, PDF) and `SetlistPlayView` (previous and next through `/setlists/:id/play/:n`, which renders `SongView` with the entry's transpose) sit behind three routes registered in `App.svelte`; `lib/setlists.ts` is the pure logic. `lib/export/setlistPdf.ts` renders each song with the single-song exporters, appends their pages with `pdf-lib`'s `copyPages`, and puts a contents page in front.

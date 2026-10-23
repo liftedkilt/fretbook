@@ -453,7 +453,9 @@
       "badManifest": "That backup's manifest is not valid.",
       "newerFormat": "That backup was made by a newer version of Fretbook.",
       "songFailed": "Could not restore {title}.",
-      "mediaFailed": "Could not restore a file of {title}."
+      "mediaFailed": "Could not restore a file of {title}.",
+      "setlistEntriesDropped": "{count} songs of {name} could not be put back in the setlist.",
+      "setlistFailed": "Could not restore the setlist {name}."
     },
     "import": {
       "failed": "The import failed.",
@@ -539,6 +541,11 @@
       "nameRequired": "Give the token a name.",
       "tooMany": "You have too many tokens. Revoke one first.",
       "notFound": "That token was not found."
+    },
+    "setlist": {
+      "notFound": "That setlist was not found.",
+      "unknownSong": "A song in the setlist is not in your library.",
+      "tooManyEntries": "A setlist can hold at most {limit} songs."
     }
   },
   "ui": {
@@ -827,5 +834,56 @@
     "bluetoothWarning": "Bluetooth audio device detected. Bluetooth adds noticeable and variable latency. For best results with scored play-along, wired headphones or speakers are recommended.",
     "highJitterWarning": "High timing jitter detected (±{jitter} ms). This may be due to inconsistent taps, room noise, or system lag.",
     "saved": "Calibration saved"
+  },
+  "setlists": {
+    "heading": "Setlists",
+    "nav": "Setlists",
+    "count": {
+      "one": "{count} song",
+      "other": "{count} songs"
+    },
+    "empty": "No setlists yet. Make one for a rehearsal or a gig.",
+    "newLabel": "New setlist name",
+    "newPlaceholder": "Friday gig",
+    "create": "Create setlist",
+    "open": "Open",
+    "delete": "Delete setlist",
+    "confirmDelete": "Delete the setlist {name}? Its songs stay in your library.",
+    "back": "All setlists",
+    "rename": "Setlist name",
+    "play": "Play through",
+    "exportPdf": "Export PDF",
+    "exportingPdf": "Preparing PDF…",
+    "exportFailed": "Could not make the PDF.",
+    "pdfContents": "Setlist",
+    "pdfTranspose": "Transpose {semitones}",
+    "addHeading": "Add songs",
+    "addSearch": "Search your library",
+    "addButton": "Add {title}",
+    "addEmpty": "No songs match.",
+    "entriesEmpty": "This setlist is empty. Search below to add songs.",
+    "entries": "Running order",
+    "dragHandle": "Drag to reorder {title}",
+    "moveUp": "Move {title} up",
+    "moveDown": "Move {title} down",
+    "reorderHint": "Drag a song, or focus it and press Alt with the up or down arrow, to change the order.",
+    "moved": "{title} moved to position {position} of {total}.",
+    "added": "{title} added at position {position}.",
+    "remove": "Remove {title}",
+    "note": "Note for {title}",
+    "notePlaceholder": "Key, capo, skip solo…",
+    "transpose": "Transpose",
+    "transposeFor": "Transpose {title}",
+    "transposeDown": "Down a semitone",
+    "transposeUp": "Up a semitone",
+    "position": "Song {position} of {total}",
+    "previous": "Previous song",
+    "next": "Next song",
+    "finish": "Back to the setlist",
+    "keysHint": "Alt with ← or → switches songs.",
+    "playNote": "Note",
+    "playTranspose": "Transposed {semitones}",
+    "playEmpty": "This setlist has no songs to play.",
+    "playNav": "Setlist navigation"
   }
 }

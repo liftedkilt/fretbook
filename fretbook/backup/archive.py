@@ -29,6 +29,7 @@ from fretbook.db.connection import session
 from fretbook.db.migrate import utcnow
 from fretbook.storage.media import MediaStore
 from fretbook.storage.repository import SongRepository
+from fretbook.storage.setlists import SetlistRepository
 
 FORMAT = "fretbook-library"
 FORMAT_VERSION = 1
@@ -142,6 +143,18 @@ def write_archive(
             "scope": "user" if owner_id else "all",
             "songs": entries,
         }
+        # Additive: older readers ignore the key, so FORMAT_VERSION stays 1.
+        manifest["setlists"] = [
+            {
+                "id": setlist["id"],
+                "name": setlist["name"],
+                "entries": [
+                    {"song_id": item["song_id"], "note": item["note"], "transpose": item["transpose"]}
+                    for item in setlist["entries"]
+                ],
+            }
+            for setlist in SetlistRepository(settings).export_all(owner_id)
+        ]
         if users:
             manifest["users"] = users
         archive.writestr(MANIFEST, json.dumps(manifest, ensure_ascii=False, indent=2))

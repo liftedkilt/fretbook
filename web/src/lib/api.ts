@@ -15,6 +15,8 @@ import type {
   Me as ContractMe,
   Meta as ContractMeta,
   SessionsEnded,
+  SetlistDetail as ContractSetlistDetail,
+  SetlistSummary as ContractSetlistSummary,
   Settings as ContractSettings,
   SongDetail as ContractSongDetail,
   SongPage as ContractSongPage,
@@ -41,6 +43,9 @@ import type {
   Meta,
   ScoreDocument,
   Settings,
+  SetlistDetail,
+  SetlistEntryDraft,
+  SetlistSummary,
   SongDetail,
   SongPage,
   SongQuery,
@@ -62,6 +67,8 @@ type _matchesContract = [
   AssertAssignable<ContractAdminUser, AdminUser>,
   AssertAssignable<ContractAudioCalibration, AudioCalibration>,
   AssertAssignable<ContractAudioCalibrationBody, AudioCalibrationBody>,
+  AssertAssignable<ContractSetlistSummary, SetlistSummary>,
+  AssertAssignable<ContractSetlistDetail, SetlistDetail>,
 ];
 
 // Score documents and jobs are parsed as the contract types, then viewed through
@@ -297,6 +304,34 @@ export function patchSync(
 
 export function deleteSong(id: string): Promise<void> {
   return request(`/api/songs/${id}`, { method: "DELETE" });
+}
+
+export function listSetlists(): Promise<SetlistSummary[]> {
+  return request<ContractSetlistSummary[]>("/api/setlists");
+}
+
+export function getSetlist(id: string): Promise<SetlistDetail> {
+  return request<ContractSetlistDetail>(`/api/setlists/${id}`);
+}
+
+export function createSetlist(name: string): Promise<SetlistDetail> {
+  return request<ContractSetlistDetail>("/api/setlists", json("POST", { name }));
+}
+
+export function renameSetlist(id: string, name: string): Promise<SetlistDetail> {
+  return request<ContractSetlistDetail>(`/api/setlists/${id}`, json("PATCH", { name }));
+}
+
+/** Save the whole running order: the list sent is the list kept. */
+export function saveSetlistEntries(
+  id: string,
+  entries: SetlistEntryDraft[],
+): Promise<SetlistDetail> {
+  return request<ContractSetlistDetail>(`/api/setlists/${id}/entries`, json("PUT", { entries }));
+}
+
+export function deleteSetlist(id: string): Promise<void> {
+  return request(`/api/setlists/${id}`, { method: "DELETE" });
 }
 
 export function uploadAudio(id: string, file: File): Promise<SongDetail> {

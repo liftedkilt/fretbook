@@ -6,7 +6,7 @@
   import { t } from "../lib/i18n.svelte";
   import type { SongDetail, TabSong } from "../lib/types";
 
-  let { id }: { id: string } = $props();
+  let { id, transpose = 0 }: { id: string; transpose?: number } = $props();
 
   let song = $state<SongDetail | null>(null);
   let error = $state("");
@@ -42,7 +42,7 @@
     <SongTags {song} />
   {/key}
   {#if song.content_kind === "chords"}
-    <ChordSheetView {song} />
+    <ChordSheetView {song} initialTranspose={transpose} />
   {:else}
     {#key song.id}
       <TabPlayer song={song as TabSong} />
