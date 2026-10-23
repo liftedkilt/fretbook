@@ -1850,6 +1850,7 @@ textarea {
 
 /* Wait mode: the cursor pulses while it waits for a note and turns green on a hit. */
 .score[data-wait="waiting"] .at-cursor-beat {
+  width: 6px !important;
   animation: wait-pulse 1.1s ease-in-out infinite;
 }
 
