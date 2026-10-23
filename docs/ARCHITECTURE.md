@@ -56,7 +56,7 @@ Imports run on a single job thread in the web process, reading the `jobs` table.
 
 ## Tuner
 
-`TunerSheet.svelte` is a sheet opened from the song page (preloaded with the track's `tuning_midi` and capo through `ui.tunerRequest`) or from the top bar (chromatic plus the presets in `web/src/lib/tuner.ts`). It reads pitch events from `startListening`, but recomputes note and cents itself from the event's frequency so the A4 slider (432 to 446 Hz) needs no restart. `lib/tuner.ts` holds the pure logic (nearest string, needle position, the in-tune tick after a few steady readings, the sine reference tone). Nothing leaves the browser.
+`TunerSheet.svelte` is a sheet opened from the song page (preloaded with the track's `tuning_midi` and capo through `ui.tunerRequest`) or from the top bar (chromatic plus the presets in `web/src/lib/tuner.ts`). It reads pitch events from `startListening`, but recomputes note and cents itself from the event's frequency so the A4 slider (432 to 446 Hz) needs no restart. `lib/tuner.ts` holds the pure logic (nearest string, needle position, `PitchSmoother`: median filter with a dropout hold, a ±1.5 cent dead zone, `TuneTracker`: a string within ±3 cents for 1 s counts as tuned and the sheet shows All strings in tune, the success chime, the sine reference tone). The sheet lays the strings out as a headstock (low strings left, high right) with an Auto toggle that, when off, locks to the tapped string. Nothing leaves the browser.
 
 ## Wait mode
 

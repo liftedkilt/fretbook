@@ -678,7 +678,14 @@
     "toneHint": "Tap a string to hear its reference note.",
     "start": "Start",
     "starting": "Starting…",
-    "stop": "Stop"
+    "stop": "Stop",
+    "auto": "Auto",
+    "mute": "Mute success sound",
+    "holdSteady": "Hold steady",
+    "tuneUp": "Tune up",
+    "tuneDown": "Tune down",
+    "allTuned": "All strings in tune",
+    "startOver": "Start over"
   },
   "tags": {
     "heading": "Tags",

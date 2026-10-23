@@ -4,9 +4,12 @@ import {
   playReferenceTone,
   A4_MAX,
   A4_MIN,
-  InTuneTracker,
   PRESETS,
-  TICK_READINGS,
+  PitchSmoother,
+  TuneTracker,
+  centsFromString,
+  displayCents,
+  playSuccessChime,
   chromaticMatch,
   clampA4,
   isInTune,
@@ -88,29 +91,111 @@ describe("needle", () => {
     expect(needlePosition(80)).toBe(1);
   });
 
-  it("calls five cents in tune", () => {
-    expect(isInTune(5)).toBe(true);
-    expect(isInTune(-5.1)).toBe(false);
+  it("calls three cents in tune", () => {
+    expect(isInTune(3)).toBe(true);
+    expect(isInTune(-3.1)).toBe(false);
   });
 });
 
-describe("InTuneTracker", () => {
-  it("shows the tick only after several steady readings on one string", () => {
-    const tracker = new InTuneTracker();
-    for (let i = 1; i < TICK_READINGS; i++) expect(tracker.update(2, 1)).toBe(false);
-    expect(tracker.update(2, 1)).toBe(true);
+describe("displayCents", () => {
+  it("shows a small offset as centred and keeps a real one", () => {
+    expect(displayCents(1.2)).toBe(0);
+    expect(displayCents(-1.5)).toBe(0);
+    expect(displayCents(2.5)).toBe(2.5);
+    expect(displayCents(-9)).toBe(-9);
+  });
+});
+
+describe("centsFromString", () => {
+  it("measures against the chosen string, not the nearest", () => {
+    expect(centsFromString(midiToFrequency(45), STANDARD, 4)).toBeCloseTo(0, 5);
+    expect(centsFromString(midiToFrequency(45), STANDARD, 5)).toBeCloseTo(500, 3);
+    expect(centsFromString(0, STANDARD, 4)).toBeNull();
+    expect(centsFromString(110, STANDARD, 9)).toBeNull();
+  });
+});
+
+describe("PitchSmoother", () => {
+  const a2 = midiToFrequency(45);
+
+  it("ignores a single outlier reading", () => {
+    const smoother = new PitchSmoother();
+    [0, 0.01, 0.02, 0.03].forEach((t) => smoother.push(t, a2));
+    const out = smoother.push(0.04, a2 * 1.02);
+    expect(out).toBeCloseTo(a2, 5);
   });
 
-  it("starts over when the cents drift, the string changes or the sound stops", () => {
-    const tracker = new InTuneTracker();
-    for (let i = 0; i < TICK_READINGS; i++) tracker.update(2, 0);
-    expect(tracker.update(2, 12)).toBe(false);
-    expect(tracker.update(2, 0)).toBe(false);
-    for (let i = 0; i < TICK_READINGS; i++) tracker.update(2, 0);
-    expect(tracker.update(3, 0)).toBe(false);
-    for (let i = 0; i < TICK_READINGS; i++) tracker.update(3, 0);
-    expect(tracker.update(null, null)).toBe(false);
-    expect(tracker.update(3, 0)).toBe(false);
+  it("follows a slow drift", () => {
+    const smoother = new PitchSmoother();
+    let out = 0;
+    for (let i = 0; i < 20; i++) out = smoother.push(i * 0.01, a2 * 2 ** ((i * 2) / 1200))!;
+    expect(out).toBeGreaterThan(a2 * 2 ** (20 / 1200));
+  });
+
+  it("jumps straight to a new note", () => {
+    const smoother = new PitchSmoother();
+    for (let i = 0; i < 5; i++) smoother.push(i * 0.01, a2);
+    expect(smoother.push(0.06, midiToFrequency(50))).toBeCloseTo(midiToFrequency(50), 5);
+  });
+
+  it("holds the note through a short dropout and then clears", () => {
+    const smoother = new PitchSmoother();
+    smoother.push(0, a2);
+    expect(smoother.push(0.2, null)).toBeCloseTo(a2, 5);
+    expect(smoother.push(0.5, null)).toBeNull();
+    expect(smoother.push(0.6, null)).toBeNull();
+  });
+});
+
+describe("TuneTracker", () => {
+  it("confirms a string after it has stayed in tune for the hold time", () => {
+    const tracker = new TuneTracker(1);
+    expect(tracker.update(0, 2, 1).confirmed).toBe(false);
+    const half = tracker.update(0.5, 2, -2);
+    expect(half.progress).toBeCloseTo(0.5, 5);
+    expect(half.confirmed).toBe(false);
+    const done = tracker.update(1, 2, 0);
+    expect(done).toMatchObject({ confirmed: true, newlyTuned: true });
+    expect(tracker.tuned.has(2)).toBe(true);
+    expect(tracker.update(1.2, 2, 0)).toMatchObject({ confirmed: true, newlyTuned: false });
+  });
+
+  it("starts over when the pitch drifts out, the string changes or the sound stops", () => {
+    const tracker = new TuneTracker(1);
+    tracker.update(0, 2, 0);
+    expect(tracker.update(0.9, 2, 8).progress).toBe(0);
+    tracker.update(1, 2, 0);
+    expect(tracker.update(1.9, 3, 0).progress).toBe(0);
+    tracker.update(2, 3, 0);
+    expect(tracker.update(2.9, null, null).progress).toBe(0);
+    expect(tracker.update(3, 3, 0).confirmed).toBe(false);
+    expect(tracker.tuned.size).toBe(0);
+  });
+
+  it("tells you once per hold and forgets the tuned strings on reset", () => {
+    const tracker = new TuneTracker(1);
+    tracker.update(0, 1, 0);
+    expect(tracker.update(1, 1, 0).newlyTuned).toBe(true);
+    tracker.update(2, 1, 20);
+    tracker.update(3, 1, 0);
+    expect(tracker.update(4, 1, 0).newlyTuned).toBe(false);
+    tracker.reset();
+    expect(tracker.tuned.size).toBe(0);
+  });
+
+  it("confirms chromatic holds without remembering them", () => {
+    const tracker = new TuneTracker(1);
+    tracker.update(0, 60, 0, false);
+    expect(tracker.update(1, 60, 0, false).newlyTuned).toBe(true);
+    expect(tracker.tuned.size).toBe(0);
+  });
+});
+
+describe("playSuccessChime", () => {
+  it("does not throw without audio", () => {
+    vi.stubGlobal("AudioContext", undefined);
+    expect(() => playSuccessChime()).not.toThrow();
+    vi.unstubAllGlobals();
   });
 });
 
