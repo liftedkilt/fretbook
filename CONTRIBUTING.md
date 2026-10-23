@@ -1,6 +1,12 @@
 # Contributing
 
-Coding agents: read [AGENTS.md](AGENTS.md) first. It explains how to pick, claim, and finish an issue alongside other agents.
+Coding agents: read [AGENTS.md](AGENTS.md) ([CLAUDE.md](CLAUDE.md), [GEMINI.md](GEMINI.md)) first. It explains how to pick, claim, and finish an issue alongside other agents.
+
+## Working on an issue
+
+- Open or pick an issue before starting larger work, using the [bug report](.github/ISSUE_TEMPLATE/bug_report.yml) or [feature request](.github/ISSUE_TEMPLATE/feature_request.yml) form. Check [ROADMAP.md](ROADMAP.md) and the epic ([#84](https://github.com/liftedkilt/fretbook/issues/84)) first so work is not duplicated.
+- Keep each pull request to one issue (`Closes #<N>` in the body), use Conventional Commits (`feat: …`, `fix: …`, `test: …`, `ci: …`, `docs: …`) for commit messages and PR titles, and fill in the [pull request template](.github/pull_request_template.md).
+- When several people or agents work in parallel, avoid conflicts on shared files (`openapi.json`, `web/src/lib/api-types.ts`, `web/src/locales/*.json`, `fretbook/db/migrations/`, `web/src/App.svelte`, `fretbook/api/routes.py`) by following the [Hotspots](AGENTS.md#hotspots) table in [AGENTS.md](AGENTS.md).
 
 ## Development setup
 

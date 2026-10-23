@@ -1,0 +1,39 @@
+name: Feature request
+description: Propose a new feature or improvement for Fretbook.
+labels: ["feature"]
+body:
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Background, motivation, or reference to ROADMAP.md / docs/ARCHITECTURE.md.
+    validations:
+      required: true
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What should Fretbook do, and what is in (and out of) scope for this issue?
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance criteria
+      description: Concrete, testable requirements for the pull request (server, UI, i18n, migrations, docs).
+      placeholder: |
+        - [ ] Tests cover the new behaviour (pytest / Vitest)
+        - [ ] UI strings added to en.json and pt-BR.json
+    validations:
+      required: true
+
+  - type: input
+    id: blocked-by
+    attributes:
+      label: Blocked by
+      description: Optional issues that must close before this one can start (also add the `blocked` label). Keep the `**Blocked by:**` prefix so `.github/workflows/unblock.yml` can unblock it automatically.
+      placeholder: "**Blocked by:** #123"
+    validations:
+      required: false

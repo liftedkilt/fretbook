@@ -114,6 +114,6 @@ Roles are read from the groups claim at each sign-in, so a group change in Pocke
 ## More
 
 - [ROADMAP.md](ROADMAP.md): what is planned, and what is already being built.
-- [CONTRIBUTING.md](CONTRIBUTING.md): development setup, checks, and adding a locale.
-- [AGENTS.md](AGENTS.md): how coding agents pick up, claim, and finish issues.
+- [CONTRIBUTING.md](CONTRIBUTING.md): development setup, checks, working on an issue, and adding a locale.
+- [AGENTS.md](AGENTS.md) ([CLAUDE.md](CLAUDE.md)): how coding agents pick up, claim, and finish issues, plus the [PR template](.github/pull_request_template.md) and [issue templates](.github/ISSUE_TEMPLATE/).
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): how the app is built, the stored score format, and API conventions.
