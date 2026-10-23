@@ -5,6 +5,7 @@ from fastapi import Request
 from fretbook.api.errors import api_error
 from fretbook.auth.base import Principal
 from fretbook.context import AppContext
+from fretbook.storage.users import TOKEN_PREFIX
 
 
 def context(request: Request) -> AppContext:
@@ -12,9 +13,13 @@ def context(request: Request) -> AppContext:
 
 
 def bearer_token(request: Request) -> str | None:
-    """The credential of an ``Authorization: Bearer`` header, or ``None`` when there is none."""
+    """The Fretbook token in an ``Authorization: Bearer`` header, or ``None`` when there is none.
+
+    Only ``fb_`` credentials count: an auth proxy may forward its own bearer token on every request.
+    """
     scheme, _, credential = request.headers.get("authorization", "").partition(" ")
-    return credential.strip() if scheme.lower() == "bearer" else None
+    credential = credential.strip()
+    return credential if scheme.lower() == "bearer" and credential.startswith(TOKEN_PREFIX) else None
 
 
 def principal(request: Request) -> Principal:

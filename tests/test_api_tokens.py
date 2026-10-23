@@ -69,6 +69,8 @@ def test_bearer_acts_as_the_owner_and_records_use(client: TestClient) -> None:
 
 
 def test_bad_revoked_and_expired_tokens_are_refused(client: TestClient) -> None:
+    # A bearer credential that is not a Fretbook token (an auth proxy's own) is ignored, not refused.
+    assert client.get("/api/songs", headers=_bearer("someone-elses")).status_code == 200
     bad = client.get("/api/songs", headers=_bearer("fb_nope"))
     assert bad.status_code == 401 and bad.json()["detail"]["key"] == "auth.invalidToken"
 

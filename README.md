@@ -68,17 +68,17 @@ To restore a snapshot, stop Fretbook and copy `fretbook.sqlite` and `media/` fro
 
 Every user can make personal API tokens in **Settings → API tokens** (in single-user mode too). A token is shown once; Fretbook keeps only a hash. It can expire, shows when it was last used, and stops working the moment you revoke it. Send it as `Authorization: Bearer <token>` on any `/api` route, in both auth modes. A token acts as its owner, so it reaches the owner's library and, in OIDC mode, the admin routes only if the owner is an admin. It cannot create or revoke tokens; that takes a signed-in session. Requests with a bearer token skip the same-origin check that guards browser sessions.
 
-`fretbook-cli` (also `python -m fretbook.cli`) wraps the common calls. It needs only Python, no extra packages, and reads `FRETBOOK_URL` (default `http://localhost:8137`) and `FRETBOOK_TOKEN`:
+`python -m fretbook.cli` (installed as `fretbook-cli` where the package is pip-installed) wraps the common calls. It needs only Python, no extra packages, and reads `FRETBOOK_URL` (default `http://localhost:8137`) and `FRETBOOK_TOKEN`:
 
 ```sh
 export FRETBOOK_URL=https://fretbook.example.com FRETBOOK_TOKEN=fb_...
-fretbook-cli import song.gp5 https://www.songsterr.com/a/wsa/... ~/tabs   # files, links, and folders
-fretbook-cli import --recursive --no-wait ~/tabs
-fretbook-cli list "blue"                                                  # or: list --json
-fretbook-cli export <song id> -f musicxml -o song.musicxml                # json (default), musicxml, chordpro
+python -m fretbook.cli import song.gp5 https://www.songsterr.com/a/wsa/... ~/tabs   # files, links, and folders
+python -m fretbook.cli import --recursive --no-wait ~/tabs
+python -m fretbook.cli list "blue"                                                  # or: list --json
+python -m fretbook.cli export <song id> -f musicxml -o song.musicxml                # json (default), musicxml, chordpro
 ```
 
-A folder import picks up Guitar Pro, MusicXML, ChordPro, Fretbook JSON and `.tab` files and skips the rest. `import` waits for each job and exits 1 if any failed. Guitar Pro files need the server-side converter (`FRETBOOK_GP_CONVERTER`; the Docker image has it).
+In Docker: `docker compose exec -e FRETBOOK_TOKEN=fb_... fretbook python -m fretbook.cli --url http://localhost:8137 list`. A folder import picks up Guitar Pro, MusicXML, ChordPro, Fretbook JSON and `.tab` files and skips the rest. `import` waits for each job and exits 1 if any failed. Guitar Pro files need the server-side converter (`FRETBOOK_GP_CONVERTER`; the Docker image has it).
 
 **Example: import a folder of Guitar Pro files from cron.** Drop files in `~/tabs/incoming`, and every night upload them and move the ones that imported:
 
@@ -90,10 +90,11 @@ A folder import picks up Guitar Pro, MusicXML, ChordPro, Fretbook JSON and `.tab
 ```sh
 #!/bin/sh
 # /opt/fretbook/import-incoming.sh
+export PYTHONPATH=/opt/fretbook
 cd ~/tabs/incoming || exit 1
 for f in *.gp *.gp3 *.gp4 *.gp5 *.gpx; do
   [ -e "$f" ] || continue
-  fretbook-cli import "$f" && mv "$f" ../imported/
+  /opt/fretbook/.venv/bin/python -m fretbook.cli import "$f" && mv "$f" ../imported/
 done
 ```
 

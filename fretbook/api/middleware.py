@@ -83,7 +83,7 @@ class SameOriginMiddleware:
     the Host it was sent to is refused, so another web page cannot import,
     upload, or delete in a library the viewer can reach. Requests without an
     Origin (curl, scripts) are allowed; auth decides those. So are requests with an
-    ``Authorization: Bearer`` header: a page cannot attach one cross-site without a
+    ``Authorization: Bearer fb_...`` header (a Fretbook API token): a page cannot attach one cross-site without a
     CORS preflight, which this server never grants, and the token is not a cookie
     the browser sends on its own.
     """
@@ -99,7 +99,7 @@ class SameOriginMiddleware:
         ):
             headers = dict(scope.get("headers") or [])
             origin = headers.get(b"origin")
-            bearer = headers.get(b"authorization", b"")[:7].lower() == b"bearer "
+            bearer = headers.get(b"authorization", b"")[:10].lower() == b"bearer fb_"
             if origin is not None and not bearer:
                 host = headers.get(b"host", b"").decode("latin-1").lower()
                 origin_host = urlsplit(origin.decode("latin-1")).netloc.lower() if origin != b"null" else ""
