@@ -464,19 +464,7 @@
       "notText": "A cifra não é texto UTF-8.",
       "tooLong": "A cifra tem mais de {limit} caracteres."
     },
-    "universal": {
-    "heading": "Solte um arquivo, cole um texto ou um link",
-    "hint": "O Fretbook descobre o que é.",
-    "placeholder": "Cole um link, uma tablatura, uma cifra…",
-    "drop": "Solte um arquivo aqui, ou escolha um",
-    "browse": "Escolher um arquivo",
-    "submit": "Adicionar",
-    "empty": "Adicione um arquivo, um texto ou um link primeiro.",
-    "supported": "O Fretbook lê Guitar Pro, MusicXML, ChordPro, tablatura ASCII, JSON do Fretbook e arquivos de áudio, e links do Songsterr, do YouTube, de arquivos diretos ou de páginas com uma tablatura.",
-    "mode": "Adicionar qualquer coisa",
-    "modeHint": "Solte um arquivo, cole um texto ou um link"
-  },
-  "asciiTab": {
+    "asciiTab": {
       "empty": "Cole uma tablatura primeiro.",
       "noTab": "Nenhuma tablatura encontrada. Ela precisa de quatro ou mais linhas de cordas, como e|---3---|.",
       "tooLong": "A tablatura tem mais de {limit} caracteres.",
@@ -509,6 +497,18 @@
     "chordsHint": "Cole acordes sobre a letra",
     "dropTitle": "Solte um arquivo aqui",
     "browse": "Escolher arquivo"
+  },
+  "universal": {
+    "heading": "Solte um arquivo, cole um texto ou um link",
+    "hint": "O Fretbook descobre o que é.",
+    "placeholder": "Cole um link, uma tablatura, uma cifra…",
+    "drop": "Solte um arquivo aqui, ou escolha um",
+    "browse": "Escolher um arquivo",
+    "submit": "Adicionar",
+    "empty": "Adicione um arquivo, um texto ou um link primeiro.",
+    "supported": "O Fretbook lê Guitar Pro, MusicXML, ChordPro, tablatura ASCII, JSON do Fretbook e arquivos de áudio, e links do Songsterr, do YouTube, de arquivos diretos ou de páginas com uma tablatura.",
+    "mode": "Adicionar qualquer coisa",
+    "modeHint": "Solte um arquivo, cole um texto ou um link"
   },
   "asciiTab": {
     "mode": "Colar tablatura",

@@ -10,6 +10,8 @@ const mockPreviewImport = vi.fn();
 const mockPreviewAsciiTab = vi.fn();
 const mockImportAsciiTab = vi.fn();
 const mockImportFile = vi.fn();
+const mockImportAuto = vi.fn();
+const mockImportDocument = vi.fn();
 const mockWaitForJob = vi.fn();
 const mockListSongs = vi.fn();
 const emptyPage = {
@@ -28,6 +30,8 @@ vi.mock("../lib/api", () => ({
   previewAsciiTab: (...args: unknown[]) => mockPreviewAsciiTab(...args),
   importAsciiTab: (...args: unknown[]) => mockImportAsciiTab(...args),
   importFile: (...args: unknown[]) => mockImportFile(...args),
+  importAuto: (...args: unknown[]) => mockImportAuto(...args),
+  importDocument: (...args: unknown[]) => mockImportDocument(...args),
   waitForJob: (...args: unknown[]) => mockWaitForJob(...args),
   listSongs: (...args: unknown[]) => mockListSongs(...args),
   apiUrl: (p: string) => p,
@@ -100,8 +104,11 @@ describe("AddSheet", () => {
     expect(screen.getByTestId("add-mode-tab")).toBeInTheDocument();
     expect(screen.getByTestId("add-mode-chords")).toBeInTheDocument();
 
-    // Default mode is link
-    expect(screen.getByTestId("add-url")).toBeInTheDocument();
+    expect(screen.getByTestId("add-mode-any")).toBeInTheDocument();
+
+    // The Add box is the default mode
+    expect(screen.getByTestId("any-text")).toBeInTheDocument();
+    expect(screen.queryByTestId("add-url")).toBeNull();
   });
 
   it("switches to file import source mode", async () => {
@@ -171,6 +178,7 @@ describe("AddSheet", () => {
     mockListSongs.mockResolvedValue(emptyPage);
 
     render(AddSheet);
+    await fireEvent.click(screen.getByTestId("add-mode-link"));
 
     const urlInput = screen.getByTestId("add-url");
     await fireEvent.input(urlInput, { target: { value: "https://example.com/song.musicxml" } });
@@ -241,5 +249,69 @@ describe("AddSheet", () => {
     await fireEvent.input(screen.getByTestId("paste-text"), { target: { value: TAB } });
 
     expect(await screen.findByTestId("paste-error")).toHaveTextContent("too many notes");
+  });
+
+  describe("Add box", () => {
+    beforeEach(() => {
+      mockListSongs.mockResolvedValue(emptyPage);
+      mockWaitForJob.mockResolvedValue({ status: "done", result: { song_id: "new-song" } });
+      mockImportAuto.mockResolvedValue({ job_id: "job-1", detected: "web" });
+    });
+
+    it("sends a lone pasted link as a link", async () => {
+      render(AddSheet);
+      await fireEvent.input(screen.getByTestId("any-text"), {
+        target: { value: " https://example.com/tab " },
+      });
+      await fireEvent.click(screen.getByTestId("any-submit"));
+
+      await vi.waitFor(() =>
+        expect(mockImportAuto).toHaveBeenCalledWith({ url: "https://example.com/tab" }),
+      );
+      await vi.waitFor(() => expect(ui.sheet).toBe(""));
+    });
+
+    it("sends other pasted text as text", async () => {
+      render(AddSheet);
+      await fireEvent.input(screen.getByTestId("any-text"), { target: { value: TAB } });
+      await fireEvent.click(screen.getByTestId("any-submit"));
+
+      await vi.waitFor(() => expect(mockImportAuto).toHaveBeenCalledWith({ text: TAB }));
+    });
+
+    it("asks for something to add when the box is empty", async () => {
+      render(AddSheet);
+      await fireEvent.click(screen.getByTestId("any-submit"));
+
+      expect(await screen.findByTestId("any-empty")).toBeInTheDocument();
+      expect(mockImportAuto).not.toHaveBeenCalled();
+    });
+
+    it("sends a dropped or chosen file for the server to identify", async () => {
+      render(AddSheet);
+      const file = new File(["G  C\nHello"], "download", { type: "application/octet-stream" });
+      await fireEvent.change(screen.getByTestId("any-file-input"), { target: { files: [file] } });
+
+      await vi.waitFor(() => expect(mockImportAuto).toHaveBeenCalledWith({ file }));
+    });
+
+    it("reads a Guitar Pro file in the browser even when it has no Guitar Pro name", async () => {
+      // Not a valid score: the point is that it never goes to the server.
+      const file = new File(["\x18FICHIER GUITAR PRO v5.00 junk"], "notes.txt");
+      render(AddSheet);
+      await fireEvent.change(screen.getByTestId("any-file-input"), { target: { files: [file] } });
+
+      expect(await screen.findByTestId("add-error")).toBeInTheDocument();
+      expect(mockImportAuto).not.toHaveBeenCalled();
+    });
+
+    it("shows the server's message when it cannot tell what was added", async () => {
+      mockImportAuto.mockRejectedValue(new Error("Couldn't recognise this."));
+      render(AddSheet);
+      await fireEvent.input(screen.getByTestId("any-text"), { target: { value: "hello there" } });
+      await fireEvent.click(screen.getByTestId("any-submit"));
+
+      expect(await screen.findByTestId("add-error")).toHaveTextContent("Couldn't recognise this.");
+    });
   });
 });

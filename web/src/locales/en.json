@@ -464,19 +464,7 @@
       "notText": "The chord sheet is not UTF-8 text.",
       "tooLong": "The chord sheet is longer than {limit} characters."
     },
-    "universal": {
-    "heading": "Drop a file, paste text, or paste a link",
-    "hint": "Fretbook works out what it is.",
-    "placeholder": "Paste a link, a tab, a chord sheet…",
-    "drop": "Drop a file here, or choose one",
-    "browse": "Choose a file",
-    "submit": "Add",
-    "empty": "Add a file, some text, or a link first.",
-    "supported": "Fretbook reads Guitar Pro, MusicXML, ChordPro, ASCII tab, Fretbook JSON and audio files, and links to Songsterr, YouTube, direct files, or pages with a tab.",
-    "mode": "Add anything",
-    "modeHint": "Drop a file, paste text or a link"
-  },
-  "asciiTab": {
+    "asciiTab": {
       "empty": "Paste some tab first.",
       "noTab": "No tab found. A tab needs four or more string rows such as e|---3---|.",
       "tooLong": "The tab is longer than {limit} characters.",
@@ -509,6 +497,18 @@
     "chordsHint": "Paste chords over lyrics",
     "dropTitle": "Drop a file here",
     "browse": "Choose a file"
+  },
+  "universal": {
+    "heading": "Drop a file, paste text, or paste a link",
+    "hint": "Fretbook works out what it is.",
+    "placeholder": "Paste a link, a tab, a chord sheet…",
+    "drop": "Drop a file here, or choose one",
+    "browse": "Choose a file",
+    "submit": "Add",
+    "empty": "Add a file, some text, or a link first.",
+    "supported": "Fretbook reads Guitar Pro, MusicXML, ChordPro, ASCII tab, Fretbook JSON and audio files, and links to Songsterr, YouTube, direct files, or pages with a tab.",
+    "mode": "Add anything",
+    "modeHint": "Drop a file, paste text or a link"
   },
   "asciiTab": {
     "mode": "Paste tab",

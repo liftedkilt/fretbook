@@ -39,6 +39,12 @@ A song is either a **tab** or a **chord sheet**.
 
 `fretbook/importers/ascii_tab.py` turns `e|---3---|` text into a score document. Rhythm is estimated, not read: a bar's notes are placed by their position between the bar lines, snapped to a grid (eighth notes by default), and each note lasts until the next one, rounded down to a length the notation can draw, with rests for the rest of the gap. The song is stored with `source_ref.rhythm_estimated = true`, which the song page shows as a badge. `looks_like_ascii_tab` is the one test that tells a tab from a chords-over-lyrics sheet; the importer registry uses it for `.txt` files and `POST /api/imports/ascii-tab[/preview]` for pasted text.
 
+## Universal import
+
+`POST /api/imports/auto` (`fretbook/api/universal_routes.py`) takes one of a file, pasted text or a link and queues a job; the old per-format endpoints stay. `fretbook/importers/sniff.py` identifies formats by content (magic bytes, ZIP member names, then text heuristics; the extension is only a fallback), and `resolve_importer` uses it for every uploaded file, so a mislabelled file still reaches the right importer. Prose that matches no format is refused rather than turned into a chord sheet. Guitar Pro is parsed by alphaTab in the browser, so the web app checks for it first (`web/src/lib/sniff.ts`) and the server refuses a Guitar Pro upload.
+
+Links go through the provider registry in `fretbook/importers/remote.py`: Songsterr, YouTube (blank tab plus `AudioFetch`), and everything else, which `SafeFetcher` (`safe_fetch.py`) downloads and the sniffer classifies; an HTML page is searched by `pages.py` for linked score files, then `<pre>` tab blocks. `SafeFetcher` is the only way the server fetches a user-supplied URL: public addresses only (unless `FRETBOOK_ALLOW_PRIVATE_URLS`), connect to the checked address with the original `Host` and SNI, manual redirects re-checked per hop, size and deadline limits. A new site (Ultimate Guitar) is a new `Provider` plus a branch in `_import_link`.
+
 ## Background jobs
 
 Imports run on a single job thread in the web process, reading the `jobs` table. Slow, GPU-bound work (such as recognising tabs in video frames, `fretbook/importers/youtube_frames.py`) should run as a separate worker that claims only its own job kind from the same table, and land its result as a draft for review in the editor. The design is in [design/youtube-tab-import.md](design/youtube-tab-import.md).

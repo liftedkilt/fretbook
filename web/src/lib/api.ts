@@ -2,6 +2,7 @@ import type {
   AdminUser as ContractAdminUser,
   AsciiTabBody,
   AsciiTabPreview as ContractAsciiTabPreview,
+  AutoImportAccepted,
   ErrorDetail,
   ImportPreview as ContractImportPreview,
   Job as ContractJob,
@@ -242,6 +243,19 @@ export function importFile(file: File): Promise<JobAccepted> {
   const data = new FormData();
   data.append("file", file);
   return request<JobAccepted>("/api/imports/file", { method: "POST", body: data });
+}
+
+/** Queue an import of whatever was dropped, pasted or linked. Send exactly one of `file`, `text` or `url`. */
+export function importAuto(input: {
+  file?: File;
+  text?: string;
+  url?: string;
+}): Promise<AutoImportAccepted> {
+  const data = new FormData();
+  if (input.file) data.append("file", input.file);
+  if (input.text) data.append("text", input.text);
+  if (input.url) data.append("url", input.url);
+  return request<AutoImportAccepted>("/api/imports/auto", { method: "POST", body: data });
 }
 
 /** Queue a restore of a library archive into the signed-in user's library. */

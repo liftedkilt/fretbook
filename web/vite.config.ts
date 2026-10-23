@@ -48,7 +48,7 @@ export default defineConfig({
       reporter: ["text-summary", "html", "json-summary"],
       reportsDirectory: "coverage",
       // The floor: current coverage rounded down. Raise it as tests are added; never lower it.
-      thresholds: { lines: 84, statements: 84, functions: 88, branches: 73 },
+      thresholds: { lines: 86, statements: 86, functions: 90, branches: 74 },
     },
   },
 });

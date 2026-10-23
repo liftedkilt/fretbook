@@ -28,6 +28,7 @@ from fretbook.backup.restore import register_restore_handler
 from fretbook.config import Settings
 from fretbook.context import AppContext
 from fretbook.db.migrate import migrate
+from fretbook.importers.safe_fetch import SafeFetcher
 from fretbook.jobs.handlers import register_handlers
 from fretbook.jobs.runner import JobRunner
 from fretbook.score.legacy import legacy_document, load_legacy_dir
@@ -118,14 +119,19 @@ def import_legacy(ctx: AppContext) -> int:
     return imported
 
 
-def create_app(settings: Settings | None = None, *, oidc_transport: httpx.AsyncBaseTransport | None = None) -> FastAPI:
-    """``oidc_transport`` stands in for the network to the OIDC provider in tests."""
+def create_app(
+    settings: Settings | None = None,
+    *,
+    oidc_transport: httpx.AsyncBaseTransport | None = None,
+    fetcher: SafeFetcher | None = None,
+) -> FastAPI:
+    """``oidc_transport`` and ``fetcher`` stand in for the network (the OIDC provider, pasted links) in tests."""
     settings = settings or Settings.from_env()
     songs = SongRepository(settings)
     users = UserStore(settings)
     media = MediaStore(settings)
     jobs = JobRunner(settings)
-    register_handlers(jobs, songs, media)
+    register_handlers(jobs, songs, media, fetcher)
     register_restore_handler(jobs, songs, media)
     updater = AutoUpdater(settings)
     ctx = AppContext(

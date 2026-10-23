@@ -51,6 +51,6 @@ branch = true
 
 [tool.coverage.report]
 # The floor: current total (lines and branches, 88.8%) rounded down. Raise it as tests are added; never lower it.
-fail_under = 88
+fail_under = 89
 show_missing = true
 skip_covered = true
