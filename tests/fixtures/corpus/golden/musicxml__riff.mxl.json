@@ -1,6 +1,265 @@
 {
-  "error": {
-    "key": "import.noFileImporter",
-    "params": {}
-  }
+  "artist": "Fretbook Fixtures",
+  "chordpro": null,
+  "content_kind": "tab",
+  "document": {
+    "bars": [
+      {
+        "alternate_endings": [],
+        "extras": {},
+        "repeat_end": 0,
+        "repeat_start": false,
+        "section": null,
+        "signature": [
+          4,
+          4
+        ],
+        "tempo": null
+      },
+      {
+        "alternate_endings": [],
+        "extras": {},
+        "repeat_end": 0,
+        "repeat_start": false,
+        "section": null,
+        "signature": [
+          4,
+          4
+        ],
+        "tempo": null
+      }
+    ],
+    "bpm": 100.0,
+    "sync": {
+      "anchors": {},
+      "points": [],
+      "video_id": null
+    },
+    "tracks": [
+      {
+        "bars": [
+          {
+            "extras": {},
+            "voices": [
+              {
+                "beats": [
+                  {
+                    "duration": 960,
+                    "extras": {},
+                    "grace": null,
+                    "notes": [
+                      {
+                        "bend": null,
+                        "dead": false,
+                        "extras": {},
+                        "fret": 0,
+                        "ghost": false,
+                        "hammer": false,
+                        "harmonic": null,
+                        "let_ring": false,
+                        "palm_mute": false,
+                        "slide": null,
+                        "staccato": false,
+                        "string": 3,
+                        "tie": false,
+                        "vibrato": false
+                      }
+                    ],
+                    "position": 0,
+                    "tuplet": null
+                  },
+                  {
+                    "duration": 960,
+                    "extras": {},
+                    "grace": null,
+                    "notes": [
+                      {
+                        "bend": null,
+                        "dead": false,
+                        "extras": {},
+                        "fret": 0,
+                        "ghost": false,
+                        "hammer": false,
+                        "harmonic": null,
+                        "let_ring": false,
+                        "palm_mute": false,
+                        "slide": null,
+                        "staccato": false,
+                        "string": 3,
+                        "tie": false,
+                        "vibrato": false
+                      }
+                    ],
+                    "position": 960,
+                    "tuplet": null
+                  },
+                  {
+                    "duration": 960,
+                    "extras": {},
+                    "grace": null,
+                    "notes": [
+                      {
+                        "bend": null,
+                        "dead": false,
+                        "extras": {},
+                        "fret": 3,
+                        "ghost": false,
+                        "hammer": false,
+                        "harmonic": null,
+                        "let_ring": false,
+                        "palm_mute": false,
+                        "slide": null,
+                        "staccato": false,
+                        "string": 3,
+                        "tie": false,
+                        "vibrato": false
+                      }
+                    ],
+                    "position": 1920,
+                    "tuplet": null
+                  },
+                  {
+                    "duration": 960,
+                    "extras": {},
+                    "grace": null,
+                    "notes": [
+                      {
+                        "bend": null,
+                        "dead": false,
+                        "extras": {},
+                        "fret": 0,
+                        "ghost": false,
+                        "hammer": false,
+                        "harmonic": null,
+                        "let_ring": false,
+                        "palm_mute": false,
+                        "slide": null,
+                        "staccato": false,
+                        "string": 2,
+                        "tie": false,
+                        "vibrato": false
+                      }
+                    ],
+                    "position": 2880,
+                    "tuplet": null
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extras": {},
+            "voices": [
+              {
+                "beats": [
+                  {
+                    "duration": 960,
+                    "extras": {},
+                    "grace": null,
+                    "notes": [
+                      {
+                        "bend": null,
+                        "dead": false,
+                        "extras": {},
+                        "fret": 2,
+                        "ghost": false,
+                        "hammer": false,
+                        "harmonic": null,
+                        "let_ring": false,
+                        "palm_mute": false,
+                        "slide": null,
+                        "staccato": false,
+                        "string": 2,
+                        "tie": false,
+                        "vibrato": false
+                      }
+                    ],
+                    "position": 0,
+                    "tuplet": null
+                  },
+                  {
+                    "duration": 960,
+                    "extras": {},
+                    "grace": null,
+                    "notes": [
+                      {
+                        "bend": null,
+                        "dead": false,
+                        "extras": {},
+                        "fret": 2,
+                        "ghost": false,
+                        "hammer": false,
+                        "harmonic": null,
+                        "let_ring": false,
+                        "palm_mute": false,
+                        "slide": null,
+                        "staccato": false,
+                        "string": 2,
+                        "tie": false,
+                        "vibrato": false
+                      }
+                    ],
+                    "position": 960,
+                    "tuplet": null
+                  },
+                  {
+                    "duration": 960,
+                    "extras": {},
+                    "grace": null,
+                    "notes": [
+                      {
+                        "bend": null,
+                        "dead": false,
+                        "extras": {},
+                        "fret": 0,
+                        "ghost": false,
+                        "hammer": false,
+                        "harmonic": null,
+                        "let_ring": false,
+                        "palm_mute": false,
+                        "slide": null,
+                        "staccato": false,
+                        "string": 1,
+                        "tie": false,
+                        "vibrato": false
+                      }
+                    ],
+                    "position": 1920,
+                    "tuplet": null
+                  },
+                  {
+                    "duration": 960,
+                    "extras": {},
+                    "grace": null,
+                    "notes": [],
+                    "position": 2880,
+                    "tuplet": null
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "capo": 0,
+        "id": "trk_xml_0",
+        "instrument": "bass-guitar",
+        "name": "Bass",
+        "preferred": true,
+        "tuning_midi": [
+          43,
+          38,
+          33,
+          28
+        ]
+      }
+    ],
+    "version": 1
+  },
+  "slug": "riff",
+  "source_kind": "musicxml",
+  "source_ref": {
+    "filename": "riff.mxl"
+  },
+  "title": "Corpus Riff",
+  "warnings": []
 }

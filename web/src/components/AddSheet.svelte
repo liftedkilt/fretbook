@@ -3,11 +3,13 @@
   import Icon from "./Icon.svelte";
   import Sheet from "./Sheet.svelte";
   import TabPreview from "./TabPreview.svelte";
+  import UniversalAdd, { type AddInput } from "./UniversalAdd.svelte";
   import {
     ApiError,
     createChordSheet,
     createTab,
     importAsciiTab,
+    importAuto,
     importDocument,
     importFile,
     importUrl,
@@ -17,6 +19,7 @@
   } from "../lib/api";
   import { asciiTabBody, debounced, DEFAULT_GRID, type Grid } from "../lib/asciiTab";
   import { documentFromGuitarPro } from "../lib/alphatab/importScore";
+  import { isGuitarProFile } from "../lib/sniff";
   import { keyed, t, tOr } from "../lib/i18n.svelte";
   import { instrumentLabel } from "../lib/instruments";
   import { navigate } from "../lib/router.svelte";
@@ -24,9 +27,9 @@
   import type { AsciiTabPreview, ImportPreview, InstrumentPreset, Job } from "../lib/types";
   import { closeSheet, defaultFamily, refreshSongs, ui } from "../lib/ui.svelte";
 
-  type Mode = "link" | "file" | "paste" | "tab" | "chords";
+  type Mode = "any" | "link" | "file" | "paste" | "tab" | "chords";
 
-  let mode = $state<Mode>("link");
+  let mode = $state<Mode>("any");
   let error = $state("");
   let notice = $state("");
   let busy = $state("");
@@ -61,6 +64,7 @@
   const chosenPreset = $derived(preset || ui.defaultInstrument);
 
   const modes: { id: Mode; icon: string; label: string; hint: string }[] = $derived([
+    { id: "any", icon: "sparkle", label: t("universal.mode"), hint: t("universal.modeHint") },
     { id: "link", icon: "link", label: t("add.link"), hint: t("add.linkHint") },
     { id: "file", icon: "upload", label: t("add.file"), hint: t("add.fileHint") },
     { id: "paste", icon: "file", label: t("asciiTab.mode"), hint: t("asciiTab.modeHint") },
@@ -271,7 +275,7 @@
     notice = "";
     busy = t("library.importing");
     try {
-      if (/\.(gp|gp3|gp4|gp5|gpx)$/i.test(file.name)) {
+      if (/\.(gp|gp3|gp4|gp5|gpx)$/i.test(file.name) || (await isGuitarProFile(file))) {
         const parsed = documentFromGuitarPro(
           new Uint8Array(await file.arrayBuffer()),
           defaultFamily(),
@@ -286,6 +290,32 @@
         return;
       }
       const started = await importFile(file);
+      await runJob(started.job_id);
+    } catch (err) {
+      error = message(err);
+    } finally {
+      busy = "";
+    }
+  }
+
+  /** The Add box: Guitar Pro is read here; everything else is sent for the server to identify. */
+  async function submitAny(input: AddInput) {
+    if ("file" in input && (await isGuitarProFile(input.file))) {
+      await submitFile(input.file);
+      return;
+    }
+    // A Songsterr link may have several tracks; the link form asks which ones.
+    if ("url" in input && songsterrUrl.test(input.url)) {
+      mode = "link";
+      url = input.url;
+      await submitUrl();
+      return;
+    }
+    error = "";
+    notice = "";
+    busy = t("library.importing");
+    try {
+      const started = await importAuto(input);
       await runJob(started.job_id);
     } catch (err) {
       error = message(err);
@@ -328,7 +358,9 @@
   </div>
 
   <div class="sheet-section">
-    {#if mode === "link"}
+    {#if mode === "any"}
+      <UniversalAdd busy={Boolean(busy)} onadd={(input) => void submitAny(input)} />
+    {:else if mode === "link"}
       <form
         class="form-grid"
         onsubmit={(event) => {

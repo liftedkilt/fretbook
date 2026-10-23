@@ -68,6 +68,9 @@ class Settings:
     migration_backups_keep: int = 5
     max_restore_bytes: int = 4 * 1024**3
     max_restore_unpacked_bytes: int = 16 * 1024**3
+    allow_private_urls: bool = False
+    fetch_max_bytes: int = 25 * 1024 * 1024
+    fetch_timeout_seconds: int = 30
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -112,6 +115,9 @@ class Settings:
             migration_backups_keep=backups_keep,
             max_restore_bytes=_int("FRETBOOK_MAX_RESTORE_BYTES", 4 * 1024**3),
             max_restore_unpacked_bytes=_int("FRETBOOK_MAX_RESTORE_UNPACKED_BYTES", 16 * 1024**3),
+            allow_private_urls=_flag("FRETBOOK_ALLOW_PRIVATE_URLS", False),
+            fetch_max_bytes=_int("FRETBOOK_FETCH_MAX_BYTES", 25 * 1024 * 1024),
+            fetch_timeout_seconds=_int("FRETBOOK_FETCH_TIMEOUT", 30),
         )
 
     @classmethod

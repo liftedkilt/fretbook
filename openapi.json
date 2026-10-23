@@ -198,6 +198,25 @@
         "title": "AsciiTabPreview",
         "type": "object"
       },
+      "AutoImportAccepted": {
+        "description": "Queued import.\n\n``detected`` is what the server took the input for: an importer kind,\nor ``songsterr``, ``youtube`` or ``web`` for a link.",
+        "properties": {
+          "detected": {
+            "title": "Detected",
+            "type": "string"
+          },
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id",
+          "detected"
+        ],
+        "title": "AutoImportAccepted",
+        "type": "object"
+      },
       "Bar": {
         "description": "One song-level bar (alphaTab's master bar).",
         "properties": {
@@ -330,6 +349,48 @@
           "duration"
         ],
         "title": "Beat",
+        "type": "object"
+      },
+      "Body_import_auto_api_imports_auto_post": {
+        "properties": {
+          "file": {
+            "anyOf": [
+              {
+                "contentMediaType": "application/octet-stream",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "maxLength": 200000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "title": "Body_import_auto_api_imports_auto_post",
         "type": "object"
       },
       "Body_import_file_api_imports_file_post": {
@@ -2704,6 +2765,97 @@
           }
         },
         "summary": "Preview Ascii Tab",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
+    "/api/imports/auto": {
+      "post": {
+        "description": "Work out what a dropped file, pasted text, or a pasted link is, and queue its import.\n\nSend exactly one of ``file``, ``text`` or ``url``. Text that is a single link is treated as a link.\nInput that matches no supported format is refused with `import.noFileImporter`.",
+        "operationId": "import_auto_api_imports_auto_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_auto_api_imports_auto_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutoImportAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Import Auto",
         "tags": [
           "imports"
         ]

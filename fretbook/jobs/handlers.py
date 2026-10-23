@@ -8,18 +8,30 @@ from pathlib import Path
 from typing import Any
 
 from fretbook.audio.ytdlp import AudioDownloadError, download_audio
-from fretbook.importers.base import ImportRequest, ImportResult, Notice
+from fretbook.importers import remote
+from fretbook.importers.audio_only import blank_document
+from fretbook.importers.base import AudioFetch, ImportError, ImportRequest, ImportResult, Notice
 from fretbook.importers.registry import resolve_importer
+from fretbook.importers.safe_fetch import SafeFetcher
 from fretbook.importers.youtube_frames import YouTubeFrameImporter
 from fretbook.jobs.runner import JobRunner, Progress
 from fretbook.score.model import ScoreDocument, content_hash
-from fretbook.storage.media import MediaStore
+from fretbook.storage.media import AUDIO_TYPES, MediaStore
 from fretbook.storage.repository import SongRepository
 
 logger = logging.getLogger(__name__)
 
 
-def register_handlers(runner: JobRunner, songs: SongRepository, media: MediaStore) -> None:
+def register_handlers(
+    runner: JobRunner, songs: SongRepository, media: MediaStore, fetcher: SafeFetcher | None = None
+) -> None:
+    settings = songs.settings
+    safe_fetcher = fetcher or SafeFetcher(
+        allow_private=settings.allow_private_urls,
+        max_bytes=settings.fetch_max_bytes,
+        timeout=settings.fetch_timeout_seconds,
+    )
+
     def songsterr(job: dict[str, Any], progress: Progress) -> dict[str, Any]:
         return _import_url(job, progress, songs, media)
 
@@ -48,7 +60,11 @@ def register_handlers(runner: JobRunner, songs: SongRepository, media: MediaStor
         YouTubeFrameImporter().import_score(ImportRequest(owner_id="", kind="youtube-frames"), progress)
         return {}
 
+    def link(job: dict[str, Any], progress: Progress) -> dict[str, Any]:
+        return _import_link(job, progress, songs, media, safe_fetcher)
+
     runner.register("import.songsterr", songsterr)
+    runner.register("import.url", link)
     runner.register("import.file", file_import)
     runner.register("import.youtube_frames", youtube)
 
@@ -74,6 +90,37 @@ def _import_url(job: dict[str, Any], progress: Progress, songs: SongRepository, 
     return _store_result(job, result, songs, media, progress)
 
 
+def _import_link(
+    job: dict[str, Any], progress: Progress, songs: SongRepository, media: MediaStore, fetcher: SafeFetcher
+) -> dict[str, Any]:
+    """Import whatever a pasted link points to (see :mod:`fretbook.importers.remote`)."""
+    payload = job["payload"]
+    url = str(payload["url"]).strip()
+    provider = remote.provider_for(url)
+    if provider == "songsterr":
+        return _import_url(job, progress, songs, media)
+    if provider == "youtube":
+        if not songs.settings.download_audio:
+            raise ImportError("audio downloads are turned off on this server", "import.audioDisabled")
+        video_id = remote.youtube_video_id(url) or ""
+        result = ImportResult(
+            title="YouTube video",
+            artist="",
+            slug="youtube-video",
+            document=blank_document(payload.get("prefer")),
+            source_kind="youtube",
+            source_ref={"url": url, "video_id": video_id},
+            audio=AudioFetch(video_id=video_id),
+        )
+        return _store_result(job, result, songs, media, progress)
+    staged = remote.fetch_importable(url, fetcher, songs.settings.inbox_dir, progress)
+    job = {
+        **job,
+        "payload": {**payload, "path": str(staged.path), "filename": staged.filename, "source_url": staged.url},
+    }
+    return _import_file(job, progress, songs, media)
+
+
 def _import_file(job: dict[str, Any], progress: Progress, songs: SongRepository, media: MediaStore) -> dict[str, Any]:
     payload = job["payload"]
     path = Path(payload["path"])
@@ -86,7 +133,11 @@ def _import_file(job: dict[str, Any], progress: Progress, songs: SongRepository,
             options=_options(payload),
         )
         result = resolve_importer(request).import_score(request, progress)
+        if payload.get("source_url"):
+            result.source_ref.setdefault("url", payload["source_url"])
         stored = _store_result(job, result, songs, media, progress)
+        if result.audio_file is not None:
+            return stored
         try:
             # Keep the original upload next to the song.
             media.save_file(
@@ -167,6 +218,17 @@ def _store_result(
             source_kind=result.source_kind,
             source_ref=source_ref,
             slug=result.slug,
+        )
+    if result.audio_file is not None:
+        suffix = next((ext for ext, kind in AUDIO_TYPES.items() if kind == result.audio_content_type), ".mp3")
+        media.save_file(
+            owner_id,
+            saved["id"],
+            kind="audio",
+            filename=f"audio{suffix}",
+            content_type=result.audio_content_type,
+            source=result.audio_file,
+            replace_kind=True,
         )
     if result.audio and songs.settings.download_audio:
         tmp = songs.settings.inbox_dir / f"audio-{uuid.uuid4().hex}.mp3"

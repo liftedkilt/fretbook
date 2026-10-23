@@ -16,7 +16,9 @@ get backwards:
 
 from __future__ import annotations
 
+import io
 import xml.etree.ElementTree as ET
+import zipfile
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -93,19 +95,46 @@ class _Part:
     has_tab: bool
 
 
+MAX_MXL_BYTES = 50 * 1024 * 1024
+"""Largest score a compressed ``.mxl`` may unpack to. Guards against zip bombs."""
+
+
+def _open_score(path: Path) -> Path | io.BytesIO:
+    """The score XML of ``path``: the file itself, or the root file inside a compressed ``.mxl``."""
+    with path.open("rb") as handle:
+        if handle.read(4) != b"PK\x03\x04":
+            return path
+    try:
+        with zipfile.ZipFile(path) as archive:
+            container = ET.fromstring(archive.read("META-INF/container.xml"))
+            roots = [
+                element.get("full-path")
+                for element in container.iter()
+                if _local(element.tag) == "rootfile" and element.get("full-path")
+            ]
+            if not roots:
+                raise ImportError("this .mxl has no score inside", "musicxml.parse")
+            info = archive.getinfo(str(roots[0]))
+            if info.file_size > MAX_MXL_BYTES:
+                raise ImportError("this .mxl unpacks to more than 50 MB", "musicxml.tooLarge")
+            return io.BytesIO(archive.read(info))
+    except (zipfile.BadZipFile, KeyError, ET.ParseError) as exc:
+        raise ImportError("MusicXML file could not be parsed", "musicxml.parse") from exc
+
+
 class MusicXmlImporter:
     kind = "musicxml"
 
     def can_handle(self, request: ImportRequest) -> bool:
         name = (request.filename or "").lower()
-        return name.endswith((".musicxml", ".xml"))
+        return name.endswith((".musicxml", ".xml", ".mxl"))
 
     def import_score(self, request: ImportRequest, progress: Progress) -> ImportResult:
         if request.file_path is None:
             raise ImportError("MusicXML import needs a file", "import.needsFile")
         progress("Reading MusicXML", "import.readingFile")
         try:
-            root = ET.parse(request.file_path).getroot()
+            root = ET.parse(_open_score(request.file_path)).getroot()
         except ET.ParseError as exc:
             raise ImportError("MusicXML file could not be parsed", "musicxml.parse") from exc
         if _local(root.tag) == "score-timewise":

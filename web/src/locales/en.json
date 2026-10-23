@@ -366,6 +366,8 @@
     "fetchingSync": "Fetching sync points",
     "tabReady": "Tab ready",
     "readingFile": "Reading the file",
+    "fetching": "Downloading the link",
+    "scanningPage": "Looking for a tab on the page",
     "youtubeUnavailable": "YouTube import is not available yet",
     "downloadingAudio": "Downloading audio",
     "convertingAudio": "Converting to mp3",
@@ -450,9 +452,19 @@
       "unknownKind": "Unknown importer: {kind}.",
       "notUrl": "{kind} is not a link import.",
       "noUrlImporter": "No importer matches this link. Songsterr links work today; YouTube frame import is not available yet.",
-      "noFileImporter": "No importer matches this file. Try MusicXML, Guitar Pro, ChordPro, or a Fretbook JSON export.",
+      "noFileImporter": "Couldn't recognise this. Fretbook reads Guitar Pro, MusicXML, ChordPro and chords over lyrics, ASCII tab, Fretbook JSON, and audio files.",
       "noPreview": "This link has no track list to choose from.",
       "guitarProInBrowser": "Guitar Pro files are read in the browser. Use the import button in Fretbook.",
+      "audioDisabled": "Audio downloads are turned off on this server.",
+      "isLibraryArchive": "This is a Fretbook library backup. Restore it from Settings, Library backup.",
+      "notYetSupported": "{format} files are recognised but cannot be imported yet.",
+      "chooseOne": "Add one file, one block of text, or one link.",
+      "badUrl": "Paste a web link that starts with http:// or https://.",
+      "urlBlocked": "This link points at a private or local address, so Fretbook will not fetch it.",
+      "fetchFailed": "The link could not be downloaded.",
+      "fetchTooLarge": "The download is too large.",
+      "fetchTimeout": "The download took too long.",
+      "tooManyRedirects": "The link redirects too many times.",
       "syncCountMismatch": "The source has {points} sync points for {bars} bars, so playback may drift.",
       "noSyncPoints": "No sync points are published for this song.",
       "keptEditedCopy": "\"{title}\" was edited since it was imported, so this import was saved as a separate song.",
@@ -477,7 +489,8 @@
       "parse": "The MusicXML file could not be read.",
       "timewise": "Timewise MusicXML is not supported. Save it as partwise.",
       "notMusicXml": "This is not a MusicXML score.",
-      "noTab": "This MusicXML file has no tablature (string and fret) data."
+      "noTab": "This MusicXML file has no tablature (string and fret) data.",
+      "tooLarge": "This MusicXML file is too large once unpacked."
     },
     "json": {
       "parse": "The JSON file could not be read.",
@@ -521,6 +534,18 @@
     "chordsHint": "Paste chords over lyrics",
     "dropTitle": "Drop a file here",
     "browse": "Choose a file"
+  },
+  "universal": {
+    "heading": "Drop a file, paste text, or paste a link",
+    "hint": "Fretbook works out what it is.",
+    "placeholder": "Paste a link, a tab, a chord sheet…",
+    "drop": "Drop a file here, or choose one",
+    "browse": "Choose a file",
+    "submit": "Add",
+    "empty": "Add a file, some text, or a link first.",
+    "supported": "Fretbook reads Guitar Pro, MusicXML, ChordPro, ASCII tab, Fretbook JSON and audio files, and links to Songsterr, YouTube, direct files, or pages with a tab.",
+    "mode": "Add anything",
+    "modeHint": "Drop a file, paste text or a link"
   },
   "asciiTab": {
     "mode": "Paste tab",
