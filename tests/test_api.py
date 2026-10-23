@@ -274,12 +274,6 @@ def test_songsterr_preview_and_selected_guitar(tmp_path: Path, monkeypatch) -> N
 
 def test_file_imports(tmp_path: Path) -> None:
     with _client(tmp_path) as client:
-        refused = client.post(
-            "/api/imports/file", files={"file": ("song.gp5", b"not-a-real-gp", "application/octet-stream")}
-        )
-        assert refused.status_code == 400
-        assert refused.json()["detail"]["key"] == "import.guitarProInBrowser"
-
         accepted = client.post("/api/imports/file", files={"file": ("song.musicxml", XML.encode(), "application/xml")})
         assert accepted.status_code == 202
         job = _wait(client, accepted.json()["job_id"])

@@ -8,6 +8,7 @@ export default ts.config(
   {
     ignores: [
       "dist/",
+      "dist-gp/",
       "coverage/",
       "node_modules/",
       "public/font/",

@@ -5,7 +5,7 @@ WORKDIR /src/web
 COPY web/package.json web/package-lock.json ./
 RUN npm ci
 COPY web/ ./
-RUN npm run build
+RUN npm run build && npm run build:gp-cli
 
 FROM python:3.12-slim-bookworm
 RUN apt-get update \
@@ -17,6 +17,10 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 COPY fretbook ./fretbook
 COPY --from=web /src/web/dist ./fretbook/static
+# Guitar Pro files are read on the server by alphaTab under Node: the node binary (about 120 MB
+# unpacked) and one bundled script (about 2.4 MB). Same Debian release as this image, so it runs here.
+COPY --from=web /usr/local/bin/node /usr/local/bin/node
+COPY --from=web /src/web/dist-gp/gp-to-document.mjs ./fretbook/gp/gp-to-document.mjs
 
 # Create non-root user and ensure data and app directories are owned by fretbook
 RUN groupadd --gid 1000 fretbook \

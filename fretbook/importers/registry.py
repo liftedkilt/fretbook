@@ -31,6 +31,7 @@ def default_importers() -> list[Importer]:
 _IMPORTER_FOR = {
     sniff.MUSICXML: "musicxml",
     sniff.MXL: "musicxml",
+    sniff.GUITAR_PRO: "guitarpro",
     sniff.FRETBOOK_JSON: "fretbook-json",
     sniff.CHORDPRO: "chordpro",
     sniff.CHORDS_OVER_LYRICS: "chordpro",
@@ -46,11 +47,6 @@ _NOT_YET = {
 
 def refuse_by_content(kind: str | None) -> None:
     """Raise the error for a sniffed format that cannot be imported on the server; do nothing otherwise."""
-    if kind == sniff.GUITAR_PRO:
-        raise ImportError(
-            "Guitar Pro files are read in the browser by alphaTab. Use the import button in Fretbook.",
-            "import.guitarProInBrowser",
-        )
     if kind == sniff.FRETBOOK_ARCHIVE:
         raise ImportError(
             "This is a Fretbook library backup. Restore it from Settings, Library backup.",

@@ -1,4 +1,5 @@
 dist/
+dist-gp/
 node_modules/
 public/font/
 public/soundfont/
