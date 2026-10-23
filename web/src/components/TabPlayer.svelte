@@ -37,7 +37,7 @@
   } from "../lib/sync";
   import { tuningLabel } from "../lib/tuning";
   import type { SongDetail, TabSong } from "../lib/types";
-  import { setNotation, ui } from "../lib/ui.svelte";
+  import { openTuner, setNotation, ui } from "../lib/ui.svelte";
 
   let { song: initial }: { song: TabSong } = $props();
 
@@ -590,6 +590,12 @@
         >
           <Icon name="edit" size={18} /><span>{t("player.edit")}</span>
         </a>
+        <button
+          data-testid="song-tuner"
+          onclick={() => openTuner({ tuning: track.tuning_midi, capo: track.capo })}
+        >
+          <Icon name="tuner" size={18} /><span>{t("tuner.open")}</span>
+        </button>
         <Menu label={t("player.export")} icon="download" testid="export-menu">
           {#snippet children(close)}
             <button

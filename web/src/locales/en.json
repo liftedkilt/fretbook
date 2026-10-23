@@ -22,10 +22,16 @@
     "songs": "Songs",
     "lastLogin": "Last sign-in",
     "never": "Never",
-    "sessions": { "one": "{count} session", "other": "{count} sessions" },
+    "sessions": {
+      "one": "{count} session",
+      "other": "{count} sessions"
+    },
     "signOut": "Sign out everywhere",
     "confirmSignOut": "Sign {name} out of every browser?",
-    "signedOut": { "one": "Ended {count} session.", "other": "Ended {count} sessions." },
+    "signedOut": {
+      "one": "Ended {count} session.",
+      "other": "Ended {count} sessions."
+    },
     "adoptHeading": "Library from single-user mode",
     "adoptHint": {
       "one": "{count} song was added before sign-in was turned on. Nobody can see it until an admin moves it into a library.",
@@ -628,5 +634,35 @@
       "dal_segno_segno_al_double_coda": "D.S.S. al double coda",
       "dal_segno_segno_al_fine": "D.S.S. al Fine"
     }
+  },
+  "tuner": {
+    "heading": "Tuner",
+    "open": "Tuner",
+    "forSong": "Tuned to this song",
+    "tuning": "Tuning",
+    "songTuning": "This song",
+    "chromatic": "Chromatic",
+    "preset": {
+      "standard": "Standard guitar (E A D G B E)",
+      "dropD": "Drop D",
+      "eb": "Eb (half step down)",
+      "dadgad": "DADGAD",
+      "openG": "Open G",
+      "bass4": "4-string bass",
+      "bass5": "5-string bass",
+      "bass6": "6-string bass"
+    },
+    "a4": "A4 reference",
+    "capoOn": "Tune with the capo on (fret {fret})",
+    "capoHint": "This song uses a capo on fret {fret}. Tune the open strings first, then put the capo on.",
+    "cents": "{cents} cents",
+    "listening": "Play a string…",
+    "idle": "Press Start, then play an open string.",
+    "inTune": "String in tune",
+    "playString": "Play reference tone for {note}",
+    "toneHint": "Tap a string to hear its reference note.",
+    "start": "Start",
+    "starting": "Starting…",
+    "stop": "Stop"
   }
 }

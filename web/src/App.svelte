@@ -7,12 +7,14 @@
   import LibraryView from "./components/LibraryView.svelte";
   import SettingsSheet from "./components/SettingsSheet.svelte";
   import SongView from "./components/SongView.svelte";
+  import TunerSheet from "./components/TunerSheet.svelte";
   import { t } from "./lib/i18n.svelte";
   import { followLink, hrefFor, navigate, routePath } from "./lib/router.svelte";
   import {
     countFor,
     loadMeta,
     openSheet,
+    openTuner,
     refreshSongs,
     ui,
     type LibraryFilter,
@@ -148,6 +150,14 @@
     <div class="topbar-actions">
       <button
         class="icon-button ghost"
+        data-testid="open-tuner-topbar"
+        onclick={() => openTuner()}
+        aria-label={t("tuner.heading")}
+      >
+        <Icon name="tuner" />
+      </button>
+      <button
+        class="icon-button ghost"
         data-testid="open-settings-topbar"
         onclick={() => openSheet("settings")}
         aria-label={t("settings.heading")}
@@ -213,3 +223,4 @@
 
 <AddSheet />
 <SettingsSheet />
+<TunerSheet />

@@ -136,7 +136,7 @@ Roles are read from the groups claim at each sign-in, so a group change in Pocke
 
 ### Microphone features need HTTPS
 
-Features that listen to your instrument (the pitch-detection engine in `web/src/lib/listen/`, which the tuner and play-along modes will use) read the microphone in the browser. Browsers only allow microphone access on **HTTPS pages or on `localhost`**. If you run Fretbook on another machine over plain `http://`, the browser blocks the microphone and Fretbook says so. Put it behind a reverse proxy with a certificate (see the proxy notes under Security) or open it through an SSH tunnel to `http://localhost`. Audio never leaves the browser, and echo cancellation, noise suppression and auto gain are turned off because they damage instrument sound.
+Features that listen to your instrument (the pitch-detection engine in `web/src/lib/listen/`, which the tuner and the play-along modes use) read the microphone in the browser. Browsers only allow microphone access on **HTTPS pages or on `localhost`**. If you run Fretbook on another machine over plain `http://`, the browser blocks the microphone and Fretbook says so. Put it behind a reverse proxy with a certificate (see the proxy notes under Security) or open it through an SSH tunnel to `http://localhost`. Audio never leaves the browser, and echo cancellation, noise suppression and auto gain are turned off because they damage instrument sound.
 
 ## Using it
 

@@ -3378,3 +3378,178 @@ kbd {
   border-radius: var(--r-md);
   background: var(--surface);
 }
+
+/* ------------------------------------------------------------------- tuner */
+
+.tuner {
+  display: grid;
+  gap: 1rem;
+}
+
+.tuner-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.tuner-field {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--text-2);
+}
+
+.tuner-a4 {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.tuner-a4 input {
+  flex: 1;
+}
+
+.tuner-a4 output {
+  min-width: 4.5rem;
+  font-family: var(--font-mono);
+  color: var(--text);
+}
+
+.tuner-capo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.tuner-hint {
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.tuner-dial {
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  padding: 1.25rem 1rem;
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+
+.tuner-dial-tuned {
+  border-color: var(--success);
+  background: var(--success-soft);
+}
+
+.tuner-note {
+  margin: 0;
+  font-size: 4rem;
+  line-height: 1;
+}
+
+.tuner-scale {
+  position: relative;
+  width: 100%;
+  height: 34px;
+  border-radius: 999px;
+  background:
+    linear-gradient(var(--line-strong), var(--line-strong)) 25% 50% / 1px 40% no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) 75% 50% / 1px 40% no-repeat,
+    var(--surface);
+}
+
+.tuner-centre {
+  position: absolute;
+  left: 50%;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--success);
+}
+
+.tuner-needle {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  width: 4px;
+  margin-left: -2px;
+  border-radius: 2px;
+  background: var(--grad);
+  transition:
+    left 0.12s var(--ease),
+    opacity 0.2s;
+}
+
+.tuner-cents {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--text-2);
+}
+
+.tuner-tick {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 1.5rem;
+  margin: 0;
+  font-weight: 600;
+  color: var(--success);
+}
+
+.tuner-strings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.tuner-string {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 128px;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+
+.tuner-string-no {
+  font-size: 0.75rem;
+  color: var(--text-3);
+}
+
+.tuner-string-name {
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.tuner-string-wire {
+  min-width: 18px;
+  border-radius: 2px;
+  background: var(--text-3);
+}
+
+.tuner-string-active {
+  outline: 2px solid var(--accent-ring);
+  background: var(--accent-soft);
+}
+
+.tuner-string-tuned {
+  outline-color: var(--success);
+  background: var(--success-soft);
+}
+
+.tuner-string[aria-pressed="true"] {
+  color: var(--accent-text);
+}
+
+.tuner-actions {
+  display: flex;
+  justify-content: flex-end;
+}

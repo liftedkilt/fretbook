@@ -18,7 +18,13 @@ import type {
 
 export type { LibraryFilter };
 export type Theme = "system" | "dark" | "light";
-export type Sheet = "" | "add" | "settings";
+export type Sheet = "" | "add" | "settings" | "tuner";
+
+/** What the song page hands the tuner: the track's strings (highest first) and capo. */
+export interface TunerRequest {
+  tuning: number[];
+  capo: number;
+}
 
 const THEME_KEY = "fretbook.theme";
 const NOTATION_KEY = "fretbook.notation";
@@ -93,6 +99,8 @@ export const ui = $state({
   filter: "all" as LibraryFilter,
   search: "",
   sheet: "" as Sheet,
+  /** Set when the tuner opens from a song, so it can preload that song's tuning. */
+  tunerRequest: null as TunerRequest | null,
   theme: storedTheme(),
   /** Standard notation above the tab. Off by default: most players only read the tab. */
   notation: storedNotation(),
@@ -199,6 +207,12 @@ export function defaultFamily(): InstrumentPreset["family"] {
 
 export function openSheet(sheet: Sheet): void {
   ui.sheet = sheet;
+}
+
+/** Open the tuner, optionally preloaded with a song's tuning and capo. */
+export function openTuner(request: TunerRequest | null = null): void {
+  ui.tunerRequest = request;
+  ui.sheet = "tuner";
 }
 
 export function closeSheet(): void {
