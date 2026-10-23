@@ -13,6 +13,7 @@
     "api-types:check": "openapi-typescript ../openapi.json -o src/lib/api-types.ts --alphabetize --root-types --root-types-no-schema-prefix --check || (echo 'API types are stale: run npm run api-types --prefix web and commit web/src/lib/api-types.ts' && exit 1)",
     "e2e": "npm run build && playwright test",
     "e2e:run": "playwright test",
+    "e2e:smoke": "playwright test e2e/smoke.spec.ts",
     "e2e:install": "playwright install chromium",
     "check:e2e": "tsc -p e2e/tsconfig.json",
     "lint": "eslint .",

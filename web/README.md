@@ -59,6 +59,7 @@ Component tests live alongside components in `src/components/*.test.ts` and use 
 npm run e2e:install   # once: downloads Chromium
 npm run e2e           # npm run build, then every spec
 npm run e2e:run       # specs only, against the existing web/dist
+npm run e2e:smoke     # smoke subset against local server or $FRETBOOK_TEST_URL
 npx playwright test e2e/player.spec.ts --headed
 ```
 

@@ -1,7 +1,8 @@
 name: Docker
 
-# Pull requests only check that the image still builds. Pushes to main and
-# version tags publish it to ghcr.io/<owner>/fretbook for amd64 and arm64.
+# Pull requests only check that the image still builds, passes smoke tests,
+# and passes Trivy vulnerability scanning. Pushes to main and version tags
+# publish it to ghcr.io/<owner>/fretbook for amd64 and arm64.
 # The release workflow starts it by hand for a new tag, because a tag pushed with
 # the default GITHUB_TOKEN does not trigger the push event.
 on:
@@ -21,6 +22,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      security-events: write
     env:
       PUBLISH: ${{ github.event_name != 'pull_request' }}
     steps:
@@ -54,9 +56,144 @@ jobs:
           context: .
           platforms: ${{ env.PUBLISH == 'true' && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
           push: ${{ env.PUBLISH == 'true' }}
+          load: ${{ env.PUBLISH != 'true' }}
           # Releases report their version only; other builds also report the commit.
           build-args: GIT_SHA=${{ startsWith(github.ref, 'refs/tags/v') && '' || github.sha }}
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: |
+            ${{ steps.meta.outputs.tags }}
+            ${{ env.PUBLISH != 'true' && 'fretbook:test' || '' }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Verify non-root user
+        if: env.PUBLISH != 'true'
+        run: |
+          RUN_USER=$(docker run --rm fretbook:test id -u)
+          echo "Container default user ID: $RUN_USER"
+          if [ "$RUN_USER" -eq 0 ]; then
+            echo "::error::Container must not run as root (UID 0)"
+            exit 1
+          fi
+
+      - name: Start container with temporary volume
+        if: env.PUBLISH != 'true'
+        run: |
+          docker volume create fretbook-smoke-data
+          docker run -d \
+            --name fretbook-smoke \
+            -p 8137:8137 \
+            -v fretbook-smoke-data:/data \
+            fretbook:test
+
+      - name: Wait for /api/health
+        if: env.PUBLISH != 'true'
+        timeout-minutes: 2
+        run: |
+          echo "Waiting for http://127.0.0.1:8137/api/health..."
+          until curl -fsS http://127.0.0.1:8137/api/health > /dev/null 2>&1; do
+            if [ "$(docker inspect -f '{{.State.Running}}' fretbook-smoke 2>/dev/null)" != "true" ]; then
+              echo "::error::Container stopped unexpectedly"
+              docker logs fretbook-smoke
+              exit 1
+            fi
+            sleep 1
+          done
+          echo "Container is healthy!"
+          curl -s http://127.0.0.1:8137/api/health
+
+      - name: Verify metadata reports version and yt-dlp
+        if: env.PUBLISH != 'true'
+        run: |
+          META=$(curl -fsS http://127.0.0.1:8137/api/meta)
+          echo "Metadata: $META"
+          VERSION=$(echo "$META" | jq -r '.version // empty')
+          YTDLP=$(echo "$META" | jq -r '.ytdlp.version // empty')
+          echo "Version: $VERSION"
+          echo "yt-dlp version: $YTDLP"
+          if [ -z "$VERSION" ]; then
+            echo "::error::/api/meta is missing version"
+            exit 1
+          fi
+          if [ -z "$YTDLP" ]; then
+            echo "::error::/api/meta is missing ytdlp.version"
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        if: env.PUBLISH != 'true'
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Cache Playwright browsers
+        if: env.PUBLISH != 'true'
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('web/package-lock.json') }}
+
+      - name: Install Playwright Chromium
+        if: env.PUBLISH != 'true'
+        working-directory: web
+        run: |
+          npm ci
+          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" != "true" ]; then
+            npx playwright install --with-deps chromium
+          else
+            npx playwright install-deps chromium
+          fi
+
+      - name: Run Playwright smoke tests against container
+        if: env.PUBLISH != 'true'
+        working-directory: web
+        env:
+          FRETBOOK_TEST_URL: http://127.0.0.1:8137
+        run: npm run e2e:smoke
+
+      - name: Upload smoke test failure artifacts
+        if: failure() && env.PUBLISH != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-docker-smoke-failures
+          path: |
+            web/test-results/
+            web/playwright-report/
+          retention-days: 7
+
+      - name: Stop and clean up container
+        if: always() && env.PUBLISH != 'true'
+        run: |
+          docker logs fretbook-smoke 2>/dev/null || true
+          docker stop fretbook-smoke 2>/dev/null || true
+          docker rm fretbook-smoke 2>/dev/null || true
+          docker volume rm fretbook-smoke-data 2>/dev/null || true
+
+      - name: Scan Docker image with Trivy (SARIF report)
+        if: env.PUBLISH != 'true'
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: fretbook:test
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'HIGH,CRITICAL'
+          ignore-unfixed: true
+
+      - name: Upload Trivy SARIF results to code scanning
+        if: always() && env.PUBLISH != 'true'
+        uses: github/codeql-action/upload-sarif@v3
+        continue-on-error: true
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Scan Docker image with Trivy (fail on fixable HIGH/CRITICAL)
+        if: env.PUBLISH != 'true'
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: fretbook:test
+          format: 'table'
+          severity: 'HIGH,CRITICAL'
+          ignore-unfixed: true
+          exit-code: '1'

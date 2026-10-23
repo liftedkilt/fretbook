@@ -12,6 +12,19 @@ type Fixtures = {
 
 export const test = base.extend<Fixtures>({
   server: async ({}, use) => {
+    const external = process.env.FRETBOOK_TEST_URL;
+    if (external) {
+      const url = external.replace(/\/$/, "");
+      const parsed = new URL(url);
+      const port = Number(parsed.port || (parsed.protocol === "https:" ? 443 : 80));
+      await use({
+        url,
+        port,
+        dataDir: "",
+        stop: async () => {},
+      });
+      return;
+    }
     const server = await startServer();
     try {
       await use(server);

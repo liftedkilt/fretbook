@@ -57,6 +57,17 @@ async function waitForHealth(
 export async function startServer(
   options: { port?: number; env?: Record<string, string> } = {},
 ): Promise<RunningServer> {
+  if (process.env.FRETBOOK_TEST_URL) {
+    const url = process.env.FRETBOOK_TEST_URL.replace(/\/$/, "");
+    const parsed = new URL(url);
+    const port = Number(parsed.port) || (parsed.protocol === "https:" ? 443 : 80);
+    return {
+      url,
+      port,
+      dataDir: "",
+      stop: async () => {},
+    };
+  }
   if (!existsSync(path.join(distDir, "index.html"))) {
     throw new Error(
       "web/dist is missing. Run `npm run build` in web/ before the e2e tests (`npm run e2e` does).",
