@@ -684,5 +684,23 @@
       "other": "Added “{tag}” to {count} songs."
     },
     "clearFilters": "Clear tag filters"
+  },
+  "wait": {
+    "title": "Wait mode",
+    "start": "Wait for me",
+    "stop": "Stop waiting",
+    "about": "The cursor stops on each note until you play it. The track you pick is left out of the synth, so you hear the other tracks as backing.",
+    "needsSynth": "Wait mode plays along with the built-in synth, so it is not available while a recording is attached.",
+    "anyOctave": "The right note in any octave counts",
+    "silent": "Silent: no synth, only the cursor",
+    "hintAfter": "Show the string and fret after (seconds)",
+    "listening": "Listening. Play the first note.",
+    "playNow": "Play {note}",
+    "playDead": "Play a muted note",
+    "hint": "String {string}, fret {fret}",
+    "skip": "Skip this note",
+    "progress": "{hits} of {total} notes",
+    "done": "Done: {hits} of {total} notes played.",
+    "hit": "Right note"
   }
 }

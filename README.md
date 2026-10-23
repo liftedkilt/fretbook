@@ -4,6 +4,7 @@ Self-hosted tabs, chord sheets, and sheet music for bass and guitar.
 
 - **Tabs**: import from Songsterr, Guitar Pro (3–8), MusicXML, plain ASCII tab (`e|---3---|`), or start blank. Any string count and tuning, several tracks per song, standard notation and tab rendered by [alphaTab](https://alphatab.net).
 - **Play along**: with an audio file (uploaded, or downloaded from the YouTube video Songsterr syncs to), the score follows the recording. Tap `T` on each bar to line it up. Without audio, alphaTab's synth plays the tab.
+- **Wait mode**: on a tab without a recording, open the player's Sync & audio panel and press **Wait for me**. The cursor stops on each note of the chosen track until the microphone hears you play it (the right note in any octave counts by default). The other tracks play as backing, or turn the synth off. It needs microphone access, which browsers only give on HTTPS pages or `localhost`, so serve Fretbook over HTTPS (behind a reverse proxy with a certificate). Single notes only for now.
 - **Chord sheets**: lyrics with chords over them, stored as ChordPro. Paste an Ultimate Guitar style "chords over lyrics" sheet and it is converted. Transpose and print.
 - **Export**: MusicXML (opens in MuseScore, Guitar Pro, and other tab apps), ChordPro, Fretbook JSON, and PDF. The PDF is engraved in the browser by alphaTab, then paged so a staff is never split, with the title, artist, tuning, and track name on every page. Chord sheets export to PDF too.
 - **Languages**: English and Brazilian Portuguese.

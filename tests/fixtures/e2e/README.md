@@ -8,3 +8,4 @@ Small songs the Playwright suite in `web/e2e/` loads into a throwaway server. Al
 | `sunny-chords.cho` | A ChordPro chord sheet with a verse and a chorus. |
 | `synced-groove.json` | A Fretbook JSON export of a four-bar bass tab with published sync points (one second per bar). |
 | `click-track.wav` | Four seconds of a quiet 220 Hz tone (8 kHz mono, 32 KB), uploaded as the audio for the synced song. |
+| `practice-riff-played.wav` | The notes of `practice-riff.musicxml` played on a synthesized bass, 0.7 s apart (22 kHz mono, 250 KB). The fake microphone in `wait-mode.spec.ts` plays it. Regenerate with `cd web && npx vite-node scripts/make-wait-fixture.ts`. |
