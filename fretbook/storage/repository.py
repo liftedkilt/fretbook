@@ -361,17 +361,20 @@ class SongRepository:
 
     def find_duplicate(self, owner_id: str, title: str, artist: str, source_kind: str) -> bool:
         """Whether the owner has a song with the same title, artist and source (case-insensitive)."""
+        return self.find_duplicate_id(owner_id, title, artist, source_kind) is not None
+
+    def find_duplicate_id(self, owner_id: str, title: str, artist: str, source_kind: str) -> str | None:
+        """The id of the owner's song with the same title, artist and source (case-insensitive), if any."""
         with self._session() as conn:
-            return (
-                conn.execute(
-                    """
-                    SELECT 1 FROM songs
-                    WHERE owner_id = ? AND lower(title) = lower(?) AND lower(artist) = lower(?) AND source_kind = ?
-                    """,
-                    (owner_id, title.strip(), artist.strip(), source_kind),
-                ).fetchone()
-                is not None
-            )
+            row = conn.execute(
+                """
+                SELECT id FROM songs
+                WHERE owner_id = ? AND lower(title) = lower(?) AND lower(artist) = lower(?) AND source_kind = ?
+                ORDER BY created_at, id LIMIT 1
+                """,
+                (owner_id, title.strip(), artist.strip(), source_kind),
+            ).fetchone()
+        return row["id"] if row else None
 
     def find_existing_duplicate(
         self,

@@ -27,6 +27,15 @@ from fretbook.jobs.runner import JobRunner, Progress
 from fretbook.score.model import ScoreDocument
 from fretbook.storage.media import AUDIO_TYPES, MediaStore
 from fretbook.storage.repository import SongRepository
+from fretbook.storage.setlists import (
+    MAX_ENTRIES as MAX_SETLIST_ENTRIES,
+)
+from fretbook.storage.setlists import (
+    EntryInput,
+    SetlistRepository,
+    TooManyEntries,
+    UnknownSongs,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -76,12 +85,29 @@ class _Song(BaseModel):
     favourite: bool = False
 
 
+class _SetlistEntry(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    song_id: str = Field(max_length=64)
+    note: str = Field(default="", max_length=2000)
+    transpose: int = 0
+
+
+class _Setlist(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    id: str
+    name: str = Field(max_length=300)
+    entries: list[_SetlistEntry] = Field(default_factory=list, max_length=100_000)
+
+
 class Manifest(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     format: str
     format_version: int
     songs: list[_Song]
+    setlists: list[_Setlist] = Field(default_factory=list, max_length=100_000)
 
 
 def _unsafe(name: str) -> bool:
@@ -135,6 +161,8 @@ def inspect_archive(path: Path, settings: Settings) -> Manifest:
             raise BackupError(
                 "backup.newerFormat", "this archive was made by a newer Fretbook", version=manifest.format_version
             )
+        if any(not _ID.fullmatch(setlist.id) for setlist in manifest.setlists):
+            raise BackupError("backup.badManifest", "manifest.json is not valid")
         for song in manifest.songs:
             if not _ID.fullmatch(song.id) or _unsafe(song.file):
                 raise BackupError("backup.badManifest", "manifest.json is not valid")
@@ -172,6 +200,8 @@ def restore_archive(
 ) -> dict[str, Any]:
     manifest = inspect_archive(path, settings)
     counts = {"imported": 0, "skipped": 0, "copied": 0, "failed": 0}
+    # Archive song id -> id in this library, for setlists. A song kept as a copy may get a new id.
+    song_ids: dict[str, str] = {}
     warnings: list[Notice] = []
     total = len(manifest.songs)
     progress(f"Restoring {total} songs", "backup.restoring")
@@ -179,7 +209,7 @@ def restore_archive(
         for entry in manifest.songs:
             outcome: Literal["imported", "skipped", "copied", "failed"]
             try:
-                outcome = _restore_song(settings, songs, media, owner_id, archive, entry, mode, warnings)
+                outcome = _restore_song(settings, songs, media, owner_id, archive, entry, mode, warnings, song_ids)
             except (
                 BackupError,
                 ValueError,
@@ -193,8 +223,51 @@ def restore_archive(
                 warnings.append(Notice("backup.songFailed", f"could not restore {entry.title}", {"title": entry.title}))
                 outcome = "failed"
             counts[outcome] += 1
+    setlists = _restore_setlists(SetlistRepository(settings), owner_id, manifest.setlists, song_ids, mode, warnings)
     progress("Ready", "import.ready")
-    return {**counts, "warnings": [warning.as_dict() for warning in warnings]}
+    return {**counts, "setlists": setlists, "warnings": [warning.as_dict() for warning in warnings]}
+
+
+def _restore_setlists(
+    repo: SetlistRepository,
+    owner_id: str,
+    setlists: list[_Setlist],
+    song_ids: dict[str, str],
+    mode: Mode,
+    warnings: list[Notice],
+) -> int:
+    """Recreate the archive's setlists, pointing entries at the songs as they now are. Returns how many were added."""
+    added = 0
+    for setlist in setlists:
+        name = setlist.name.strip() or "Untitled"
+        try:
+            mine = repo.get_setlist(owner_id, setlist.id) is not None
+            if mine and mode == "skip":
+                continue
+            entries = [
+                EntryInput(song_ids[item.song_id], item.note, item.transpose)
+                for item in setlist.entries
+                if item.song_id in song_ids
+            ]
+            dropped = len(setlist.entries) - len(entries)
+            if dropped:
+                warnings.append(
+                    Notice(
+                        "backup.setlistEntriesDropped",
+                        f"{dropped} songs of {name} could not be put back in the setlist",
+                        {"name": name, "count": dropped},
+                    )
+                )
+            repo.create_setlist(
+                owner_id,
+                name,
+                entries[:MAX_SETLIST_ENTRIES],
+                setlist_id=None if repo.id_taken(setlist.id) else setlist.id,
+            )
+            added += 1
+        except (ValueError, KeyError, OSError, sqlite3.Error, ValidationError, UnknownSongs, TooManyEntries):
+            warnings.append(Notice("backup.setlistFailed", f"could not restore the setlist {name}", {"name": name}))
+    return added
 
 
 def _restore_song(
@@ -206,11 +279,16 @@ def _restore_song(
     entry: _Song,
     mode: Mode,
     warnings: list[Notice],
+    song_ids: dict[str, str],
 ) -> Literal["imported", "skipped", "copied"]:
-    existing = songs.get_song(owner_id, entry.id) is not None or songs.find_duplicate(
-        owner_id, entry.title, entry.artist, entry.source_kind
+    existing_id = (
+        entry.id
+        if songs.get_song(owner_id, entry.id) is not None
+        else songs.find_duplicate_id(owner_id, entry.title, entry.artist, entry.source_kind)
     )
-    if existing and mode == "skip":
+    existing = existing_id is not None
+    if existing_id and mode == "skip":
+        song_ids[entry.id] = existing_id
         return "skipped"
 
     document: ScoreDocument | None = None
@@ -234,6 +312,7 @@ def _restore_song(
     )
     songs.set_tags(owner_id, song["id"], entry.tags)
     songs.set_favourite(owner_id, song["id"], entry.favourite)
+    song_ids[entry.id] = song["id"]
     for item in entry.media:
         try:
             _restore_media(settings, media, owner_id, song["id"], archive, item)

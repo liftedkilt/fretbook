@@ -133,6 +133,38 @@ export interface SongSummary {
   tags: string[];
 }
 
+export interface SetlistSummary {
+  id: string;
+  name: string;
+  entry_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/** One place in a setlist's running order. */
+export interface SetlistEntry {
+  id: string;
+  song_id: string;
+  note: string;
+  transpose: number;
+  title: string;
+  artist: string;
+  content_kind: ContentKind;
+  preferred_instrument: string;
+  string_count: number;
+}
+
+export interface SetlistDetail extends SetlistSummary {
+  entries: SetlistEntry[];
+}
+
+/** What is saved for an entry; the server numbers the order from the list. */
+export interface SetlistEntryDraft {
+  song_id: string;
+  note: string;
+  transpose: number;
+}
+
 export type LibrarySort = "title" | "artist" | "added" | "updated" | "opened";
 export type SortOrder = "asc" | "desc";
 export type LibraryFilter = "all" | "bass" | "electric" | "acoustic" | "chords";

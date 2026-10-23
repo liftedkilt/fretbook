@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { untrack } from "svelte";
+
   import ChordSheet from "./ChordSheet.svelte";
   import Cover from "./Cover.svelte";
   import Icon from "./Icon.svelte";
@@ -7,9 +9,9 @@
   import { followLink, hrefFor } from "../lib/router.svelte";
   import type { SongDetail } from "../lib/types";
 
-  let { song }: { song: SongDetail } = $props();
+  let { song, initialTranspose = 0 }: { song: SongDetail; initialTranspose?: number } = $props();
 
-  let transpose = $state(0);
+  let transpose = $state(untrack(() => initialTranspose));
   let flats = $state(false);
   let size = $state(1);
   let exporting = $state(false);
