@@ -41,7 +41,11 @@ export function prng(seed: number): () => number {
  * fundamental and a strong second harmonic, as on a real instrument, so octave errors are a
  * real risk. Not a recording, but it has the properties that make pitch detection hard.
  */
-export function renderNotes(notes: SynthNote[], seconds: number, options: SynthOptions): Float32Array {
+export function renderNotes(
+  notes: SynthNote[],
+  seconds: number,
+  options: SynthOptions,
+): Float32Array {
   const { sampleRate, instrument } = options;
   const out = new Float32Array(Math.ceil(seconds * sampleRate));
   const random = prng(options.seed ?? 1);
@@ -57,7 +61,8 @@ export function renderNotes(notes: SynthNote[], seconds: number, options: SynthO
     // Release: damped over 25 ms, or crossfaded over 20 ms into a legato successor.
     const fade = nextLegato ? 0.02 : 0.025;
     const end = Math.min(out.length, Math.round((ringEnd + fade) * sampleRate));
-    const baseDecay = (instrument === "bass" ? 1.4 : 1.0) * (1 + 0.5 * Math.exp(-(note.midi - 28) / 14));
+    const baseDecay =
+      (instrument === "bass" ? 1.4 : 1.0) * (1 + 0.5 * Math.exp(-(note.midi - 28) / 14));
     const stretch = instrument === "bass" ? 0.00004 : 0.00008;
     const harmonics: { w: number; amp: number; tau: number; phase: number }[] = [];
     for (let h = 1; h * f0 < sampleRate * 0.45 && h <= 14; h++) {
@@ -80,9 +85,11 @@ export function renderNotes(notes: SynthNote[], seconds: number, options: SynthO
     for (let i = begin; i < end; i++) {
       const t = (i - begin) / sampleRate;
       let value = 0;
-      for (const h of harmonics) value += h.amp * Math.exp(-t / h.tau) * Math.sin(h.w * (i - begin) + h.phase);
+      for (const h of harmonics)
+        value += h.amp * Math.exp(-t / h.tau) * Math.sin(h.w * (i - begin) + h.phase);
       let envelope = Math.min(1, t / attack);
-      if (t > ringEnd - note.start) envelope *= Math.max(0, 1 - (t - (ringEnd - note.start)) / fade);
+      if (t > ringEnd - note.start)
+        envelope *= Math.max(0, 1 - (t - (ringEnd - note.start)) / fade);
       let sample = value * envelope;
       if (!note.legato && t < 0.012) {
         // Pick noise: low-passed white noise that dies in a few milliseconds.
@@ -94,7 +101,8 @@ export function renderNotes(notes: SynthNote[], seconds: number, options: SynthO
   });
 
   if (options.noiseFloor) {
-    for (let i = 0; i < out.length; i++) out[i] += options.noiseFloor * (random() * 2 - 1) * Math.sqrt(3);
+    for (let i = 0; i < out.length; i++)
+      out[i] += options.noiseFloor * (random() * 2 - 1) * Math.sqrt(3);
   }
   let peak = 0;
   for (const v of out) peak = Math.max(peak, Math.abs(v));

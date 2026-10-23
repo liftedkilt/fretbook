@@ -11,10 +11,7 @@ export function midiToFrequency(midi: number, a4 = DEFAULT_A4): number {
 }
 
 /** Nearest note and how far off it is, in cents (-50..50). */
-export function describePitch(
-  frequency: number,
-  a4 = DEFAULT_A4,
-): { midi: number; cents: number } {
+export function describePitch(frequency: number, a4 = DEFAULT_A4): { midi: number; cents: number } {
   const exact = frequencyToMidiFloat(frequency, a4);
   const midi = Math.round(exact);
   return { midi, cents: (exact - midi) * 100 };

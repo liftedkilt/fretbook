@@ -11,6 +11,8 @@ export interface OnsetOptions {
   minGap?: number;
   /** Frames quieter than this RMS never start a note. */
   silenceRms?: number;
+  /** Minimum flux (per-bin, scaled) for an onset; raise it in noisy rooms. */
+  fluxFloor?: number;
 }
 
 /**
@@ -29,6 +31,7 @@ export class OnsetDetector {
   private readonly sensitivity: number;
   private readonly minGapFrames: number;
   private readonly silenceRms: number;
+  private readonly floor: number;
   private readonly bins: number;
   private readonly firstBin: number;
   private readonly history: number[] = [];
@@ -39,11 +42,18 @@ export class OnsetDetector {
   private primed = false;
 
   constructor(options: OnsetOptions) {
-    this.frameSize = options.frameSize ?? 1024;
-    this.hopSize = options.hopSize ?? 256;
+    // The frame has to span about two periods of the lowest bass, whatever the sample rate.
+    let frameSize = 256;
+    while (frameSize < 0.04 * options.sampleRate) frameSize <<= 1;
+    this.frameSize = options.frameSize ?? frameSize;
+    this.hopSize = options.hopSize ?? Math.round(0.01 * options.sampleRate);
     this.sensitivity = options.sensitivity ?? 1.6;
     this.silenceRms = options.silenceRms ?? 0.003;
-    this.minGapFrames = Math.max(1, Math.round(((options.minGap ?? 0.06) * options.sampleRate) / this.hopSize));
+    this.floor = options.fluxFloor ?? 1;
+    this.minGapFrames = Math.max(
+      1,
+      Math.round(((options.minGap ?? 0.06) * options.sampleRate) / this.hopSize),
+    );
     this.fft = new FFT(this.frameSize);
     this.window = new Float64Array(this.frameSize);
     for (let i = 0; i < this.frameSize; i++) {
@@ -52,8 +62,7 @@ export class OnsetDetector {
     this.re = new Float64Array(this.frameSize);
     this.im = new Float64Array(this.frameSize);
     this.bins = this.frameSize / 2;
-    // Skip bins under ~100 Hz: a low bass fundamental is shorter than the frame and just flickers.
-    this.firstBin = Math.max(1, Math.ceil((100 * this.frameSize) / options.sampleRate));
+    this.firstBin = 1;
     this.previous = new Float64Array(this.bins);
   }
 
@@ -73,22 +82,19 @@ export class OnsetDetector {
     // Energy of the newest hop only: an attack sits at the end of the frame, where the window
     // and the frame-wide RMS both hide it.
     let hopEnergy = 0;
-    // A second difference stands in for a high-pass: the swing of a 31-41 Hz wave must not look
-    // like an attack, but the pick noise and upper harmonics must.
-    for (let i = this.frameSize - this.hopSize; i < this.frameSize; i++) {
-      const d = frame[i] - 2 * frame[i - 1] + frame[i - 2];
-      hopEnergy += d * d;
-    }
+    for (let i = this.frameSize - this.hopSize; i < this.frameSize; i++)
+      hopEnergy += frame[i] * frame[i];
     this.fft.transform(re, im);
-    this.rmsHistory.push(hopEnergy / this.hopSize);
+    this.rmsHistory.push(Math.sqrt(hopEnergy / this.hopSize));
     if (this.rmsHistory.length > 4) this.rmsHistory.shift();
     let flux = 0;
     for (let k = this.firstBin; k < bins; k++) {
-      const magnitude = Math.log1p(100 * Math.hypot(re[k], im[k]));
+      const magnitude = Math.log1p((200 * Math.hypot(re[k], im[k])) / this.frameSize);
       const rise = magnitude - this.previous[k];
       if (rise > 0) flux += rise;
       this.previous[k] = magnitude;
     }
+    flux = (flux * 100) / (bins - this.firstBin);
     this.sinceOnset++;
     if (!this.primed) {
       // The first frame only seeds the spectrum; it would otherwise look like a huge rise.
@@ -101,7 +107,7 @@ export class OnsetDetector {
     let result: { hopsAgo: number; strength: number } | null = null;
     const mean =
       this.history.length > 0 ? this.history.reduce((a, b) => a + b, 0) / this.history.length : 0;
-    const threshold = this.sensitivity * mean + 4;
+    const threshold = this.sensitivity * mean + this.floor;
     if (
       this.flux1 > threshold &&
       this.flux1 >= this.flux2 &&
@@ -120,11 +126,11 @@ export class OnsetDetector {
     return result;
   }
 
-  /** A real attack adds high-frequency energy; a string being damped or a bass wave swinging does not. */
+  /** A real attack adds energy; a string being damped, or a click on a fade, does not. */
   private louderThanBefore(): boolean {
     const history = this.rmsHistory;
     // history[last] is this frame, [last - 1] the flux peak, [0] three hops earlier.
     if (history.length < 4) return true;
-    return Math.max(history[2], history[3]) > history[0] * 1.3 + 1e-12;
+    return Math.max(history[2], history[3]) > history[0] * 1.12 + 1e-5;
   }
 }

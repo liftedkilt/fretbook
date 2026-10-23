@@ -44,7 +44,8 @@ export function decodeWav(bytes: Uint8Array): { samples: Float32Array; sampleRat
     } else if (tag(offset) === "data") {
       const frames = Math.floor(size / (2 * channels));
       const samples = new Float32Array(frames);
-      for (let i = 0; i < frames; i++) samples[i] = view.getInt16(offset + 8 + i * 2 * channels, true) / 32768;
+      for (let i = 0; i < frames; i++)
+        samples[i] = view.getInt16(offset + 8 + i * 2 * channels, true) / 32768;
       return { samples, sampleRate };
     }
     offset += 8 + size + (size % 2);

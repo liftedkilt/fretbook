@@ -9,7 +9,13 @@ export interface Scenario {
   noiseFloor?: number;
 }
 
-function line(midis: number[], step: number, duration: number, lead = 0.3, legato = false): TruthNote[] {
+function line(
+  midis: number[],
+  step: number,
+  duration: number,
+  lead = 0.3,
+  legato = false,
+): TruthNote[] {
   return midis.map((midi, i) => ({
     midi,
     start: lead + i * step,
@@ -48,11 +54,31 @@ const legatoGuitar = [
 
 export const SCENARIOS: Scenario[] = [
   { name: "bass range B0-G3", instrument: "bass", notes: bassRange, seconds: total(bassRange) },
-  { name: "guitar range E2-E6", instrument: "guitar", notes: guitarRange, seconds: total(guitarRange) },
-  { name: "bass repeated notes", instrument: "bass", notes: repeatedBass, seconds: total(repeatedBass) },
-  { name: "guitar repeated notes", instrument: "guitar", notes: repeatedGuitar, seconds: total(repeatedGuitar) },
+  {
+    name: "guitar range E2-E6",
+    instrument: "guitar",
+    notes: guitarRange,
+    seconds: total(guitarRange),
+  },
+  {
+    name: "bass repeated notes",
+    instrument: "bass",
+    notes: repeatedBass,
+    seconds: total(repeatedBass),
+  },
+  {
+    name: "guitar repeated notes",
+    instrument: "guitar",
+    notes: repeatedGuitar,
+    seconds: total(repeatedGuitar),
+  },
   { name: "bass legato line", instrument: "bass", notes: legatoBass, seconds: total(legatoBass) },
-  { name: "guitar legato line", instrument: "guitar", notes: legatoGuitar, seconds: total(legatoGuitar) },
+  {
+    name: "guitar legato line",
+    instrument: "guitar",
+    notes: legatoGuitar,
+    seconds: total(legatoGuitar),
+  },
   {
     name: "bass with background noise",
     instrument: "bass",
@@ -70,3 +96,36 @@ export function renderScenario(scenario: Scenario, sampleRate: number, seed = 7)
     noiseFloor: scenario.noiseFloor,
   });
 }
+
+/** Small WAV fixtures committed under `fixtures/`, written by `scripts/make-listen-fixtures.ts`. */
+export const FIXTURE_SAMPLE_RATE = 22050;
+
+const bassRiff = [
+  ...line([23, 28, 33, 38], 0.6, 0.55),
+  ...line([28, 28, 28, 28], 0.25, 0.24, 2.8),
+  ...line([31, 33, 31, 29], 0.3, 0.3, 3.9, true),
+  ...line([40, 36], 0.5, 0.45, 5.2),
+];
+const guitarRiff = [
+  ...line([40, 47, 52, 59, 64], 0.5, 0.45),
+  ...line([64, 64, 64, 64], 0.25, 0.24, 2.7),
+  ...line([67, 69, 67, 65], 0.25, 0.25, 3.8, true),
+  ...line([76, 83], 0.5, 0.45, 4.9),
+];
+
+export const FIXTURES: Scenario[] = [
+  {
+    name: "bass-riff",
+    instrument: "bass",
+    notes: bassRiff,
+    seconds: total(bassRiff),
+    noiseFloor: 0.002,
+  },
+  {
+    name: "guitar-riff",
+    instrument: "guitar",
+    notes: guitarRiff,
+    seconds: total(guitarRiff),
+    noiseFloor: 0.002,
+  },
+];

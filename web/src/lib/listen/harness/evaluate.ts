@@ -47,12 +47,18 @@ export function runEngine(
   for (let at = 0; at < samples.length; at += blockSize) {
     const time = at / sampleRate;
     if (expected) engine.setExpectedMidi(expected(time));
-    events.push(...engine.process(samples.subarray(at, Math.min(samples.length, at + blockSize)), time));
+    events.push(
+      ...engine.process(samples.subarray(at, Math.min(samples.length, at + blockSize)), time),
+    );
   }
   return events;
 }
 
-export function evaluate(samples: Float32Array, truth: TruthNote[], options: EvaluateOptions): Report {
+export function evaluate(
+  samples: Float32Array,
+  truth: TruthNote[],
+  options: EvaluateOptions,
+): Report {
   const { sampleRate } = options;
   const tolerance = options.centsTolerance ?? 25;
   const sorted = [...truth].sort((a, b) => a.start - b.start);
@@ -84,7 +90,9 @@ export function evaluate(samples: Float32Array, truth: TruthNote[], options: Eva
       worst.push(`midi ${note.midi} @${note.start.toFixed(2)}s: mostly unpitched`);
       return;
     }
-    const cents = voiced.map((e) => centsBetween(e.frequency as number, reference)).sort((a, b) => a - b);
+    const cents = voiced
+      .map((e) => centsBetween(e.frequency as number, reference))
+      .sort((a, b) => a - b);
     const median = cents[Math.floor(cents.length / 2)];
     errors.push(Math.abs(median));
     if (Math.abs(median) <= tolerance) pitchHits++;
@@ -99,7 +107,9 @@ export function evaluate(samples: Float32Array, truth: TruthNote[], options: Eva
   const used = new Set<number>();
   let found = 0;
   for (const note of sorted) {
-    const window = note.legato ? (options.legatoOnsetTolerance ?? 0.15) : (options.onsetTolerance ?? 0.06);
+    const window = note.legato
+      ? (options.legatoOnsetTolerance ?? 0.15)
+      : (options.onsetTolerance ?? 0.06);
     let best = -1;
     let bestDelta = Infinity;
     claimed.forEach((time, i) => {

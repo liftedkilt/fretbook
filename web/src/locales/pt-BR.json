@@ -568,5 +568,19 @@
     "create": "Criar música",
     "rhythmEstimated": "Ritmo estimado",
     "rhythmEstimatedHint": "A tablatura em texto não tem ritmo. A duração das notas vem do espaçamento, então confira o tempo."
+  },
+  "listen": {
+    "input": "Dispositivo de entrada",
+    "defaultDevice": "Entrada padrão",
+    "channel": "Canal {n}",
+    "level": "Nível de entrada",
+    "problem": {
+      "insecure": "O navegador só permite o microfone em páginas HTTPS ou em localhost. Abra o Fretbook por HTTPS (coloque-o atrás de um proxy reverso com certificado) ou em http://localhost.",
+      "unsupported": "Este navegador não consegue gravar pelo microfone.",
+      "denied": "O acesso ao microfone foi bloqueado. Permita-o para este site na barra de endereço ou nas configurações do site e tente de novo.",
+      "noDevice": "Nenhuma entrada de áudio foi encontrada. Conecte um microfone ou interface de áudio e tente de novo.",
+      "busy": "A entrada de áudio está em uso por outro aplicativo ou não pôde ser aberta.",
+      "other": "Não foi possível começar a ouvir o microfone."
+    }
   }
 }

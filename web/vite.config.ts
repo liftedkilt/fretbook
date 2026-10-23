@@ -44,7 +44,14 @@ export default defineConfig({
       // environment (untested ones report 100%), and Playwright covers them as user flows.
       include: ["src/**/*.ts"],
       // Generated from openapi.json, entry point, and ambient type declarations.
-      exclude: ["src/**/*.test.ts", "src/lib/api-types.ts", "src/main.ts", "src/**/*.d.ts"],
+      exclude: [
+        "src/**/*.test.ts",
+        "src/lib/api-types.ts",
+        "src/main.ts",
+        "src/**/*.d.ts",
+        // Runs in the AudioWorkletGlobalScope, which Vitest cannot host; the DSP it wraps is covered.
+        "src/lib/listen/processor.ts",
+      ],
       reporter: ["text-summary", "html", "json-summary"],
       reportsDirectory: "coverage",
       // The floor: current coverage rounded down. Raise it as tests are added; never lower it.

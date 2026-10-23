@@ -68,10 +68,13 @@ export class PitchEngine {
     });
     this.onsets = new OnsetDetector({ sampleRate: this.sampleRate });
     const hop = this.onsets.hopSize;
-    this.pitchHop = Math.max(hop, Math.round(((options.pitchInterval ?? 0.02) * this.sampleRate) / hop) * hop);
+    this.pitchHop = Math.max(
+      hop,
+      Math.round(((options.pitchInterval ?? 0.02) * this.sampleRate) / hop) * hop,
+    );
     this.silenceRms = options.silenceRms ?? 0.003;
     this.minClarity = options.minClarity ?? 0.7;
-    this.ring = new Float32Array(this.windowSize);
+    this.ring = new Float32Array(Math.max(this.windowSize, this.onsets.frameSize));
     this.window = new Float32Array(this.windowSize);
     this.frame = new Float32Array(this.onsets.frameSize);
   }
@@ -95,7 +98,7 @@ export class PitchEngine {
   process(block: Float32Array, startTime: number): PitchEvent[] {
     const events: PitchEvent[] = [];
     const hop = this.onsets.hopSize;
-    const size = this.windowSize;
+    const size = this.ring.length;
     for (let i = 0; i < block.length; i++) {
       const sample = block[i];
       this.ring[this.written % size] = sample;
@@ -110,10 +113,11 @@ export class PitchEngine {
       const onset = this.onsets.push(this.frame);
       if (onset && this.pendingOnset === null) {
         // The rise happens in the newest part of the frame before the confirming hop.
-        this.pendingOnset = now - (onset.hopsAgo * hop + this.onsets.frameSize * 0.25) / this.sampleRate;
+        this.pendingOnset =
+          now - (onset.hopsAgo * hop + this.onsets.frameSize * 0.25) / this.sampleRate;
         this.lastOnsetFrame = this.written;
       }
-      if (this.written % this.pitchHop === 0 && this.written >= size) {
+      if (this.written % this.pitchHop === 0 && this.written >= this.windowSize) {
         events.push(this.analyse(now));
       }
     }
@@ -121,7 +125,7 @@ export class PitchEngine {
   }
 
   private copyTail(into: Float32Array): void {
-    const size = this.windowSize;
+    const size = this.ring.length;
     const start = this.written - into.length;
     for (let j = 0; j < into.length; j++) into[j] = this.ring[(start + j) % size];
   }
