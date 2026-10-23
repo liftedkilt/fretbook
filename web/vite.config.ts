@@ -1,9 +1,10 @@
 import { alphaTab } from "@coderline/alphatab-vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
+import { svelteTesting } from "@testing-library/svelte/vite";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
-  plugins: [svelte(), alphaTab()],
+  plugins: [svelte(), alphaTab(), svelteTesting()],
   base: "./",
   build: {
     outDir: "dist",
@@ -18,7 +19,24 @@ export default defineConfig({
     },
   },
   test: {
-    environment: "node",
-    include: ["src/**/*.test.ts"],
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: "unit",
+          environment: "node",
+          include: ["src/lib/**/*.test.ts"],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "component",
+          environment: "jsdom",
+          include: ["src/components/**/*.test.ts"],
+          setupFiles: ["src/setupTests.ts"],
+        },
+      },
+    ],
   },
 });

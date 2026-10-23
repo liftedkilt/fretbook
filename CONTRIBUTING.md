@@ -54,6 +54,27 @@ To run these on every commit, install [pre-commit](https://pre-commit.com) once 
 
 To keep `git blame` useful after the one-off reformat: `git config blame.ignoreRevsFile .git-blame-ignore-revs`.
 
+### Component tests
+
+Svelte components are tested with `@testing-library/svelte` in `web/src/components/*.test.ts`. Vitest uses a separate `jsdom` environment project for component tests so the library unit tests in `web/src/lib` stay fast under `node`. Mock `web/src/lib/api.ts` with `vi.mock` to test component behavior in isolation without a backend:
+
+```ts
+import { fireEvent, render, screen } from "@testing-library/svelte";
+import { describe, expect, it, vi } from "vitest";
+import MyComponent from "./MyComponent.svelte";
+
+vi.mock("../lib/api", () => ({ ... }));
+
+describe("MyComponent", () => {
+  it("renders correctly", () => {
+    render(MyComponent, { props: { ... } });
+    expect(screen.getByTestId("...")).toBeInTheDocument();
+  });
+});
+```
+
+DOM matchers from `@testing-library/jest-dom` (`toBeInTheDocument()`, `toHaveValue()`, etc.) are pre-configured globally via `web/src/setupTests.ts`.
+
 ### End-to-end tests
 
 Playwright drives Chromium against a real `python -m fretbook` that serves the built web app. Each test starts its own server on a free port with an empty temporary data directory and seeds it through the API. The suite is in `web/e2e/` and takes about 15 seconds locally; CI runs it as the `e2e` job and uploads traces and videos when it fails.

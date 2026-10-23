@@ -44,6 +44,10 @@ Every user-visible string goes through `t()` in `src/lib/i18n.svelte.ts`. Do not
 
 `npm test` runs `src/lib/catalog.test.ts`, which fails if a `t("...")` key is missing from the English catalog. Server error and progress keys are checked by `tests/test_api.py` (`test_english_catalog_covers_server_keys`).
 
+## Component tests
+
+Component tests live alongside components in `src/components/*.test.ts` and use `@testing-library/svelte` and `jsdom`. The Vitest config (`vite.config.ts`) separates component tests from pure `src/lib` tests so the latter continue to run quickly in Node. API calls should be mocked with `vi.mock("../lib/api", ...)`. Jest-DOM matchers (`toBeInTheDocument`, etc.) are configured globally via `src/setupTests.ts`.
+
 ## End-to-end tests
 
 `e2e/` holds a [Playwright](https://playwright.dev) project (Chromium only). A test gets two fixtures from `e2e/support/fixtures.ts`:
