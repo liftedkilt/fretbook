@@ -46,6 +46,21 @@ def test_clean_tags_trims_dedupes_and_caps() -> None:
     assert len(clean_tags([f"t{index}" for index in range(100)])) == MAX_TAGS_PER_SONG
 
 
+def test_tags_match_ignoring_case_beyond_ascii(client: TestClient) -> None:
+    one, two = _tab(client, "One")["id"], _tab(client, "Two")["id"]
+    _tag(client, one, "Prática")
+    assert _tag(client, two, "PRÁTICA", "prática") == ["PRÁTICA"]
+    assert _titles(client, tag=["prática"]) == ["One", "Two"]
+    assert [item["count"] for item in client.get("/api/tags").json()] == [2]
+
+
+def test_ascii_tab_save_applies_suggestions(client: TestClient) -> None:
+    text = "e|-0-3-|\nB|-----|\nG|-----|\nD|-----|\nA|-----|\nE|-----|\n"
+    response = client.post("/api/imports/ascii-tab", json={"text": text, "title": "Pasted"})
+    assert response.status_code == 201, response.text
+    assert response.json()["tags"]  # the instrument of the converted tab
+
+
 def test_set_tags_replaces_and_sorts_them(client: TestClient) -> None:
     song = _tab(client, "Riff")
     assert song["tags"] == [] and song["favourite"] is False
@@ -98,7 +113,9 @@ def test_tag_list_counts_songs_and_bulk_add(client: TestClient) -> None:
     _tag(client, ids[0], "funk")
     response = client.post("/api/tags/add", json={"song_ids": [*ids, "unknown"], "tags": ["Funk", "Live"]})
     assert response.json() == {"updated": 3}
-    assert client.get("/api/tags").json() == [{"tag": "funk", "count": 3}, {"tag": "Live", "count": 3}]
+    # Spellings differ between songs; the list shows one of them per tag.
+    listed = client.get("/api/tags").json()
+    assert [(item["tag"].lower(), item["count"]) for item in listed] == [("funk", 3), ("live", 3)]
     assert _titles(client, tag=["live"]) == ["A", "B", "C"]
     assert client.post("/api/tags/add", json={"song_ids": [], "tags": ["x"]}).status_code == 422
 

@@ -21,7 +21,7 @@ from fretbook.score.model import (
     Voice,
     summary_fields,
 )
-from fretbook.tags import MAX_TAGS_PER_SONG, clean_tags
+from fretbook.tags import MAX_TAGS_PER_SONG, clean_tags, tag_key
 
 _EMPTY_SUMMARY: dict[str, Any] = {
     "bpm": 0,
@@ -64,7 +64,7 @@ _SUMMARY_COLUMNS = (
 # The song's tags as a JSON array, sorted, so a page of songs needs no query per song.
 _TAGS_COLUMN = (
     "(SELECT json_group_array(tag) FROM "
-    "(SELECT tag FROM song_tags WHERE song_id = s.id ORDER BY tag COLLATE NOCASE)) AS tags_json"
+    "(SELECT tag FROM song_tags WHERE song_id = s.id ORDER BY tag_key, tag)) AS tags_json"
 )
 
 
@@ -165,11 +165,12 @@ class SongRepository:
             params.append(match)
         if instrument != "all":
             where.append(_FILTERS[instrument])
-        wanted = clean_tags(tags or [])
+        wanted = [tag_key(tag) for tag in clean_tags(tags or [])]
         if wanted:
             marks = ", ".join("?" for _ in wanted)
             where.append(
-                f"s.id IN (SELECT song_id FROM song_tags WHERE tag IN ({marks}) GROUP BY song_id HAVING count(*) = ?)"
+                f"s.id IN (SELECT song_id FROM song_tags WHERE tag_key IN ({marks}) "
+                "GROUP BY song_id HAVING count(*) = ?)"
             )
             params.extend([*wanted, len(wanted)])
         if favourite:
@@ -488,7 +489,7 @@ class SongRepository:
             if not _owns(conn, owner_id, song_id):
                 return None
             conn.execute("DELETE FROM song_tags WHERE song_id = ?", (song_id,))
-            conn.executemany("INSERT INTO song_tags (song_id, tag) VALUES (?, ?)", [(song_id, tag) for tag in wanted])
+            _insert_tags(conn, song_id, wanted)
             return _stored_tags(conn, song_id)
 
     def add_tags(self, owner_id: str, song_ids: list[str], tags: list[str]) -> int:
@@ -502,12 +503,10 @@ class SongRepository:
             for song_id in dict.fromkeys(song_ids):
                 if not _owns(conn, owner_id, song_id):
                     continue
-                have = {tag.casefold() for tag in _stored_tags(conn, song_id)}
+                have = {tag_key(tag) for tag in _stored_tags(conn, song_id)}
                 room = MAX_TAGS_PER_SONG - len(have)
-                fresh = [tag for tag in wanted if tag.casefold() not in have][: max(room, 0)]
-                conn.executemany(
-                    "INSERT INTO song_tags (song_id, tag) VALUES (?, ?)", [(song_id, tag) for tag in fresh]
-                )
+                fresh = [tag for tag in wanted if tag_key(tag) not in have][: max(room, 0)]
+                _insert_tags(conn, song_id, fresh)
                 updated += 1
         return updated
 
@@ -524,11 +523,11 @@ class SongRepository:
         with self._session() as conn:
             rows = conn.execute(
                 """
-                SELECT t.tag AS tag, count(*) AS count
+                SELECT min(t.tag) AS tag, count(*) AS count
                 FROM song_tags t JOIN songs s ON s.id = t.song_id
                 WHERE s.owner_id = ?
-                GROUP BY t.tag COLLATE NOCASE
-                ORDER BY count DESC, t.tag COLLATE NOCASE
+                GROUP BY t.tag_key
+                ORDER BY count DESC, t.tag_key
                 """,
                 (owner_id,),
             ).fetchall()
@@ -544,8 +543,14 @@ def _owns(conn: sqlite3.Connection, owner_id: str, song_id: str) -> bool:
     return conn.execute("SELECT 1 FROM songs WHERE owner_id = ? AND id = ?", (owner_id, song_id)).fetchone() is not None
 
 
+def _insert_tags(conn: sqlite3.Connection, song_id: str, tags: list[str]) -> None:
+    conn.executemany(
+        "INSERT INTO song_tags (song_id, tag, tag_key) VALUES (?, ?, ?)", [(song_id, tag, tag_key(tag)) for tag in tags]
+    )
+
+
 def _stored_tags(conn: sqlite3.Connection, song_id: str) -> list[str]:
-    rows = conn.execute("SELECT tag FROM song_tags WHERE song_id = ? ORDER BY tag COLLATE NOCASE", (song_id,))
+    rows = conn.execute("SELECT tag FROM song_tags WHERE song_id = ? ORDER BY tag_key, tag", (song_id,))
     return [row["tag"] for row in rows]
 
 

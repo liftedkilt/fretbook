@@ -342,13 +342,15 @@ def seed_v5(conn: sqlite3.Connection) -> None:
         )
         """
     )
-    conn.execute("INSERT INTO song_tags (song_id, tag) VALUES ('song-v5', 'Funk')")
+    conn.execute("INSERT INTO song_tags (song_id, tag, tag_key) VALUES ('song-v5', 'Funk', 'funk')")
     conn.commit()
 
 
 def verify_v5(conn: sqlite3.Connection) -> None:
     assert conn.execute("SELECT favourite FROM songs WHERE id = 'song-v5'").fetchone()[0] == 1
-    assert conn.execute("SELECT tag FROM song_tags WHERE song_id = 'song-v5' AND tag = 'funk'").fetchone()[0] == "Funk"
+    assert (
+        conn.execute("SELECT tag FROM song_tags WHERE song_id = 'song-v5' AND tag_key = 'funk'").fetchone()[0] == "Funk"
+    )
     conn.execute("DELETE FROM songs WHERE id = 'song-v5'")
     assert conn.execute("SELECT count(*) FROM song_tags WHERE song_id = 'song-v5'").fetchone()[0] == 0
     conn.rollback()

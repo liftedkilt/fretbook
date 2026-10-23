@@ -20,6 +20,11 @@ _TUNINGS: dict[tuple[int, ...], str] = {
 }
 
 
+def tag_key(tag: str) -> str:
+    """What makes two tags the same tag: the text case-folded, so "Prática" and "PRÁTICA" match."""
+    return tag.casefold()
+
+
 def clean_tag(raw: str) -> str:
     """One tag as stored: whitespace collapsed, trimmed, and cut to :data:`MAX_TAG_CHARS`. May be empty."""
     return _SPACE.sub(" ", raw).strip()[:MAX_TAG_CHARS].strip()
@@ -31,8 +36,8 @@ def clean_tags(raw: list[str]) -> list[str]:
     tags: list[str] = []
     for item in raw:
         tag = clean_tag(item)
-        if tag and tag.casefold() not in seen:
-            seen.add(tag.casefold())
+        if tag and tag_key(tag) not in seen:
+            seen.add(tag_key(tag))
             tags.append(tag)
     return tags[:MAX_TAGS_PER_SONG]
 
