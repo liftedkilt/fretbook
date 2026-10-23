@@ -8,6 +8,13 @@ let emit: (frequency: number | null) => void = () => {};
 const stopSession = vi.fn(async () => {});
 const startListening = vi.fn();
 
+vi.mock("../lib/api", () => ({
+  getMe: vi.fn(),
+  getMeta: vi.fn(),
+  listSongs: vi.fn(),
+  saveSettings: vi.fn(),
+}));
+
 vi.mock("../lib/listen", async () => {
   return {
     ListenError: class ListenError extends Error {
@@ -20,12 +27,35 @@ vi.mock("../lib/listen", async () => {
   };
 });
 
-const tone = { stop: vi.fn() };
-const playReferenceTone = vi.fn((_frequency: number) => tone);
-vi.mock("../lib/tuner", async () => {
-  const actual = await vi.importActual<object>("../lib/tuner");
-  return { ...actual, playReferenceTone: (frequency: number) => playReferenceTone(frequency) };
-});
+// The real playReferenceTone runs against a fake AudioContext, so its tone code is exercised too.
+const oscillators: { frequency: { value: number }; stop: ReturnType<typeof vi.fn> }[] = [];
+const contextClose = vi.fn(async () => {});
+class FakeAudioContext {
+  currentTime = 0;
+  destination = {};
+  close = contextClose;
+  createOscillator() {
+    const oscillator = {
+      type: "",
+      frequency: { value: 0 },
+      connect: (node: unknown) => node,
+      start: vi.fn(),
+      stop: vi.fn(),
+    };
+    oscillators.push(oscillator);
+    return oscillator;
+  }
+  createGain() {
+    const param = {
+      value: 0,
+      setValueAtTime: vi.fn(),
+      linearRampToValueAtTime: vi.fn(),
+      cancelScheduledValues: vi.fn(),
+    };
+    return { gain: param, connect: (node: unknown) => node };
+  }
+}
+vi.stubGlobal("AudioContext", FakeAudioContext);
 
 function event(frequency: number | null) {
   return {
@@ -43,8 +73,8 @@ beforeEach(() => {
   ui.sheet = "";
   ui.tunerRequest = null;
   stopSession.mockClear();
-  playReferenceTone.mockClear();
-  tone.stop.mockClear();
+  oscillators.length = 0;
+  contextClose.mockClear();
   startListening.mockReset();
   startListening.mockImplementation(async (options: { onPitch: (event: unknown) => void }) => {
     emit = (frequency) => options.onPitch(event(frequency));
@@ -106,9 +136,10 @@ describe("TunerSheet", () => {
     await fireEvent.input(await screen.findByTestId("tuner-a4"), { target: { value: "432" } });
     expect(screen.getByTestId("tuner-a4-value")).toHaveTextContent("432 Hz");
     await fireEvent.click(screen.getByTestId("tuner-string-0"));
-    expect(playReferenceTone).toHaveBeenCalledWith(432);
+    expect(oscillators).toHaveLength(1);
+    expect(oscillators[0].frequency.value).toBeCloseTo(432, 5);
     await fireEvent.click(screen.getByTestId("tuner-string-0"));
-    expect(tone.stop).toHaveBeenCalled();
+    expect(oscillators[0].stop).toHaveBeenCalled();
   });
 
   it("explains a blocked microphone and releases it when closed", async () => {

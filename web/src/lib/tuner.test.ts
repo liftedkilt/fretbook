@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { midiToFrequency } from "./listen/notes";
 import {
+  playReferenceTone,
   A4_MAX,
   A4_MIN,
   InTuneTracker,
@@ -110,5 +111,54 @@ describe("InTuneTracker", () => {
     for (let i = 0; i < TICK_READINGS; i++) tracker.update(3, 0);
     expect(tracker.update(null, null)).toBe(false);
     expect(tracker.update(3, 0)).toBe(false);
+  });
+});
+
+describe("playReferenceTone", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it("plays a sine at the frequency and fades out on stop", () => {
+    vi.useFakeTimers();
+    const param = {
+      value: 0,
+      setValueAtTime: vi.fn(),
+      linearRampToValueAtTime: vi.fn(),
+      cancelScheduledValues: vi.fn(),
+    };
+    const oscillator = {
+      type: "",
+      frequency: { value: 0 },
+      connect: vi.fn(),
+      start: vi.fn(),
+      stop: vi.fn(),
+    };
+    const gain = { gain: param, connect: vi.fn() };
+    oscillator.connect.mockReturnValue(gain);
+    gain.connect.mockReturnValue(undefined);
+    const close = vi.fn(async () => {});
+    vi.stubGlobal("window", { setTimeout: globalThis.setTimeout });
+    vi.stubGlobal(
+      "AudioContext",
+      class {
+        currentTime = 1;
+        destination = {};
+        createOscillator = () => oscillator;
+        createGain = () => gain;
+        close = close;
+      },
+    );
+
+    const tone = playReferenceTone(110);
+    expect(oscillator.type).toBe("sine");
+    expect(oscillator.frequency.value).toBe(110);
+    expect(oscillator.start).toHaveBeenCalled();
+
+    tone.stop();
+    expect(oscillator.stop).toHaveBeenCalledWith(expect.closeTo(1.06));
+    vi.advanceTimersByTime(200);
+    expect(close).toHaveBeenCalled();
   });
 });
