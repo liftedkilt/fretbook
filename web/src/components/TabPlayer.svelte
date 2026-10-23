@@ -5,14 +5,35 @@
   import Cover from "./Cover.svelte";
   import Icon from "./Icon.svelte";
   import Menu from "./Menu.svelte";
+  import PracticePanel from "./PracticePanel.svelte";
+  import ShortcutHelp from "./ShortcutHelp.svelte";
   import { ApiError, patchSync, uploadAudio } from "../lib/api";
   import { AudioMedia } from "../lib/alphatab/audioHandler";
-  import { preferredTrack, trackToAlphaTex } from "../lib/alphatex";
+  import { preferredTrack, scoreToAlphaTex } from "../lib/alphatex";
+  import { Clicker } from "../lib/clicker";
   import { barTicks } from "../lib/durations";
   import { t } from "../lib/i18n.svelte";
   import { instrumentLabel } from "../lib/instruments";
+  import {
+    ClickScheduler,
+    clamp01,
+    countInClicks,
+    loadPractice,
+    nextCountIn,
+    preservePitch,
+    savePractice,
+    trackMix,
+  } from "../lib/practice";
   import { followLink, hrefFor } from "../lib/router.svelte";
-  import { flatSyncPoints, measureAt, moveAnchor, pointAnchors, songStarts } from "../lib/sync";
+  import { RATES, shortcutFor, stepRate, type ShortcutAction } from "../lib/shortcuts";
+  import {
+    barSeconds,
+    flatSyncPoints,
+    measureAt,
+    moveAnchor,
+    pointAnchors,
+    songStarts,
+  } from "../lib/sync";
   import { tuningLabel } from "../lib/tuning";
   import type { SongDetail, TabSong } from "../lib/types";
   import { setNotation, ui } from "../lib/ui.svelte";
@@ -29,6 +50,8 @@
   let scoreReady = $state(0);
   let shiftMs = 0;
   const player: { api: alphaTab.AlphaTabApi | null } = { api: null };
+  const clicker = new Clicker();
+  const scheduler = new ClickScheduler();
 
   let tapIndex = $state(0);
   let loopA = $state<number | null>(null);
@@ -38,6 +61,10 @@
   let currentMeasure = $state(-1);
   let clock = $state("0:00.0");
   let playing = $state(false);
+  let practice = $state(untrack(() => loadPractice(initial.id)));
+  let countingIn = $state(false);
+  let helpOpen = $state(false);
+  let countInTimer = 0;
   let saveLabel = $state("");
   let saveTimer = 0;
   let pendingSync: (() => Promise<void>) | null = null;
@@ -53,9 +80,9 @@
   // With audio, the <audio> clock and sync points set the pace, so a BPM edit must not rebuild the score.
   // Without audio, alphaTab's synth plays at the written tempo, so it does.
   const renderBpm = $derived(song.has_audio ? untrack(() => song.document.bpm) : document_.bpm);
-  const tex = $derived(
-    trackToAlphaTex({ ...document_, bpm: renderBpm }, trackId, song.title, song.artist),
-  );
+  // Every track is loaded so the synth can play and mix them all; only the chosen one is drawn.
+  const tex = $derived(scoreToAlphaTex({ ...document_, bpm: renderBpm }, song.title, song.artist));
+  const trackIndex = $derived(Math.max(0, document_.tracks.indexOf(track)));
 
   function staveProfile(notation: boolean): alphaTab.StaveProfile {
     return notation ? alphaTab.StaveProfile.ScoreTab : alphaTab.StaveProfile.Tab;
@@ -123,7 +150,16 @@
     const starts = startsNow();
     currentMeasure = measureAt(starts, seconds);
     if (loopA != null && loopB != null && currentMeasure > loopB && !audioEl.paused) {
-      audioEl.currentTime = Math.max(0, starts[loopA] ?? 0);
+      const target = Math.max(0, starts[loopA] ?? 0);
+      scheduler.reset();
+      if (practice.countIn.bars > 0 && practice.countIn.beforeLoops && !countingIn) {
+        const element = audioEl;
+        element.pause();
+        element.currentTime = target;
+        runCountIn(loopA, () => void element.play());
+      } else {
+        audioEl.currentTime = target;
+      }
     }
     clock = formatTime(seconds);
     playing = !audioEl.paused;
@@ -155,6 +191,7 @@
     instance.scoreLoaded.on(() => {
       queueMicrotask(() => {
         scoreReady += 1;
+        applyPractice();
       });
     });
     instance.playerReady.on(() => {
@@ -163,6 +200,7 @@
         alphaTab.synth.IExternalMediaSynthOutput | undefined;
       if (output) output.handler = new AudioMedia(audioEl, () => shiftMs);
       audioEl.playbackRate = untrack(() => rate);
+      applyPractice();
     });
     // Without audio, alphaTab's own events say where playback is, tempo changes included.
     instance.playedBeatChanged.on((beat) => {
@@ -174,7 +212,7 @@
     instance.playerStateChanged.on((event) => {
       if (!useAudio) playing = event.state === alphaTab.synth.PlayerState.Playing;
     });
-    instance.tex(source);
+    instance.tex(source, [untrack(() => trackIndex)]);
     return () => {
       scoreReady = 0;
       player.api = null;
@@ -188,6 +226,36 @@
     void song.document.sync.anchors;
     void song.document.sync.points;
     applySync();
+  });
+
+  // Switching track redraws the score that is already loaded instead of parsing it again.
+  $effect(() => {
+    const index = trackIndex;
+    if (!scoreReady) return;
+    untrack(() => {
+      const api = player.api;
+      const target = api?.score?.tracks[index];
+      if (!api || !target || api.tracks[0]?.index === target.index) return;
+      api.renderTracks([target]);
+      applySync();
+    });
+  });
+
+  // Slowing the recording must not change its pitch.
+  $effect(() => {
+    if (audioEl) preservePitch(audioEl);
+  });
+
+  // The metronome click has to be re-planned whenever the clock jumps.
+  $effect(() => {
+    const element = audioEl;
+    if (!element) return;
+    const reset = () => scheduler.reset();
+    const events = ["seeking", "play", "pause", "ratechange"] as const;
+    for (const name of events) element.addEventListener(name, reset);
+    return () => {
+      for (const name of events) element.removeEventListener(name, reset);
+    };
   });
 
   // Follow scrolls inside the score, so the score itself must sit clear of the
@@ -211,40 +279,147 @@
       if (target && /INPUT|TEXTAREA|SELECT/.test(target.tagName)) return;
       // A focused button already handles Space itself.
       if (target?.tagName === "BUTTON" && event.key === " ") return;
-      if (event.ctrlKey || event.metaKey || event.altKey) return;
-      if (event.key === "t" || event.key === "T") {
-        event.preventDefault();
-        tap();
-      } else if (event.key === " ") {
-        event.preventDefault();
-        toggle();
-      } else if (event.key === "ArrowLeft") {
-        event.preventDefault();
-        step(-1);
-      } else if (event.key === "ArrowRight") {
-        event.preventDefault();
-        step(1);
-      }
+      const action = shortcutFor(event);
+      if (!action) return;
+      // The help dialog is modal: only its own key works while it is open.
+      if (helpOpen && action !== "help") return;
+      event.preventDefault();
+      perform(action);
     };
+    const metronome = window.setInterval(tickMetronome, 25);
     document.addEventListener("keydown", onKey);
     return () => {
       window.clearInterval(timer);
+      window.clearInterval(metronome);
+      window.clearTimeout(countInTimer);
+      clicker.close();
       document.removeEventListener("keydown", onKey);
       // Leaving the page must not lose a tap that is still waiting to be saved.
       void flushSync();
     };
   });
 
+  function perform(action: ShortcutAction) {
+    switch (action) {
+      case "toggle":
+        return toggle();
+      case "previousBar":
+        return step(-1);
+      case "nextBar":
+        return step(1);
+      case "tap":
+        return tap();
+      case "metronome":
+        practice.metronome.on = !practice.metronome.on;
+        return practiceChanged();
+      case "countIn":
+        practice.countIn.bars = nextCountIn(practice.countIn.bars);
+        return practiceChanged();
+      case "muteTrack":
+      case "soloTrack": {
+        // Tracks only sound through the synth; a recording plays as one mix.
+        if (song.has_audio) return;
+        const mix = (practice.mix.tracks[track.id] ??= trackMix(practice, track.id));
+        if (action === "muteTrack") mix.mute = !mix.mute;
+        else mix.solo = !mix.solo;
+        return practiceChanged();
+      }
+      case "volumeDown":
+      case "volumeUp": {
+        const key = song.has_audio ? "audio" : "synth";
+        const delta = action === "volumeUp" ? 0.05 : -0.05;
+        practice.mix[key] = Math.round(clamp01(practice.mix[key] + delta, 1) * 100) / 100;
+        return practiceChanged();
+      }
+      case "slower":
+        return setRate(stepRate(rate, -1));
+      case "faster":
+        return setRate(stepRate(rate, 1));
+      case "help":
+        helpOpen = !helpOpen;
+    }
+  }
+
+  /** Pushes the mixer, metronome and volume settings to the synth or the recording, and remembers them. */
+  function applyPractice() {
+    savePractice(song.id, practice);
+    if (audioEl) audioEl.volume = practice.mix.audio;
+    const api = player.api;
+    // A recording plays without the synth, so the synth's own metronome and tracks are silent.
+    if (!api?.score || song.has_audio) return;
+    api.metronomeVolume = practice.metronome.on ? practice.metronome.volume : 0;
+    api.masterVolume = practice.mix.synth;
+    api.score.tracks.forEach((item, index) => {
+      const id = document_.tracks[index]?.id;
+      if (id === undefined) return;
+      const mix = trackMix(practice, id);
+      api.changeTrackVolume([item], mix.volume);
+      api.changeTrackMute([item], mix.mute);
+      api.changeTrackSolo([item], mix.solo);
+    });
+  }
+
+  function practiceChanged() {
+    applyPractice();
+    if (practice.metronome.on) clicker.unlock();
+  }
+
+  /** Seconds one bar lasts on the wall clock, at the current speed. */
+  function barLength(index: number): number {
+    const starts = song.has_audio ? startsNow() : [];
+    const length =
+      starts.length > index + 1 ? starts[index + 1] - starts[index] : barSeconds(document_)[index];
+    return (length ?? 2) / rate;
+  }
+
+  /** Clicks the bars in, then calls `then`. Without a count-in it calls `then` at once. */
+  function runCountIn(index: number, then: () => void) {
+    const bars = practice.countIn.bars;
+    if (bars <= 0 || countingIn) return then();
+    const bar = Math.min(Math.max(index, 0), Math.max(barCount - 1, 0));
+    const signature = document_.bars[bar]?.signature ?? [4, 4];
+    const plan = countInClicks(signature, barLength(bar), bars);
+    clicker.unlock();
+    const volume = Math.max(practice.metronome.volume, 0.3);
+    for (const click of plan.clicks) clicker.click(click.time, click.accent, volume);
+    countingIn = true;
+    countInTimer = window.setTimeout(() => {
+      countingIn = false;
+      then();
+    }, plan.duration * 1000);
+  }
+
+  function cancelCountIn() {
+    window.clearTimeout(countInTimer);
+    countingIn = false;
+  }
+
+  function tickMetronome() {
+    if (!song.has_audio || !audioEl || audioEl.paused || countingIn || !practice.metronome.on)
+      return;
+    const starts = startsNow();
+    if (starts.length === 0) return;
+    for (const click of scheduler.due(
+      starts,
+      document_.bars,
+      audioEl.currentTime,
+      audioEl.playbackRate,
+      0.12,
+    ))
+      clicker.click(click.delay, click.accent, practice.metronome.volume);
+  }
+
   function toggle() {
     const api = player.api;
     if (!api) return;
+    if (countingIn) return cancelCountIn();
     if (song.has_audio && audioEl) {
-      if (audioEl.paused) api.play();
+      if (audioEl.paused) runCountIn(currentMeasure, () => api.play());
       else api.pause();
       return;
     }
     if (api.playerState === alphaTab.synth.PlayerState.Playing) api.pause();
-    else api.play();
+    else runCountIn(currentMeasure, () => api.play());
   }
 
   function step(direction: number) {
@@ -319,6 +494,7 @@
 
   function setRate(value: number) {
     rate = value;
+    scheduler.reset();
     if (audioEl) audioEl.playbackRate = value;
     if (player.api) player.api.playbackSpeed = value;
   }
@@ -471,6 +647,12 @@
             {t("player.synth")} {t("player.keys")}
           {/if}
         </p>
+        <PracticePanel
+          {practice}
+          hasAudio={song.has_audio}
+          tracks={song.document.tracks}
+          onchange={practiceChanged}
+        />
         {#if song.has_audio}
           <div class="panel-group">
             <h3>{t("player.syncMarks")}</h3>
@@ -558,6 +740,7 @@
           class="play-button"
           data-testid="player-play"
           data-playing={playing}
+          data-counting={countingIn}
           onclick={toggle}
           aria-label={playing ? t("player.pause") : t("player.play")}
         >
@@ -622,7 +805,7 @@
             aria-label={t("player.rate")}
             onchange={(event) => setRate(Number(event.currentTarget.value))}
           >
-            {#each [0.5, 0.75, 1, 1.25, 1.5] as value (value)}
+            {#each RATES as value (value)}
               <option {value}>{value}×</option>
             {/each}
           </select>
@@ -647,6 +830,15 @@
         </button>
         <button
           class="icon-button ghost"
+          data-testid="player-shortcuts"
+          onclick={() => (helpOpen = true)}
+          aria-label={t("shortcuts.title")}
+          title={t("shortcuts.title")}
+        >
+          <Icon name="info" size={18} />
+        </button>
+        <button
+          class="icon-button ghost"
           data-testid="player-panel-toggle"
           aria-expanded={panelOpen}
           onclick={() => (panelOpen = !panelOpen)}
@@ -658,4 +850,5 @@
       </div>
     </div>
   </div>
+  <ShortcutHelp open={helpOpen} onclose={() => (helpOpen = false)} />
 </div>

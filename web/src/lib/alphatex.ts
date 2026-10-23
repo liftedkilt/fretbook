@@ -157,17 +157,8 @@ export function voiceCount(track: Track): number {
   );
 }
 
-export function trackToAlphaTex(
-  document: ScoreDocument,
-  trackId: string,
-  title: string,
-  artist: string,
-): string {
-  const track = document.tracks.find((item) => item.id === trackId) ?? preferredTrack(document);
+function trackLines(document: ScoreDocument, track: Track, withBarMetadata: boolean): string[] {
   const lines = [
-    `\\title ("${escapeTex(title || track.name)}")`,
-    `\\artist ("${escapeTex(artist)}")`,
-    `\\tempo (${Math.round(document.bpm * 100) / 100})`,
     `\\track ("${escapeTex(track.name)}")`,
     "\\staff { score tabs }",
     `\\tuning (${tuningLabel(track.tuning_midi)})`,
@@ -178,10 +169,43 @@ export function trackToAlphaTex(
   for (let voice = 0; voice < voices; voice += 1) {
     if (voices > 1) lines.push("\\voice");
     document.bars.forEach((bar, index) => {
-      const metadata = voice === 0 ? barMetadata(document, index) : [];
+      const metadata = voice === 0 && withBarMetadata ? barMetadata(document, index) : [];
       const content = barContent(bar, track.bars[index], voice);
       lines.push(`${[...metadata, ...content].join(" ")} |`);
     });
   }
-  return lines.join("\n");
+  return lines;
+}
+
+function headerLines(document: ScoreDocument, title: string, artist: string, fallback: string) {
+  return [
+    `\\title ("${escapeTex(title || fallback)}")`,
+    `\\artist ("${escapeTex(artist)}")`,
+    `\\tempo (${Math.round(document.bpm * 100) / 100})`,
+  ];
+}
+
+export function trackToAlphaTex(
+  document: ScoreDocument,
+  trackId: string,
+  title: string,
+  artist: string,
+): string {
+  const track = document.tracks.find((item) => item.id === trackId) ?? preferredTrack(document);
+  return [
+    ...headerLines(document, title, artist, track.name),
+    ...trackLines(document, track, true),
+  ].join("\n");
+}
+
+/**
+ * Every track in one score, in document order, so the player can mix them.
+ * Bars are shared, so time, tempo and section marks are written once, on the first track.
+ */
+export function scoreToAlphaTex(document: ScoreDocument, title: string, artist: string): string {
+  const [first] = document.tracks;
+  return [
+    ...headerLines(document, title, artist, first?.name ?? ""),
+    ...document.tracks.flatMap((track, index) => trackLines(document, track, index === 0)),
+  ].join("\n");
 }

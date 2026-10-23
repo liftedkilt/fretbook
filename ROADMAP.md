@@ -19,12 +19,9 @@ These are already being worked on. Coordinate with them before touching the same
 
 Repeats are stored in the score but not rendered, so the bar index is also the playback order. Real songs depend on repeats, voltas, D.S. and D.C. Render them, expand them into a playback order, and make sync marks follow the played order rather than the written bar index.
 
-### Practice controls
+### Synth alongside a recording
 
-The basics of a play-along tool:
-- a metronome and a count-in before playback starts
-- mute, solo and volume for each track, and for the audio against the synth
-- make sure slowing the audio down keeps its pitch, in every browser we support
+Practice controls (metronome, count-in, mixer, pitch-preserving slowdown) are done, but while a recording plays the built-in synth is silent: alphaTab's external-media mode produces no synth sound. Play the synth next to the recording so the mixer can balance the two and mute or solo tracks over a recording.
 
 ### Failed imports
 

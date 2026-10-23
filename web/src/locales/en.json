@@ -225,7 +225,7 @@
     "usingPublished": "Playback is using the published sync points. If the audio drifts, tap the bar where it goes wrong: later bars move with it.",
     "needAudio": "Sync points are saved, but there is no audio file yet. Upload an mp3 or wav.",
     "synth": "No audio file, so playback uses the built-in synth.",
-    "keys": "Space plays. Arrows move a bar. T taps the next mark.",
+    "keys": "Space plays. Arrows move a bar. T taps the next mark. M metronome, C count-in, [ ] speed, ? all shortcuts.",
     "loopRange": "A{a}–B{b}",
     "export": "Export",
     "syncPanel": "Sync & audio",
@@ -235,6 +235,43 @@
     "nextBar": "Next bar",
     "position": "Position",
     "notation": "Standard notation"
+  },
+  "practice": {
+    "metronome": "Metronome",
+    "volume": "Volume",
+    "metronomeVolume": "Metronome volume",
+    "countIn": "Count-in",
+    "countInOff": "Off",
+    "countInBars": {
+      "one": "{count} bar",
+      "other": "{count} bars"
+    },
+    "countInLoops": "Before each loop pass",
+    "mixer": "Mixer",
+    "recording": "Recording",
+    "synth": "Synth",
+    "synthOff": "A recording is playing, so the built-in synth is off. Add or remove the recording to mix tracks.",
+    "mute": "Mute",
+    "solo": "Solo",
+    "muteTrack": "Mute {name}",
+    "soloTrack": "Solo {name}",
+    "trackVolume": "{name} volume"
+  },
+  "shortcuts": {
+    "title": "Keyboard shortcuts",
+    "toggle": "Play or pause",
+    "previousBar": "Previous bar",
+    "nextBar": "Next bar",
+    "tap": "Tap the next sync mark",
+    "metronome": "Metronome on or off",
+    "countIn": "Count-in: off, 1 bar, 2 bars",
+    "muteTrack": "Mute the shown track (synth only)",
+    "soloTrack": "Solo the shown track (synth only)",
+    "volumeDown": "Volume down",
+    "volumeUp": "Volume up",
+    "slower": "Slower",
+    "faster": "Faster",
+    "help": "Show or hide this list"
   },
   "editor": {
     "heading": "Edit",

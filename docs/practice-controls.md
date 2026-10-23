@@ -1,0 +1,28 @@
+# Practice controls
+
+How the song page's metronome, count-in, mixer, and slow-down work, and how to check them by hand.
+
+## How it works
+
+- **Synth playback** (a song without a recording): alphaTab plays every track of the score. The mixer sets each track's volume, mute and solo, and the synth's master volume. The metronome is alphaTab's own, so it follows tempo and time-signature changes in the score.
+- **Recording playback**: the `<audio>` element sets the pace and alphaTab's external-media mode makes no sound of its own. The metronome is a Web Audio click scheduled from the bar starts (`songStarts`, which includes your sync marks), so it stays on the recording's beat. The mixer shows the recording's volume only.
+- **Count-in**: one or two empty bars are clicked in at the tempo and time signature of the bar playback starts on, scaled by the playback speed. With "Before each loop pass" on, a recording pauses at the loop start, counts in, then plays on.
+- **Slowing down**: the speed control sets `playbackRate`, and `preservesPitch` is switched on for the audio element (`webkitPreservesPitch` / `mozPreservesPitch` too where a browser still uses them). The synth slows by changing its tempo, which never changes pitch. No time-stretch library is needed.
+- Settings are stored in `localStorage` per song (`fretbook.practice.<song id>`): per browser, not per account.
+
+## Manual check: slowed audio keeps its pitch
+
+`preservesPitch` is asserted automatically in Chromium (`web/e2e/practice.spec.ts`). Browsers do not expose whether the sound really kept its pitch, so check Firefox and Safari by ear:
+
+1. Open a song with a recording of a sustained note or a tuner-friendly tone (the `click-track.wav` fixture has no pitch; use any song with a held note).
+2. Open the song in the browser, play it at 1×, and note the pitch (or hold a tuner app up to the speaker).
+3. Press `[` until the speed shows 0.5×. The notes should last twice as long but sound the same pitch, not an octave lower.
+4. Press `]` back to 1× and 1.5×: the pitch must not rise.
+
+Record the browser and version when you report a problem.
+
+## Manual check: metronome and count-in
+
+1. Press `M`: clicks sound on every beat, higher on beat 1, in time with the cursor (synth) or the recording.
+2. Press `C` until "2 bars" is selected, then Space: two bars of clicks, then the music.
+3. Open a song with a tempo or time-signature change: the click changes with it.

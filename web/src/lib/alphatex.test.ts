@@ -2,7 +2,7 @@ import * as alphaTab from "@coderline/alphatab";
 import { describe, expect, it } from "vitest";
 
 import { scoreToDocument } from "./alphatab/importScore";
-import { trackToAlphaTex } from "./alphatex";
+import { scoreToAlphaTex, trackToAlphaTex } from "./alphatex";
 import { notation } from "./durations";
 import type { Beat, ScoreDocument } from "./types";
 
@@ -302,5 +302,29 @@ describe("trackToAlphaTex", () => {
     expect(low).toMatchObject({ fret: 1, string: 1 });
     expect(low.realValue).toBe(36);
     expect(played(sevenScore)[0].playbackDuration).toBe(960);
+  });
+});
+
+describe("scoreToAlphaTex", () => {
+  it("writes every track once and keeps bar metadata on the first track only", () => {
+    const quarter: Beat = { position: 0, duration: 960, notes: [{ string: 0, fret: 1 }] };
+    const base = bass(
+      [[quarter], [quarter]],
+      [
+        [4, 4],
+        [3, 4],
+      ],
+    );
+    base.bars[1].tempo = 90;
+    base.tracks.push({ ...base.tracks[0], id: "second", name: "Second", preferred: false });
+    const tex = scoreToAlphaTex(base, "Fixture", "Ada");
+    expect(tex.match(/\\track/g)).toHaveLength(2);
+    expect(tex.match(/\\ts \(3 4\)/g)).toHaveLength(1);
+    expect(tex.match(/\\tempo \(90\)/g)).toHaveLength(1);
+    const score = alphaTab.importer.ScoreLoader.loadAlphaTex(tex);
+    expect(score.tracks.map((item) => item.name)).toEqual(["Bass", "Second"]);
+    expect(score.masterBars).toHaveLength(2);
+    expect(score.masterBars[1].timeSignatureNumerator).toBe(3);
+    expect(score.tracks[1].staves[0].bars).toHaveLength(2);
   });
 });
