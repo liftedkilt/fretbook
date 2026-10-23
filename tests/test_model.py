@@ -9,11 +9,13 @@ from fretbook.score.model import (
     Beat,
     Note,
     ScoreDocument,
+    SyncMap,
     Track,
     TrackBar,
     Voice,
     bar_seconds,
     content_hash,
+    played_bar_seconds,
     summary_fields,
 )
 
@@ -104,3 +106,42 @@ def test_known_presets() -> None:
     assert get_preset("bass-5").tuning_midi[-1] == 23
     with pytest.raises(KeyError):
         get_preset("nope")
+
+
+def test_played_bar_seconds_and_sync_conversion() -> None:
+    bars = [
+        Bar(signature=(4, 4)),
+        Bar(signature=(4, 4), tempo=60, repeat_start=True),
+        Bar(signature=(4, 4), repeat_end=2),
+        Bar(signature=(4, 4)),
+    ]
+    # Played order is 0, 1, 2, 1, 2, 3.
+    # Bar 0 is 120 bpm (2s). Bar 1 is 60 bpm (4s). Bar 2 inherits 60 bpm (4s).
+    # Next repeat of Bar 1 is 60 bpm (4s), Bar 2 is 4s, Bar 3 is 4s.
+    doc = ScoreDocument(
+        bpm=120,
+        bars=bars,
+        tracks=[_track([43, 38, 33, 28], bars=4)],
+        sync=SyncMap(
+            points=[1.0, 3.0, 7.0, 15.0],
+            anchors={"0": 1.0, "2": 7.0, "4": 19.0},
+            keyed_by="written",
+        ),
+    )
+    assert played_bar_seconds(doc) == [2.0, 4.0, 4.0, 4.0, 4.0, 4.0]
+    assert doc.sync.keyed_by == "played"
+    # First play of bar 2 is index 2, end of song is index 6 (was written bar 4)
+    assert doc.sync.anchors["0"] == 1.0
+    assert doc.sync.anchors["2"] == 7.0
+    assert doc.sync.anchors["6"] == 19.0
+    assert doc.sync.points == [1.0, 3.0, 7.0, None, None, 15.0]
+
+
+def test_written_sync_rejects_out_of_range_anchor() -> None:
+    bars = [Bar(), Bar()]
+    with pytest.raises(ValueError, match="is not a bar index"):
+        ScoreDocument(
+            bars=bars,
+            tracks=[_track([43, 38, 33, 28], bars=2)],
+            sync=SyncMap(anchors={"9": 5.0}, keyed_by="written"),
+        )

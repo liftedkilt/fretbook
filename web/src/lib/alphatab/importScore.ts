@@ -4,6 +4,7 @@ import { t } from "../i18n.svelte";
 import type {
   Bar,
   Beat,
+  DirectionKind,
   GraceKind,
   HarmonicKind,
   Note,
@@ -22,7 +23,31 @@ import type {
  * - Master bars become song-level bars; each track keeps all its voices.
  */
 
-const { GraceType, HarmonicType, SlideInType, SlideOutType, VibratoType } = alphaTab.model;
+const { Direction, GraceType, HarmonicType, SlideInType, SlideOutType, VibratoType } =
+  alphaTab.model;
+
+/** alphaTab's direction enum, by our names. */
+const DIRECTIONS: [alphaTab.model.Direction, DirectionKind][] = [
+  [Direction.TargetFine, "fine"],
+  [Direction.TargetSegno, "segno"],
+  [Direction.TargetSegnoSegno, "segno_segno"],
+  [Direction.TargetCoda, "coda"],
+  [Direction.TargetDoubleCoda, "double_coda"],
+  [Direction.JumpDaCapo, "da_capo"],
+  [Direction.JumpDaCapoAlCoda, "da_capo_al_coda"],
+  [Direction.JumpDaCapoAlDoubleCoda, "da_capo_al_double_coda"],
+  [Direction.JumpDaCapoAlFine, "da_capo_al_fine"],
+  [Direction.JumpDalSegno, "dal_segno"],
+  [Direction.JumpDalSegnoAlCoda, "dal_segno_al_coda"],
+  [Direction.JumpDalSegnoAlDoubleCoda, "dal_segno_al_double_coda"],
+  [Direction.JumpDalSegnoAlFine, "dal_segno_al_fine"],
+  [Direction.JumpDalSegnoSegno, "dal_segno_segno"],
+  [Direction.JumpDalSegnoSegnoAlCoda, "dal_segno_segno_al_coda"],
+  [Direction.JumpDalSegnoSegnoAlDoubleCoda, "dal_segno_segno_al_double_coda"],
+  [Direction.JumpDalSegnoSegnoAlFine, "dal_segno_segno_al_fine"],
+  [Direction.JumpDaCoda, "da_coda"],
+  [Direction.JumpDaDoubleCoda, "da_double_coda"],
+];
 
 function slide(note: alphaTab.model.Note): SlideKind | null {
   switch (note.slideOutType) {
@@ -130,6 +155,9 @@ function convertBars(score: alphaTab.model.Score): { bpm: number; bars: Bar[] } 
       repeat_start: master.isRepeatStart,
       repeat_end: master.isRepeatEnd ? Math.max(2, master.repeatCount) : 0,
       alternate_endings: endings,
+      directions: DIRECTIONS.filter(([kind]) => master.directions?.has(kind)).map(
+        ([, name]) => name,
+      ),
       section: master.section?.text || null,
       extras: {},
     };
@@ -177,7 +205,13 @@ export function scoreToDocument(score: alphaTab.model.Score): {
   return {
     title: score.title || t("library.untitled"),
     artist: score.artist || "",
-    document: { version: 1, bpm, bars, tracks, sync: { video_id: null, points: [], anchors: {} } },
+    document: {
+      version: 1,
+      bpm,
+      bars,
+      tracks,
+      sync: { video_id: null, points: [], anchors: {}, keyed_by: "played" },
+    },
   };
 }
 

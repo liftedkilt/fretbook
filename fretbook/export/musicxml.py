@@ -165,13 +165,76 @@ def _attributes(measure: ET.Element, bar: Bar, track: Track, *, first: bool, pre
         _sub(details, "capo", track.capo)
 
 
-def _bar_marks(measure: ET.Element, bar: Bar, *, tempo: float | None) -> None:
-    if bar.repeat_start or bar.alternate_endings:
+# Direction -> (marks, words, sound attributes). A segno or coda is a target; a jump names its target.
+_TARGETS: dict[str, tuple[str | None, str, dict[str, str]]] = {
+    "segno": ("segno", "", {"segno": "segno"}),
+    "segno_segno": ("segno", "", {"segno": "segnosegno"}),
+    "coda": ("coda", "", {"coda": "coda"}),
+    "double_coda": ("coda", "", {"coda": "doublecoda"}),
+    "fine": (None, "Fine", {"fine": "yes"}),
+    "da_coda": (None, "To Coda", {"tocoda": "coda"}),
+    "da_double_coda": (None, "To Double Coda", {"tocoda": "doublecoda"}),
+}
+_JUMP_BASES = {
+    "da_capo": ("D.C.", {"dacapo": "yes"}),
+    "dal_segno": ("D.S.", {"dalsegno": "segno"}),
+    "dal_segno_segno": ("D.S.S.", {"dalsegno": "segnosegno"}),
+}
+_JUMP_ENDINGS = {"": "", "_al_coda": " al Coda", "_al_double_coda": " al Double Coda", "_al_fine": " al Fine"}
+
+
+def _direction_spec(name: str) -> tuple[str | None, str, dict[str, str]]:
+    if name in _TARGETS:
+        return _TARGETS[name]
+    for base, (words, sound) in _JUMP_BASES.items():
+        if name.startswith(base) and name[len(base) :] in _JUMP_ENDINGS:
+            return None, words + _JUMP_ENDINGS[name[len(base) :]], sound
+    raise ValueError(f"unknown direction {name!r}")
+
+
+def _bar_directions(measure: ET.Element, bar: Bar) -> None:
+    for name in bar.directions:
+        mark, words, sound = _direction_spec(name)
+        direction = _sub(measure, "direction", placement="above")
+        kind = _sub(direction, "direction-type")
+        if mark:
+            _sub(kind, mark)
+        if words:
+            _sub(kind, "words", words)
+        _sub(direction, "sound", **sound)
+
+
+def _voltas(bars: list[Bar]) -> tuple[set[int], dict[int, bool]]:
+    """First bar of each volta bracket, and its last bar mapped to whether a repeat sign closes it.
+
+    A bracket starts on a bar whose ``alternate_endings`` differ from the previous bar's and holds
+    until a repeat ends, a different bracket or a repeat starts, or the song ends.
+    """
+    starts: set[int] = set()
+    ends: dict[int, bool] = {}
+    for start, bar in enumerate(bars):
+        if not bar.alternate_endings or (start and bars[start - 1].alternate_endings == bar.alternate_endings):
+            continue
+        starts.add(start)
+        end = start
+        while end + 1 < len(bars) and not (
+            bars[end].repeat_end
+            or bars[end + 1].repeat_start
+            or (bars[end + 1].alternate_endings and bars[end + 1].alternate_endings != bar.alternate_endings)
+        ):
+            end += 1
+        ends[end] = bool(bars[end].repeat_end)
+    return starts, ends
+
+
+def _bar_marks(measure: ET.Element, bar: Bar, *, tempo: float | None, volta_start: bool) -> None:
+    if bar.repeat_start or volta_start:
         barline = _sub(measure, "barline", location="left")
-        if bar.alternate_endings:
+        if volta_start:
             _sub(barline, "ending", number=",".join(str(item) for item in bar.alternate_endings), type="start")
         if bar.repeat_start:
             _sub(barline, "repeat", direction="forward")
+    _bar_directions(measure, bar)
     if bar.section:
         direction = _sub(measure, "direction", placement="above")
         _sub(_sub(direction, "direction-type"), "rehearsal", bar.section)
@@ -183,10 +246,19 @@ def _bar_marks(measure: ET.Element, bar: Bar, *, tempo: float | None) -> None:
         _sub(direction, "sound", tempo=str(round(tempo, 2)))
 
 
-def _bar_end(measure: ET.Element, bar: Bar) -> None:
-    if bar.repeat_end:
+def _bar_end(measure: ET.Element, bar: Bar, *, volta: tuple[list[int], bool] | None = None) -> None:
+    if bar.repeat_end or volta:
         barline = _sub(measure, "barline", location="right")
-        _sub(barline, "repeat", direction="backward", times=str(bar.repeat_end))
+        if volta:
+            numbers, closed = volta
+            _sub(
+                barline,
+                "ending",
+                number=",".join(str(item) for item in numbers),
+                type="stop" if closed else "discontinue",
+            )
+        if bar.repeat_end:
+            _sub(barline, "repeat", direction="backward", times=str(bar.repeat_end))
 
 
 def _voice_notes(measure: ET.Element, track_bar: TrackBar, bar: Bar, track: Track) -> None:
@@ -238,13 +310,19 @@ def to_musicxml(document: ScoreDocument, *, title: str, artist: str) -> bytes:
     for index, track in enumerate(document.tracks, start=1):
         part = _sub(root, "part", id=f"P{index}")
         previous: Bar | None = None
+        volta_starts, volta_ends = _voltas(document.bars)
         for bar_index, (bar, track_bar) in enumerate(zip(document.bars, track.bars, strict=True)):
             measure = _sub(part, "measure", number=str(bar_index + 1))
             _attributes(measure, bar, track, first=bar_index == 0, previous=previous)
             tempo = document.bpm if bar_index == 0 else bar.tempo
-            _bar_marks(measure, bar, tempo=tempo if index == 1 else None)
+            _bar_marks(measure, bar, tempo=tempo if index == 1 else None, volta_start=bar_index in volta_starts)
             _voice_notes(measure, track_bar, bar, track)
-            _bar_end(measure, bar)
+            if bar_index in volta_ends:
+                # The bracket's numbers are the ones its first bar carries.
+                first = max(item for item in volta_starts if item <= bar_index)
+                _bar_end(measure, bar, volta=(document.bars[first].alternate_endings, volta_ends[bar_index]))
+            else:
+                _bar_end(measure, bar)
             previous = bar
     ET.indent(root)
     body = ET.tostring(root, encoding="unicode")

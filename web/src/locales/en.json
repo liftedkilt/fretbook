@@ -595,5 +595,35 @@
     "dismissing": "Dismissing…",
     "completed": "Ready",
     "viewSong": "View song"
+  },
+  "repeats": {
+    "heading": "Repeats and jumps",
+    "start": "Repeat starts here",
+    "plays": "Repeat ends here: plays",
+    "volta": "Volta (passes)",
+    "directions": "Jumps and marks",
+    "addDirection": "Add a mark…",
+    "remove": "Remove",
+    "direction": {
+      "segno": "Segno",
+      "segno_segno": "Segno Segno",
+      "coda": "Coda",
+      "double_coda": "Double coda",
+      "fine": "Fine",
+      "da_coda": "To Coda",
+      "da_double_coda": "To double coda",
+      "da_capo": "D.C.",
+      "da_capo_al_coda": "D.C. al Coda",
+      "da_capo_al_double_coda": "D.C. al double coda",
+      "da_capo_al_fine": "D.C. al Fine",
+      "dal_segno": "D.S.",
+      "dal_segno_al_coda": "D.S. al Coda",
+      "dal_segno_al_double_coda": "D.S. al double coda",
+      "dal_segno_al_fine": "D.S. al Fine",
+      "dal_segno_segno": "D.S.S.",
+      "dal_segno_segno_al_coda": "D.S.S. al Coda",
+      "dal_segno_segno_al_double_coda": "D.S.S. al double coda",
+      "dal_segno_segno_al_fine": "D.S.S. al Fine"
+    }
   }
 }

@@ -595,5 +595,35 @@
     "dismissing": "Dispensando…",
     "completed": "Pronto",
     "viewSong": "Ver música"
+  },
+  "repeats": {
+    "heading": "Repetições e saltos",
+    "start": "A repetição começa aqui",
+    "plays": "A repetição termina aqui: vezes",
+    "volta": "Casa (passagens)",
+    "directions": "Saltos e marcas",
+    "addDirection": "Adicionar marca…",
+    "remove": "Remover",
+    "direction": {
+      "segno": "Segno",
+      "segno_segno": "Segno Segno",
+      "coda": "Coda",
+      "double_coda": "Coda dupla",
+      "fine": "Fine",
+      "da_coda": "Para a Coda",
+      "da_double_coda": "Para a coda dupla",
+      "da_capo": "D.C.",
+      "da_capo_al_coda": "D.C. al Coda",
+      "da_capo_al_double_coda": "D.C. al coda dupla",
+      "da_capo_al_fine": "D.C. al Fine",
+      "dal_segno": "D.S.",
+      "dal_segno_al_coda": "D.S. al Coda",
+      "dal_segno_al_double_coda": "D.S. al coda dupla",
+      "dal_segno_al_fine": "D.S. al Fine",
+      "dal_segno_segno": "D.S.S.",
+      "dal_segno_segno_al_coda": "D.S.S. al Coda",
+      "dal_segno_segno_al_double_coda": "D.S.S. al coda dupla",
+      "dal_segno_segno_al_fine": "D.S.S. al Fine"
+    }
   }
 }

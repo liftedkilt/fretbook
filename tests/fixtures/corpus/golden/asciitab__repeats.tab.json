@@ -6,6 +6,7 @@
     "bars": [
       {
         "alternate_endings": [],
+        "directions": [],
         "extras": {},
         "repeat_end": 0,
         "repeat_start": true,
@@ -18,6 +19,7 @@
       },
       {
         "alternate_endings": [],
+        "directions": [],
         "extras": {},
         "repeat_end": 2,
         "repeat_start": false,
@@ -30,6 +32,7 @@
       },
       {
         "alternate_endings": [],
+        "directions": [],
         "extras": {},
         "repeat_end": 4,
         "repeat_start": true,
@@ -44,6 +47,7 @@
     "bpm": 120.0,
     "sync": {
       "anchors": {},
+      "keyed_by": "played",
       "points": [],
       "video_id": null
     },

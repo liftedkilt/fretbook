@@ -16,6 +16,7 @@ from fretbook.importers.safe_fetch import SafeFetcher
 from fretbook.importers.youtube_frames import YouTubeFrameImporter
 from fretbook.jobs.runner import JobRunner, Progress
 from fretbook.score.model import ScoreDocument, content_hash
+from fretbook.score.playback import played_bars
 from fretbook.storage.media import AUDIO_TYPES, MediaStore
 from fretbook.storage.repository import SongRepository
 
@@ -169,7 +170,8 @@ def _reimport(
         )
         return None
     document = result.document
-    anchors = {key: value for key, value in stored.sync.anchors.items() if int(key) <= len(document.bars)}
+    played = len(played_bars(document.bars))
+    anchors = {key: value for key, value in stored.sync.anchors.items() if int(key) <= played}
     if len(anchors) != len(stored.sync.anchors):
         warnings.append(
             Notice("import.anchorsDropped", "the new import has fewer bars, so some sync marks were dropped")

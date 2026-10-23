@@ -31,12 +31,35 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from fretbook.score.playback import first_played, played_bars
+
 TICKS_PER_QUARTER = 960
 VERSION: Literal[1] = 1
 
 SlideKind = Literal["shift", "legato", "in_below", "in_above", "out_down", "out_up"]
 HarmonicKind = Literal["natural", "artificial", "pinch", "tap", "semi"]
 GraceKind = Literal["on_beat", "before_beat", "bend"]
+DirectionKind = Literal[
+    "fine",
+    "segno",
+    "segno_segno",
+    "coda",
+    "double_coda",
+    "da_capo",
+    "da_capo_al_coda",
+    "da_capo_al_double_coda",
+    "da_capo_al_fine",
+    "dal_segno",
+    "dal_segno_al_coda",
+    "dal_segno_al_double_coda",
+    "dal_segno_al_fine",
+    "dal_segno_segno",
+    "dal_segno_segno_al_coda",
+    "dal_segno_segno_al_double_coda",
+    "dal_segno_segno_al_fine",
+    "da_coda",
+    "da_double_coda",
+]
 
 
 class _Model(BaseModel):
@@ -96,6 +119,9 @@ class Bar(_Model):
     repeat_end: int = Field(default=0, ge=0, le=32)
     """How many times the repeated section plays, on its last bar. 0 means no repeat ends here."""
     alternate_endings: list[int] = Field(default_factory=list)
+    """Volta: the passes (1-based) of the repeat this bar plays on. It holds until the next bar that sets its own."""
+    directions: list[DirectionKind] = Field(default_factory=list)
+    """Navigation marks on this bar: targets (segno, coda, fine) and jumps (D.C., D.S., to coda)."""
     section: str | None = None
     extras: dict[str, Any] = Field(default_factory=dict)
 
@@ -128,18 +154,26 @@ class Track(_Model):
 
 
 class SyncMap(_Model):
-    """Backing-track alignment, keyed by song-level bar index.
+    """Backing-track alignment, keyed by *played* bar index.
 
-    ``points`` are source timestamps in seconds (Songsterr video points), one
-    per bar; ``None`` means the source had none for that bar. ``anchors`` are
-    the user's taps, keyed by bar index. Playback uses anchors when present,
-    otherwise points. Repeats are not rendered yet, so the bar index is also
-    the playback index; once they are, anchors need a play-through occurrence.
+    The played order is the written bars expanded through repeats, voltas and
+    D.S./D.C. jumps (``fretbook.score.playback``); with no repeats it is the
+    written order. ``points`` are source timestamps in seconds (Songsterr video
+    points), one per played bar; ``None`` means the source had none for that
+    bar. ``anchors`` are the user's taps, keyed by played bar index. Playback
+    uses anchors when present, otherwise points.
+
+    ``keyed_by`` says which index the keys use. Documents saved before repeats
+    were rendered are ``"written"`` (the field is absent, so it defaults to
+    that): validating one converts the marks to the first play of each written
+    bar and sets ``"played"``. That conversion is the migration of existing
+    marks; it is exact because nothing used to render repeats.
     """
 
     video_id: str | None = None
     points: list[float | None] = Field(default_factory=list)
     anchors: dict[str, float] = Field(default_factory=dict)
+    keyed_by: Literal["written", "played"] = "written"
 
 
 class ScoreDocument(_Model):
@@ -176,10 +210,34 @@ class ScoreDocument(_Model):
                                 raise ValueError(
                                     f"string {note.string} is outside 0..{strings - 1} on {track.name}, bar {index + 1}"
                                 )
+        order = played_bars(self.bars)
+        if self.sync.keyed_by == "written":
+            self._convert_written_marks(order)
         for key in self.sync.anchors:
-            if not key.isdigit() or int(key) > count:
+            if not key.isdigit() or int(key) > len(order):
                 raise ValueError(f"sync anchor {key!r} is not a bar index")
         return self
+
+    def _convert_written_marks(self, order: list[int]) -> None:
+        """Re-key sync marks from written to played bar index (see :class:`SyncMap`)."""
+        count = len(self.bars)
+        sync = self.sync
+        first = first_played(order, count)
+        anchors: dict[str, float] = {}
+        for key, value in sync.anchors.items():
+            if not key.isdigit() or int(key) > count:
+                raise ValueError(f"sync anchor {key!r} is not a bar index")
+            index = int(key)
+            anchors[str(len(order) if index == count else first[index])] = value
+        points: list[float | None] = []
+        if sync.points:
+            points = [None] * len(order)
+            for written, point in enumerate(sync.points[:count]):
+                if first[written] < len(order):
+                    points[first[written]] = point
+        sync.anchors = anchors
+        sync.points = points
+        sync.keyed_by = "played"
 
 
 def preferred_track(document: ScoreDocument) -> Track:
@@ -203,6 +261,23 @@ def bar_seconds(document: ScoreDocument) -> list[float]:
     tempo = document.bpm
     for index, bar in enumerate(document.bars):
         if index and bar.tempo is not None:
+            tempo = bar.tempo
+        lengths.append(bar.length_quarters * 60 / tempo)
+    return lengths
+
+
+def played_bar_seconds(document: ScoreDocument) -> list[float]:
+    """Length in seconds of each *played* bar: the written bars expanded through repeats and jumps.
+
+    The tempo in force follows the playing order, and bar 0 always restarts at the opening tempo.
+    """
+    lengths: list[float] = []
+    tempo = document.bpm
+    for index in played_bars(document.bars):
+        bar = document.bars[index]
+        if index == 0:
+            tempo = document.bpm
+        elif bar.tempo is not None:
             tempo = bar.tempo
         lengths.append(bar.length_quarters * 60 / tempo)
     return lengths
