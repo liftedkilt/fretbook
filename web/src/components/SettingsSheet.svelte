@@ -1,4 +1,5 @@
 <script lang="ts">
+  import BackupSettings from "./BackupSettings.svelte";
   import Icon from "./Icon.svelte";
   import Sheet from "./Sheet.svelte";
   import { apiUrl } from "../lib/api";
@@ -118,6 +119,7 @@
         {/each}
       </div>
     </section>
+    <BackupSettings />
     {#if ui.version}
       <section class="setting" data-testid="about-setting">
         <div class="setting-label">

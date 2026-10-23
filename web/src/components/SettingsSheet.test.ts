@@ -5,10 +5,14 @@ import { ui } from "../lib/ui.svelte";
 import SettingsSheet from "./SettingsSheet.svelte";
 
 const mockSaveSettings = vi.fn();
+const mockImportLibrary = vi.fn();
+const mockWaitForJob = vi.fn();
 
 vi.mock("../lib/api", () => ({
   saveSettings: (...args: unknown[]) => mockSaveSettings(...args),
   apiUrl: (p: string) => p,
+  importLibrary: (...args: unknown[]) => mockImportLibrary(...args),
+  waitForJob: (...args: unknown[]) => mockWaitForJob(...args),
 }));
 
 const mockPresets: InstrumentPreset[] = [
@@ -100,5 +104,58 @@ describe("SettingsSheet", () => {
     expect(screen.getByText(/player@example.com/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /users/i })).toBeInTheDocument();
     expect(screen.getByTestId("sign-out")).toBeInTheDocument();
+  });
+
+  it("offers a library download and hides the export-everything link from non-admins", () => {
+    render(SettingsSheet);
+
+    expect(screen.getByTestId("backup-export")).toHaveAttribute("href", "/api/library/export");
+    expect(screen.queryByTestId("backup-export-all")).not.toBeInTheDocument();
+  });
+
+  it("shows the export-everything link to admins", () => {
+    ui.me = {
+      user_id: "u",
+      display_name: "Root",
+      email: "root@example.com",
+      authenticated: true,
+      role: "admin",
+      settings: { default_instrument: "bass-4" },
+    };
+
+    render(SettingsSheet);
+
+    expect(screen.getByTestId("backup-export-all")).toHaveAttribute(
+      "href",
+      "/api/admin/library/export",
+    );
+  });
+
+  it("restores a backup with the chosen duplicate mode and reports the result", async () => {
+    mockImportLibrary.mockResolvedValueOnce({ job_id: "j1" });
+    mockWaitForJob.mockResolvedValueOnce({
+      status: "done",
+      result: { imported: 3, skipped: 1, copied: 0, failed: 0, warnings: [] },
+    });
+    render(SettingsSheet);
+
+    await fireEvent.click(screen.getByRole("radio", { name: /keep both/i }));
+    const file = new File(["zip"], "lib.zip", { type: "application/zip" });
+    await fireEvent.change(screen.getByTestId("backup-file"), { target: { files: [file] } });
+
+    expect(mockImportLibrary).toHaveBeenCalledWith(file, "copy");
+    expect(await screen.findByTestId("backup-summary")).toHaveTextContent(
+      "Added 3, skipped 1, kept 0 as copies, 0 failed.",
+    );
+  });
+
+  it("shows the server's message when a restore is refused", async () => {
+    mockImportLibrary.mockRejectedValueOnce(new Error("That file is not a Fretbook backup."));
+    render(SettingsSheet);
+
+    const file = new File(["nope"], "x.zip");
+    await fireEvent.change(screen.getByTestId("backup-file"), { target: { files: [file] } });
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("not a Fretbook backup");
   });
 });

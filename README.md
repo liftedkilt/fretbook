@@ -27,7 +27,7 @@ docker pull ghcr.io/liftedkilt/fretbook:latest   # newest main
 docker pull ghcr.io/liftedkilt/fretbook:0.2.0    # a release; pin this one
 ```
 
-**Upgrading.** Fretbook is versioned with [semver](https://semver.org); while it is `0.x`, a minor version may include breaking changes, so read the [changelog](CHANGELOG.md) first. Everything lives in the `/data` volume, so back it up before you upgrade (stop the container and copy the volume, or copy `fretbook.sqlite` and the media folder). Then pull and restart; database migrations run on start and are not reversible, so to roll back, restore the backup and run the older image. Before applying database migrations on upgrade, Fretbook also automatically takes a consistent SQLite backup to `data/backups/pre-migrate-<from>-<to>-<timestamp>.sqlite` (keeping the last 5 by default). If the database is from a newer version than the running code, startup is refused.
+**Upgrading.** Fretbook is versioned with [semver](https://semver.org); while it is `0.x`, a minor version may include breaking changes, so read the [changelog](CHANGELOG.md) first. Everything lives in the `/data` volume, so back it up before you upgrade (see [Backup and restore](#backup-and-restore)). Then pull and restart; database migrations run on start and are not reversible, so to roll back, restore the backup and run the older image. Before applying database migrations on upgrade, Fretbook also automatically takes a consistent SQLite backup to `data/backups/pre-migrate-<from>-<to>-<timestamp>.sqlite` (keeping the last 5 by default). If the database is from a newer version than the running code, startup is refused.
 
 ```sh
 docker compose pull && docker compose up -d
@@ -44,6 +44,23 @@ Python 3.12, Node 22, and ffmpeg (only for downloading YouTube audio).
 ```
 
 For development, see [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Backup and restore
+
+Everything is one SQLite file plus a `media/` folder under `FRETBOOK_DATA_DIR`. Two ways to keep a copy:
+
+**Library archive (Settings → Backup and restore).** *Download library* gives one `.zip` with every song (tabs as Fretbook JSON, chord sheets as ChordPro), its audio and kept uploads, and a `manifest.json` (app and schema version, song metadata). It is written to disk song by song, so a large library does not load into memory (it needs free space in `$DATA_DIR/inbox` for the temporary file). To restore, choose the zip and decide what happens to songs already in the library (same id, or same title, artist and source): *Skip it* or *Keep both*. The restore runs as a background job, always into the signed-in user's own library. With sign-in on, everyone exports and restores their own library, and admins also get *Download everyone's library* (restoring that file puts all its songs in the restoring user's library; to recover a whole server use a snapshot). Archives are checked before anything is stored: entry count, unpacked size, compression ratio, and file names (no absolute paths or `..`).
+
+**Snapshot for cron or a sidecar.** `python -m fretbook backup <dest> [--keep N]` copies the database with SQLite's online backup API (consistent while the server runs) and the `media/` folder into `<dest>/fretbook-backup-<UTC timestamp>/`. `--keep 7` then deletes the oldest `fretbook-backup-*` folders in `<dest>`, leaving anything else alone. It reads the same `FRETBOOK_DATA_DIR` / `FRETBOOK_DATABASE` as the server and prints the folder it wrote; it exits 1 on failure.
+
+```sh
+# crontab: nightly at 03:15, keep a week
+15 3 * * * cd /opt/fretbook && FRETBOOK_DATA_DIR=/srv/fretbook/data .venv/bin/python -m fretbook backup /srv/backups --keep 7
+# Docker
+docker compose exec fretbook python -m fretbook backup /data/snapshots --keep 7
+```
+
+To restore a snapshot, stop Fretbook and copy `fretbook.sqlite` and `media/` from the snapshot folder back into the data directory (delete any `fretbook.sqlite-wal` and `-shm` files next to the old database first).
 
 ## Configuration
 
@@ -63,6 +80,8 @@ For development, see [CONTRIBUTING.md](CONTRIBUTING.md).
 | `FRETBOOK_YTDLP_AUTO_UPDATE` | `false` | Install the newest yt-dlp into `$DATA_DIR/ytdlp` at start and once a day, and use it. See [Keeping yt-dlp working](#keeping-yt-dlp-working). |
 | `FRETBOOK_YTDLP_COOKIES` | empty | Path to a Netscape-format cookies file for yt-dlp. See the warning below. |
 | `FRETBOOK_MAX_UPLOAD_BYTES` | 80 MB | Largest upload and request body. |
+| `FRETBOOK_MAX_RESTORE_BYTES` | 4 GiB | Largest library archive accepted by Settings → Backup and restore. |
+| `FRETBOOK_MAX_RESTORE_UNPACKED_BYTES` | 16 GiB | Largest total size an archive may unpack to. |
 | `FRETBOOK_STATIC_DIR` | built-in | Serve the web app from another directory. |
 | `FRETBOOK_OIDC_ISSUER` | empty | Provider URL, for example `https://id.example.com`. Setting it turns on sign-in. |
 | `FRETBOOK_OIDC_CLIENT_ID` | empty | Client id from the provider. |

@@ -24,6 +24,13 @@ def _flag(name: str, default: bool) -> bool:
     return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _int(name: str, default: int) -> int:
+    try:
+        return int(os.environ.get(name, "").strip() or default)
+    except ValueError:
+        return default
+
+
 def _auth_mode() -> str:
     raw = os.environ.get("FRETBOOK_AUTH_MODE", "").strip().lower()
     if raw:
@@ -59,6 +66,8 @@ class Settings:
     ytdlp_auto_update: bool = False
     ytdlp_cookies: Path | None = None
     migration_backups_keep: int = 5
+    max_restore_bytes: int = 4 * 1024**3
+    max_restore_unpacked_bytes: int = 16 * 1024**3
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -101,6 +110,8 @@ class Settings:
             ytdlp_auto_update=_flag("FRETBOOK_YTDLP_AUTO_UPDATE", False),
             ytdlp_cookies=Path(cookies).expanduser() if cookies else None,
             migration_backups_keep=backups_keep,
+            max_restore_bytes=_int("FRETBOOK_MAX_RESTORE_BYTES", 4 * 1024**3),
+            max_restore_unpacked_bytes=_int("FRETBOOK_MAX_RESTORE_UNPACKED_BYTES", 16 * 1024**3),
         )
 
     @classmethod

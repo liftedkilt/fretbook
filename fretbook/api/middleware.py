@@ -33,17 +33,21 @@ class _TooLarge(HTTPException):
 class BodyLimitMiddleware:
     """Refuse request bodies over ``max_bytes``, whether or not they declare a Content-Length."""
 
-    def __init__(self, app: ASGIApp, max_bytes: int) -> None:
+    def __init__(self, app: ASGIApp, max_bytes: int, path_limits: dict[str, int] | None = None) -> None:
         self.app = app
         self.max_bytes = max_bytes
+        # Larger limits for named routes (library restore); matched on the path without ``root_path``.
+        self.path_limits = path_limits or {}
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
         headers = dict(scope.get("headers") or [])
+        path = scope["path"].removeprefix(scope.get("root_path", ""))
+        limit = max(self.max_bytes, self.path_limits.get(path, 0))
         declared = headers.get(b"content-length")
-        if declared is not None and declared.isdigit() and int(declared) > self.max_bytes:
+        if declared is not None and declared.isdigit() and int(declared) > limit:
             await _json_error(send, 413, "request.tooLarge", "request body is too large")
             return
         seen = 0
@@ -54,7 +58,7 @@ class BodyLimitMiddleware:
             message = await receive()
             if message["type"] == "http.request":
                 seen += len(message.get("body", b""))
-                if seen > self.max_bytes:
+                if seen > limit:
                     raise _TooLarge
             return message
 

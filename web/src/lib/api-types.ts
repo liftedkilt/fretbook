@@ -24,6 +24,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/library/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Everything
+         * @description Every song of every user, for admins. Restoring it puts all songs in the restoring user's library.
+         */
+        get: operations["export_everything_api_admin_library_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/users": {
         parameters: {
             query?: never;
@@ -162,6 +182,49 @@ export interface paths {
         get: operations["get_job_api_jobs__job_id__get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/library/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Library
+         * @description Every song the caller owns, with its audio and kept uploads, as one zip.
+         */
+        get: operations["export_library_api_library_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/library/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Library
+         * @description Queue a restore of an exported archive into the caller's library. Poll `GET /api/jobs/{job_id}`.
+         *
+         *     A song already in the library (same id, or same title, artist and source) is left alone with
+         *     `mode=skip` and added again as a copy with `mode=copy`. The archive is checked before the job is queued.
+         */
+        post: operations["import_library_api_library_import_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -503,6 +566,17 @@ export interface components {
             /** Kind */
             kind?: string | null;
         };
+        /** Body_import_library_api_library_import_post */
+        Body_import_library_api_library_import_post: {
+            /** File */
+            file: string;
+            /**
+             * Mode
+             * @default skip
+             * @enum {string}
+             */
+            mode: "skip" | "copy";
+        };
         /** Body_upload_audio_api_songs__song_id__audio_post */
         Body_upload_audio_api_songs__song_id__audio_post: {
             /** File */
@@ -707,6 +781,14 @@ export interface components {
         JobResult: {
             /** Content Kind */
             content_kind?: ("tab" | "chords") | null;
+            /** Copied */
+            copied?: number | null;
+            /** Failed */
+            failed?: number | null;
+            /** Imported */
+            imported?: number | null;
+            /** Skipped */
+            skipped?: number | null;
             /** Slug */
             slug?: string | null;
             /** Song Id */
@@ -1168,6 +1250,7 @@ export type AdminUser = components['schemas']['AdminUser'];
 export type Bar = components['schemas']['Bar'];
 export type Beat = components['schemas']['Beat'];
 export type BodyImportFileApiImportsFilePost = components['schemas']['Body_import_file_api_imports_file_post'];
+export type BodyImportLibraryApiLibraryImportPost = components['schemas']['Body_import_library_api_library_import_post'];
 export type BodyUploadAudioApiSongsSongIdAudioPost = components['schemas']['Body_upload_audio_api_songs__song_id__audio_post'];
 export type CreateSongBody = components['schemas']['CreateSongBody'];
 export type ErrorBody = components['schemas']['ErrorBody'];
@@ -1222,6 +1305,89 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SongsMoved"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.adminOnly`: the caller is not an admin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    export_everything_api_admin_library_export_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A zip archive of songs and media, as an attachment. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/zip": string;
                 };
             };
             /** @description Keyed error. `detail` is {key, message, params}. */
@@ -1729,6 +1895,158 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Job"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    export_library_api_library_export_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A zip archive of songs and media, as an attachment. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/zip": string;
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    import_library_api_library_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_library_api_library_import_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAccepted"];
                 };
             };
             /** @description Keyed error. `detail` is {key, message, params}. */

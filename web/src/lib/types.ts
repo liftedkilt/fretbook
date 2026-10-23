@@ -228,7 +228,15 @@ export interface Job {
   id: string;
   kind: string;
   status: "queued" | "running" | "done" | "error";
-  result: { song_id?: string; content_kind?: ContentKind; warnings?: Keyed[] } | null;
+  result: {
+    song_id?: string;
+    content_kind?: ContentKind;
+    warnings?: Keyed[];
+    imported?: number | null;
+    skipped?: number | null;
+    copied?: number | null;
+    failed?: number | null;
+  } | null;
   error: string | null;
   error_key: string;
   error_params: Record<string, string | number>;

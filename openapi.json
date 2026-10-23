@@ -225,6 +225,29 @@
         "title": "Body_import_file_api_imports_file_post",
         "type": "object"
       },
+      "Body_import_library_api_library_import_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          },
+          "mode": {
+            "default": "skip",
+            "enum": [
+              "skip",
+              "copy"
+            ],
+            "title": "Mode",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_import_library_api_library_import_post",
+        "type": "object"
+      },
       "Body_upload_audio_api_songs__song_id__audio_post": {
         "properties": {
           "file": {
@@ -703,6 +726,50 @@
               }
             ],
             "title": "Content Kind"
+          },
+          "copied": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Copied"
+          },
+          "failed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failed"
+          },
+          "imported": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Imported"
+          },
+          "skipped": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skipped"
           },
           "slug": {
             "anyOf": [
@@ -1920,6 +1987,99 @@
         ]
       }
     },
+    "/api/admin/library/export": {
+      "get": {
+        "description": "Every song of every user, for admins. Restoring it puts all songs in the restoring user's library.",
+        "operationId": "export_everything_api_admin_library_export_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "A zip archive of songs and media, as an attachment."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.adminOnly`: the caller is not an admin."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Export Everything",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/api/admin/users": {
       "get": {
         "description": "Every account, with role, song count, last sign-in and live sessions. The ``local`` row holds\nsongs from single-user mode.",
@@ -2507,6 +2667,181 @@
         "summary": "Get Job",
         "tags": [
           "jobs"
+        ]
+      }
+    },
+    "/api/library/export": {
+      "get": {
+        "description": "Every song the caller owns, with its audio and kept uploads, as one zip.",
+        "operationId": "export_library_api_library_export_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "A zip archive of songs and media, as an attachment."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Export Library",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/api/library/import": {
+      "post": {
+        "description": "Queue a restore of an exported archive into the caller's library. Poll `GET /api/jobs/{job_id}`.\n\nA song already in the library (same id, or same title, artist and source) is left alone with\n`mode=skip` and added again as a copy with `mode=copy`. The archive is checked before the job is queued.",
+        "operationId": "import_library_api_library_import_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_library_api_library_import_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Import Library",
+        "tags": [
+          "library"
         ]
       }
     },
@@ -4051,6 +4386,10 @@
     {
       "description": "Start a background import. Poll GET /api/jobs/{job_id}.",
       "name": "imports"
+    },
+    {
+      "description": "Export the whole library as a zip and restore one. Restore is a background job.",
+      "name": "library"
     },
     {
       "description": "Background job status, progress keys, and errors.",

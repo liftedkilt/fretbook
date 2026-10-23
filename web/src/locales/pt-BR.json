@@ -72,6 +72,21 @@
     "autoUpdateOn": "Atualiza sozinho ao iniciar e uma vez por dia.",
     "autoUpdateOff": "Não atualiza sozinho."
   },
+  "backup": {
+    "heading": "Backup e restauração",
+    "hint": "Baixe toda a sua biblioteca em um zip ou restaure um backup nesta biblioteca.",
+    "export": "Baixar biblioteca",
+    "exportAll": "Baixar a biblioteca de todos",
+    "restore": "Restaurar de um backup",
+    "choose": "Escolha um arquivo de backup",
+    "modeLabel": "Se uma música já existir aqui",
+    "modeSkip": "Ignorar",
+    "modeCopy": "Manter as duas",
+    "restoring": "Restaurando a sua biblioteca",
+    "start": "Restaurar",
+    "done": "Adicionadas {imported}, ignoradas {skipped}, mantidas {copied} como cópias, {failed} com falha.",
+    "warningsHeading": "Alguns itens precisam de atenção"
+  },
   "library": {
     "heading": "Biblioteca",
     "empty": "Nenhuma música ainda. Importe um link do Songsterr ou um arquivo, comece uma tablatura em branco ou cole uma cifra.",
@@ -376,6 +391,19 @@
       "interrupted": "O servidor reiniciou durante esta importação. Comece de novo.",
       "noHandler": "Esse tipo de importação não está disponível.",
       "timeout": "A importação está demorando demais."
+    },
+    "backup": {
+      "notArchive": "Esse arquivo não é um backup do Fretbook.",
+      "tooManyFiles": "Esse backup tem arquivos demais.",
+      "unsafePath": "Esse backup contém um nome de arquivo inseguro.",
+      "encrypted": "Backups criptografados não são suportados.",
+      "tooLarge": "Esse backup é grande demais depois de descompactado.",
+      "suspicious": "Esse backup parece danificado ou inseguro.",
+      "noManifest": "Esse backup não tem manifesto.",
+      "badManifest": "O manifesto desse backup não é válido.",
+      "newerFormat": "Esse backup foi feito por uma versão mais nova do Fretbook.",
+      "songFailed": "Não foi possível restaurar {title}.",
+      "mediaFailed": "Não foi possível restaurar um arquivo de {title}."
     },
     "import": {
       "failed": "A importação falhou.",
