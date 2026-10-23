@@ -46,6 +46,15 @@ describe("settings", () => {
     expect(parsed.mix.synth).toBe(1);
     expect(parsed.mix.tracks).toEqual({ a: { volume: 0.5, mute: true, solo: false } });
     expect(parsePractice({ countIn: { bars: 5 } }).countIn.bars).toBe(0);
+  });
+
+  it("remembers the wait mode options and repairs bad ones", () => {
+    expect(defaultPractice().wait).toEqual({ anyOctave: true, silent: false, hintSeconds: 5 });
+    expect(
+      parsePractice({ wait: { anyOctave: false, silent: true, hintSeconds: 99 } }).wait,
+    ).toEqual({ anyOctave: false, silent: true, hintSeconds: 30 });
+    expect(parsePractice({ wait: { hintSeconds: "soon" } }).wait.hintSeconds).toBe(5);
+    expect(parsePractice({ metronome: { on: true } }).wait.anyOctave).toBe(true);
     expect(parsePractice("nonsense")).toEqual(defaultPractice());
     expect(parsePractice([])).toEqual(defaultPractice());
   });
