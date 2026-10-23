@@ -20,6 +20,12 @@ docker compose up --build
 
 Open `http://localhost:8137`. The database and audio live in the `fretbook-data` volume. A `./songs` folder is mounted read-only for bass-tab-sync imports.
 
+Prebuilt images for amd64 and arm64 are published to GHCR on every push to `main` (`latest`) and for each `v*` tag:
+
+```sh
+docker pull ghcr.io/liftedkilt/fretbook:latest
+```
+
 ### Locally
 
 Python 3.12, Node 22, and ffmpeg (only for downloading YouTube audio).
