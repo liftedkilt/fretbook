@@ -429,7 +429,10 @@
       "failed": "A importação falhou.",
       "interrupted": "O servidor reiniciou durante esta importação. Comece de novo.",
       "noHandler": "Esse tipo de importação não está disponível.",
-      "timeout": "A importação está demorando demais."
+      "timeout": "A importação está demorando demais.",
+      "notFailed": "Apenas importações com falha podem ser repetidas.",
+      "uploadExpired": "O arquivo enviado não está mais disponível. Por favor, envie-o novamente.",
+      "cannotRetry": "Esta importação não pode ser repetida."
     },
     "backup": {
       "notArchive": "Esse arquivo não é um backup do Fretbook.",
@@ -582,5 +585,15 @@
       "busy": "A entrada de áudio está em uso por outro aplicativo ou não pôde ser aberta.",
       "other": "Não foi possível começar a ouvir o microfone."
     }
+  },
+  "recentImports": {
+    "heading": "Importações recentes",
+    "retry": "Tentar novamente",
+    "dismiss": "Dispensar",
+    "queued": "Na fila",
+    "retrying": "Tentando novamente…",
+    "dismissing": "Dispensando…",
+    "completed": "Pronto",
+    "viewSong": "Ver música"
   }
 }

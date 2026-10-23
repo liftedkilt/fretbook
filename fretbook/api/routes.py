@@ -8,7 +8,7 @@ import re
 import uuid
 from dataclasses import asdict
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, Response
@@ -631,15 +631,112 @@ def import_document(
     )
 
 
+def _job_label(job: dict[str, Any]) -> str:
+    payload = job.get("payload") or {}
+    if isinstance(payload, str):
+        try:
+            payload = json.loads(payload)
+        except Exception:
+            payload = {}
+    return (
+        payload.get("filename")
+        or payload.get("title")
+        or payload.get("slug")
+        or payload.get("url")
+        or job.get("kind", "")
+    )
+
+
+@router.get("/api/jobs", response_model=list[Job], tags=["jobs"], responses=AUTH_RESPONSES)
+def list_jobs(
+    status: Literal["queued", "running", "done", "error"] | None = None,
+    ctx: AppContext = Depends(_ctx),
+    user: Principal = Depends(_user),
+) -> JSONResponse:
+    """Recent jobs for the current user."""
+    jobs = ctx.jobs.list_jobs(user.user_id, status=status)
+    for job in jobs:
+        job["label"] = _job_label(job)
+        for private in ("owner_id", "payload", "attempts"):
+            job.pop(private, None)
+    return _json(jobs)
+
+
 @router.get("/api/jobs/{job_id}", response_model=Job, tags=["jobs"], responses=AUTH_RESPONSES)
 def get_job(job_id: str, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> JSONResponse:
     """Job status. `owner_id`, `payload`, and `attempts` are not returned."""
     job = ctx.jobs.get(user.user_id, job_id)
     if job is None:
         raise api_error(404, "job.notFound", "job not found")
+    job["label"] = _job_label(job)
     for private in ("owner_id", "payload", "attempts"):
         job.pop(private, None)
     return _json(job)
+
+
+@router.post(
+    "/api/jobs/{job_id}/retry",
+    status_code=202,
+    response_model=JobAccepted,
+    tags=["jobs"],
+    responses=AUTH_RESPONSES,
+)
+def retry_job(
+    job_id: str,
+    ctx: AppContext = Depends(_ctx),
+    user: Principal = Depends(_user),
+) -> JSONResponse:
+    """Retry a failed background import."""
+    job = ctx.jobs.get(user.user_id, job_id)
+    if job is None:
+        raise api_error(404, "job.notFound", "job not found")
+    if job["status"] != "error":
+        raise api_error(400, "job.notFailed", "only failed jobs can be retried")
+    try:
+        retried = ctx.jobs.retry(user.user_id, job_id)
+    except FileNotFoundError:
+        raise api_error(
+            410,
+            "job.uploadExpired",
+            "the uploaded file is no longer available; please upload it again",
+        )
+    except ValueError as exc:
+        raise api_error(400, "job.cannotRetry", str(exc))
+    if retried is None:
+        raise api_error(404, "job.notFound", "job not found")
+    return _json({"job_id": job_id}, status_code=202)
+
+
+@router.delete(
+    "/api/jobs/{job_id}",
+    status_code=204,
+    tags=["jobs"],
+    responses=AUTH_RESPONSES,
+)
+def delete_job(
+    job_id: str,
+    ctx: AppContext = Depends(_ctx),
+    user: Principal = Depends(_user),
+) -> Response:
+    """Dismiss a job."""
+    if not ctx.jobs.dismiss(user.user_id, job_id):
+        raise api_error(404, "job.notFound", "job not found")
+    return Response(status_code=204)
+
+
+@router.post(
+    "/api/jobs/{job_id}/dismiss",
+    status_code=204,
+    tags=["jobs"],
+    responses=AUTH_RESPONSES,
+)
+def dismiss_job(
+    job_id: str,
+    ctx: AppContext = Depends(_ctx),
+    user: Principal = Depends(_user),
+) -> Response:
+    """Dismiss a job."""
+    return delete_job(job_id, ctx, user)
 
 
 # --- administration (OIDC mode; admins come from FRETBOOK_OIDC_ADMIN_GROUP) ---

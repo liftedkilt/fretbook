@@ -239,6 +239,7 @@ export interface Job {
   id: string;
   kind: string;
   status: "queued" | "running" | "done" | "error";
+  label?: string;
   result: {
     song_id?: string;
     content_kind?: ContentKind;
@@ -253,4 +254,6 @@ export interface Job {
   error_params: Record<string, string | number>;
   progress: string;
   progress_key: string;
+  created_at?: string;
+  updated_at?: string;
 }

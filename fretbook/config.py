@@ -71,6 +71,7 @@ class Settings:
     allow_private_urls: bool = False
     fetch_max_bytes: int = 25 * 1024 * 1024
     fetch_timeout_seconds: int = 30
+    failed_upload_retention_days: int = 7
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -118,6 +119,7 @@ class Settings:
             allow_private_urls=_flag("FRETBOOK_ALLOW_PRIVATE_URLS", False),
             fetch_max_bytes=_int("FRETBOOK_FETCH_MAX_BYTES", 25 * 1024 * 1024),
             fetch_timeout_seconds=_int("FRETBOOK_FETCH_TIMEOUT", 30),
+            failed_upload_retention_days=_int("FRETBOOK_FAILED_UPLOAD_RETENTION_DAYS", 7),
         )
 
     @classmethod
@@ -142,6 +144,7 @@ class Settings:
             oidc_redirect_uri="",
             session_secret="test-secret",
             migration_backups_keep=5,
+            failed_upload_retention_days=7,
         )
 
     @property

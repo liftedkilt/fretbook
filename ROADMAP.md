@@ -23,10 +23,6 @@ Repeats are stored in the score but not rendered, so the bar index is also the p
 
 Practice controls (metronome, count-in, mixer, pitch-preserving slowdown) are done, but while a recording plays the built-in synth is silent: alphaTab's external-media mode produces no synth sound. Play the synth next to the recording so the mixer can balance the two and mute or solo tracks over a recording.
 
-### Failed imports
-
-When an import job fails (including one given up on after two server restarts), let the user retry it from the library instead of pasting the link or choosing the file again.
-
 ## Nice to have
 
 ### Practice

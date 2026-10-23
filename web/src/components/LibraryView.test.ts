@@ -6,11 +6,13 @@ import LibraryView from "./LibraryView.svelte";
 
 const mockDeleteSong = vi.fn();
 const mockListSongs = vi.fn();
+const mockListJobs = vi.fn().mockResolvedValue([]);
 
 vi.mock("../lib/api", () => ({
   deleteSong: (...args: unknown[]) => mockDeleteSong(...args),
   listSongs: (...args: unknown[]) => mockListSongs(...args),
   markSongOpened: vi.fn(),
+  listJobs: (...args: unknown[]) => mockListJobs(...args),
   apiUrl: (p: string) => p,
 }));
 

@@ -293,8 +293,21 @@ export function importDocument(body: {
   return view(request<ContractSongDetail>("/api/songs/import-document", json("POST", body)));
 }
 
+export function listJobs(status?: "queued" | "running" | "done" | "error"): Promise<Job[]> {
+  const query = status ? `?status=${encodeURIComponent(status)}` : "";
+  return view(request<ContractJob[]>(`/api/jobs${query}`));
+}
+
 export function getJob(id: string): Promise<Job> {
   return view(request<ContractJob>(`/api/jobs/${id}`));
+}
+
+export function retryJob(id: string): Promise<JobAccepted> {
+  return request<JobAccepted>(`/api/jobs/${id}/retry`, { method: "POST" });
+}
+
+export function dismissJob(id: string): Promise<void> {
+  return request<void>(`/api/jobs/${id}`, { method: "DELETE" });
 }
 
 export async function waitForJob(id: string, onProgress?: (job: Job) => void): Promise<Job> {

@@ -378,6 +378,59 @@ def _keys_after(source: str, call: str) -> set[str]:
     return keys
 
 
+def test_jobs_api_retry_and_dismiss(tmp_path: Path) -> None:
+    with _client(tmp_path) as client:
+        response = client.post(
+            "/api/imports/file",
+            files={"file": ("bad.musicxml", b"<invalid-xml>", "application/xml")},
+        )
+        assert response.status_code == 202
+        job_id = response.json()["job_id"]
+
+        client.app.state.ctx.jobs.run_once()
+        job = client.get(f"/api/jobs/{job_id}").json()
+        assert job["status"] == "error"
+        assert job["label"] == "bad.musicxml"
+
+        jobs = client.get("/api/jobs").json()
+        assert any(j["id"] == job_id for j in jobs)
+        error_jobs = client.get("/api/jobs?status=error").json()
+        assert any(j["id"] == job_id for j in error_jobs)
+        queued_jobs = client.get("/api/jobs?status=queued").json()
+        assert not any(j["id"] == job_id for j in queued_jobs)
+
+        retry_resp = client.post(f"/api/jobs/{job_id}/retry")
+        assert retry_resp.status_code == 202
+        retried_job = client.get(f"/api/jobs/{job_id}").json()
+        assert retried_job["status"] == "queued"
+
+        bad_retry = client.post(f"/api/jobs/{job_id}/retry")
+        assert bad_retry.status_code == 400
+        assert bad_retry.json()["detail"]["key"] == "job.notFailed"
+
+        # File upload expired/missing returns 410
+        resp_expired = client.post(
+            "/api/imports/file",
+            files={"file": ("expired.musicxml", b"<bad-xml>", "application/xml")},
+        )
+        expired_id = resp_expired.json()["job_id"]
+        while client.app.state.ctx.jobs.run_once():
+            pass
+        assert client.get(f"/api/jobs/{expired_id}").json()["status"] == "error"
+        # Delete the uploaded file to simulate expiration/cleanup
+        for p in (tmp_path / "inbox").glob("*expired.musicxml"):
+            p.unlink()
+        expired_retry = client.post(f"/api/jobs/{expired_id}/retry")
+        assert expired_retry.status_code == 410
+        assert expired_retry.json()["detail"]["key"] == "job.uploadExpired"
+
+        dismiss_resp = client.delete(f"/api/jobs/{job_id}")
+        assert dismiss_resp.status_code == 204
+        assert client.get(f"/api/jobs/{job_id}").status_code == 404
+
+        assert client.delete(f"/api/jobs/{job_id}").status_code == 404
+
+
 def test_english_catalog_covers_server_keys() -> None:
     catalog = _catalog()
     error_keys: set[str] = set()

@@ -124,20 +124,18 @@ def _import_link(
 def _import_file(job: dict[str, Any], progress: Progress, songs: SongRepository, media: MediaStore) -> dict[str, Any]:
     payload = job["payload"]
     path = Path(payload["path"])
-    try:
-        request = ImportRequest(
-            owner_id=job["owner_id"],
-            filename=payload.get("filename") or path.name,
-            file_path=path,
-            kind=payload.get("kind"),
-            options=_options(payload),
-        )
-        result = resolve_importer(request).import_score(request, progress)
-        if payload.get("source_url"):
-            result.source_ref.setdefault("url", payload["source_url"])
-        stored = _store_result(job, result, songs, media, progress)
-        if result.audio_file is not None:
-            return stored
+    request = ImportRequest(
+        owner_id=job["owner_id"],
+        filename=payload.get("filename") or path.name,
+        file_path=path,
+        kind=payload.get("kind"),
+        options=_options(payload),
+    )
+    result = resolve_importer(request).import_score(request, progress)
+    if payload.get("source_url"):
+        result.source_ref.setdefault("url", payload["source_url"])
+    stored = _store_result(job, result, songs, media, progress)
+    if result.audio_file is None:
         try:
             # Keep the original upload next to the song.
             media.save_file(
@@ -150,9 +148,8 @@ def _import_file(job: dict[str, Any], progress: Progress, songs: SongRepository,
             )
         except (OSError, ValueError):
             logger.warning("could not keep the uploaded file for %s", stored["song_id"])
-        return stored
-    finally:
-        path.unlink(missing_ok=True)
+    path.unlink(missing_ok=True)
+    return stored
 
 
 def _reimport(
