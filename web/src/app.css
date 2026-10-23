@@ -1837,6 +1837,14 @@ textarea {
   -webkit-overflow-scrolling: touch;
 }
 
+.fretboard-wrap {
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem 0.5rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
 .at-cursor-bar {
   background: rgba(255, 122, 80, 0.13) !important;
 }

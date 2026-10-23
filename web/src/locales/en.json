@@ -675,7 +675,10 @@
     "addPlaceholder": "Add a tag…",
     "remove": "Remove tag {tag}",
     "select": "Select",
-    "selected": { "one": "{count} selected", "other": "{count} selected" },
+    "selected": {
+      "one": "{count} selected",
+      "other": "{count} selected"
+    },
     "selectAll": "Select all shown",
     "selectSong": "Select song",
     "bulkAdd": "Add tag to selected",
@@ -702,5 +705,22 @@
     "progress": "{hits} of {total} notes",
     "done": "Done: {hits} of {total} notes played.",
     "hit": "Right note"
+  },
+  "fretboard": {
+    "title": "Fretboard",
+    "show": "Show the fretboard under the score",
+    "leftHanded": "Left-handed",
+    "labels": "Show on the notes",
+    "root": "Intervals from",
+    "rootAuto": "Lowest string",
+    "label": "Fretboard with {strings} strings",
+    "capo": "Capo at fret {fret}",
+    "now": "Now: {notes}",
+    "idle": "Waiting for the first note",
+    "noteAt": "string {string}, fret {fret}",
+    "labelNone": "Nothing",
+    "labelNames": "Note names",
+    "labelIntervals": "Intervals",
+    "labelFrets": "Fret numbers"
   }
 }

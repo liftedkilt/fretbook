@@ -1,3 +1,4 @@
+import { FRET_LABELS, type FretLabel } from "./fretboard";
 import type { Bar } from "./types";
 
 /*
@@ -34,6 +35,14 @@ export interface PracticeSettings {
     /** Seconds on one beat before the hint shows the string and fret. */
     hintSeconds: number;
   };
+  /** The fretboard under the score. */
+  fretboard: {
+    on: boolean;
+    label: FretLabel;
+    leftHanded: boolean;
+    /** Pitch class the interval labels count from; null means the lowest open string. */
+    root: number | null;
+  };
 }
 
 export interface Click {
@@ -54,6 +63,7 @@ export function defaultPractice(): PracticeSettings {
     countIn: { bars: 0, beforeLoops: false },
     mix: { audio: 1, synth: 1, tracks: {} },
     wait: { anyOctave: true, silent: false, hintSeconds: 5 },
+    fretboard: { on: false, label: "names", leftHanded: false, root: null },
   };
 }
 
@@ -71,7 +81,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 export function parsePractice(raw: unknown): PracticeSettings {
   const result = defaultPractice();
   if (!isRecord(raw)) return result;
-  const { metronome, countIn, mix, wait } = raw;
+  const { metronome, countIn, mix, wait, fretboard } = raw;
   if (isRecord(metronome)) {
     result.metronome.on = metronome.on === true;
     result.metronome.volume = clamp01(metronome.volume, result.metronome.volume);
@@ -100,6 +110,15 @@ export function parsePractice(raw: unknown): PracticeSettings {
     const seconds = wait.hintSeconds;
     if (typeof seconds === "number" && Number.isFinite(seconds))
       result.wait.hintSeconds = Math.min(30, Math.max(1, Math.round(seconds)));
+  }
+  if (isRecord(fretboard)) {
+    result.fretboard.on = fretboard.on === true;
+    if (FRET_LABELS.includes(fretboard.label as FretLabel))
+      result.fretboard.label = fretboard.label as FretLabel;
+    result.fretboard.leftHanded = fretboard.leftHanded === true;
+    const root = fretboard.root;
+    if (typeof root === "number" && Number.isInteger(root) && root >= 0 && root < 12)
+      result.fretboard.root = root;
   }
   return result;
 }

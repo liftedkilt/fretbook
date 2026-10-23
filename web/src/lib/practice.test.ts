@@ -48,6 +48,22 @@ describe("settings", () => {
     expect(parsePractice({ countIn: { bars: 5 } }).countIn.bars).toBe(0);
   });
 
+  it("remembers the fretboard options and repairs bad ones", () => {
+    expect(defaultPractice().fretboard).toEqual({
+      on: false,
+      label: "names",
+      leftHanded: false,
+      root: null,
+    });
+    expect(
+      parsePractice({ fretboard: { on: true, label: "frets", leftHanded: true, root: 9 } })
+        .fretboard,
+    ).toEqual({ on: true, label: "frets", leftHanded: true, root: 9 });
+    const bad = parsePractice({ fretboard: { label: "sparkles", root: 12 } }).fretboard;
+    expect(bad.label).toBe("names");
+    expect(bad.root).toBeNull();
+  });
+
   it("remembers the wait mode options and repairs bad ones", () => {
     expect(defaultPractice().wait).toEqual({ anyOctave: true, silent: false, hintSeconds: 5 });
     expect(
