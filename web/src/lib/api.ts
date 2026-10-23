@@ -1,5 +1,7 @@
 import type {
   AdminUser as ContractAdminUser,
+  AsciiTabBody,
+  AsciiTabPreview as ContractAsciiTabPreview,
   ErrorDetail,
   ImportPreview as ContractImportPreview,
   Job as ContractJob,
@@ -18,6 +20,7 @@ import { currentPath } from "./router.svelte";
 import { songsPath } from "./songQuery";
 import type {
   AdminUser,
+  AsciiTabPreview,
   ImportPreview,
   Job,
   Keyed,
@@ -247,6 +250,24 @@ export function importLibrary(file: File, mode: "skip" | "copy"): Promise<JobAcc
   data.append("file", file);
   data.append("mode", mode);
   return request<JobAccepted>("/api/library/import", { method: "POST", body: data });
+}
+
+/** Convert pasted tab (or chords over lyrics) without saving it. */
+export function previewAsciiTab(
+  body: AsciiTabBody,
+  signal?: AbortSignal,
+): Promise<AsciiTabPreview> {
+  return view(
+    request<ContractAsciiTabPreview>("/api/imports/ascii-tab/preview", {
+      ...json("POST", body),
+      signal,
+    }),
+  );
+}
+
+/** Save pasted tab as a song. Chords over lyrics are saved as a chord sheet. */
+export function importAsciiTab(body: AsciiTabBody): Promise<SongDetail> {
+  return view(request<ContractSongDetail>("/api/imports/ascii-tab", json("POST", body)));
 }
 
 export function importDocument(body: {

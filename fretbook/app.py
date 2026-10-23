@@ -16,6 +16,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Redirect
 from starlette.responses import Response
 
 from fretbook import __version__
+from fretbook.api.ascii_tab_routes import router as ascii_tab_router
 from fretbook.api.backup import RESTORE_PATH
 from fretbook.api.backup import router as backup_router
 from fretbook.api.middleware import BodyLimitMiddleware, SameOriginMiddleware
@@ -209,6 +210,7 @@ def create_app(settings: Settings | None = None, *, oidc_transport: httpx.AsyncB
     )
     app.include_router(router)
     app.include_router(backup_router)
+    app.include_router(ascii_tab_router)
     auth_routes = ctx.auth.routes()
     if auth_routes is not None:
         app.include_router(auth_routes)

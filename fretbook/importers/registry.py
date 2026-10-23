@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from fretbook.importers.ascii_tab import AsciiTabImporter
 from fretbook.importers.base import Importer, ImportError, ImportRequest
 from fretbook.importers.chordpro import ChordProImporter
 from fretbook.importers.fretbook_json import FretbookJsonImporter
@@ -16,6 +17,7 @@ def default_importers() -> list[Importer]:
         SongsterrImporter(),
         MusicXmlImporter(),
         FretbookJsonImporter(),
+        AsciiTabImporter(),
         ChordProImporter(),
         GuitarProImporter(),
         YouTubeFrameImporter(),

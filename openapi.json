@@ -66,6 +66,138 @@
         "title": "AdminUser",
         "type": "object"
       },
+      "AsciiTabBody": {
+        "properties": {
+          "artist": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Artist",
+            "type": "string"
+          },
+          "bpm": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 400.0,
+                "exclusiveMinimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bpm"
+          },
+          "grid": {
+            "default": 8,
+            "enum": [
+              4,
+              8,
+              16,
+              32
+            ],
+            "title": "Grid",
+            "type": "integer"
+          },
+          "signature": {
+            "default": [
+              4,
+              4
+            ],
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Signature",
+            "type": "array"
+          },
+          "text": {
+            "maxLength": 200000,
+            "title": "Text",
+            "type": "string"
+          },
+          "title": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "AsciiTabBody",
+        "type": "object"
+      },
+      "AsciiTabPreview": {
+        "description": "What the pasted text becomes. A tab has ``document``; a chord sheet has ``chordpro``.",
+        "properties": {
+          "artist": {
+            "title": "Artist",
+            "type": "string"
+          },
+          "chordpro": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chordpro"
+          },
+          "content_kind": {
+            "enum": [
+              "tab",
+              "chords"
+            ],
+            "title": "Content Kind",
+            "type": "string"
+          },
+          "document": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScoreDocument"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rhythm_estimated": {
+            "title": "Rhythm Estimated",
+            "type": "boolean"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/ErrorDetail"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "content_kind",
+          "title",
+          "artist",
+          "document",
+          "chordpro",
+          "rhythm_estimated",
+          "warnings"
+        ],
+        "title": "AsciiTabPreview",
+        "type": "object"
+      },
       "Bar": {
         "description": "One song-level bar (alphaTab's master bar).",
         "properties": {
@@ -2388,6 +2520,190 @@
           }
         },
         "summary": "Import Url",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
+    "/api/imports/ascii-tab": {
+      "post": {
+        "description": "Save pasted ASCII tab as a song (a chord sheet when the text is chords over lyrics).\n\nA tab is stored with ``source_ref.rhythm_estimated`` set, so the song page can say the timing is a guess.",
+        "operationId": "import_ascii_tab_api_imports_ascii_tab_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AsciiTabBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SongDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Import Ascii Tab",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
+    "/api/imports/ascii-tab/preview": {
+      "post": {
+        "description": "Convert pasted ASCII tab without saving it, so the browser can draw it before the song is created.\n\nText that is chords over lyrics comes back as a chord sheet. Rhythm in a tab is estimated from spacing.",
+        "operationId": "preview_ascii_tab_api_imports_ascii_tab_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AsciiTabBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AsciiTabPreview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Preview Ascii Tab",
         "tags": [
           "imports"
         ]

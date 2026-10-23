@@ -129,7 +129,7 @@
     "filterElectric": "Electric guitar",
     "filterAcoustic": "Acoustic guitar",
     "filterEmpty": "No songs match this filter.",
-    "file": "MusicXML, Guitar Pro, ChordPro, text, or Fretbook JSON",
+    "file": "MusicXML, Guitar Pro, ChordPro, ASCII tab, or Fretbook JSON",
     "importing": "Importing…",
     "warnings": "Imported with warnings: {warnings}",
     "untitled": "Untitled",
@@ -419,7 +419,8 @@
       "syncCountMismatch": "The source has {points} sync points for {bars} bars, so playback may drift.",
       "noSyncPoints": "No sync points are published for this song.",
       "keptEditedCopy": "\"{title}\" was edited since it was imported, so this import was saved as a separate song.",
-      "anchorsDropped": "The new import has fewer bars, so some sync marks were dropped."
+      "anchorsDropped": "The new import has fewer bars, so some sync marks were dropped.",
+      "rhythmEstimated": "ASCII tab has no rhythm, so note lengths were estimated from the spacing. Check the timing."
     },
     "songs": {
       "badCursor": "That page of the library is no longer valid. Reload the list."
@@ -449,6 +450,15 @@
       "empty": "The chord sheet is empty.",
       "notText": "The chord sheet is not UTF-8 text.",
       "tooLong": "The chord sheet is longer than {limit} characters."
+    },
+    "asciiTab": {
+      "empty": "Paste some tab first.",
+      "noTab": "No tab found. A tab needs four or more string rows such as e|---3---|.",
+      "tooLong": "The tab is longer than {limit} characters.",
+      "badGrid": "That shortest note value is not supported.",
+      "tooDense": "Bar {bar} has too many notes to place.",
+      "skippedSystems": "{count} tab system(s) with a different number of strings were skipped.",
+      "gridRefined": "{count} bar(s) have more notes than the grid has slots, so a finer grid was used there."
     }
   },
   "ui": {
@@ -467,12 +477,34 @@
     "link": "Songsterr link",
     "linkHint": "Import tracks and synced audio",
     "file": "Upload a file",
-    "fileHint": "Guitar Pro, MusicXML, ChordPro",
+    "fileHint": "Guitar Pro, MusicXML, ChordPro, ASCII tab",
     "tab": "Blank tab",
     "tabHint": "Write a tab from scratch",
     "chords": "Chord sheet",
     "chordsHint": "Paste chords over lyrics",
     "dropTitle": "Drop a file here",
     "browse": "Choose a file"
+  },
+  "asciiTab": {
+    "mode": "Paste tab",
+    "modeHint": "ASCII tab or chords over lyrics",
+    "paste": "Tab or chord text",
+    "pasteHint": "e|---3---|---0---|\nB|-------|---1---|\nG|-------|-------|\nD|-------|-------|",
+    "timing": "Timing",
+    "grid": "Shortest note",
+    "grid4": "Quarter",
+    "grid8": "Eighth",
+    "grid16": "Sixteenth",
+    "grid32": "Thirty-second",
+    "bpm": "Tempo (BPM)",
+    "bpmAuto": "From the text, or 120",
+    "preview": "Preview",
+    "previewEmpty": "Paste a tab to see it here.",
+    "previewLoading": "Reading the tab…",
+    "previewFailed": "The preview could not be drawn.",
+    "chordsDetected": "This looks like chords over lyrics, so it will be saved as a chord sheet.",
+    "create": "Create song",
+    "rhythmEstimated": "Rhythm estimated",
+    "rhythmEstimatedHint": "ASCII tab has no rhythm. Note lengths come from the spacing, so check the timing."
   }
 }

@@ -58,7 +58,6 @@ Features that use the microphone to hear the instrument, in the order to build t
 
 ### Importing and editing
 
-- Paste plain ASCII tab (the `e|---3---|` style) and convert it to a score.
 - More file formats, such as Power Tab (`.ptb`) and MIDI.
 - Retune or transpose a tab, for example from standard to drop D, or from 4-string to 5-string bass.
 - Chord diagrams on chord sheets, for guitar and ukulele.

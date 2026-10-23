@@ -1,0 +1,490 @@
+{
+  "artist": "",
+  "chordpro": null,
+  "content_kind": "tab",
+  "document": {
+    "bars": [
+      {
+        "alternate_endings": [],
+        "extras": {},
+        "repeat_end": 0,
+        "repeat_start": false,
+        "section": null,
+        "signature": [
+          4,
+          4
+        ],
+        "tempo": null
+      },
+      {
+        "alternate_endings": [],
+        "extras": {},
+        "repeat_end": 0,
+        "repeat_start": false,
+        "section": null,
+        "signature": [
+          4,
+          4
+        ],
+        "tempo": null
+      }
+    ],
+    "bpm": 120.0,
+    "sync": {
+      "anchors": {},
+      "points": [],
+      "video_id": null
+    },
+    "tracks": [
+      {
+        "bars": [
+          {
+            "extras": {},
+            "voices": [
+              {
+                "beats": [
+                  {
+                    "duration": 480,
+                    "extras": {},
+                    "grace": null,
+                    "notes": [
+                      {
+                        "bend": null,
+                        "dead": false,
+                        "extras": {},
+                        "fret": 0,
+                        "ghost": false,
+                        "hammer": false,
+                        "harmonic": null,
+                        "let_ring": false,
+                        "palm_mute": false,
+                        "slide": null,
+                        "staccato": false,
+                        "string": 5,
+                        "tie": false,
+                        "vibrato": false
+                      }
+                    ],
+                    "position": 0,
+                    "tuplet": null
+                  },
+                  {
+                    "duration": 480,
+                    "extras": {},
+                    "grace": null,
+                    "notes": [
+                      {
+                        "bend": null,
+                        "dead": false,
+                        "extras": {},
+                        "fret": 0,
+                        "ghost": false,
+                        "hammer": false,
+                        "harmonic": null,
+                        "let_ring": false,
+                        "palm_mute": false,
+                        "slide": null,
+                        "staccato": false,
+                        "string": 5,
+                        "tie": false,
+                        "vibrato": false
+                      }
+                    ],
+                    "position": 480,
+                    "tuplet": null
+                  },
+                  {
+                    "duration": 480,
+                    "extras": {},
+                    "grace": null,
+                    "notes": [
+                      {
+                        "bend": null,
+                        "dead": false,
+                        "extras": {},
+                        "fret": 0,
+                        "ghost": false,
+                        "hammer": false,
+                        "harmonic": null,
+                        "let_ring": false,
+                        "palm_mute": false,
+                        "slide": null,
+                        "staccato": false,
+                        "string": 5,
+                        "tie": false,
+                        "vibrato": false
+                      }
+                    ],
+                    "position": 960,
+                    "tuplet": null
+                  },
+                  {
+                    "duration": 480,
+                    "extras": {},
+                    "grace": null,
+                    "notes": [
+                      {
+                        "bend": null,
+                        "dead": false,
+                        "extras": {},
+                        "fret": 2,
+                        "ghost": false,
+                        "hammer": false,
+                        "harmonic": null,
+                        "let_ring": false,
+                        "palm_mute": false,
+                        "slide": null,
+                        "staccato": false,
+                        "string": 4,
+                        "tie": false,
+                        "vibrato": false
+                      },
+                      {
+                        "bend": null,
+                        "dead": false,
+                        "extras": {},
+                        "fret": 0,
+                        "ghost": false,
+                        "hammer": false,
+                        "harmonic": null,
+                        "let_ring": false,
+                        "palm_mute": false,
+                        "slide": null,
+                        "staccato": false,
+                        "string": 5,
+                        "tie": false,
+                        "vibrato": false
+                      }
+                    ],
+                    "position": 1440,
+                    "tuplet": null
+                  },
+                  {
+                    "duration": 480,
+                    "extras": {},
+                    "grace": null,
+                    "notes": [
+                      {
+                        "bend": null,
+                        "dead": false,
+                        "extras": {},
+                        "fret": 0,
+                        "ghost": false,
+                        "hammer": false,
+                        "harmonic": null,
+                        "let_ring": false,
+                        "palm_mute": false,
+                        "slide": null,
+                        "staccato": false,
+                        "string": 5,
+                        "tie": false,
+                        "vibrato": false
+                      }
+                    ],
+                    "position": 1920,
+                    "tuplet": null
+                  },
+                  {
+                    "duration": 480,
+                    "extras": {},
+                    "grace": null,
+                    "notes": [
+                      {
+                        "bend": null,
+                        "dead": false,
+                        "extras": {},
+                        "fret": 0,
+                        "ghost": false,
+                        "hammer": false,
+                        "harmonic": null,
+                        "let_ring": false,
+                        "palm_mute": false,
+                        "slide": null,
+                        "staccato": false,
+                        "string": 5,
+                        "tie": false,
+                        "vibrato": false
+                      }
+                    ],
+                    "position": 2400,
+                    "tuplet": null
+                  },
+                  {
+                    "duration": 960,
+                    "extras": {},
+                    "grace": null,
+                    "notes": [
+                      {
+                        "bend": null,
+                        "dead": false,
+                        "extras": {},
+                        "fret": 0,
+                        "ghost": false,
+                        "hammer": false,
+                        "harmonic": null,
+                        "let_ring": false,
+                        "palm_mute": false,
+                        "slide": null,
+                        "staccato": false,
+                        "string": 5,
+                        "tie": false,
+                        "vibrato": false
+                      }
+                    ],
+                    "position": 2880,
+                    "tuplet": null
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extras": {},
+            "voices": [
+              {
+                "beats": [
+                  {
+                    "duration": 480,
+                    "extras": {},
+                    "grace": null,
+                    "notes": [
+                      {
+                        "bend": null,
+                        "dead": false,
+                        "extras": {},
+                        "fret": 0,
+                        "ghost": false,
+                        "hammer": false,
+                        "harmonic": null,
+                        "let_ring": false,
+                        "palm_mute": false,
+                        "slide": null,
+                        "staccato": false,
+                        "string": 5,
+                        "tie": false,
+                        "vibrato": false
+                      }
+                    ],
+                    "position": 0,
+                    "tuplet": null
+                  },
+                  {
+                    "duration": 480,
+                    "extras": {},
+                    "grace": null,
+                    "notes": [
+                      {
+                        "bend": null,
+                        "dead": false,
+                        "extras": {},
+                        "fret": 0,
+                        "ghost": false,
+                        "hammer": false,
+                        "harmonic": null,
+                        "let_ring": false,
+                        "palm_mute": false,
+                        "slide": null,
+                        "staccato": false,
+                        "string": 5,
+                        "tie": false,
+                        "vibrato": false
+                      }
+                    ],
+                    "position": 480,
+                    "tuplet": null
+                  },
+                  {
+                    "duration": 480,
+                    "extras": {},
+                    "grace": null,
+                    "notes": [
+                      {
+                        "bend": null,
+                        "dead": false,
+                        "extras": {},
+                        "fret": 0,
+                        "ghost": false,
+                        "hammer": false,
+                        "harmonic": null,
+                        "let_ring": false,
+                        "palm_mute": false,
+                        "slide": null,
+                        "staccato": false,
+                        "string": 5,
+                        "tie": false,
+                        "vibrato": false
+                      }
+                    ],
+                    "position": 960,
+                    "tuplet": null
+                  },
+                  {
+                    "duration": 480,
+                    "extras": {},
+                    "grace": null,
+                    "notes": [
+                      {
+                        "bend": null,
+                        "dead": false,
+                        "extras": {},
+                        "fret": 2,
+                        "ghost": false,
+                        "hammer": false,
+                        "harmonic": null,
+                        "let_ring": false,
+                        "palm_mute": false,
+                        "slide": null,
+                        "staccato": false,
+                        "string": 3,
+                        "tie": false,
+                        "vibrato": false
+                      },
+                      {
+                        "bend": null,
+                        "dead": false,
+                        "extras": {},
+                        "fret": 2,
+                        "ghost": false,
+                        "hammer": false,
+                        "harmonic": null,
+                        "let_ring": false,
+                        "palm_mute": false,
+                        "slide": null,
+                        "staccato": false,
+                        "string": 4,
+                        "tie": false,
+                        "vibrato": false
+                      },
+                      {
+                        "bend": null,
+                        "dead": false,
+                        "extras": {},
+                        "fret": 0,
+                        "ghost": false,
+                        "hammer": false,
+                        "harmonic": null,
+                        "let_ring": false,
+                        "palm_mute": false,
+                        "slide": null,
+                        "staccato": false,
+                        "string": 5,
+                        "tie": false,
+                        "vibrato": false
+                      }
+                    ],
+                    "position": 1440,
+                    "tuplet": null
+                  },
+                  {
+                    "duration": 480,
+                    "extras": {},
+                    "grace": null,
+                    "notes": [
+                      {
+                        "bend": null,
+                        "dead": false,
+                        "extras": {},
+                        "fret": 0,
+                        "ghost": false,
+                        "hammer": false,
+                        "harmonic": null,
+                        "let_ring": false,
+                        "palm_mute": false,
+                        "slide": null,
+                        "staccato": false,
+                        "string": 5,
+                        "tie": false,
+                        "vibrato": false
+                      }
+                    ],
+                    "position": 1920,
+                    "tuplet": null
+                  },
+                  {
+                    "duration": 480,
+                    "extras": {},
+                    "grace": null,
+                    "notes": [
+                      {
+                        "bend": null,
+                        "dead": false,
+                        "extras": {},
+                        "fret": 0,
+                        "ghost": false,
+                        "hammer": false,
+                        "harmonic": null,
+                        "let_ring": false,
+                        "palm_mute": false,
+                        "slide": null,
+                        "staccato": false,
+                        "string": 5,
+                        "tie": false,
+                        "vibrato": false
+                      }
+                    ],
+                    "position": 2400,
+                    "tuplet": null
+                  },
+                  {
+                    "duration": 960,
+                    "extras": {},
+                    "grace": null,
+                    "notes": [
+                      {
+                        "bend": null,
+                        "dead": false,
+                        "extras": {},
+                        "fret": 0,
+                        "ghost": false,
+                        "hammer": false,
+                        "harmonic": null,
+                        "let_ring": false,
+                        "palm_mute": false,
+                        "slide": null,
+                        "staccato": false,
+                        "string": 5,
+                        "tie": false,
+                        "vibrato": false
+                      }
+                    ],
+                    "position": 2880,
+                    "tuplet": null
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "capo": 0,
+        "id": "trk_ascii_0",
+        "instrument": "guitar",
+        "name": "Guitar",
+        "preferred": true,
+        "tuning_midi": [
+          64,
+          59,
+          55,
+          50,
+          45,
+          38
+        ]
+      }
+    ],
+    "version": 1
+  },
+  "slug": "drop-d",
+  "source_kind": "ascii-tab",
+  "source_ref": {
+    "filename": "drop-d.tab",
+    "grid": 8,
+    "rhythm_estimated": true
+  },
+  "title": "Drop D Chug",
+  "warnings": [
+    {
+      "key": "import.rhythmEstimated",
+      "message": "ASCII tab has no rhythm, so note lengths were estimated from the spacing. Check the timing.",
+      "params": {}
+    }
+  ]
+}

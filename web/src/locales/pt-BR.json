@@ -129,7 +129,7 @@
     "filterElectric": "Guitarra elétrica",
     "filterAcoustic": "Violão",
     "filterEmpty": "Nenhuma música corresponde a este filtro.",
-    "file": "MusicXML, Guitar Pro, ChordPro, texto ou JSON do Fretbook",
+    "file": "MusicXML, Guitar Pro, ChordPro, tablatura em texto ou JSON do Fretbook",
     "importing": "Importando…",
     "warnings": "Importado com avisos: {warnings}",
     "untitled": "Sem título",
@@ -419,7 +419,8 @@
       "noSyncPoints": "Não há pontos de sincronia publicados para esta música.",
       "keptEditedCopy": "\"{title}\" teve alterações desde a importação, então esta importação foi salva como outra música.",
       "anchorsDropped": "A nova importação tem menos compassos, então algumas marcas de sincronia foram descartadas.",
-      "noPreview": "Este link não tem uma lista de faixas para escolher."
+      "noPreview": "Este link não tem uma lista de faixas para escolher.",
+      "rhythmEstimated": "A tablatura em texto não tem ritmo, então a duração das notas foi estimada pelo espaçamento. Confira o tempo."
     },
     "songs": {
       "badCursor": "Essa página da biblioteca não é mais válida. Recarregue a lista."
@@ -449,6 +450,15 @@
       "empty": "A cifra está vazia.",
       "notText": "A cifra não é texto UTF-8.",
       "tooLong": "A cifra tem mais de {limit} caracteres."
+    },
+    "asciiTab": {
+      "empty": "Cole uma tablatura primeiro.",
+      "noTab": "Nenhuma tablatura encontrada. Ela precisa de quatro ou mais linhas de cordas, como e|---3---|.",
+      "tooLong": "A tablatura tem mais de {limit} caracteres.",
+      "badGrid": "Esse valor de nota mais curta não é compatível.",
+      "tooDense": "O compasso {bar} tem notas demais para posicionar.",
+      "skippedSystems": "{count} sistema(s) de tablatura com outro número de cordas foram ignorados.",
+      "gridRefined": "{count} compasso(s) têm mais notas do que a grade comporta, então uma grade mais fina foi usada neles."
     }
   },
   "ui": {
@@ -467,12 +477,34 @@
     "link": "Link do Songsterr",
     "linkHint": "Importe faixas e áudio sincronizado",
     "file": "Enviar arquivo",
-    "fileHint": "Guitar Pro, MusicXML, ChordPro",
+    "fileHint": "Guitar Pro, MusicXML, ChordPro, tablatura em texto",
     "tab": "Tablatura em branco",
     "tabHint": "Escreva uma tablatura do zero",
     "chords": "Cifra",
     "chordsHint": "Cole acordes sobre a letra",
     "dropTitle": "Solte um arquivo aqui",
     "browse": "Escolher arquivo"
+  },
+  "asciiTab": {
+    "mode": "Colar tablatura",
+    "modeHint": "Tablatura em texto ou cifra",
+    "paste": "Texto da tablatura ou cifra",
+    "pasteHint": "e|---3---|---0---|\nB|-------|---1---|\nG|-------|-------|\nD|-------|-------|",
+    "timing": "Tempo e ritmo",
+    "grid": "Menor nota",
+    "grid4": "Semínima",
+    "grid8": "Colcheia",
+    "grid16": "Semicolcheia",
+    "grid32": "Fusa",
+    "bpm": "Andamento (BPM)",
+    "bpmAuto": "Do texto, ou 120",
+    "preview": "Prévia",
+    "previewEmpty": "Cole uma tablatura para vê-la aqui.",
+    "previewLoading": "Lendo a tablatura…",
+    "previewFailed": "Não foi possível desenhar a prévia.",
+    "chordsDetected": "Isto parece uma cifra (acordes sobre a letra), então será salvo como cifra.",
+    "create": "Criar música",
+    "rhythmEstimated": "Ritmo estimado",
+    "rhythmEstimatedHint": "A tablatura em texto não tem ritmo. A duração das notas vem do espaçamento, então confira o tempo."
   }
 }
