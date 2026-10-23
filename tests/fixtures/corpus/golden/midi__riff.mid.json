@@ -1,6 +1,8 @@
 {
   "error": {
-    "key": "import.noFileImporter",
-    "params": {}
+    "key": "import.notYetSupported",
+    "params": {
+      "format": "MIDI"
+    }
   }
 }

@@ -81,6 +81,9 @@ class ImportResult:
     document: ScoreDocument | None = None
     chordpro: str | None = None
     audio: AudioFetch | None = None
+    audio_file: Path | None = None
+    """An audio file on disk to keep as the song's audio (the job moves it into the media store)."""
+    audio_content_type: str = "audio/mpeg"
     warnings: list[Notice] = field(default_factory=list)
 
     @property

@@ -21,6 +21,7 @@ from fretbook.api.backup import RESTORE_PATH
 from fretbook.api.backup import router as backup_router
 from fretbook.api.middleware import BodyLimitMiddleware, SameOriginMiddleware
 from fretbook.api.routes import router
+from fretbook.api.universal_routes import router as universal_router
 from fretbook.audio.ytdlp_health import AutoUpdater
 from fretbook.auth import build_auth
 from fretbook.backup.restore import register_restore_handler
@@ -211,6 +212,7 @@ def create_app(settings: Settings | None = None, *, oidc_transport: httpx.AsyncB
     app.include_router(router)
     app.include_router(backup_router)
     app.include_router(ascii_tab_router)
+    app.include_router(universal_router)
     auth_routes = ctx.auth.routes()
     if auth_routes is not None:
         app.include_router(auth_routes)

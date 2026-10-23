@@ -169,6 +169,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/imports/auto": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Auto
+         * @description Work out what a dropped file, pasted text, or a pasted link is, and queue its import.
+         *
+         *     Send exactly one of ``file``, ``text`` or ``url``. Text that is a single link is treated as a link.
+         *     Input that matches no supported format is refused with `import.noFileImporter`.
+         */
+        post: operations["import_auto_api_imports_auto_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/imports/file": {
         parameters: {
             query?: never;
@@ -606,6 +629,19 @@ export interface components {
             warnings: components["schemas"]["ErrorDetail"][];
         };
         /**
+         * AutoImportAccepted
+         * @description Queued import.
+         *
+         *     ``detected`` is what the server took the input for: an importer kind,
+         *     or ``songsterr``, ``youtube`` or ``web`` for a link.
+         */
+        AutoImportAccepted: {
+            /** Detected */
+            detected: string;
+            /** Job Id */
+            job_id: string;
+        };
+        /**
          * Bar
          * @description One song-level bar (alphaTab's master bar).
          */
@@ -658,6 +694,15 @@ export interface components {
             position: number;
             /** Tuplet */
             tuplet?: number | null;
+        };
+        /** Body_import_auto_api_imports_auto_post */
+        Body_import_auto_api_imports_auto_post: {
+            /** File */
+            file?: string | null;
+            /** Text */
+            text?: string | null;
+            /** Url */
+            url?: string | null;
         };
         /** Body_import_file_api_imports_file_post */
         Body_import_file_api_imports_file_post: {
@@ -1349,8 +1394,10 @@ export interface components {
 export type AdminUser = components['schemas']['AdminUser'];
 export type AsciiTabBody = components['schemas']['AsciiTabBody'];
 export type AsciiTabPreview = components['schemas']['AsciiTabPreview'];
+export type AutoImportAccepted = components['schemas']['AutoImportAccepted'];
 export type Bar = components['schemas']['Bar'];
 export type Beat = components['schemas']['Beat'];
+export type BodyImportAutoApiImportsAutoPost = components['schemas']['Body_import_auto_api_imports_auto_post'];
 export type BodyImportFileApiImportsFilePost = components['schemas']['Body_import_file_api_imports_file_post'];
 export type BodyImportLibraryApiLibraryImportPost = components['schemas']['Body_import_library_api_library_import_post'];
 export type BodyUploadAudioApiSongsSongIdAudioPost = components['schemas']['Body_upload_audio_api_songs__song_id__audio_post'];
@@ -1921,6 +1968,84 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AsciiTabPreview"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    import_auto_api_imports_auto_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_auto_api_imports_auto_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AutoImportAccepted"];
                 };
             };
             /** @description Keyed error. `detail` is {key, message, params}. */
