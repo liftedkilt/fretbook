@@ -128,6 +128,9 @@ export interface SongSummary {
   has_audio: boolean;
   duration: number | null;
   updated_at: string;
+  favourite: boolean;
+  /** Sorted A to Z ignoring case. */
+  tags: string[];
 }
 
 export type LibrarySort = "title" | "artist" | "added" | "updated" | "opened";
@@ -139,15 +142,26 @@ export interface SongQuery {
   sort?: LibrarySort;
   order?: SortOrder;
   instrument?: LibraryFilter;
+  /** A song needs every tag listed. */
+  tag?: string[];
+  favourite?: boolean;
   limit?: number;
   cursor?: string;
+}
+
+/** Songs in the whole library per filter, unaffected by search, tags and favourites. */
+export type LibraryCounts = Record<LibraryFilter, number> & { favourites: number };
+
+export interface TagCount {
+  tag: string;
+  count: number;
 }
 
 export interface SongPage {
   items: SongSummary[];
   total: number;
   next_cursor: string | null;
-  counts: Record<LibraryFilter, number>;
+  counts: LibraryCounts;
 }
 
 export interface SongDetail extends SongSummary {

@@ -46,6 +46,7 @@ from fretbook.score.instruments import family, get_preset, is_preset, presets_pa
 from fretbook.score.model import ScoreDocument
 from fretbook.storage.media import AUDIO_TYPES
 from fretbook.storage.repository import RevisionConflict
+from fretbook.tags import suggest_tags
 
 router = APIRouter()
 
@@ -220,6 +221,8 @@ def list_songs(
     sort: Literal["title", "artist", "added", "updated", "opened"] = "updated",
     order: Literal["asc", "desc"] | None = Query(None, description="Defaults to the natural order of `sort`."),
     instrument: Literal["all", "bass", "electric", "acoustic", "chords"] = "all",
+    tag: list[str] = Query([], max_length=10, description="Repeat to require several tags; a song needs all of them."),
+    favourite: bool = Query(False, description="Only starred songs."),
     limit: int = Query(50, ge=1, le=200),
     cursor: str = Query("", max_length=64),
     ctx: AppContext = Depends(_ctx),
@@ -231,7 +234,15 @@ def list_songs(
     """
     start = _decode_cursor(cursor)
     page = ctx.songs.list_songs(
-        user.user_id, q=q, sort=sort, order=order, instrument=instrument, limit=limit, offset=start
+        user.user_id,
+        q=q,
+        sort=sort,
+        order=order,
+        instrument=instrument,
+        tags=tag,
+        favourite=favourite,
+        limit=limit,
+        offset=start,
     )
     end = start + len(page["items"])
     page["next_cursor"] = _encode_cursor(end) if end < page["total"] else None
@@ -610,18 +621,17 @@ def import_document(
 ) -> JSONResponse:
     """Save a document the browser built (the browser reads Guitar Pro with alphaTab)."""
     title = body.title.strip() or "Untitled"
-    return _json(
-        ctx.songs.create_song(
-            user.user_id,
-            title=title,
-            artist=body.artist.strip(),
-            document=body.document,
-            source_kind=body.source_kind,
-            source_ref={},
-            slug=body.slug or title,
-        ),
-        status_code=201,
+    song = ctx.songs.create_song(
+        user.user_id,
+        title=title,
+        artist=body.artist.strip(),
+        document=body.document,
+        source_kind=body.source_kind,
+        source_ref={},
+        slug=body.slug or title,
     )
+    ctx.songs.add_tags(user.user_id, [song["id"]], suggest_tags(song))
+    return _json(require_song(ctx, user.user_id, song["id"]), status_code=201)
 
 
 def _job_label(job: dict[str, Any]) -> str:

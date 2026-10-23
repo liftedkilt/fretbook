@@ -120,6 +120,36 @@
       </nav>
     {/if}
 
+    {#if ui.favourites.length}
+      <nav
+        class="side-recent rail-hide"
+        aria-label={t("tags.favourites")}
+        data-testid="side-favourites"
+      >
+        <p class="side-label">{t("tags.favourites")}</p>
+        {#each ui.favourites as song (song.id)}
+          <a
+            class="recent-link"
+            aria-current={activeSong === song.id ? "page" : undefined}
+            href={hrefFor(`/songs/${song.id}`)}
+            onclick={(event) => followLink(event, `/songs/${song.id}`)}
+          >
+            <Cover
+              id={song.id}
+              title={song.title}
+              kind={song.content_kind}
+              strings={song.string_count}
+              size="sm"
+            />
+            <span>
+              <strong>{song.title}</strong>
+              <small>{song.artist || "—"}</small>
+            </span>
+          </a>
+        {/each}
+      </nav>
+    {/if}
+
     {#if isAdmin}
       <a
         class="side-link side-users"

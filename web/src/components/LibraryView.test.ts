@@ -7,10 +7,15 @@ import LibraryView from "./LibraryView.svelte";
 const mockDeleteSong = vi.fn();
 const mockListSongs = vi.fn();
 const mockListJobs = vi.fn().mockResolvedValue([]);
+const mockAddTags = vi.fn();
+const mockSetFavourite = vi.fn();
 
 vi.mock("../lib/api", () => ({
   deleteSong: (...args: unknown[]) => mockDeleteSong(...args),
   listSongs: (...args: unknown[]) => mockListSongs(...args),
+  listTags: vi.fn().mockResolvedValue([]),
+  setFavourite: (...args: unknown[]) => mockSetFavourite(...args),
+  addTags: (...args: unknown[]) => mockAddTags(...args),
   markSongOpened: vi.fn(),
   listJobs: (...args: unknown[]) => mockListJobs(...args),
   apiUrl: (p: string) => p,
@@ -34,6 +39,8 @@ function makeSong(overrides: Partial<SongSummary>): SongSummary {
     has_audio: false,
     duration: 180,
     updated_at: "2026-01-01T00:00:00Z",
+    favourite: false,
+    tags: [],
     ...overrides,
   };
 }
@@ -55,13 +62,15 @@ function fakeServer(query: SongQuery = {}): SongPage {
       (song) =>
         !query.instrument || query.instrument === "all" || family(song) === query.instrument,
     )
+    .filter((song) => (query.tag ?? []).every((tag) => song.tags.includes(tag)))
+    .filter((song) => !query.favourite || song.favourite)
     .filter((song) =>
       words.every((word) => `${song.title} ${song.artist}`.toLowerCase().includes(word)),
     );
   const start = Number(query.cursor ?? 0);
   const limit = query.limit ?? 50;
   const items = matching.slice(start, start + limit);
-  const counts = { all: songs.length, bass: 0, electric: 0, acoustic: 0, chords: 0 };
+  const counts = { all: songs.length, bass: 0, electric: 0, acoustic: 0, chords: 0, favourites: 0 };
   for (const song of songs) counts[family(song) as "bass"] += 1;
   return {
     items,
@@ -89,9 +98,12 @@ describe("LibraryView", () => {
     ui.songs = [];
     ui.total = 0;
     ui.nextCursor = null;
-    ui.counts = { all: 0, bass: 0, electric: 0, acoustic: 0, chords: 0 };
+    ui.counts = { all: 0, bass: 0, electric: 0, acoustic: 0, chords: 0, favourites: 0 };
     ui.loaded = true;
     ui.filter = "all";
+    ui.tags = [];
+    ui.tagList = [];
+    ui.favouritesOnly = false;
     ui.search = "";
     ui.sheet = "";
     ui.error = "";
@@ -265,5 +277,78 @@ describe("LibraryView", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Failed to delete");
     confirmSpy.mockRestore();
+  });
+  it("filters by several tags and by favourites through the server", async () => {
+    await load([
+      makeSong({ id: "1", title: "One", tags: ["funk", "slap"], favourite: true }),
+      makeSong({ id: "2", title: "Two", tags: ["funk"] }),
+    ]);
+    ui.tagList = [
+      { tag: "funk", count: 2 },
+      { tag: "slap", count: 1 },
+    ];
+    render(LibraryView);
+
+    const [funk, slap] = screen.getAllByTestId("library-tag");
+    await fireEvent.click(funk);
+    await waitFor(() => expect(screen.getAllByTestId("song-card")).toHaveLength(2));
+    await fireEvent.click(slap);
+    await waitFor(() => expect(screen.getAllByTestId("song-card")).toHaveLength(1));
+    expect(mockListSongs).toHaveBeenLastCalledWith(
+      expect.objectContaining({ tag: ["funk", "slap"] }),
+    );
+    expect(slap).toHaveAttribute("aria-pressed", "true");
+
+    await fireEvent.click(slap);
+    await fireEvent.click(screen.getByTestId("library-filter-favourites"));
+    await waitFor(() =>
+      expect(mockListSongs).toHaveBeenLastCalledWith(
+        expect.objectContaining({ tag: ["funk"], favourite: true }),
+      ),
+    );
+    await waitFor(() => expect(screen.getAllByTestId("song-card")).toHaveLength(1));
+  });
+
+  it("stars a song from its card", async () => {
+    await load([makeSong({ id: "s1", title: "Star Me" })]);
+    mockSetFavourite.mockResolvedValue(true);
+    render(LibraryView);
+
+    await fireEvent.click(screen.getByTestId("song-star"));
+    expect(mockSetFavourite).toHaveBeenCalledWith("s1", true);
+  });
+
+  it("tags the selected songs in one go", async () => {
+    await load([makeSong({ id: "1", title: "One" }), makeSong({ id: "2", title: "Two" })]);
+    mockAddTags.mockResolvedValue(2);
+    render(LibraryView);
+
+    await fireEvent.click(screen.getByTestId("library-select"));
+    expect(screen.getByTestId("library-bulk-apply")).toBeDisabled();
+    await fireEvent.click(screen.getAllByTestId("song-select")[0]);
+    await fireEvent.click(screen.getAllByTestId("song-select")[1]);
+    expect(screen.getByTestId("library-selected")).toHaveTextContent("2 selected");
+    await fireEvent.input(screen.getByTestId("library-bulk-tag"), { target: { value: " Live " } });
+    await fireEvent.click(screen.getByTestId("library-bulk-apply"));
+
+    await waitFor(() => expect(mockAddTags).toHaveBeenCalledWith(["1", "2"], ["Live"]));
+    await waitFor(() =>
+      expect(screen.getByTestId("library-bulk-notice")).toHaveTextContent(
+        "Added “Live” to 2 songs",
+      ),
+    );
+    expect(screen.getByTestId("library-selected")).toHaveTextContent("0 selected");
+  });
+
+  it("offers to clear tag filters when nothing matches", async () => {
+    await load([makeSong({ id: "1", tags: [] })]);
+    ui.tagList = [{ tag: "funk", count: 0 }];
+    render(LibraryView);
+
+    await fireEvent.click(screen.getByTestId("library-tag"));
+    await waitFor(() => expect(screen.getByTestId("library-filter-empty")).toBeInTheDocument());
+    await fireEvent.click(screen.getByTestId("library-clear-tags"));
+    await waitFor(() => expect(screen.getAllByTestId("song-card")).toHaveLength(1));
+    expect(ui.tags).toEqual([]);
   });
 });

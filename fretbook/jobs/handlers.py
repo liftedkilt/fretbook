@@ -19,6 +19,7 @@ from fretbook.score.model import ScoreDocument, content_hash
 from fretbook.score.playback import played_bars
 from fretbook.storage.media import AUDIO_TYPES, MediaStore
 from fretbook.storage.repository import SongRepository
+from fretbook.tags import suggest_tags
 
 logger = logging.getLogger(__name__)
 
@@ -218,6 +219,9 @@ def _store_result(
             source_ref=source_ref,
             slug=result.slug,
         )
+        # A new song starts with what the import knows; a re-import keeps the tags the user edited.
+        songs.add_tags(owner_id, [saved["id"]], suggest_tags(saved))
+        saved = songs.get_song(owner_id, saved["id"]) or saved
     if result.audio_file is not None:
         suffix = next((ext for ext, kind in AUDIO_TYPES.items() if kind == result.audio_content_type), ".mp3")
         media.save_file(

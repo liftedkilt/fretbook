@@ -15,7 +15,7 @@ import sqlite3
 import uuid
 import zipfile
 from pathlib import Path
-from typing import IO, Any, Literal
+from typing import IO, Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
@@ -71,6 +71,9 @@ class _Song(BaseModel):
     source_ref: dict[str, Any] = Field(default_factory=dict)
     file: str = Field(max_length=500)
     media: list[_Media] = Field(default_factory=list)
+    # Untrusted like the rest: the repository cleans, dedupes and caps tags before storing them.
+    tags: list[Annotated[str, Field(max_length=200)]] = Field(default_factory=list, max_length=1000)
+    favourite: bool = False
 
 
 class Manifest(BaseModel):
@@ -229,6 +232,8 @@ def _restore_song(
         chordpro=text,
         song_id=keep_id,
     )
+    songs.set_tags(owner_id, song["id"], entry.tags)
+    songs.set_favourite(owner_id, song["id"], entry.favourite)
     for item in entry.media:
         try:
             _restore_media(settings, media, owner_id, song["id"], archive, item)

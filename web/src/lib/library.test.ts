@@ -2,7 +2,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { songsPath } from "./songQuery";
 import type { SongPage, SongQuery } from "./types";
-import { countFor, loadLibrary, loadMore, refreshSongs, setSort, ui } from "./ui.svelte";
+import * as api from "./api";
+import {
+  countFor,
+  loadLibrary,
+  loadMore,
+  refreshSongs,
+  setSort,
+  toggleTagFilter,
+  ui,
+} from "./ui.svelte";
 
 const mockListSongs = vi.fn<(query?: SongQuery) => Promise<SongPage>>();
 
@@ -11,6 +20,7 @@ vi.mock("./api", () => ({
   getMe: vi.fn(),
   getMeta: vi.fn(),
   saveSettings: vi.fn(),
+  listTags: vi.fn().mockResolvedValue([]),
 }));
 
 function page(title: string): SongPage {
@@ -18,7 +28,7 @@ function page(title: string): SongPage {
     items: [{ id: title, title } as SongPage["items"][number]],
     total: 1,
     next_cursor: null,
-    counts: { all: 1, bass: 0, electric: 0, acoustic: 0, chords: 0 },
+    counts: { all: 1, bass: 0, electric: 0, acoustic: 0, chords: 0, favourites: 0 },
   };
 }
 
@@ -26,6 +36,8 @@ beforeEach(() => {
   mockListSongs.mockReset();
   ui.search = "";
   ui.filter = "all";
+  ui.tags = [];
+  ui.favouritesOnly = false;
 });
 
 afterEach(() => {
@@ -47,6 +59,14 @@ describe("songsPath", () => {
     expect(params.has("cursor")).toBe(false);
     expect(songsPath()).toBe("/api/songs");
   });
+
+  it("sends each tag as its own parameter and drops a false favourite", () => {
+    const params = new URL(songsPath({ tag: ["funk", "warm up"], favourite: true }), "http://x")
+      .searchParams;
+    expect(params.getAll("tag")).toEqual(["funk", "warm up"]);
+    expect(params.get("favourite")).toBe("true");
+    expect(songsPath({ tag: [], favourite: false })).toBe("/api/songs");
+  });
 });
 
 describe("loadLibrary", () => {
@@ -64,6 +84,36 @@ describe("loadLibrary", () => {
     await first;
 
     expect(ui.songs.map((song) => song.title)).toEqual(["new"]);
+  });
+});
+
+describe("tag and favourite filters", () => {
+  it("sends the selected tags and the favourites switch with the query", async () => {
+    mockListSongs.mockResolvedValue(page("x"));
+    toggleTagFilter("Funk");
+    toggleTagFilter("slap");
+    ui.favouritesOnly = true;
+    await loadLibrary();
+    expect(mockListSongs.mock.calls[0][0]).toMatchObject({
+      tag: ["Funk", "slap"],
+      favourite: true,
+    });
+  });
+
+  it("toggles a tag without caring about case", () => {
+    toggleTagFilter("Funk");
+    toggleTagFilter("funk");
+    expect(ui.tags).toEqual([]);
+  });
+
+  it("drops a selected tag that no song has any more", async () => {
+    mockListSongs.mockResolvedValue(page("x"));
+    vi.mocked(api.listTags).mockResolvedValue([{ tag: "Funk", count: 2 }]);
+    ui.tags = ["funk", "gone"];
+    await refreshSongs();
+    expect(ui.tags).toEqual(["funk"]);
+    expect(ui.tagList).toEqual([{ tag: "Funk", count: 2 }]);
+    vi.mocked(api.listTags).mockResolvedValue([]);
   });
 });
 
@@ -118,6 +168,7 @@ describe("refreshSongs", () => {
     await refreshSongs();
     expect(ui.songs.map((song) => song.title)).toEqual(["listed"]);
     expect(ui.recent.map((song) => song.title)).toEqual(["recent"]);
+    expect(mockListSongs).toHaveBeenCalledWith(expect.objectContaining({ favourite: true }));
   });
 });
 

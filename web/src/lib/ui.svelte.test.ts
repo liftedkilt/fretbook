@@ -1,12 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const listSongs = vi.fn();
+const listTags = vi.fn();
 const getMeta = vi.fn();
 const getMe = vi.fn();
 const saveSettings = vi.fn();
 
 vi.mock("./api", () => ({
   listSongs: (...args: unknown[]) => listSongs(...args),
+  listTags: () => listTags(),
   getMeta: () => getMeta(),
   getMe: () => getMe(),
   saveSettings: (...args: unknown[]) => saveSettings(...args),
@@ -42,6 +44,8 @@ function page(ids: string[], nextCursor: string | null = null) {
 
 beforeEach(() => {
   listSongs.mockReset();
+  listTags.mockReset();
+  listTags.mockResolvedValue([]);
   getMeta.mockReset();
   getMe.mockReset();
   saveSettings.mockReset();
@@ -92,8 +96,11 @@ describe("library", () => {
 
   it("refreshes the library and the recent list together", async () => {
     listSongs.mockResolvedValue(page(["a"]));
+    listTags.mockResolvedValue([{ tag: "Funk", count: 1 }]);
     await refreshSongs();
     expect(ui.recent.map((song) => song.id)).toEqual(["a"]);
+    expect(ui.favourites.map((song) => song.id)).toEqual(["a"]);
+    expect(ui.tagList).toEqual([{ tag: "Funk", count: 1 }]);
   });
 
   it("remembers the sort in its natural order", () => {

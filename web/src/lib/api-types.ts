@@ -545,6 +545,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/songs/{song_id}/favourite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Favourite
+         * @description Star or unstar a song.
+         */
+        put: operations["set_favourite_api_songs__song_id__favourite_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/songs/{song_id}/opened": {
         parameters: {
             query?: never;
@@ -585,6 +605,26 @@ export interface paths {
         patch: operations["update_sync_api_songs__song_id__sync_patch"];
         trace?: never;
     };
+    "/api/songs/{song_id}/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Song Tags
+         * @description Replace the song's tags.
+         */
+        put: operations["set_song_tags_api_songs__song_id__tags_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/songs/import-document": {
         parameters: {
             query?: never;
@@ -605,10 +645,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Tags
+         * @description Every tag on the caller's songs with how many songs use it, most used first.
+         */
+        get: operations["list_tags_api_tags_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tags/add": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Tags
+         * @description Add tags to many songs at once. Songs that are not the caller's are skipped.
+         */
+        post: operations["add_tags_api_tags_add_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AddTagsBody */
+        AddTagsBody: {
+            /** Song Ids */
+            song_ids: string[];
+            /** Tags */
+            tags: string[];
+        };
         /**
          * AdminUser
          * @description An account as an admin sees it. ``local`` marks the owner of songs from single-user mode.
@@ -868,6 +955,16 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** Favourite */
+        Favourite: {
+            /** Favourite */
+            favourite: boolean;
+        };
+        /** FavouriteBody */
+        FavouriteBody: {
+            /** Favourite */
+            favourite: boolean;
+        };
         /** Health */
         Health: {
             /** Name */
@@ -1029,6 +1126,8 @@ export interface components {
             chords: number;
             /** Electric */
             electric: number;
+            /** Favourites */
+            favourites: number;
         };
         /**
          * Me
@@ -1162,6 +1261,11 @@ export interface components {
             /** Ended */
             ended: number;
         };
+        /** SetTagsBody */
+        SetTagsBody: {
+            /** Tags */
+            tags: string[];
+        };
         /**
          * Settings
          * @description Per-user preferences. ``default_instrument`` is a preset id from ``GET /api/meta``.
@@ -1195,6 +1299,8 @@ export interface components {
             document: components["schemas"]["ScoreDocument"] | null;
             /** Duration */
             duration: number | null;
+            /** Favourite */
+            favourite: boolean;
             /** Has Audio */
             has_audio: boolean;
             /** Has Sync */
@@ -1219,6 +1325,8 @@ export interface components {
             };
             /** String Count */
             string_count: number;
+            /** Tags */
+            tags: string[];
             /** Title */
             title: string;
             /** Track Count */
@@ -1308,6 +1416,8 @@ export interface components {
             content_kind: "tab" | "chords";
             /** Duration */
             duration: number | null;
+            /** Favourite */
+            favourite: boolean;
             /** Has Audio */
             has_audio: boolean;
             /** Has Sync */
@@ -1326,12 +1436,19 @@ export interface components {
             source_kind: string;
             /** String Count */
             string_count: number;
+            /** Tags */
+            tags: string[];
             /** Title */
             title: string;
             /** Track Count */
             track_count: number;
             /** Updated At */
             updated_at: string;
+        };
+        /** SongTags */
+        SongTags: {
+            /** Tags */
+            tags: string[];
         };
         /** SyncBody */
         SyncBody: {
@@ -1374,6 +1491,18 @@ export interface components {
             points?: (number | null)[];
             /** Video Id */
             video_id?: string | null;
+        };
+        /** TagCount */
+        TagCount: {
+            /** Count */
+            count: number;
+            /** Tag */
+            tag: string;
+        };
+        /** TagsAdded */
+        TagsAdded: {
+            /** Updated */
+            updated: number;
         };
         /** Track */
         Track: {
@@ -1475,6 +1604,7 @@ export interface components {
     headers: never;
     pathItems: never;
 }
+export type AddTagsBody = components['schemas']['AddTagsBody'];
 export type AdminUser = components['schemas']['AdminUser'];
 export type AsciiTabBody = components['schemas']['AsciiTabBody'];
 export type AsciiTabPreview = components['schemas']['AsciiTabPreview'];
@@ -1488,6 +1618,8 @@ export type BodyUploadAudioApiSongsSongIdAudioPost = components['schemas']['Body
 export type CreateSongBody = components['schemas']['CreateSongBody'];
 export type ErrorBody = components['schemas']['ErrorBody'];
 export type ErrorDetail = components['schemas']['ErrorDetail'];
+export type Favourite = components['schemas']['Favourite'];
+export type FavouriteBody = components['schemas']['FavouriteBody'];
 export type Health = components['schemas']['Health'];
 export type ImportDocumentBody = components['schemas']['ImportDocumentBody'];
 export type ImportPreview = components['schemas']['ImportPreview'];
@@ -1503,6 +1635,7 @@ export type Note = components['schemas']['Note'];
 export type PreviewBody = components['schemas']['PreviewBody'];
 export type ScoreDocument = components['schemas']['ScoreDocument'];
 export type SessionsEnded = components['schemas']['SessionsEnded'];
+export type SetTagsBody = components['schemas']['SetTagsBody'];
 export type Settings = components['schemas']['Settings'];
 export type SettingsBody = components['schemas']['SettingsBody'];
 export type SongDetail = components['schemas']['SongDetail'];
@@ -1511,8 +1644,11 @@ export type SongPage = components['schemas']['SongPage'];
 export type SongsMoved = components['schemas']['SongsMoved'];
 export type SongsterrTrackChoice = components['schemas']['SongsterrTrackChoice'];
 export type SongSummary = components['schemas']['SongSummary'];
+export type SongTags = components['schemas']['SongTags'];
 export type SyncBody = components['schemas']['SyncBody'];
 export type SyncMap = components['schemas']['SyncMap'];
+export type TagCount = components['schemas']['TagCount'];
+export type TagsAdded = components['schemas']['TagsAdded'];
 export type Track = components['schemas']['Track'];
 export type TrackBar = components['schemas']['TrackBar'];
 export type UpdateSongBody = components['schemas']['UpdateSongBody'];
@@ -3048,6 +3184,8 @@ export interface operations {
         parameters: {
             query?: {
                 cursor?: string;
+                /** @description Only starred songs. */
+                favourite?: boolean;
                 instrument?: "all" | "bass" | "electric" | "acoustic" | "chords";
                 limit?: number;
                 /** @description Defaults to the natural order of `sort`. */
@@ -3055,6 +3193,8 @@ export interface operations {
                 /** @description Words matched as prefixes against title and artist. */
                 q?: string;
                 sort?: "title" | "artist" | "added" | "updated" | "opened";
+                /** @description Repeat to require several tags; a song needs all of them. */
+                tag?: string[];
             };
             header?: never;
             path?: never;
@@ -3824,6 +3964,86 @@ export interface operations {
             };
         };
     };
+    set_favourite_api_songs__song_id__favourite_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                song_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FavouriteBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Favourite"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
     mark_song_opened_api_songs__song_id__opened_post: {
         parameters: {
             query?: never;
@@ -3978,6 +4198,86 @@ export interface operations {
             };
         };
     };
+    set_song_tags_api_songs__song_id__tags_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                song_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetTagsBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SongTags"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
     import_document_api_songs_import_document_post: {
         parameters: {
             query?: never;
@@ -3998,6 +4298,158 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SongDetail"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    list_tags_api_tags_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagCount"][];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    add_tags_api_tags_add_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddTagsBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagsAdded"];
                 };
             };
             /** @description Keyed error. `detail` is {key, message, params}. */

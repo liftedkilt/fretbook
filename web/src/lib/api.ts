@@ -15,6 +15,9 @@ import type {
   SongPage as ContractSongPage,
   SongSummary as ContractSongSummary,
   SongsMoved,
+  SongTags as ContractSongTags,
+  TagCount as ContractTagCount,
+  TagsAdded,
 } from "./api-types";
 import { keyed } from "./i18n.svelte";
 import { currentPath } from "./router.svelte";
@@ -33,6 +36,7 @@ import type {
   SongPage,
   SongQuery,
   SongSummary,
+  TagCount,
 } from "./types";
 
 /** Flat contract responses must be usable as the UI models in `./types`. */
@@ -44,6 +48,7 @@ type _matchesContract = [
   AssertAssignable<ContractSettings, Settings>,
   AssertAssignable<ContractSongSummary, SongSummary>,
   AssertAssignable<ContractSongPage, SongPage>,
+  AssertAssignable<ContractTagCount, TagCount>,
   AssertAssignable<ContractImportPreview, ImportPreview>,
   AssertAssignable<ContractAdminUser, AdminUser>,
 ];
@@ -159,6 +164,31 @@ export function listSongs(query: SongQuery = {}): Promise<SongPage> {
 /** Record that the song was opened, for the "last opened" sort. */
 export function markSongOpened(id: string): Promise<void> {
   return request(`/api/songs/${id}/opened`, { method: "POST" });
+}
+
+/** Every tag on the caller's songs with its song count, most used first. */
+export function listTags(): Promise<TagCount[]> {
+  return request<ContractTagCount[]>("/api/tags");
+}
+
+/** Replace the song's tags. Resolves to the tags as stored: trimmed, without repeats, sorted. */
+export async function setSongTags(id: string, tags: string[]): Promise<string[]> {
+  const body = await request<ContractSongTags>(`/api/songs/${id}/tags`, json("PUT", { tags }));
+  return body.tags;
+}
+
+/** Add tags to many songs at once. Resolves to how many songs were updated. */
+export async function addTags(songIds: string[], tags: string[]): Promise<number> {
+  const body = await request<TagsAdded>("/api/tags/add", json("POST", { song_ids: songIds, tags }));
+  return body.updated;
+}
+
+export async function setFavourite(id: string, favourite: boolean): Promise<boolean> {
+  const body = await request<{ favourite: boolean }>(
+    `/api/songs/${id}/favourite`,
+    json("PUT", { favourite }),
+  );
+  return body.favourite;
 }
 
 export function getSong(id: string): Promise<SongDetail> {

@@ -1,6 +1,34 @@
 {
   "components": {
     "schemas": {
+      "AddTagsBody": {
+        "properties": {
+          "song_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Song Ids",
+            "type": "array"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Tags",
+            "type": "array"
+          }
+        },
+        "required": [
+          "song_ids",
+          "tags"
+        ],
+        "title": "AddTagsBody",
+        "type": "object"
+      },
       "AdminUser": {
         "description": "An account as an admin sees it. ``local`` marks the owner of songs from single-user mode.",
         "properties": {
@@ -611,6 +639,32 @@
         "title": "ErrorDetail",
         "type": "object"
       },
+      "Favourite": {
+        "properties": {
+          "favourite": {
+            "title": "Favourite",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "favourite"
+        ],
+        "title": "Favourite",
+        "type": "object"
+      },
+      "FavouriteBody": {
+        "properties": {
+          "favourite": {
+            "title": "Favourite",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "favourite"
+        ],
+        "title": "FavouriteBody",
+        "type": "object"
+      },
       "Health": {
         "properties": {
           "name": {
@@ -1052,6 +1106,10 @@
           "electric": {
             "title": "Electric",
             "type": "integer"
+          },
+          "favourites": {
+            "title": "Favourites",
+            "type": "integer"
           }
         },
         "required": [
@@ -1059,7 +1117,8 @@
           "bass",
           "electric",
           "acoustic",
-          "chords"
+          "chords",
+          "favourites"
         ],
         "title": "LibraryCounts",
         "type": "object"
@@ -1352,6 +1411,23 @@
         "title": "SessionsEnded",
         "type": "object"
       },
+      "SetTagsBody": {
+        "properties": {
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Tags",
+            "type": "array"
+          }
+        },
+        "required": [
+          "tags"
+        ],
+        "title": "SetTagsBody",
+        "type": "object"
+      },
       "Settings": {
         "description": "Per-user preferences. ``default_instrument`` is a preset id from ``GET /api/meta``.",
         "properties": {
@@ -1444,6 +1520,10 @@
             ],
             "title": "Duration"
           },
+          "favourite": {
+            "title": "Favourite",
+            "type": "boolean"
+          },
           "has_audio": {
             "title": "Has Audio",
             "type": "boolean"
@@ -1489,6 +1569,13 @@
             "title": "String Count",
             "type": "integer"
           },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
           "title": {
             "title": "Title",
             "type": "string"
@@ -1519,6 +1606,8 @@
           "has_audio",
           "duration",
           "updated_at",
+          "favourite",
+          "tags",
           "source_ref",
           "document",
           "chordpro",
@@ -1656,6 +1745,10 @@
             ],
             "title": "Duration"
           },
+          "favourite": {
+            "title": "Favourite",
+            "type": "boolean"
+          },
           "has_audio": {
             "title": "Has Audio",
             "type": "boolean"
@@ -1692,6 +1785,13 @@
             "title": "String Count",
             "type": "integer"
           },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
           "title": {
             "title": "Title",
             "type": "string"
@@ -1721,9 +1821,27 @@
           "has_sync",
           "has_audio",
           "duration",
-          "updated_at"
+          "updated_at",
+          "favourite",
+          "tags"
         ],
         "title": "SongSummary",
+        "type": "object"
+      },
+      "SongTags": {
+        "properties": {
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tags",
+            "type": "array"
+          }
+        },
+        "required": [
+          "tags"
+        ],
+        "title": "SongTags",
         "type": "object"
       },
       "SongsMoved": {
@@ -1864,6 +1982,37 @@
           }
         },
         "title": "SyncMap",
+        "type": "object"
+      },
+      "TagCount": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "tag": {
+            "title": "Tag",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tag",
+          "count"
+        ],
+        "title": "TagCount",
+        "type": "object"
+      },
+      "TagsAdded": {
+        "properties": {
+          "updated": {
+            "title": "Updated",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "updated"
+        ],
+        "title": "TagsAdded",
         "type": "object"
       },
       "Track": {
@@ -3999,6 +4148,34 @@
             }
           },
           {
+            "description": "Repeat to require several tags; a song needs all of them.",
+            "in": "query",
+            "name": "tag",
+            "required": false,
+            "schema": {
+              "default": [],
+              "description": "Repeat to require several tags; a song needs all of them.",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 10,
+              "title": "Tag",
+              "type": "array"
+            }
+          },
+          {
+            "description": "Only starred songs.",
+            "in": "query",
+            "name": "favourite",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Only starred songs.",
+              "title": "Favourite",
+              "type": "boolean"
+            }
+          },
+          {
             "in": "query",
             "name": "limit",
             "required": false,
@@ -5059,6 +5236,109 @@
         ]
       }
     },
+    "/api/songs/{song_id}/favourite": {
+      "put": {
+        "description": "Star or unstar a song.",
+        "operationId": "set_favourite_api_songs__song_id__favourite_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "song_id",
+            "required": true,
+            "schema": {
+              "title": "Song Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FavouriteBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Favourite"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Set Favourite",
+        "tags": [
+          "tags"
+        ]
+      }
+    },
     "/api/songs/{song_id}/opened": {
       "post": {
         "description": "Record that the caller opened the song, for the \"last opened\" sort.",
@@ -5247,6 +5527,287 @@
           "songs"
         ]
       }
+    },
+    "/api/songs/{song_id}/tags": {
+      "put": {
+        "description": "Replace the song's tags.",
+        "operationId": "set_song_tags_api_songs__song_id__tags_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "song_id",
+            "required": true,
+            "schema": {
+              "title": "Song Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetTagsBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SongTags"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Set Song Tags",
+        "tags": [
+          "tags"
+        ]
+      }
+    },
+    "/api/tags": {
+      "get": {
+        "description": "Every tag on the caller's songs with how many songs use it, most used first.",
+        "operationId": "list_tags_api_tags_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TagCount"
+                  },
+                  "title": "Response List Tags Api Tags Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "List Tags",
+        "tags": [
+          "tags"
+        ]
+      }
+    },
+    "/api/tags/add": {
+      "post": {
+        "description": "Add tags to many songs at once. Songs that are not the caller's are skipped.",
+        "operationId": "add_tags_api_tags_add_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddTagsBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagsAdded"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Add Tags",
+        "tags": [
+          "tags"
+        ]
+      }
     }
   },
   "tags": [
@@ -5277,6 +5838,10 @@
     {
       "description": "Background job status, progress keys, and errors.",
       "name": "jobs"
+    },
+    {
+      "description": "Free-form tags and the favourite star on the caller's songs.",
+      "name": "tags"
     }
   ]
 }
