@@ -31,9 +31,8 @@ Practice controls (metronome, count-in, mixer, pitch-preserving slowdown) are do
 
 ### Listening to you play
 
-Features that use the microphone to hear the instrument, in the order to build them. They all run in the browser and share one piece of pitch detection, which is built (`web/src/lib/listen/`) and waiting for its first feature. Browsers only allow the microphone on HTTPS pages (or `localhost`), so the README has to tell self-hosters to put Fretbook behind HTTPS to use them.
+Features that use the microphone to hear the instrument, in the order to build them. They all run in the browser and share one piece of pitch detection, which is built (`web/src/lib/listen/`) and now drives the tuner. Browsers only allow the microphone on HTTPS pages (or `localhost`), so the README has to tell self-hosters to put Fretbook behind HTTPS to use them.
 
-- **Tuner**: tune to the song's tuning, string by string.
 - **Wait mode**: the cursor waits on each beat until you play the right note, then moves on, as Yousician does. The expected notes come from the score (string tuning + fret + capo), so the app only checks for the note it expects, which is far more reliable than working out what was played. Tied notes are skipped, dead notes accept any attack, and the right note in another octave counts. It plays with the built-in synth or in silence, because stopping a recording at every missed note doesn't work. Start with single notes, which covers bass and most riffs.
 - **Chords in wait mode**: compare the sound's overall pitch content against the chord's expected notes instead of transcribing every string. It is less reliable than single notes, so make it lenient and let the player skip a beat.
 - **Scored play-along**: play along with the recording without stopping, and get each note marked hit, early, late or missed, with a score at the end and in the practice log. It needs a calibration step that measures the input and output latency, and headphones so the microphone doesn't hear the recording.

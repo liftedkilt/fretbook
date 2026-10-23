@@ -22,10 +22,16 @@
     "songs": "Músicas",
     "lastLogin": "Última entrada",
     "never": "Nunca",
-    "sessions": { "one": "{count} sessão", "other": "{count} sessões" },
+    "sessions": {
+      "one": "{count} sessão",
+      "other": "{count} sessões"
+    },
     "signOut": "Encerrar todas as sessões",
     "confirmSignOut": "Desconectar {name} de todos os navegadores?",
-    "signedOut": { "one": "{count} sessão encerrada.", "other": "{count} sessões encerradas." },
+    "signedOut": {
+      "one": "{count} sessão encerrada.",
+      "other": "{count} sessões encerradas."
+    },
     "adoptHeading": "Biblioteca do modo de usuário único",
     "adoptHint": {
       "one": "{count} música foi adicionada antes de a entrada ser ativada. Ninguém a vê até que um administrador a mova para uma biblioteca.",
@@ -628,5 +634,35 @@
       "dal_segno_segno_al_double_coda": "D.S.S. al coda dupla",
       "dal_segno_segno_al_fine": "D.S.S. al Fine"
     }
+  },
+  "tuner": {
+    "heading": "Afinador",
+    "open": "Afinador",
+    "forSong": "Afinado para esta música",
+    "tuning": "Afinação",
+    "songTuning": "Esta música",
+    "chromatic": "Cromático",
+    "preset": {
+      "standard": "Violão/guitarra padrão (E A D G B E)",
+      "dropD": "Drop D",
+      "eb": "Eb (meio tom abaixo)",
+      "dadgad": "DADGAD",
+      "openG": "Open G",
+      "bass4": "Baixo de 4 cordas",
+      "bass5": "Baixo de 5 cordas",
+      "bass6": "Baixo de 6 cordas"
+    },
+    "a4": "Referência do A4",
+    "capoOn": "Afinar com o capotraste (casa {fret})",
+    "capoHint": "Esta música usa capotraste na casa {fret}. Afine as cordas soltas primeiro e depois coloque o capotraste.",
+    "cents": "{cents} cents",
+    "listening": "Toque uma corda…",
+    "idle": "Toque em Iniciar e depois toque uma corda solta.",
+    "inTune": "Corda afinada",
+    "playString": "Tocar o tom de referência de {note}",
+    "toneHint": "Toque em uma corda para ouvir a nota de referência.",
+    "start": "Iniciar",
+    "starting": "Iniciando…",
+    "stop": "Parar"
   }
 }
