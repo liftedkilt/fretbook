@@ -15,6 +15,7 @@ import type {
 } from "./api-types";
 import { keyed } from "./i18n.svelte";
 import { currentPath } from "./router.svelte";
+import { songsPath } from "./songQuery";
 import type {
   AdminUser,
   ImportPreview,
@@ -146,14 +147,9 @@ export function saveSettings(settings: Settings): Promise<Settings> {
   return request<ContractSettings>("/api/me/settings", json("PUT", settings));
 }
 
-/** One page of the library. Empty parameters are left to the server's defaults. */
+/** One page of the library. */
 export function listSongs(query: SongQuery = {}): Promise<SongPage> {
-  const params = new URLSearchParams();
-  for (const [key, value] of Object.entries(query)) {
-    if (value !== undefined && value !== "") params.set(key, String(value));
-  }
-  const text = params.toString();
-  return request<ContractSongPage>(`/api/songs${text ? `?${text}` : ""}`);
+  return request<ContractSongPage>(songsPath(query));
 }
 
 /** Record that the song was opened, for the "last opened" sort. */
