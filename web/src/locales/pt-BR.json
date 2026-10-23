@@ -170,7 +170,7 @@
     "status": "Compasso {measure}/{total} · {time}",
     "statusIdle": "– · {time}",
     "nextTap": "Próxima marca: {measure}",
-    "usingPublished": "A reprodução está usando os pontos de sincronia publicados. Marque um compasso para começar os seus.",
+    "usingPublished": "A reprodução está usando os pontos de sincronia publicados. Se o áudio sair do tempo, marque o compasso onde isso começa: os seguintes acompanham.",
     "needAudio": "Os pontos de sincronia foram salvos, mas ainda não há arquivo de áudio. Envie um mp3 ou wav.",
     "synth": "Não há arquivo de áudio, então a reprodução usa o sintetizador interno.",
     "keys": "Espaço toca. As setas mudam de compasso. T marca o próximo.",
@@ -181,7 +181,8 @@
     "loop": "Repetição",
     "previousBar": "Compasso anterior",
     "nextBar": "Próximo compasso",
-    "position": "Posição"
+    "position": "Posição",
+    "notation": "Partitura"
   },
   "editor": {
     "heading": "Editar",

@@ -84,6 +84,26 @@ export function songStarts(document: ScoreDocument): number[] {
 }
 
 /**
+ * Pin `bar` to `seconds` and move every later anchor by the same amount, so a
+ * section that slipped (a source that plays bars the tab does not have) is put
+ * right with one tap. `starts` are the bar starts in force before the change.
+ */
+export function moveAnchor(
+  anchors: Record<string, number>,
+  starts: number[],
+  bar: number,
+  seconds: number,
+): Record<string, number> {
+  const delta = seconds - starts[bar];
+  const next: Record<string, number> = {};
+  for (const [key, value] of Object.entries(anchors)) {
+    next[key] = Number(key) > bar ? Number((value + delta).toFixed(3)) : value;
+  }
+  next[String(bar)] = Number(seconds.toFixed(3));
+  return next;
+}
+
+/**
  * Re-key anchors (and points) after the editor inserts or removes bars.
  * `origin[i]` is the bar index the current bar `i` came from, or null for a new bar.
  */

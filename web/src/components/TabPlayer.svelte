@@ -12,9 +12,10 @@
   import { t } from "../lib/i18n.svelte";
   import { instrumentLabel } from "../lib/instruments";
   import { followLink, hrefFor } from "../lib/router.svelte";
-  import { flatSyncPoints, measureAt, pointAnchors, songStarts } from "../lib/sync";
+  import { flatSyncPoints, measureAt, moveAnchor, pointAnchors, songStarts } from "../lib/sync";
   import { tuningLabel } from "../lib/tuning";
   import type { SongDetail, TabSong } from "../lib/types";
+  import { setNotation, ui } from "../lib/ui.svelte";
 
   let { song: initial }: { song: TabSong } = $props();
 
@@ -49,6 +50,10 @@
   // Without audio, alphaTab's synth plays at the written tempo, so it does.
   const renderBpm = $derived(song.has_audio ? untrack(() => song.document.bpm) : document_.bpm);
   const tex = $derived(trackToAlphaTex({ ...document_, bpm: renderBpm }, trackId, song.title, song.artist));
+
+  function staveProfile(notation: boolean): alphaTab.StaveProfile {
+    return notation ? alphaTab.StaveProfile.ScoreTab : alphaTab.StaveProfile.Tab;
+  }
 
   function message(err: unknown): string {
     return err instanceof Error ? err.message : t("error.generic");
@@ -125,7 +130,7 @@
     const settings = new alphaTab.Settings();
     settings.core.fontDirectory = new URL("font/", document.baseURI).href;
     settings.core.logLevel = alphaTab.LogLevel.Warning;
-    settings.display.staveProfile = alphaTab.StaveProfile.ScoreTab;
+    settings.display.staveProfile = staveProfile(untrack(() => ui.notation));
     settings.player.playerMode = useAudio ? alphaTab.PlayerMode.EnabledExternalMedia : alphaTab.PlayerMode.EnabledSynthesizer;
     settings.player.soundFont = new URL("soundfont/sonivox.sf2", document.baseURI).href;
     settings.player.enableCursor = true;
@@ -250,17 +255,14 @@
 
   function tap() {
     if (!song.has_audio || !audioEl || barCount <= 0) return;
-    const next = seedAnchors();
-    next[String(tapIndex)] = Number(audioEl.currentTime.toFixed(3));
-    commitAnchors(next);
+    commitAnchors(moveAnchor(seedAnchors(), startsNow(), tapIndex, audioEl.currentTime));
     tapIndex = Math.min(barCount - 1, tapIndex + 1);
   }
 
   function nudge(delta: number) {
     if (currentMeasure < 0 || currentMeasure >= barCount) return;
-    const next = seedAnchors();
-    next[String(currentMeasure)] = Number((startsNow()[currentMeasure] + delta).toFixed(3));
-    commitAnchors(next);
+    const starts = startsNow();
+    commitAnchors(moveAnchor(seedAnchors(), starts, currentMeasure, starts[currentMeasure] + delta));
   }
 
   function clearCurrent() {
@@ -287,6 +289,15 @@
     if (!api) return;
     api.settings.player.scrollMode = checked ? alphaTab.ScrollMode.Continuous : alphaTab.ScrollMode.Off;
     api.updateSettings();
+  }
+
+  function toggleNotation() {
+    setNotation(!ui.notation);
+    const api = player.api;
+    if (!api) return;
+    api.settings.display.staveProfile = staveProfile(ui.notation);
+    api.updateSettings();
+    api.render();
   }
 
   function setRate(value: number) {
@@ -328,6 +339,7 @@
         title: song.title,
         artist: song.artist,
         capoLabel: current.capo > 0 ? t("player.capo", { fret: current.capo }) : "",
+        notation: ui.notation,
       });
     } catch {
       error = t("player.exportPdfFailed");
@@ -518,6 +530,15 @@
             {/each}
           </select>
         </label>
+        <button
+          class="icon-button ghost"
+          aria-pressed={ui.notation}
+          onclick={toggleNotation}
+          aria-label={t("player.notation")}
+          title={t("player.notation")}
+        >
+          <Icon name="chords" size={18} />
+        </button>
         <button
           class="icon-button ghost"
           aria-pressed={follow}
