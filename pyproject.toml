@@ -6,6 +6,9 @@ license = "MIT"
 requires-python = ">=3.12"
 readme = "README.md"
 
+[project.scripts]
+fretbook-cli = "fretbook.cli:main"
+
 [project.optional-dependencies]
 vision = [
     "opencv-python-headless>=4.10,<5",

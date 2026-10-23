@@ -6,6 +6,8 @@ provider's ``sub`` is kept in ``users.external_subject``.
 
 from __future__ import annotations
 
+import hashlib
+import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -16,10 +18,22 @@ from fretbook.db.migrate import utcnow
 from fretbook.storage.repository import _unique_slug
 
 LOCAL_USER = "local"
+TOKEN_PREFIX = "fb_"
+MAX_TOKENS_PER_USER = 50
+# last_used_at moves at most this often, so a busy script does not write on every request.
+_TOUCH_SECONDS = 60
+
+
+def hash_api_token(token: str) -> str:
+    """Tokens are 256 random bits, so a plain SHA-256 is enough to store."""
+    return hashlib.sha256(token.encode()).hexdigest()
 
 
 def _later(seconds: int) -> str:
     return (datetime.now(UTC) + timedelta(seconds=seconds)).replace(microsecond=0).isoformat()
+
+
+_TOKEN_COLUMNS = "id, name, prefix, created_at, expires_at, last_used_at"
 
 
 class UserStore:
@@ -135,3 +149,61 @@ class UserStore:
                 conn.execute("UPDATE songs SET owner_id = ?, slug = ? WHERE id = ?", (user_id, slug, row["id"]))
             conn.execute("UPDATE media SET owner_id = ? WHERE owner_id = ?", (user_id, LOCAL_USER))
         return len(rows)
+
+    # --- personal API tokens --------------------------------------------------
+
+    def create_token(
+        self, user_id: str, name: str, *, expires_in_days: int | None
+    ) -> tuple[str, dict[str, Any]] | None:
+        """Make a token for ``user_id`` and return ``(secret, row)``, or ``None`` at the per-user cap.
+
+        The secret is not stored and cannot be read again.
+        """
+        secret = TOKEN_PREFIX + secrets.token_urlsafe(32)
+        token_id = uuid.uuid4().hex
+        expires_at = _later(expires_in_days * 86400) if expires_in_days else None
+        with self._session(immediate=True) as conn:
+            count = conn.execute("SELECT COUNT(*) FROM api_tokens WHERE user_id = ?", (user_id,)).fetchone()[0]
+            if count >= MAX_TOKENS_PER_USER:
+                return None
+            conn.execute(
+                """
+                INSERT INTO api_tokens (id, user_id, name, prefix, token_hash, created_at, expires_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (token_id, user_id, name, secret[:8], hash_api_token(secret), utcnow(), expires_at),
+            )
+            row = conn.execute(f"SELECT {_TOKEN_COLUMNS} FROM api_tokens WHERE id = ?", (token_id,)).fetchone()
+        return secret, dict(row)
+
+    def list_tokens(self, user_id: str) -> list[dict[str, Any]]:
+        with self._session() as conn:
+            rows = conn.execute(
+                f"SELECT {_TOKEN_COLUMNS} FROM api_tokens WHERE user_id = ? ORDER BY created_at DESC, id",
+                (user_id,),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def revoke_token(self, user_id: str, token_id: str) -> bool:
+        with self._session() as conn:
+            return conn.execute("DELETE FROM api_tokens WHERE id = ? AND user_id = ?", (token_id, user_id)).rowcount > 0
+
+    def find_token_owner(self, secret: str) -> dict[str, Any] | None:
+        """The owner of a live token, or ``None`` when it is unknown or expired. Records the use."""
+        now = utcnow()
+        with self._session() as conn:
+            row = conn.execute(
+                """
+                SELECT t.id, t.last_used_at, u.id AS user_id, u.display_name, u.email, u.role
+                FROM api_tokens t JOIN users u ON u.id = t.user_id
+                WHERE t.token_hash = ? AND (t.expires_at IS NULL OR t.expires_at > ?)
+                """,
+                (hash_api_token(secret), now),
+            ).fetchone()
+            if row is None:
+                return None
+            conn.execute(
+                "UPDATE api_tokens SET last_used_at = ? WHERE id = ? AND (last_used_at IS NULL OR last_used_at <= ?)",
+                (now, row["id"], _later(-_TOUCH_SECONDS)),
+            )
+        return dict(row)

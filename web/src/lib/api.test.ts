@@ -39,6 +39,9 @@ describe("request wrappers", () => {
     ["saveSettings", () => api.saveSettings({} as never), "PUT", "api/me/settings"],
     ["markSongOpened", () => api.markSongOpened("s1"), "POST", "api/songs/s1/opened"],
     ["getSong", () => api.getSong("s1"), "GET", "api/songs/s1"],
+    ["listApiTokens", () => api.listApiTokens(), "GET", "api/tokens"],
+    ["createApiToken", () => api.createApiToken("nightly", 30), "POST", "api/tokens"],
+    ["revokeApiToken", () => api.revokeApiToken("t1"), "DELETE", "api/tokens/t1"],
     [
       "createTab",
       () =>

@@ -387,7 +387,8 @@
   "errors": {
     "auth": {
       "required": "Your session has ended. Sign in again.",
-      "adminOnly": "Only administrators can do that."
+      "adminOnly": "Only administrators can do that.",
+      "invalidToken": "That API token is invalid, expired, or revoked."
     },
     "user": {
       "notFound": "That user was not found."
@@ -532,6 +533,12 @@
       "tooDense": "Bar {bar} has too many notes to place.",
       "skippedSystems": "{count} tab system(s) with a different number of strings were skipped.",
       "gridRefined": "{count} bar(s) have more notes than the grid has slots, so a finer grid was used there."
+    },
+    "token": {
+      "sessionRequired": "API tokens cannot manage API tokens. Sign in to the web app.",
+      "nameRequired": "Give the token a name.",
+      "tooMany": "You have too many tokens. Revoke one first.",
+      "notFound": "That token was not found."
     }
   },
   "ui": {
@@ -756,5 +763,33 @@
     "labelNames": "Note names",
     "labelIntervals": "Intervals",
     "labelFrets": "Fret numbers"
+  },
+  "apiTokens": {
+    "heading": "API tokens",
+    "hint": "Let scripts and the command line use your library. A token can do what you can.",
+    "manage": "Manage API tokens",
+    "hide": "Hide",
+    "nameLabel": "Token name",
+    "namePlaceholder": "For example: nightly import",
+    "expiryLabel": "Expires",
+    "expiryNever": "Never",
+    "expiry30": "In 30 days",
+    "expiry90": "In 90 days",
+    "expiry365": "In a year",
+    "create": "Create token",
+    "created": "Copy your new token now. It is shown only once.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "dismiss": "Done",
+    "empty": "No tokens yet.",
+    "loading": "Loading tokens",
+    "revoke": "Revoke",
+    "revokeConfirm": "Revoke \"{name}\"? Scripts using it stop working.",
+    "createdOn": "Created {date}",
+    "expiresOn": "Expires {date}",
+    "neverExpires": "Does not expire",
+    "lastUsed": "Last used {date}",
+    "neverUsed": "Never used",
+    "sessionRequired": "Sign in to the web app to manage tokens."
   }
 }

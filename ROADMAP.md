@@ -53,5 +53,4 @@ Features that use the microphone to hear the instrument, in the order to build t
 
 ### Other
 
-- Personal API tokens, so scripts and other tools can use the API.
 - More languages. See [CONTRIBUTING.md](CONTRIBUTING.md#adding-a-locale).

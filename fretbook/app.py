@@ -23,6 +23,7 @@ from fretbook.api.bulk_routes import router as bulk_router
 from fretbook.api.middleware import BodyLimitMiddleware, SameOriginMiddleware
 from fretbook.api.routes import router
 from fretbook.api.tag_routes import router as tag_router
+from fretbook.api.token_routes import router as token_router
 from fretbook.api.universal_routes import router as universal_router
 from fretbook.audio.ytdlp_health import AutoUpdater
 from fretbook.auth import build_auth
@@ -172,7 +173,7 @@ def create_app(
             "Single-user mode has no login: every request is the local user. "
             "With OIDC (FRETBOOK_OIDC_ISSUER set) a browser signs in through GET /auth/login, "
             "GET /auth/callback and POST /auth/logout, which are not JSON and not listed here; "
-            "every route but /api/health then answers 401 auth.required without a session cookie."
+            "every route but /api/health then answers 401 auth.required without a session cookie or an API token."
         ),
         lifespan=lifespan,
         openapi_tags=[
@@ -208,6 +209,13 @@ def create_app(
                 "name": "tags",
                 "description": "Free-form tags and the favourite star on the caller's songs.",
             },
+            {
+                "name": "tokens",
+                "description": (
+                    "Personal API tokens for scripts. Send one as `Authorization: Bearer <token>` on any /api route; "
+                    "it acts as its owner. Managing tokens needs a signed-in session, not a token."
+                ),
+            },
         ],
         # Output schemas mark defaulted fields as present, which is what responses actually send.
         separate_input_output_schemas=True,
@@ -227,6 +235,7 @@ def create_app(
     app.include_router(universal_router)
     app.include_router(tag_router)
     app.include_router(bulk_router)
+    app.include_router(token_router)
     auth_routes = ctx.auth.routes()
     if auth_routes is not None:
         app.include_router(auth_routes)

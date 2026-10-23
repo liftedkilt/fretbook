@@ -387,7 +387,8 @@
   "errors": {
     "auth": {
       "required": "Sua sessão terminou. Entre novamente.",
-      "adminOnly": "Só administradores podem fazer isso."
+      "adminOnly": "Só administradores podem fazer isso.",
+      "invalidToken": "Esse token de API é inválido, expirou ou foi revogado."
     },
     "user": {
       "notFound": "Esse usuário não foi encontrado."
@@ -532,6 +533,12 @@
       "tooDense": "O compasso {bar} tem notas demais para posicionar.",
       "skippedSystems": "{count} sistema(s) de tablatura com outro número de cordas foram ignorados.",
       "gridRefined": "{count} compasso(s) têm mais notas do que a grade comporta, então uma grade mais fina foi usada neles."
+    },
+    "token": {
+      "sessionRequired": "Tokens de API não podem gerenciar tokens de API. Entre no aplicativo web.",
+      "nameRequired": "Dê um nome ao token.",
+      "tooMany": "Você tem tokens demais. Revogue um primeiro.",
+      "notFound": "Esse token não foi encontrado."
     }
   },
   "ui": {
@@ -756,5 +763,33 @@
     "labelNames": "Nomes das notas",
     "labelIntervals": "Intervalos",
     "labelFrets": "Números das casas"
+  },
+  "apiTokens": {
+    "heading": "Tokens de API",
+    "hint": "Permita que scripts e a linha de comando usem sua biblioteca. Um token pode fazer o que você pode.",
+    "manage": "Gerenciar tokens de API",
+    "hide": "Ocultar",
+    "nameLabel": "Nome do token",
+    "namePlaceholder": "Por exemplo: importação noturna",
+    "expiryLabel": "Expira",
+    "expiryNever": "Nunca",
+    "expiry30": "Em 30 dias",
+    "expiry90": "Em 90 dias",
+    "expiry365": "Em um ano",
+    "create": "Criar token",
+    "created": "Copie seu novo token agora. Ele é mostrado apenas uma vez.",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "dismiss": "Concluir",
+    "empty": "Nenhum token ainda.",
+    "loading": "Carregando tokens",
+    "revoke": "Revogar",
+    "revokeConfirm": "Revogar \"{name}\"? Os scripts que o usam deixam de funcionar.",
+    "createdOn": "Criado em {date}",
+    "expiresOn": "Expira em {date}",
+    "neverExpires": "Não expira",
+    "lastUsed": "Último uso em {date}",
+    "neverUsed": "Nunca usado",
+    "sessionRequired": "Entre no aplicativo web para gerenciar tokens."
   }
 }

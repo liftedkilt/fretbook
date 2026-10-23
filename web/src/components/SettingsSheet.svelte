@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ApiTokens from "./ApiTokens.svelte";
   import BackupSettings from "./BackupSettings.svelte";
   import Icon from "./Icon.svelte";
   import Sheet from "./Sheet.svelte";
@@ -119,6 +120,7 @@
         {/each}
       </div>
     </section>
+    <ApiTokens />
     <BackupSettings />
     {#if ui.version}
       <section class="setting" data-testid="about-setting">
