@@ -13,6 +13,7 @@ export type Theme = "system" | "dark" | "light";
 export type Sheet = "" | "add" | "settings";
 
 const THEME_KEY = "fretbook.theme";
+const NOTATION_KEY = "fretbook.notation";
 
 function storedTheme(): Theme {
   try {
@@ -20,6 +21,14 @@ function storedTheme(): Theme {
     return value === "dark" || value === "light" ? value : "system";
   } catch {
     return "system";
+  }
+}
+
+function storedNotation(): boolean {
+  try {
+    return typeof localStorage !== "undefined" && localStorage.getItem(NOTATION_KEY) === "1";
+  } catch {
+    return false;
   }
 }
 
@@ -34,6 +43,8 @@ export const ui = $state({
   search: "",
   sheet: "" as Sheet,
   theme: storedTheme(),
+  /** Standard notation above the tab. Off by default: most players only read the tab. */
+  notation: storedNotation(),
   error: "",
 });
 
@@ -99,6 +110,16 @@ export function setTheme(theme: Theme): void {
   try {
     if (theme === "system") localStorage.removeItem(THEME_KEY);
     else localStorage.setItem(THEME_KEY, theme);
+  } catch {
+    /* storage may be unavailable */
+  }
+}
+
+export function setNotation(show: boolean): void {
+  ui.notation = show;
+  try {
+    if (show) localStorage.setItem(NOTATION_KEY, "1");
+    else localStorage.removeItem(NOTATION_KEY);
   } catch {
     /* storage may be unavailable */
   }

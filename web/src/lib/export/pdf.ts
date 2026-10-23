@@ -47,6 +47,8 @@ export interface TrackPdfInput {
   artist: string;
   /** Already translated, for example "Capo 3". Empty when there is no capo. */
   capoLabel?: string;
+  /** Standard notation above the tab, as in the player. Defaults to on. */
+  notation?: boolean;
   bravura: Uint8Array;
 }
 
@@ -107,12 +109,12 @@ function drawHeader(page: PDFPage, fonts: PdfFonts, title: string, detail: strin
   });
 }
 
-function engrave(tex: string, width: number): { chunks: StaffChunk[]; systems: Box[]; tuning: number[] } {
+function engrave(tex: string, width: number, notation: boolean): { chunks: StaffChunk[]; systems: Box[]; tuning: number[] } {
   const settings = new alphaTab.Settings();
   settings.core.engine = "svg";
   settings.core.enableLazyLoading = false;
   settings.core.logLevel = alphaTab.LogLevel.None;
-  settings.display.staveProfile = alphaTab.StaveProfile.ScoreTab;
+  settings.display.staveProfile = notation ? alphaTab.StaveProfile.ScoreTab : alphaTab.StaveProfile.Tab;
   settings.display.layoutMode = alphaTab.LayoutMode.Page;
   settings.display.barsPerRow = 4;
   // The page header repeats the title, artist, track, and the song's tuning.
@@ -163,7 +165,7 @@ function engrave(tex: string, width: number): { chunks: StaffChunk[]; systems: B
 export async function renderTrackPdf(input: TrackPdfInput): Promise<TrackPdf> {
   const track = input.document.tracks.find((item) => item.id === input.trackId) ?? preferredTrack(input.document);
   const tex = trackToAlphaTex(input.document, track.id, input.title, input.artist);
-  const engraved = engrave(tex, contentWidth());
+  const engraved = engrave(tex, contentWidth(), input.notation ?? true);
   const placed = paginate(engraved.chunks, engraved.systems, contentHeight());
   const detail = [input.artist, track.name, tuningLabel(track.tuning_midi), input.capoLabel ?? ""]
     .map((part) => part.trim())

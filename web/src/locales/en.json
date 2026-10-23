@@ -170,7 +170,7 @@
     "status": "Bar {measure}/{total} · {time}",
     "statusIdle": "– · {time}",
     "nextTap": "Next mark: {measure}",
-    "usingPublished": "Playback is using the published sync points. Tap to start your own.",
+    "usingPublished": "Playback is using the published sync points. If the audio drifts, tap the bar where it goes wrong: later bars move with it.",
     "needAudio": "Sync points are saved, but there is no audio file yet. Upload an mp3 or wav.",
     "synth": "No audio file, so playback uses the built-in synth.",
     "keys": "Space plays. Arrows move a bar. T taps the next mark.",
@@ -181,7 +181,8 @@
     "loop": "Loop",
     "previousBar": "Previous bar",
     "nextBar": "Next bar",
-    "position": "Position"
+    "position": "Position",
+    "notation": "Standard notation"
   },
   "editor": {
     "heading": "Edit",

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { barSeconds, flatSyncPoints, measureAt, measureStarts, remapSync } from "./sync";
+import { barSeconds, flatSyncPoints, measureAt, measureStarts, moveAnchor, remapSync } from "./sync";
 import type { ScoreDocument } from "./types";
 
 describe("measureStarts", () => {
@@ -44,5 +44,16 @@ describe("remapSync", () => {
     const next = remapSync(sync, [1, 2, null, 3]);
     expect(next.anchors).toEqual({ "0": 2.1, "3": 6.2 });
     expect(next.points).toEqual([2, 4, null, 6]);
+  });
+});
+
+describe("moveAnchor", () => {
+  it("moves later anchors with the tapped bar and leaves earlier ones", () => {
+    const anchors = { "0": 1, "1": 3, "2": 5, "3": 7 };
+    expect(moveAnchor(anchors, [1, 3, 5, 7, 9], 1, 6.5)).toEqual({ "0": 1, "1": 6.5, "2": 8.5, "3": 10.5 });
+  });
+
+  it("measures the shift from the bar's current start when it has no anchor yet", () => {
+    expect(moveAnchor({ "0": 0, "4": 8 }, [0, 2, 4, 6, 8], 2, 5)).toEqual({ "0": 0, "2": 5, "4": 9 });
   });
 });
