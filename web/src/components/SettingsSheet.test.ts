@@ -158,4 +158,16 @@ describe("SettingsSheet", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent("not a Fretbook backup");
   });
+
+  it("renders calibration section and opens calibration sheet on button click", async () => {
+    render(SettingsSheet);
+
+    expect(screen.getByTestId("calibration-setting")).toBeInTheDocument();
+    expect(screen.getByTestId("settings-offset-slider")).toBeInTheDocument();
+
+    const openBtn = screen.getByTestId("open-calibration");
+    await fireEvent.click(openBtn);
+
+    expect(ui.sheet).toBe("calibration");
+  });
 });

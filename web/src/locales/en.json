@@ -791,5 +791,41 @@
     "lastUsed": "Last used {date}",
     "neverUsed": "Never used",
     "sessionRequired": "Sign in to the web app to manage tokens."
+  },
+  "calibration": {
+    "title": "Audio latency calibration",
+    "description": "Compensate for the round-trip delay between sound output and microphone input.",
+    "defaultDevice": "Default device",
+    "button": "Calibrate audio latency…",
+    "openWizard": "Calibrate audio latency",
+    "manualSlider": "Manual offset",
+    "manualSliderHint": "Adjust the round-trip latency compensation manually.",
+    "currentLatency": "Offset: {offset} ms",
+    "currentJitter": "Jitter: ±{jitter} ms",
+    "notCalibrated": "Not calibrated",
+    "devicePair": "Output: {output} · Input: {input}",
+    "outputDevice": "Audio output",
+    "inputDevice": "Audio input",
+    "wizardHeading": "Audio latency calibration wizard",
+    "wizardIntro": "This wizard measures the round-trip latency of your audio setup. Click \"Start\" to play a series of clicks, then play or tap along on your instrument with each click (or let the microphone hear your speakers).",
+    "start": "Start calibration",
+    "cancel": "Cancel",
+    "stop": "Stop",
+    "tryAgain": "Try again",
+    "save": "Save calibration",
+    "leadIn": "Listen to the tempo…",
+    "calibrating": "Tap on every click ({current} of {total})",
+    "tapDetected": "Tap detected!",
+    "resultsHeading": "Calibration results",
+    "measuredOffset": "Measured offset: {offset} ms",
+    "measuredJitter": "Jitter: ±{jitter} ms",
+    "sampleCount": {
+      "one": "{count} tap recorded",
+      "other": "{count} taps recorded"
+    },
+    "noTaps": "No taps were detected. Make sure your microphone is on, check the volume, and try again.",
+    "bluetoothWarning": "Bluetooth audio device detected. Bluetooth adds noticeable and variable latency. For best results with scored play-along, wired headphones or speakers are recommended.",
+    "highJitterWarning": "High timing jitter detected (±{jitter} ms). This may be due to inconsistent taps, room noise, or system lag.",
+    "saved": "Calibration saved"
   }
 }

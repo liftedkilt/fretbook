@@ -313,3 +313,18 @@ export interface Job {
   created_at?: string;
   updated_at?: string;
 }
+
+export interface AudioCalibration {
+  output_device: string;
+  input_device: string;
+  offset_ms: number;
+  jitter_ms?: number | null;
+  updated_at: string;
+}
+
+export interface AudioCalibrationBody {
+  output_device?: string;
+  input_device?: string;
+  offset_ms: number;
+  jitter_ms?: number | null;
+}

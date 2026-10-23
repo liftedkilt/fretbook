@@ -337,6 +337,87 @@
         "title": "AsciiTabPreview",
         "type": "object"
       },
+      "AudioCalibration": {
+        "description": "Measured or manual audio latency calibration for an output/input device pair.",
+        "properties": {
+          "input_device": {
+            "title": "Input Device",
+            "type": "string"
+          },
+          "jitter_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jitter Ms"
+          },
+          "offset_ms": {
+            "title": "Offset Ms",
+            "type": "number"
+          },
+          "output_device": {
+            "title": "Output Device",
+            "type": "string"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "output_device",
+          "input_device",
+          "offset_ms",
+          "updated_at"
+        ],
+        "title": "AudioCalibration",
+        "type": "object"
+      },
+      "AudioCalibrationBody": {
+        "additionalProperties": false,
+        "properties": {
+          "input_device": {
+            "default": "default",
+            "maxLength": 120,
+            "title": "Input Device",
+            "type": "string"
+          },
+          "jitter_ms": {
+            "anyOf": [
+              {
+                "maximum": 1000.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jitter Ms"
+          },
+          "offset_ms": {
+            "maximum": 2000.0,
+            "minimum": -1000.0,
+            "title": "Offset Ms",
+            "type": "number"
+          },
+          "output_device": {
+            "default": "default",
+            "maxLength": 120,
+            "title": "Output Device",
+            "type": "string"
+          }
+        },
+        "required": [
+          "offset_ms"
+        ],
+        "title": "AudioCalibrationBody",
+        "type": "object"
+      },
       "AutoImportAccepted": {
         "description": "Queued import.\n\n``detected`` is what the server took the input for: an importer kind,\nor ``songsterr``, ``youtube`` or ``web`` for a link.",
         "properties": {
@@ -4285,6 +4366,393 @@
         "summary": "Me",
         "tags": [
           "auth"
+        ]
+      }
+    },
+    "/api/me/calibration": {
+      "delete": {
+        "description": "Delete the calibration for the given output and input device pair.",
+        "operationId": "delete_calibration_api_me_calibration_delete",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "output_device",
+            "required": false,
+            "schema": {
+              "default": "default",
+              "maxLength": 120,
+              "title": "Output Device",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "input_device",
+            "required": false,
+            "schema": {
+              "default": "default",
+              "maxLength": 120,
+              "title": "Input Device",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Delete Calibration",
+        "tags": [
+          "audio"
+        ]
+      },
+      "get": {
+        "description": "Return the calibration for the given output and input device pair, or null if unset.",
+        "operationId": "get_calibration_api_me_calibration_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "output_device",
+            "required": false,
+            "schema": {
+              "default": "default",
+              "maxLength": 120,
+              "title": "Output Device",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "input_device",
+            "required": false,
+            "schema": {
+              "default": "default",
+              "maxLength": 120,
+              "title": "Input Device",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/AudioCalibration"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Get Calibration Api Me Calibration Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Get Calibration",
+        "tags": [
+          "audio"
+        ]
+      },
+      "put": {
+        "description": "Store or update the audio calibration for the given output and input device pair.",
+        "operationId": "save_calibration_api_me_calibration_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AudioCalibrationBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudioCalibration"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Save Calibration",
+        "tags": [
+          "audio"
+        ]
+      }
+    },
+    "/api/me/calibrations": {
+      "get": {
+        "description": "Return all stored audio calibrations for the calling user.",
+        "operationId": "list_calibrations_api_me_calibrations_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AudioCalibration"
+                  },
+                  "title": "Response List Calibrations Api Me Calibrations Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "List Calibrations",
+        "tags": [
+          "audio"
         ]
       }
     },

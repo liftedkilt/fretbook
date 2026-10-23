@@ -1,6 +1,7 @@
 <script lang="ts">
   import AddSheet from "./components/AddSheet.svelte";
   import AdminView from "./components/AdminView.svelte";
+  import CalibrationSheet from "./components/CalibrationSheet.svelte";
   import Cover from "./components/Cover.svelte";
   import EditorView from "./components/EditorView.svelte";
   import Icon from "./components/Icon.svelte";
@@ -254,3 +255,4 @@
 <AddSheet />
 <SettingsSheet />
 <TunerSheet />
+<CalibrationSheet />

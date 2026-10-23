@@ -42,6 +42,31 @@ describe("request wrappers", () => {
     ["listApiTokens", () => api.listApiTokens(), "GET", "api/tokens"],
     ["createApiToken", () => api.createApiToken("nightly", 30), "POST", "api/tokens"],
     ["revokeApiToken", () => api.revokeApiToken("t1"), "DELETE", "api/tokens/t1"],
+    ["listCalibrations", () => api.listCalibrations(), "GET", "api/me/calibrations"],
+    [
+      "getCalibration",
+      () => api.getCalibration("out", "in"),
+      "GET",
+      "api/me/calibration?output_device=out&input_device=in",
+    ],
+    [
+      "saveCalibration",
+      () =>
+        api.saveCalibration({
+          output_device: "default",
+          input_device: "default",
+          offset_ms: 40,
+          jitter_ms: 2,
+        } as never),
+      "PUT",
+      "api/me/calibration",
+    ],
+    [
+      "deleteCalibration",
+      () => api.deleteCalibration(),
+      "DELETE",
+      "api/me/calibration?output_device=default&input_device=default",
+    ],
     [
       "createTab",
       () =>

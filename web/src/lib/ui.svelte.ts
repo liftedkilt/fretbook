@@ -20,7 +20,7 @@ import type {
 
 export type { LibraryFilter };
 export type Theme = "system" | "dark" | "light";
-export type Sheet = "" | "add" | "settings" | "tuner";
+export type Sheet = "" | "add" | "settings" | "tuner" | "calibration";
 
 /** What the song page hands the tuner: the track's strings (highest first) and capo. */
 export interface TunerRequest {

@@ -1,21 +1,77 @@
 <script lang="ts">
   import ApiTokens from "./ApiTokens.svelte";
+  import { onMount } from "svelte";
+
   import BackupSettings from "./BackupSettings.svelte";
   import Icon from "./Icon.svelte";
   import Sheet from "./Sheet.svelte";
-  import { apiUrl } from "../lib/api";
+  import { apiUrl, getCalibration, saveCalibration } from "../lib/api";
   import { currentLocale, locales, setLocale, t, tOr } from "../lib/i18n.svelte";
+  import {
+    getLocalCalibration,
+    isHighJitter,
+    setLocalCalibration,
+  } from "../lib/listen/calibration";
   import { followLink, hrefFor } from "../lib/router.svelte";
-  import { closeSheet, setDefaultInstrument, setTheme, ui, type Theme } from "../lib/ui.svelte";
+  import {
+    closeSheet,
+    openSheet,
+    setDefaultInstrument,
+    setTheme,
+    ui,
+    type Theme,
+  } from "../lib/ui.svelte";
   import { ytdlpHealth } from "../lib/ytdlp";
 
   let error = $state("");
+  let calibrationOffset = $state(0);
+  let calibrationJitter = $state<number | null>(null);
+  let hasCalibration = $state(false);
 
   const themes: { id: Theme; icon: string; key: string }[] = [
     { id: "system", icon: "monitor", key: "settings.themeSystem" },
     { id: "dark", icon: "moon", key: "settings.themeDark" },
     { id: "light", icon: "sun", key: "settings.themeLight" },
   ];
+
+  onMount(() => {
+    void loadCurrentCalibration();
+  });
+
+  async function loadCurrentCalibration() {
+    const local = getLocalCalibration("default", "default");
+    if (local !== null) {
+      calibrationOffset = local;
+      hasCalibration = true;
+    }
+    try {
+      const remote = await getCalibration("default", "default");
+      if (remote) {
+        calibrationOffset = remote.offset_ms;
+        calibrationJitter = remote.jitter_ms ?? null;
+        hasCalibration = true;
+        setLocalCalibration("default", "default", remote.offset_ms);
+      }
+    } catch {
+      // offline / ignored
+    }
+  }
+
+  async function onManualOffsetChange(val: number) {
+    calibrationOffset = val;
+    hasCalibration = true;
+    setLocalCalibration("default", "default", val);
+    try {
+      await saveCalibration({
+        output_device: "default",
+        input_device: "default",
+        offset_ms: val,
+        jitter_ms: calibrationJitter,
+      });
+    } catch {
+      // offline / ignored
+    }
+  }
 
   async function changeDefault(next: string) {
     error = "";
@@ -121,6 +177,69 @@
       </div>
     </section>
     <ApiTokens />
+
+    <section class="setting setting-stacked" data-testid="calibration-setting">
+      <div class="setting-label">
+        <span class="setting-icon"><Icon name="gauge" /></span>
+        <div>
+          <strong>{t("calibration.title")}</strong>
+          <p class="muted">{t("calibration.description")}</p>
+          <p class="muted" data-testid="calibration-status">
+            {#if hasCalibration}
+              {t("calibration.currentLatency", { offset: calibrationOffset })}
+              {#if calibrationJitter !== null}
+                · {t("calibration.currentJitter", { jitter: calibrationJitter })}
+              {/if}
+            {:else}
+              {t("calibration.notCalibrated")}
+            {/if}
+          </p>
+        </div>
+      </div>
+
+      {#if calibrationJitter !== null && isHighJitter(calibrationJitter)}
+        <p class="notice setting-notice" role="alert" data-testid="settings-jitter-warning">
+          <Icon name="alert" size={16} />
+          {t("calibration.highJitterWarning", { jitter: calibrationJitter })}
+        </p>
+      {/if}
+
+      <div class="mix-slider" style="margin-top: 0.5rem; width: 100%;">
+        <span style="min-width: 100px;">{t("calibration.manualSlider")}</span>
+        <input
+          type="range"
+          min="0"
+          max="500"
+          step="1"
+          aria-label={t("calibration.manualSlider")}
+          data-testid="settings-offset-slider"
+          value={calibrationOffset}
+          oninput={(e) => void onManualOffsetChange(Number(e.currentTarget.value))}
+          style="flex: 1;"
+        />
+        <output
+          data-testid="settings-offset-value"
+          style="min-width: 50px; font-variant-numeric: tabular-nums;"
+        >
+          {calibrationOffset} ms
+        </output>
+      </div>
+
+      <div style="margin-top: 0.5rem;">
+        <button
+          type="button"
+          class="button"
+          data-testid="open-calibration"
+          onclick={() => {
+            closeSheet();
+            openSheet("calibration");
+          }}
+        >
+          <Icon name="sliders" size={16} />{t("calibration.button")}
+        </button>
+      </div>
+    </section>
+
     <BackupSettings />
     {#if ui.version}
       <section class="setting" data-testid="about-setting">

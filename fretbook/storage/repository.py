@@ -149,6 +149,104 @@ class SongRepository:
             conn.execute("UPDATE users SET default_instrument = ? WHERE id = ?", (default_instrument, user_id))
         return self.get_settings(user_id)
 
+    # --- audio calibration -------------------------------------------------
+
+    def get_calibration(
+        self,
+        owner_id: str,
+        output_device: str = "default",
+        input_device: str = "default",
+    ) -> dict[str, Any] | None:
+        with self._session() as conn:
+            row = conn.execute(
+                """
+                SELECT output_device, input_device, offset_ms, jitter_ms, updated_at
+                FROM audio_calibrations
+                WHERE owner_id = ? AND output_device = ? AND input_device = ?
+                """,
+                (owner_id, output_device, input_device),
+            ).fetchone()
+        if not row:
+            return None
+        return {
+            "output_device": row["output_device"],
+            "input_device": row["input_device"],
+            "offset_ms": row["offset_ms"],
+            "jitter_ms": row["jitter_ms"],
+            "updated_at": row["updated_at"],
+        }
+
+    def list_calibrations(self, owner_id: str) -> list[dict[str, Any]]:
+        with self._session() as conn:
+            rows = conn.execute(
+                """
+                SELECT output_device, input_device, offset_ms, jitter_ms, updated_at
+                FROM audio_calibrations
+                WHERE owner_id = ?
+                ORDER BY updated_at DESC
+                """,
+                (owner_id,),
+            ).fetchall()
+        return [
+            {
+                "output_device": row["output_device"],
+                "input_device": row["input_device"],
+                "offset_ms": row["offset_ms"],
+                "jitter_ms": row["jitter_ms"],
+                "updated_at": row["updated_at"],
+            }
+            for row in rows
+        ]
+
+    def save_calibration(
+        self,
+        owner_id: str,
+        *,
+        output_device: str = "default",
+        input_device: str = "default",
+        offset_ms: float,
+        jitter_ms: float | None = None,
+    ) -> dict[str, Any]:
+        now = utcnow()
+        cal_id = uuid.uuid4().hex
+        with self._session() as conn:
+            conn.execute(
+                """
+                INSERT INTO audio_calibrations (
+                    id, owner_id, output_device, input_device, offset_ms, jitter_ms, created_at, updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(owner_id, output_device, input_device) DO UPDATE SET
+                    offset_ms = excluded.offset_ms,
+                    jitter_ms = excluded.jitter_ms,
+                    updated_at = excluded.updated_at
+                """,
+                (cal_id, owner_id, output_device, input_device, offset_ms, jitter_ms, now, now),
+            )
+        return {
+            "output_device": output_device,
+            "input_device": input_device,
+            "offset_ms": offset_ms,
+            "jitter_ms": jitter_ms,
+            "updated_at": now,
+        }
+
+    def delete_calibration(
+        self,
+        owner_id: str,
+        output_device: str = "default",
+        input_device: str = "default",
+    ) -> bool:
+        with self._session() as conn:
+            cursor = conn.execute(
+                """
+                DELETE FROM audio_calibrations
+                WHERE owner_id = ? AND output_device = ? AND input_device = ?
+                """,
+                (owner_id, output_device, input_device),
+            )
+            return cursor.rowcount > 0
+
     # --- songs -------------------------------------------------------------
 
     def list_songs(
