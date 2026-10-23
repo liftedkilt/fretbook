@@ -1848,6 +1848,53 @@ textarea {
   box-shadow: 0 0 12px rgba(255, 122, 80, 0.7);
 }
 
+/* Wait mode: the cursor pulses while it waits for a note and turns green on a hit. */
+.score[data-wait="waiting"] .at-cursor-beat {
+  animation: wait-pulse 1.1s ease-in-out infinite;
+}
+
+.score[data-wait="hit"] .at-cursor-beat {
+  background: var(--success) !important;
+  box-shadow: 0 0 14px var(--success);
+}
+
+.score[data-wait="hit"] .at-highlight * {
+  fill: var(--success);
+  stroke: var(--success);
+}
+
+@keyframes wait-pulse {
+  50% {
+    box-shadow: 0 0 22px rgba(255, 122, 80, 1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .score[data-wait="waiting"] .at-cursor-beat {
+    animation: none;
+  }
+}
+
+.wait-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+}
+
+.wait-status[data-state="hit"] {
+  border-color: var(--success);
+  background: var(--success-soft);
+}
+
+.wait-note {
+  font-weight: 650;
+}
+
 .at-selection div {
   background: rgba(255, 122, 80, 0.12) !important;
 }

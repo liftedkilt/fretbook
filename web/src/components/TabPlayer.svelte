@@ -7,6 +7,7 @@
   import Menu from "./Menu.svelte";
   import PracticePanel from "./PracticePanel.svelte";
   import ShortcutHelp from "./ShortcutHelp.svelte";
+  import WaitPanel from "./WaitPanel.svelte";
   import { ApiError, patchSync, uploadAudio } from "../lib/api";
   import { AudioMedia } from "../lib/alphatab/audioHandler";
   import { preferredTrack, scoreToAlphaTex } from "../lib/alphatex";
@@ -14,6 +15,9 @@
   import { barTicks } from "../lib/durations";
   import { t } from "../lib/i18n.svelte";
   import { instrumentLabel } from "../lib/instruments";
+  import { describeProblem, ListenError, startListening } from "../lib/listen";
+  import { buildWaitSteps, stepIndexAt, type WaitStep } from "../lib/listen/wait";
+  import { WaitRun } from "../lib/listen/waitRun";
   import { followPlayed, playedBars } from "../lib/playback";
   import {
     ClickScheduler,
@@ -35,7 +39,7 @@
     pointAnchors,
     songStarts,
   } from "../lib/sync";
-  import { tuningLabel } from "../lib/tuning";
+  import { midiToName, tuningLabel } from "../lib/tuning";
   import type { SongDetail, TabSong } from "../lib/types";
   import { openTuner, setNotation, ui } from "../lib/ui.svelte";
 
@@ -70,6 +74,17 @@
   let saveTimer = 0;
   let pendingSync: (() => Promise<void>) | null = null;
 
+  // Wait mode: the synth plays and stops on each beat of the chosen track until it is played.
+  type WaitState = "idle" | "waiting" | "hit" | "done";
+  let waitOn = $state(false);
+  let waitState = $state<WaitState>("idle");
+  let waitHits = $state(0);
+  let waitStep = $state<WaitStep | null>(null);
+  let waitHint = $state(false);
+  let waitError = $state("");
+  let waitRun: WaitRun | null = null;
+  let waitFlash = 0;
+
   const document_ = $derived(song.document);
   const track = $derived(
     document_.tracks.find((item) => item.id === trackId) ?? preferredTrack(document_),
@@ -87,6 +102,7 @@
   // Every track is loaded so the synth can play and mix them all; only the chosen one is drawn.
   const tex = $derived(scoreToAlphaTex({ ...document_, bpm: renderBpm }, song.title, song.artist));
   const trackIndex = $derived(Math.max(0, document_.tracks.indexOf(track)));
+  const waitSteps = $derived(buildWaitSteps(document_, track));
 
   function staveProfile(notation: boolean): alphaTab.StaveProfile {
     return notation ? alphaTab.StaveProfile.ScoreTab : alphaTab.StaveProfile.Tab;
@@ -208,13 +224,31 @@
     });
     // Without audio, alphaTab's own events say where playback is, tempo changes included.
     instance.playedBeatChanged.on((beat) => {
-      if (!useAudio) {
-        currentMeasure = followPlayed(
-          playedBars(untrack(() => song.document.bars)),
-          beat.voice.bar.index,
-          currentMeasure,
-        );
+      if (useAudio) return;
+      currentMeasure = followPlayed(
+        playedBars(untrack(() => song.document.bars)),
+        beat.voice.bar.index,
+        currentMeasure,
+      );
+      // The synth has no loop of its own: past the end of the range, go back to its start.
+      if (loopA != null && loopB != null && currentMeasure > loopB && playing) {
+        goToBar(loopA);
+        return;
       }
+      if (waitRun && beat.voice.bar.staff.track.index === untrack(() => trackIndex)) {
+        const index = stepIndexAt(
+          untrack(() => waitSteps),
+          currentMeasure,
+          beat.displayStart,
+        );
+        if (index >= 0) waitRun.reach(index);
+      }
+    });
+    instance.playerFinished.on(() => {
+      if (!waitRun) return;
+      waitState = "done";
+      waitStep = null;
+      waitRun.seek(0);
     });
     instance.playerPositionChanged.on((event) => {
       if (!useAudio) clock = formatTime(event.currentTime / 1000);
@@ -303,6 +337,7 @@
       window.clearInterval(metronome);
       window.clearTimeout(countInTimer);
       clicker.close();
+      waitRun?.stop();
       document.removeEventListener("keydown", onKey);
       // Leaving the page must not lose a tap that is still waiting to be saved.
       void flushSync();
@@ -358,13 +393,14 @@
     // A recording plays without the synth, so the synth's own metronome and tracks are silent.
     if (!api?.score || song.has_audio) return;
     api.metronomeVolume = practice.metronome.on ? practice.metronome.volume : 0;
-    api.masterVolume = practice.mix.synth;
+    api.masterVolume = waitOn && practice.wait.silent ? 0 : practice.mix.synth;
     api.score.tracks.forEach((item, index) => {
       const id = document_.tracks[index]?.id;
       if (id === undefined) return;
       const mix = trackMix(practice, id);
       api.changeTrackVolume([item], mix.volume);
-      api.changeTrackMute([item], mix.mute);
+      // In wait mode the player plays the chosen track, so it is left out of the backing.
+      api.changeTrackMute([item], mix.mute || (waitOn && index === trackIndex));
       api.changeTrackSolo([item], mix.solo);
     });
   }
@@ -423,6 +459,7 @@
     const api = player.api;
     if (!api) return;
     if (countingIn) return cancelCountIn();
+    if (waitRun && waitState === "waiting") return waitRun.skip();
     if (song.has_audio && audioEl) {
       if (audioEl.paused) runCountIn(currentMeasure, () => api.play());
       else api.pause();
@@ -443,12 +480,14 @@
     if (song.has_audio && audioEl) {
       audioEl.currentTime = Math.max(0, startsNow()[index] ?? 0);
     } else if (player.api) {
-      // alphaTab's ticks run through the expanded song, so sum the bars as played.
-      let tick = 0;
-      for (let cursor = 0; cursor < index; cursor += 1)
-        tick += barTicks(song.document.bars[order[cursor]].signature);
+      const tick = tickOfBar(index);
       player.api.tickPosition = tick;
       currentMeasure = index;
+      if (waitRun) {
+        waitRun.seek(tick);
+        waitStep = null;
+        if (waitState !== "idle") waitState = "idle";
+      }
     }
   }
 
@@ -483,6 +522,82 @@
       if (loopA == null || loopA > currentMeasure) loopA = currentMeasure;
     }
   }
+
+  async function startWait() {
+    const api = player.api;
+    if (!api || song.has_audio || waitRun) return;
+    waitError = "";
+    const run = new WaitRun({
+      steps: waitSteps,
+      listen: startListening,
+      match: { anyOctave: practice.wait.anyOctave },
+      hintSeconds: practice.wait.hintSeconds,
+      onWait: (step) => {
+        player.api?.pause();
+        window.clearTimeout(waitFlash);
+        waitStep = step;
+        waitHint = false;
+        waitState = "waiting";
+      },
+      onHit: () => {
+        waitHits = run.hits;
+        waitHint = false;
+        waitStep = null;
+        waitState = "hit";
+        window.clearTimeout(waitFlash);
+        waitFlash = window.setTimeout(() => {
+          if (waitState === "hit") waitState = "idle";
+        }, 400);
+        player.api?.play();
+      },
+      onHint: () => (waitHint = true),
+    });
+    try {
+      await run.start();
+    } catch (err) {
+      waitError = err instanceof ListenError ? describeProblem(err.problem) : message(err);
+      return;
+    }
+    waitRun = run;
+    waitOn = true;
+    waitHits = 0;
+    waitState = "idle";
+    waitRun.seek(currentMeasure > 0 ? tickOfBar(currentMeasure) : 0);
+    applyPractice();
+  }
+
+  function stopWait() {
+    window.clearTimeout(waitFlash);
+    waitRun?.stop();
+    waitRun = null;
+    waitOn = false;
+    waitState = "idle";
+    waitStep = null;
+    waitHint = false;
+    applyPractice();
+  }
+
+  function toggleWait() {
+    if (waitOn) stopWait();
+    else void startWait();
+  }
+
+  /** alphaTab's ticks run through the expanded song, so sum the bars as played. */
+  function tickOfBar(index: number): number {
+    let tick = 0;
+    for (let cursor = 0; cursor < index; cursor += 1)
+      tick += barTicks(song.document.bars[order[cursor]].signature);
+    return tick;
+  }
+
+  // Changing track or adding a recording ends wait mode: its steps belong to the old track.
+  $effect(() => {
+    void trackId;
+    void song.has_audio;
+    untrack(() => {
+      if (waitRun) stopWait();
+    });
+  });
 
   function setFollow(checked: boolean) {
     follow = checked;
@@ -644,6 +759,7 @@
   <div
     class="paper score"
     data-testid="player-score"
+    data-wait={waitOn ? waitState : undefined}
     bind:this={host}
     role="region"
     aria-label={t("player.score")}
@@ -670,6 +786,21 @@
           tracks={song.document.tracks}
           onchange={practiceChanged}
         />
+        <WaitPanel
+          {practice}
+          on={waitOn}
+          available={!song.has_audio}
+          error={waitError}
+          onchange={() => {
+            applyPractice();
+            if (waitOn) {
+              // The matcher and hint timer were built with the old options.
+              stopWait();
+              void startWait();
+            }
+          }}
+          ontoggle={toggleWait}
+        />
         {#if song.has_audio}
           <div class="panel-group">
             <h3>{t("player.syncMarks")}</h3>
@@ -691,26 +822,26 @@
               {t("player.nextTap", { measure: tapIndex + 1 })}{#if saveLabel}&nbsp;· {saveLabel}{/if}
             </p>
           </div>
-          <div class="panel-group">
-            <h3>{t("player.loop")}</h3>
-            <div class="button-row">
-              <button onclick={() => setLoop("a")}
-                ><Icon name="repeat" size={16} />{t("player.loopA")}</button
-              >
-              <button onclick={() => setLoop("b")}>{t("player.loopB")}</button>
-              <button
-                onclick={() => {
-                  loopA = null;
-                  loopB = null;
-                }}
-                disabled={loopA == null}>{t("player.clearLoop")}</button
-              >
-              {#if loopA != null && loopB != null}<span class="pill pill-accent"
-                  >{t("player.loopRange", { a: loopA + 1, b: loopB + 1 })}</span
-                >{/if}
-            </div>
-          </div>
         {/if}
+        <div class="panel-group">
+          <h3>{t("player.loop")}</h3>
+          <div class="button-row">
+            <button onclick={() => setLoop("a")}
+              ><Icon name="repeat" size={16} />{t("player.loopA")}</button
+            >
+            <button onclick={() => setLoop("b")}>{t("player.loopB")}</button>
+            <button
+              onclick={() => {
+                loopA = null;
+                loopB = null;
+              }}
+              disabled={loopA == null}>{t("player.clearLoop")}</button
+            >
+            {#if loopA != null && loopB != null}<span class="pill pill-accent"
+                >{t("player.loopRange", { a: loopA + 1, b: loopB + 1 })}</span
+              >{/if}
+          </div>
+        </div>
         <div class="panel-group panel-inline">
           <label class="field compact-field">
             <span>{t("player.bpm")}</span>
@@ -742,6 +873,44 @@
       </section>
     {/if}
 
+    {#if waitOn}
+      <div
+        class="wait-status"
+        data-testid="wait-status"
+        data-state={waitState}
+        data-hits={waitHits}
+        data-total={waitSteps.length}
+        role="status"
+      >
+        <Icon name="mic" size={16} />
+        <span class="wait-note">
+          {#if waitState === "waiting" && waitStep}
+            {waitStep.kind === "dead"
+              ? t("wait.playDead")
+              : t("wait.playNow", { note: midiToName(waitStep.midis[0]) })}
+          {:else if waitState === "hit"}
+            {t("wait.hit")}
+          {:else if waitState === "done"}
+            {t("wait.done", { hits: waitHits, total: waitSteps.length })}
+          {:else}
+            {t("wait.listening")}
+          {/if}
+        </span>
+        {#if waitHint && waitStep}
+          <span class="pill pill-accent" data-testid="wait-hint"
+            >{t("wait.hint", { string: waitStep.string + 1, fret: waitStep.fret })}</span
+          >
+        {/if}
+        <span class="muted small"
+          >{t("wait.progress", { hits: waitHits, total: waitSteps.length })}</span
+        >
+        {#if waitState === "waiting"}
+          <button class="button" data-testid="wait-skip" onclick={() => waitRun?.skip()}
+            >{t("wait.skip")}</button
+          >
+        {/if}
+      </div>
+    {/if}
     <div class="dock-bar">
       <div class="dock-transport">
         <button

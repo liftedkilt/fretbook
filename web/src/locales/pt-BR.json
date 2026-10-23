@@ -684,5 +684,23 @@
       "other": "Etiqueta “{tag}” adicionada a {count} músicas."
     },
     "clearFilters": "Limpar filtros de etiqueta"
+  },
+  "wait": {
+    "title": "Modo espera",
+    "start": "Esperar por mim",
+    "stop": "Parar de esperar",
+    "about": "O cursor para em cada nota até você tocá-la. A faixa escolhida fica fora do sintetizador, então você ouve as outras faixas como acompanhamento.",
+    "needsSynth": "O modo espera toca junto com o sintetizador interno, então não está disponível enquanto há uma gravação anexada.",
+    "anyOctave": "A nota certa em qualquer oitava vale",
+    "silent": "Silencioso: sem sintetizador, só o cursor",
+    "hintAfter": "Mostrar a corda e a casa depois de (segundos)",
+    "listening": "Ouvindo. Toque a primeira nota.",
+    "playNow": "Toque {note}",
+    "playDead": "Toque uma nota abafada",
+    "hint": "Corda {string}, casa {fret}",
+    "skip": "Pular esta nota",
+    "progress": "{hits} de {total} notas",
+    "done": "Pronto: {hits} de {total} notas tocadas.",
+    "hit": "Nota certa"
   }
 }
