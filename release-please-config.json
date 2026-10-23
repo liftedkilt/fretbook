@@ -12,8 +12,7 @@
         { "type": "toml", "path": "pyproject.toml", "jsonpath": "$.project.version" },
         { "type": "json", "path": "web/package.json", "jsonpath": "$.version" },
         { "type": "json", "path": "web/package-lock.json", "jsonpath": "$.version" },
-        { "type": "json", "path": "web/package-lock.json", "jsonpath": "$.packages[''].version" },
-        { "type": "json", "path": "openapi.json", "jsonpath": "$.info.version" }
+        { "type": "json", "path": "web/package-lock.json", "jsonpath": "$.packages[''].version" }
       ]
     }
   }

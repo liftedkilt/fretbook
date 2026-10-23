@@ -24,6 +24,11 @@ from fretbook.config import Settings
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "openapi.json"
 
+# The contract does not follow the release version: release-please would have to
+# rewrite openapi.json on every release, and its JSON updater re-serializes the
+# whole file, so the release PR would fail the --check below.
+CONTRACT_VERSION = "0.0.0"
+
 
 def contract_settings() -> Settings:
     """Settings that cannot leak machine-specific values into the schema."""
@@ -69,6 +74,7 @@ def _drop_empty_json_schemas(schema: dict[str, Any]) -> None:
 def build_schema() -> dict[str, Any]:
     app = create_app(contract_settings())
     schema = app.openapi()
+    schema["info"]["version"] = CONTRACT_VERSION
     # Drop an empty servers list if a future FastAPI adds one from the environment.
     if schema.get("servers") == []:
         schema.pop("servers", None)
