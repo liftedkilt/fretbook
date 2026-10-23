@@ -1,5 +1,8 @@
 <script lang="ts">
   import ChordSheet from "./ChordSheet.svelte";
+  import Cover from "./Cover.svelte";
+  import Icon from "./Icon.svelte";
+  import Menu from "./Menu.svelte";
   import { t } from "../lib/i18n.svelte";
   import { followLink, hrefFor } from "../lib/router.svelte";
   import type { SongDetail } from "../lib/types";
@@ -8,8 +11,7 @@
 
   let transpose = $state(0);
   let flats = $state(false);
-  let size = $state(1.05);
-  let twoColumns = $state(false);
+  let size = $state(1);
   let exporting = $state(false);
   let error = $state("");
 
@@ -37,70 +39,84 @@
   }
 </script>
 
-{#if error}<p class="error">{error}</p>{/if}
-
-<div class="page-header no-print">
-  <div class="page-title-group">
-    <h2>{song.title}</h2>
-    <div class="page-meta">
-      {#if song.artist}<strong>{song.artist}</strong> ·{/if}
-      <span class="badge brass">{t("library.chordSheet")}</span>
-    </div>
-  </div>
-  <div class="actions">
-    <a class="button sm" href={hrefFor("/")} onclick={(event) => followLink(event, "/")}>{t("app.back")}</a>
-    <a class="button sm" href={hrefFor(`/songs/${song.id}/edit`)} onclick={(event) => followLink(event, `/songs/${song.id}/edit`)}>
-      {t("player.edit")}
-    </a>
-    <a class="button sm ghost" href={exportUrl("cho")}>{t("chords.exportChordPro")}</a>
-    <a class="button sm ghost" href={exportUrl("json")}>{t("player.exportJson")}</a>
-    <button class="sm ghost" disabled={exporting} onclick={() => void exportPdf()}>
-      {exporting ? t("player.exportingPdf") : t("player.exportPdf")}
-    </button>
-  </div>
-</div>
-
-<section class="transport-dock no-print">
-  <div class="transport-primary">
-    <div class="transport-group">
-      <span class="field" style="display:flex;align-items:center;gap:0.45rem">
-        <span>{t("chords.transpose")}</span>
-        <span class="row" style="align-items:center;gap:0.35rem">
-          <button class="sm" onclick={() => (transpose -= 1)} aria-label={t("chords.down")}>−</button>
-          <span class="status-readout" style="min-width:2.6rem;text-align:center">
-            {transpose > 0 ? `+${transpose}` : transpose}
-          </span>
-          <button class="sm" onclick={() => (transpose += 1)} aria-label={t("chords.up")}>+</button>
-          {#if transpose !== 0}
-            <button class="sm ghost" onclick={() => (transpose = 0)}>{t("chords.reset")}</button>
-          {/if}
-        </span>
-      </span>
-
-      <label class="field-inline">
-        <input type="checkbox" bind:checked={flats} />
-        <span>{t("chords.flats")}</span>
-      </label>
-    </div>
-
-    <div class="transport-group">
-      <label class="field" style="display:flex;align-items:center;gap:0.5rem">
-        <span>{t("chords.size")}</span>
-        <input type="range" min="0.8" max="1.8" step="0.05" bind:value={size} />
-      </label>
-
-      <div class="segmented" role="group" aria-label={t("chords.columns")}>
-        <button type="button" aria-pressed={!twoColumns} onclick={() => (twoColumns = false)}>
-          {t("chords.singleColumn")}
-        </button>
-        <button type="button" aria-pressed={twoColumns} onclick={() => (twoColumns = true)}>
-          {t("chords.multiColumn")}
-        </button>
+<div class="song-page chords-page">
+  <header class="song-header no-print">
+    <a class="back-link" href={hrefFor("/")} onclick={(event) => followLink(event, "/")}><Icon name="back" size={18} />{t("app.back")}</a>
+    <div class="song-hero">
+      <Cover id={song.id} title={song.title} kind="chords" size="lg" />
+      <div class="song-hero-text">
+        <p class="eyebrow">{t("library.chordSheet")}</p>
+        <h1 class="display song-heading">{song.title}</h1>
+        {#if song.artist}<p class="song-byline">{song.artist}</p>{/if}
+      </div>
+      <div class="hero-actions">
+        <a class="button" href={hrefFor(`/songs/${song.id}/edit`)} onclick={(event) => followLink(event, `/songs/${song.id}/edit`)}>
+          <Icon name="edit" size={18} /><span>{t("player.edit")}</span>
+        </a>
+        <Menu label={t("player.export")} icon="download">
+          {#snippet children(close)}
+            <button
+              class="menu-item"
+              role="menuitem"
+              disabled={exporting}
+              onclick={() => {
+                close();
+                void exportPdf();
+              }}
+            >
+              <Icon name="file" size={18} />{exporting ? t("player.exportingPdf") : t("player.exportPdf")}
+            </button>
+            <button
+              class="menu-item"
+              role="menuitem"
+              onclick={() => {
+                close();
+                window.print();
+              }}
+            >
+              <Icon name="print" size={18} />{t("chords.print")}
+            </button>
+            <a class="menu-item" role="menuitem" href={exportUrl("cho")} onclick={close}><Icon name="chords" size={18} />{t("chords.exportChordPro")}</a>
+            <a class="menu-item" role="menuitem" href={exportUrl("json")} onclick={close}><Icon name="download" size={18} />{t("player.exportJson")}</a>
+          {/snippet}
+        </Menu>
       </div>
     </div>
-  </div>
-</section>
+    {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
+  </header>
 
-<div class="paper chord-paper {twoColumns ? 'two-columns' : ''}" style="font-size:{size}rem">
-  <ChordSheet text={song.chordpro ?? ""} {transpose} {flats} />
+  <div class="paper chord-paper" style="font-size:{size}rem">
+    <ChordSheet text={song.chordpro ?? ""} {transpose} {flats} />
+  </div>
+
+  <div class="float-dock no-print" role="toolbar" aria-label={t("chords.controls")}>
+    <div class="float-group">
+      <span class="float-label">{t("chords.transpose")}</span>
+      <button class="icon-button ghost" onclick={() => (transpose -= 1)} aria-label={t("chords.down")}><Icon name="minus" size={18} /></button>
+      <button
+        class="float-value"
+        onclick={() => (transpose = 0)}
+        disabled={transpose === 0}
+        aria-label={t("chords.reset")}
+        title={t("chords.reset")}
+      >
+        {transpose > 0 ? `+${transpose}` : transpose}
+      </button>
+      <button class="icon-button ghost" onclick={() => (transpose += 1)} aria-label={t("chords.up")}><Icon name="plus" size={18} /></button>
+    </div>
+    <span class="float-divider" aria-hidden="true"></span>
+    <button class="toggle" aria-pressed={flats} onclick={() => (flats = !flats)} title={t("chords.flats")}>
+      <span aria-hidden="true">{flats ? "♭" : "♯"}</span><span class="float-label">{t("chords.flats")}</span>
+    </button>
+    <span class="float-divider" aria-hidden="true"></span>
+    <div class="float-group">
+      <button class="icon-button ghost" onclick={() => (size = Math.max(0.8, Math.round((size - 0.1) * 10) / 10))} aria-label={t("chords.smaller")}>
+        <span class="text-size small" aria-hidden="true">A</span>
+      </button>
+      <span class="float-label">{t("chords.size")}</span>
+      <button class="icon-button ghost" onclick={() => (size = Math.min(1.8, Math.round((size + 0.1) * 10) / 10))} aria-label={t("chords.larger")}>
+        <span class="text-size" aria-hidden="true">A</span>
+      </button>
+    </div>
+  </div>
 </div>

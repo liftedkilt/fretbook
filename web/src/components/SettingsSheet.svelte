@@ -1,0 +1,73 @@
+<script lang="ts">
+  import Icon from "./Icon.svelte";
+  import Sheet from "./Sheet.svelte";
+  import { currentLocale, locales, setLocale, t, tOr } from "../lib/i18n.svelte";
+  import { closeSheet, setDefaultInstrument, setTheme, ui, type Theme } from "../lib/ui.svelte";
+
+  let error = $state("");
+
+  const themes: { id: Theme; icon: string; key: string }[] = [
+    { id: "system", icon: "monitor", key: "settings.themeSystem" },
+    { id: "dark", icon: "moon", key: "settings.themeDark" },
+    { id: "light", icon: "sun", key: "settings.themeLight" },
+  ];
+
+  async function changeDefault(next: string) {
+    error = "";
+    try {
+      await setDefaultInstrument(next);
+    } catch (err) {
+      error = err instanceof Error ? err.message : t("error.generic");
+    }
+  }
+</script>
+
+<Sheet open={ui.sheet === "settings"} title={t("settings.heading")} onclose={closeSheet}>
+  <div class="settings-list">
+    <section class="setting">
+      <div class="setting-label">
+        <span class="setting-icon"><Icon name="guitar" /></span>
+        <div>
+          <strong>{t("settings.defaultInstrument")}</strong>
+          <p class="muted">{t("settings.defaultInstrumentHint")}</p>
+        </div>
+      </div>
+      <select
+        value={ui.defaultInstrument}
+        aria-label={t("settings.defaultInstrument")}
+        onchange={(event) => void changeDefault(event.currentTarget.value)}
+      >
+        {#each ui.presets as item (item.id)}
+          <option value={item.id}>{tOr(item.label_key, item.label)}</option>
+        {/each}
+      </select>
+    </section>
+
+    <section class="setting">
+      <div class="setting-label">
+        <span class="setting-icon"><Icon name="globe" /></span>
+        <strong>{t("language.label")}</strong>
+      </div>
+      <select value={currentLocale()} aria-label={t("language.label")} onchange={(event) => setLocale(event.currentTarget.value)}>
+        {#each locales as item (item.id)}
+          <option value={item.id}>{t(item.labelKey)}</option>
+        {/each}
+      </select>
+    </section>
+
+    <section class="setting">
+      <div class="setting-label">
+        <span class="setting-icon"><Icon name="sun" /></span>
+        <strong>{t("settings.theme")}</strong>
+      </div>
+      <div class="segmented" role="radiogroup" aria-label={t("settings.theme")}>
+        {#each themes as item (item.id)}
+          <button role="radio" aria-checked={ui.theme === item.id} onclick={() => setTheme(item.id)}>
+            <Icon name={item.icon} size={16} />{t(item.key)}
+          </button>
+        {/each}
+      </div>
+    </section>
+    {#if error}<p class="alert" role="alert">{error}</p>{/if}
+  </div>
+</Sheet>
