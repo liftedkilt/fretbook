@@ -678,7 +678,14 @@
     "toneHint": "Toque em uma corda para ouvir a nota de referência.",
     "start": "Iniciar",
     "starting": "Iniciando…",
-    "stop": "Parar"
+    "stop": "Parar",
+    "auto": "Auto",
+    "mute": "Silenciar o som de sucesso",
+    "holdSteady": "Segure firme",
+    "tuneUp": "Suba a afinação",
+    "tuneDown": "Desça a afinação",
+    "allTuned": "Todas as cordas afinadas",
+    "startOver": "Recomeçar"
   },
   "tags": {
     "heading": "Etiquetas",

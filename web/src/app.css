@@ -3483,6 +3483,20 @@ kbd {
   line-height: 1.4;
 }
 
+.tuner-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+}
+
+.tuner-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  font-size: 0.9rem;
+}
+
 .tuner-dial {
   display: grid;
   justify-items: center;
@@ -3491,6 +3505,9 @@ kbd {
   border-radius: var(--r-lg);
   background: var(--surface-2);
   border: 1px solid var(--line);
+  transition:
+    border-color 0.3s,
+    background 0.3s;
 }
 
 .tuner-dial-tuned {
@@ -3498,28 +3515,58 @@ kbd {
   background: var(--success-soft);
 }
 
-.tuner-note {
-  margin: 0;
-  font-size: 4rem;
-  line-height: 1;
-}
-
-.tuner-scale {
+/* The pitch trace: flat on the left, sharp on the right, newest reading at the bottom. */
+.tuner-trace {
   position: relative;
   width: 100%;
-  height: 34px;
-  border-radius: 999px;
+  height: 190px;
+  border-radius: var(--r-md);
   background:
-    linear-gradient(var(--line-strong), var(--line-strong)) 25% 50% / 1px 40% no-repeat,
-    linear-gradient(var(--line-strong), var(--line-strong)) 75% 50% / 1px 40% no-repeat,
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 calc(10% - 1px),
+      var(--line) calc(10% - 1px) 10%
+    ),
     var(--surface);
+  overflow: hidden;
+}
+
+.tuner-trace svg {
+  position: absolute;
+  inset: 0 0 56px;
+  width: 100%;
+  height: calc(100% - 56px);
+}
+
+.tuner-trace polyline {
+  fill: none;
+  stroke: var(--accent-ring);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  stroke-linejoin: round;
+}
+
+.tuner-flat,
+.tuner-sharp {
+  position: absolute;
+  top: 0.4rem;
+  font-size: 1.1rem;
+  color: var(--text-3);
+}
+
+.tuner-flat {
+  left: 0.6rem;
+}
+
+.tuner-sharp {
+  right: 0.6rem;
 }
 
 .tuner-centre {
   position: absolute;
   left: 50%;
-  top: 4px;
-  bottom: 4px;
+  top: 0;
+  bottom: 0;
   width: 2px;
   margin-left: -1px;
   background: var(--success);
@@ -3527,22 +3574,55 @@ kbd {
 
 .tuner-needle {
   position: absolute;
-  top: 2px;
-  bottom: 2px;
-  width: 4px;
-  margin-left: -2px;
-  border-radius: 2px;
-  background: var(--grad);
+  bottom: 8px;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-left: -26px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 2px solid var(--accent-ring);
   transition:
-    left 0.12s var(--ease),
+    left 0.25s var(--ease),
     opacity 0.2s;
 }
 
+.tuner-dial-tuned .tuner-needle {
+  border-color: var(--success);
+}
+
+.tuner-note {
+  margin: 0;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
 .tuner-cents {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   margin: 0;
   font-family: var(--font-mono);
   font-size: 0.9rem;
   color: var(--text-2);
+}
+
+.tuner-bubble {
+  min-width: 2.6rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  text-align: center;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+}
+
+.tuner-hint-now {
+  min-height: 1.4rem;
+  margin: 0;
+  font-weight: 600;
 }
 
 .tuner-tick {
@@ -3555,9 +3635,14 @@ kbd {
   color: var(--success);
 }
 
-.tuner-strings {
-  display: flex;
-  flex-wrap: wrap;
+.tuner-headstock {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.tuner-column {
+  display: grid;
   gap: 0.5rem;
   padding: 0;
   margin: 0;
@@ -3566,10 +3651,11 @@ kbd {
 
 .tuner-string {
   display: grid;
-  grid-template-columns: auto auto 1fr auto;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 0.5rem;
-  min-width: 128px;
+  width: 100%;
+  min-height: 44px;
   padding: 0.5rem 0.75rem;
   border-radius: var(--r-md);
   background: var(--surface-2);
@@ -3585,29 +3671,36 @@ kbd {
   font-weight: 600;
 }
 
-.tuner-string-wire {
-  min-width: 18px;
-  border-radius: 2px;
-  background: var(--text-3);
-}
-
 .tuner-string-active {
   outline: 2px solid var(--accent-ring);
   background: var(--accent-soft);
 }
 
+.tuner-string-locked {
+  outline: 2px dashed var(--accent-ring);
+}
+
 .tuner-string-tuned {
-  outline-color: var(--success);
+  outline: 2px solid var(--success);
   background: var(--success-soft);
+  color: var(--success);
 }
 
 .tuner-string[aria-pressed="true"] {
   color: var(--accent-text);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .tuner-needle,
+  .tuner-dial {
+    transition: none;
+  }
+}
+
 .tuner-actions {
   display: flex;
   justify-content: flex-end;
+  gap: 0.5rem;
 }
 
 /* Tags and favourites */
