@@ -149,7 +149,7 @@ def create_app(settings: Settings | None = None, *, oidc_transport: httpx.AsyncB
         version=__version__,
         description=(
             "JSON API for the web app. Every route is under /api. "
-            "Errors use the shape {\"detail\": {\"key\", \"message\", \"params\"}}; "
+            'Errors use the shape {"detail": {"key", "message", "params"}}; '
             "the UI looks `key` up under `errors` and falls back to the English `message`. "
             "Single-user mode has no login: every request is the local user. "
             "With OIDC (FRETBOOK_OIDC_ISSUER set) a browser signs in through GET /auth/login, "

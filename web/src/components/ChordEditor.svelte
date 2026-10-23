@@ -47,13 +47,21 @@
 
 <div class="editor-page">
   <header class="editor-bar">
-    <a class="back-link" href={hrefFor(`/songs/${song.id}`)} onclick={(event) => followLink(event, `/songs/${song.id}`)}>
+    <a
+      class="back-link"
+      href={hrefFor(`/songs/${song.id}`)}
+      onclick={(event) => followLink(event, `/songs/${song.id}`)}
+    >
       <Icon name="back" size={18} />{t("chords.view")}
     </a>
     <h1 class="editor-title">{t("chords.editHeading")}</h1>
     <div class="editor-actions">
-      {#if status}<span class="save-status" role="status" data-testid="editor-status"><Icon name="check" size={16} />{status}</span>{/if}
-      <button class="primary" data-testid="editor-save" onclick={() => void save()}><Icon name="save" size={18} />{t("editor.save")}</button>
+      {#if status}<span class="save-status" role="status" data-testid="editor-status"
+          ><Icon name="check" size={16} />{status}</span
+        >{/if}
+      <button class="primary" data-testid="editor-save" onclick={() => void save()}
+        ><Icon name="save" size={18} />{t("editor.save")}</button
+      >
     </div>
   </header>
 
@@ -67,18 +75,31 @@
 
   <section class="card form-grid">
     <label class="field"><span>{t("library.title")}</span><input bind:value={song.title} /></label>
-    <label class="field"><span>{t("library.artist")}</span><input bind:value={song.artist} /></label>
+    <label class="field"><span>{t("library.artist")}</span><input bind:value={song.artist} /></label
+    >
     <p class="muted small span-2">{t("chords.editHint")}</p>
   </section>
 
   <div class="segmented pane-switch" role="tablist" aria-label={t("chords.editHeading")}>
-    <button role="tab" aria-selected={pane === "write"} onclick={() => (pane = "write")}><Icon name="edit" size={16} />{t("chords.write")}</button>
-    <button role="tab" aria-selected={pane === "preview"} onclick={() => (pane = "preview")}><Icon name="eye" size={16} />{t("chords.preview")}</button>
+    <button role="tab" aria-selected={pane === "write"} onclick={() => (pane = "write")}
+      ><Icon name="edit" size={16} />{t("chords.write")}</button
+    >
+    <button role="tab" aria-selected={pane === "preview"} onclick={() => (pane = "preview")}
+      ><Icon name="eye" size={16} />{t("chords.preview")}</button
+    >
   </div>
 
   <div class="chord-editor" data-pane={pane}>
-    <textarea class="code-input" data-testid="chord-text" bind:value={text} spellcheck="false" rows="24" aria-label={t("chords.text")}></textarea>
+    <textarea
+      class="code-input"
+      data-testid="chord-text"
+      bind:value={text}
+      spellcheck="false"
+      rows="24"
+      aria-label={t("chords.text")}></textarea>
     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-    <div class="paper chord-paper" role="region" aria-label={t("chords.preview")} tabindex="0"><ChordSheet {text} /></div>
+    <div class="paper chord-paper" role="region" aria-label={t("chords.preview")} tabindex="0">
+      <ChordSheet {text} />
+    </div>
   </div>
 </div>

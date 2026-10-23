@@ -25,7 +25,12 @@
   }
 </script>
 
-<Sheet open={ui.sheet === "settings"} title={t("settings.heading")} testid="settings-sheet" onclose={closeSheet}>
+<Sheet
+  open={ui.sheet === "settings"}
+  title={t("settings.heading")}
+  testid="settings-sheet"
+  onclose={closeSheet}
+>
   <div class="settings-list">
     {#if ui.me?.authenticated}
       <section class="setting">
@@ -33,7 +38,9 @@
           <span class="setting-icon"><Icon name="users" /></span>
           <div>
             <strong data-testid="account-name">{ui.me.display_name}</strong>
-            <p class="muted">{ui.me.email}{ui.me.role === "admin" ? ` · ${t("admin.roleAdmin")}` : ""}</p>
+            <p class="muted">
+              {ui.me.email}{ui.me.role === "admin" ? ` · ${t("admin.roleAdmin")}` : ""}
+            </p>
           </div>
         </div>
         <div class="account-row">
@@ -50,7 +57,9 @@
             </a>
           {/if}
           <form method="post" action={apiUrl("/auth/logout")}>
-            <button type="submit" data-testid="sign-out"><Icon name="logout" size={16} />{t("account.signOut")}</button>
+            <button type="submit" data-testid="sign-out"
+              ><Icon name="logout" size={16} />{t("account.signOut")}</button
+            >
           </form>
         </div>
       </section>
@@ -80,7 +89,12 @@
         <span class="setting-icon"><Icon name="globe" /></span>
         <strong>{t("language.label")}</strong>
       </div>
-      <select data-testid="language-select" value={currentLocale()} aria-label={t("language.label")} onchange={(event) => setLocale(event.currentTarget.value)}>
+      <select
+        data-testid="language-select"
+        value={currentLocale()}
+        aria-label={t("language.label")}
+        onchange={(event) => setLocale(event.currentTarget.value)}
+      >
         {#each locales as item (item.id)}
           <option value={item.id}>{t(item.labelKey)}</option>
         {/each}
@@ -94,7 +108,11 @@
       </div>
       <div class="segmented" role="radiogroup" aria-label={t("settings.theme")}>
         {#each themes as item (item.id)}
-          <button role="radio" aria-checked={ui.theme === item.id} onclick={() => setTheme(item.id)}>
+          <button
+            role="radio"
+            aria-checked={ui.theme === item.id}
+            onclick={() => setTheme(item.id)}
+          >
             <Icon name={item.icon} size={16} />{t(item.key)}
           </button>
         {/each}
@@ -134,7 +152,9 @@
           </div>
         </div>
         {#if ytdlpHealth(ui.ytdlp) === "stale"}
-          <p class="notice setting-notice" role="status">{t("ytdlp.stale", { count: ui.ytdlp.age_days ?? 0 })}</p>
+          <p class="notice setting-notice" role="status">
+            {t("ytdlp.stale", { count: ui.ytdlp.age_days ?? 0 })}
+          </p>
         {/if}
       </section>
     {/if}

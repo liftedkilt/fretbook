@@ -496,9 +496,7 @@ def preview_import(body: PreviewBody, user: Principal = Depends(_user)) -> JSONR
     tags=["imports"],
     responses=AUTH_RESPONSES,
 )
-def import_url(
-    body: ImportUrlBody, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)
-) -> JSONResponse:
+def import_url(body: ImportUrlBody, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> JSONResponse:
     """Queue a Songsterr or YouTube-frame import. Returns a job id."""
     url = body.url.strip()
     request = ImportRequest(owner_id=user.user_id, url=url, kind=body.kind)

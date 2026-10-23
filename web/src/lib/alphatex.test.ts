@@ -6,7 +6,10 @@ import { trackToAlphaTex } from "./alphatex";
 import { notation } from "./durations";
 import type { Beat, ScoreDocument } from "./types";
 
-function bass(beats: Beat[][], signatures: [number, number][] = beats.map(() => [4, 4])): ScoreDocument {
+function bass(
+  beats: Beat[][],
+  signatures: [number, number][] = beats.map(() => [4, 4]),
+): ScoreDocument {
   return {
     version: 1,
     bpm: 120,
@@ -27,7 +30,9 @@ function bass(beats: Beat[][], signatures: [number, number][] = beats.map(() => 
 }
 
 function load(document: ScoreDocument, trackId = "bass"): alphaTab.model.Score {
-  return alphaTab.importer.ScoreLoader.loadAlphaTex(trackToAlphaTex(document, trackId, "Fixture", "Ada"));
+  return alphaTab.importer.ScoreLoader.loadAlphaTex(
+    trackToAlphaTex(document, trackId, "Fixture", "Ada"),
+  );
 }
 
 function fretted(
@@ -107,9 +112,21 @@ describe("trackToAlphaTex", () => {
           { position: 0, duration: 480, notes: [{ string: 0, fret: 3, slide: "shift" }] },
           { position: 480, duration: 480, notes: [{ string: 0, fret: 5, slide: "legato" }] },
           { position: 960, duration: 480, notes: [{ string: 0, fret: 7, hammer: true }] },
-          { position: 1440, duration: 480, notes: [{ string: 0, fret: 9, bend: 2, vibrato: true }] },
-          { position: 1920, duration: 480, notes: [{ string: 1, fret: 12, harmonic: "natural", let_ring: true }] },
-          { position: 2400, duration: 480, notes: [{ string: 2, fret: 2, palm_mute: true, staccato: true, ghost: true }] },
+          {
+            position: 1440,
+            duration: 480,
+            notes: [{ string: 0, fret: 9, bend: 2, vibrato: true }],
+          },
+          {
+            position: 1920,
+            duration: 480,
+            notes: [{ string: 1, fret: 12, harmonic: "natural", let_ring: true }],
+          },
+          {
+            position: 2400,
+            duration: 480,
+            notes: [{ string: 2, fret: 2, palm_mute: true, staccato: true, ghost: true }],
+          },
           { position: 2880, duration: 480, notes: [{ string: 2, fret: 2 }] },
           { position: 3360, duration: 480, notes: [{ string: 2, fret: 2, tie: true }] },
         ],
@@ -124,7 +141,11 @@ describe("trackToAlphaTex", () => {
     expect(notes[3].vibrato).not.toBe(VibratoType.None);
     expect(notes[4].harmonicType).toBe(HarmonicType.Natural);
     expect(notes[4].isLetRing).toBe(true);
-    expect([notes[5].isPalmMute, notes[5].isStaccato, notes[5].isGhost]).toEqual([true, true, true]);
+    expect([notes[5].isPalmMute, notes[5].isStaccato, notes[5].isGhost]).toEqual([
+      true,
+      true,
+      true,
+    ]);
     expect(notes[7].isTieDestination).toBe(true);
   });
 
@@ -147,7 +168,9 @@ describe("trackToAlphaTex", () => {
     );
     document.bars[1].tempo = 90;
     document.bars[0].section = "Intro";
-    document.tracks[0].bars[0].voices.push({ beats: [{ position: 0, duration: 3840, notes: [{ string: 0, fret: 7 }] }] });
+    document.tracks[0].bars[0].voices.push({
+      beats: [{ position: 0, duration: 3840, notes: [{ string: 0, fret: 7 }] }],
+    });
     const score = load(document);
     const beats = played(score);
     expect(beats[0].graceType).toBe(alphaTab.model.GraceType.OnBeat);
@@ -171,13 +194,26 @@ describe("trackToAlphaTex", () => {
       [
         { position: 0, duration: 1440, notes: [{ string: 0, fret: 3, hammer: true }] },
         { position: 1440, duration: 480, notes: [{ string: 0, fret: 5 }] },
-        { position: 1920, duration: 1920, notes: [{ string: 1, fret: 0 }, { string: 3, fret: 2 }] },
+        {
+          position: 1920,
+          duration: 1920,
+          notes: [
+            { string: 1, fret: 0 },
+            { string: 3, fret: 2 },
+          ],
+        },
       ],
     ]);
     const back = scoreToDocument(load(document)).document;
     const beats = back.tracks[0].bars[0].voices[0].beats;
     expect(back.tracks[0].tuning_midi).toEqual([43, 38, 33, 28]);
-    expect(beats.map((beat) => [beat.position, beat.duration, beat.notes.map((note) => [note.string, note.fret])])).toEqual([
+    expect(
+      beats.map((beat) => [
+        beat.position,
+        beat.duration,
+        beat.notes.map((note) => [note.string, note.fret]),
+      ]),
+    ).toEqual([
       [0, 1440, [[0, 3]]],
       [1440, 480, [[0, 5]]],
       [
@@ -225,9 +261,13 @@ describe("trackToAlphaTex", () => {
     expect(beats[1].playbackStart).toBe(960);
     expect(beats[1].playbackDuration).toBe(960);
 
-    const drop = fretted("gtr", "Guitar", "guitar", [64, 59, 55, 50, 45, 38], [
-      [{ position: 0, duration: 1920, notes: [{ string: 5, fret: 0 }] }],
-    ]);
+    const drop = fretted(
+      "gtr",
+      "Guitar",
+      "guitar",
+      [64, 59, 55, 50, 45, 38],
+      [[{ position: 0, duration: 1920, notes: [{ string: 5, fret: 0 }] }]],
+    );
     const dropped = played(load(drop, "gtr"));
     expect(load(drop, "gtr").tracks[0].staves[0].tuning[5]).toBe(38);
     expect(dropped[0].notes[0].realValue).toBe(38);
@@ -249,9 +289,13 @@ describe("trackToAlphaTex", () => {
     expect(capoScore.tracks[0].playbackInfo.program).toBe(25);
     expect(played(capoScore)[0].notes[0].realValue).toBe(66);
 
-    const seven = fretted("gtr", "Seven", "guitar", [64, 59, 55, 50, 45, 40, 35], [
-      [{ position: 0, duration: 960, notes: [{ string: 6, fret: 1 }] }],
-    ]);
+    const seven = fretted(
+      "gtr",
+      "Seven",
+      "guitar",
+      [64, 59, 55, 50, 45, 40, 35],
+      [[{ position: 0, duration: 960, notes: [{ string: 6, fret: 1 }] }]],
+    );
     const sevenScore = load(seven, "gtr");
     expect(sevenScore.tracks[0].staves[0].tuning).toEqual([64, 59, 55, 50, 45, 40, 35]);
     const low = played(sevenScore)[0].notes[0];

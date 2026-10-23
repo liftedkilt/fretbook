@@ -15,7 +15,11 @@ const test = base.extend<Fixtures>({
     await use(await freePort());
   },
   stub: async ({ appPort }, use) => {
-    const stub = await startOidcStub(await freePort(), CLIENT_ID, `http://127.0.0.1:${appPort}/auth/callback`);
+    const stub = await startOidcStub(
+      await freePort(),
+      CLIENT_ID,
+      `http://127.0.0.1:${appPort}/auth/callback`,
+    );
     try {
       await use(stub);
     } finally {
@@ -44,7 +48,11 @@ const test = base.extend<Fixtures>({
   },
 });
 
-test("sign in through the provider, and each person sees only their own songs", async ({ browser, server, stub }) => {
+test("sign in through the provider, and each person sees only their own songs", async ({
+  browser,
+  server,
+  stub,
+}) => {
   // Without a session the API refuses, and a page request is sent to sign in.
   const anonymous = await playwrightRequest.newContext({ baseURL: server.url });
   expect((await anonymous.get("/api/songs")).status()).toBe(401);
@@ -56,7 +64,11 @@ test("sign in through the provider, and each person sees only their own songs", 
   await alicePage.goto("/");
   // The redirect went through the provider's authorize endpoint with PKCE.
   expect(stub.authorizations).toHaveLength(1);
-  expect(stub.authorizations[0]).toMatchObject({ response_type: "code", client_id: CLIENT_ID, code_challenge_method: "S256" });
+  expect(stub.authorizations[0]).toMatchObject({
+    response_type: "code",
+    client_id: CLIENT_ID,
+    code_challenge_method: "S256",
+  });
   await expect(alicePage.getByTestId("library-empty")).toBeVisible();
   await alicePage.getByTestId("open-settings").click();
   await expect(alicePage.getByTestId("account-name")).toHaveText("Alice Example");

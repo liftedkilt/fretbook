@@ -1,7 +1,17 @@
 import * as alphaTab from "@coderline/alphatab";
 
 import { t } from "../i18n.svelte";
-import type { Bar, Beat, GraceKind, HarmonicKind, Note, ScoreDocument, SlideKind, Track, TrackBar } from "../types";
+import type {
+  Bar,
+  Beat,
+  GraceKind,
+  HarmonicKind,
+  Note,
+  ScoreDocument,
+  SlideKind,
+  Track,
+  TrackBar,
+} from "../types";
 
 /**
  * alphaTab's model to a Fretbook document (Guitar Pro import).
@@ -92,7 +102,9 @@ function convertBeat(beat: alphaTab.model.Beat, strings: number): Beat {
   const kind = grace(beat);
   const notes = beat.isRest
     ? []
-    : beat.notes.map((note) => convertNote(note, strings)).filter((note): note is Note => note !== null);
+    : beat.notes
+        .map((note) => convertNote(note, strings))
+        .filter((note): note is Note => note !== null);
   return {
     position: Math.max(0, kind ? beat.displayStart : beat.playbackStart),
     duration: Math.max(1, kind ? beat.displayDuration : beat.playbackDuration),
@@ -125,7 +137,11 @@ function convertBars(score: alphaTab.model.Score): { bpm: number; bars: Bar[] } 
   return { bpm, bars };
 }
 
-export function scoreToDocument(score: alphaTab.model.Score): { title: string; artist: string; document: ScoreDocument } {
+export function scoreToDocument(score: alphaTab.model.Score): {
+  title: string;
+  artist: string;
+  document: ScoreDocument;
+} {
   const { bpm, bars } = convertBars(score);
   const tracks: Track[] = [];
   score.tracks.forEach((source, index) => {
@@ -141,7 +157,10 @@ export function scoreToDocument(score: alphaTab.model.Score): { title: string; a
             .filter((beat) => !(beat.isEmpty && beat.notes.length === 0))
             .map((beat) => convertBeat(beat, tuning.length)),
         }))
-        .filter((voice, voiceIndex) => voiceIndex === 0 || voice.beats.some((beat) => beat.notes.length > 0));
+        .filter(
+          (voice, voiceIndex) =>
+            voiceIndex === 0 || voice.beats.some((beat) => beat.notes.length > 0),
+        );
       return { voices: voices.length ? voices : [{ beats: [] }], extras: {} };
     });
     tracks.push({
@@ -164,7 +183,11 @@ export function scoreToDocument(score: alphaTab.model.Score): { title: string; a
 
 /** Mark the first track of the preferred family (bass or guitar) as preferred. */
 export function choosePreferred(document: ScoreDocument, family: "bass" | "guitar" | null): void {
-  const index = family ? document.tracks.findIndex((track) => track.instrument.includes("bass") === (family === "bass")) : -1;
+  const index = family
+    ? document.tracks.findIndex(
+        (track) => track.instrument.includes("bass") === (family === "bass"),
+      )
+    : -1;
   document.tracks.forEach((track, position) => {
     track.preferred = position === (index >= 0 ? index : 0);
   });

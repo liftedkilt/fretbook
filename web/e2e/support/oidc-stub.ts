@@ -18,7 +18,11 @@ export type OidcStub = {
 
 const b64url = (data: Buffer | string) => Buffer.from(data).toString("base64url");
 
-export async function startOidcStub(port: number, clientId: string, redirectUri: string): Promise<OidcStub> {
+export async function startOidcStub(
+  port: number,
+  clientId: string,
+  redirectUri: string,
+): Promise<OidcStub> {
   const { privateKey, publicKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
   const jwk = { ...publicKey.export({ format: "jwk" }), kid: "e2e", use: "sig", alg: "RS256" };
   const issuer = `http://127.0.0.1:${port}`;
@@ -47,7 +51,11 @@ export async function startOidcStub(port: number, clientId: string, redirectUri:
     if (url.pathname === "/authorize") {
       const query = Object.fromEntries(url.searchParams);
       authorizations.push(query);
-      if (query.client_id !== clientId || query.redirect_uri !== redirectUri || query.code_challenge_method !== "S256") {
+      if (
+        query.client_id !== clientId ||
+        query.redirect_uri !== redirectUri ||
+        query.code_challenge_method !== "S256"
+      ) {
         return json(res, 400, { error: "invalid_request" });
       }
       const code = randomBytes(16).toString("hex");
@@ -68,7 +76,12 @@ export async function startOidcStub(port: number, clientId: string, redirectUri:
         const challenge = createHash("sha256")
           .update(form.code_verifier ?? "")
           .digest("base64url");
-        if (!grant || form.redirect_uri !== redirectUri || form.client_id !== clientId || challenge !== grant.challenge) {
+        if (
+          !grant ||
+          form.redirect_uri !== redirectUri ||
+          form.client_id !== clientId ||
+          challenge !== grant.challenge
+        ) {
           return json(res, 400, { error: "invalid_grant" });
         }
         const now = Math.floor(Date.now() / 1000);
@@ -87,7 +100,11 @@ export async function startOidcStub(port: number, clientId: string, redirectUri:
           }),
         );
         const signature = sign("RSA-SHA256", Buffer.from(`${header}.${claims}`), privateKey);
-        json(res, 200, { access_token: "at", token_type: "Bearer", id_token: `${header}.${claims}.${b64url(signature)}` });
+        json(res, 200, {
+          access_token: "at",
+          token_type: "Bearer",
+          id_token: `${header}.${claims}.${b64url(signature)}`,
+        });
       });
       return;
     }

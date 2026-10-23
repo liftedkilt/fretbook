@@ -813,11 +813,7 @@ def _notes_from_glyphs(glyphs: Sequence[_Glyph], barlines: Sequence[_Box]) -> li
         index = 0
         while index < len(ordered):
             current = ordered[index]
-            if (
-                index + 1 < len(ordered)
-                and current.kind in {"1", "2"}
-                and ordered[index + 1].kind.isdigit()
-            ):
+            if index + 1 < len(ordered) and current.kind in {"1", "2"} and ordered[index + 1].kind.isdigit():
                 gap = ordered[index + 1].box.x0 - current.box.x1
                 if 0 <= gap <= 18:
                     kind = current.kind + ordered[index + 1].kind
@@ -904,9 +900,7 @@ def _shift_bar(note: TabNote, bar: int) -> TabNote:
 def _beats(notes: Sequence[TabNote]) -> list[Beat]:
     grouped: dict[int, list[Note]] = {}
     for note in notes:
-        grouped.setdefault(note.position, []).append(
-            Note(string=note.string, fret=note.fret, dead=note.dead)
-        )
+        grouped.setdefault(note.position, []).append(Note(string=note.string, fret=note.fret, dead=note.dead))
     positions = sorted(grouped)
     beats: list[Beat] = []
     for index, position in enumerate(positions):
@@ -939,4 +933,3 @@ def _pnm_header(data: bytes) -> tuple[int, int, int, int]:
     if data[index] in b" \t\r\n":
         index += 1
     return int(tokens[0]), int(tokens[1]), int(tokens[2]), index
-

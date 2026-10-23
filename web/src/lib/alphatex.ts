@@ -83,7 +83,10 @@ export function beatToken(beat: Beat): string {
   const tail = `.${shape.token}${brace(effects)}`;
   if (beat.notes.length === 0) return `r${tail}`;
   if (beat.notes.length === 1) return `${noteToken(beat.notes[0])}${tail}`;
-  return `(${[...beat.notes].sort((a, b) => a.string - b.string).map(noteToken).join(" ")})${tail}`;
+  return `(${[...beat.notes]
+    .sort((a, b) => a.string - b.string)
+    .map(noteToken)
+    .join(" ")})${tail}`;
 }
 
 /** Rests filling `ticks`, longest values first. */
@@ -98,14 +101,16 @@ export function restTokens(ticks: number): string[] {
   }
   if (left > 1) {
     const rest = notation(left);
-    if (Math.abs(rest.ticks - left) <= 1) parts.push(beatToken({ position: 0, duration: left, notes: [] }));
+    if (Math.abs(rest.ticks - left) <= 1)
+      parts.push(beatToken({ position: 0, duration: left, notes: [] }));
   }
   return parts;
 }
 
 function voiceBeats(trackBar: TrackBar | undefined, voice: number): Beat[] {
   return [...(trackBar?.voices[voice]?.beats ?? [])].sort(
-    (left, right) => left.position - right.position || Number(Boolean(right.grace)) - Number(Boolean(left.grace)),
+    (left, right) =>
+      left.position - right.position || Number(Boolean(right.grace)) - Number(Boolean(left.grace)),
   );
 }
 
@@ -129,7 +134,11 @@ function barMetadata(document: ScoreDocument, index: number): string[] {
   const bar = document.bars[index];
   const previous = index > 0 ? document.bars[index - 1] : undefined;
   const parts: string[] = [];
-  if (!previous || previous.signature[0] !== bar.signature[0] || previous.signature[1] !== bar.signature[1]) {
+  if (
+    !previous ||
+    previous.signature[0] !== bar.signature[0] ||
+    previous.signature[1] !== bar.signature[1]
+  ) {
     parts.push(`\\ts (${bar.signature[0]} ${bar.signature[1]})`);
   }
   if (index > 0 && bar.tempo) parts.push(`\\tempo (${Math.round(bar.tempo * 100) / 100})`);
@@ -142,10 +151,18 @@ export function preferredTrack(document: ScoreDocument): Track {
 }
 
 export function voiceCount(track: Track): number {
-  return Math.max(1, ...track.bars.map((bar) => bar.voices.filter((voice) => voice.beats.length > 0).length));
+  return Math.max(
+    1,
+    ...track.bars.map((bar) => bar.voices.filter((voice) => voice.beats.length > 0).length),
+  );
 }
 
-export function trackToAlphaTex(document: ScoreDocument, trackId: string, title: string, artist: string): string {
+export function trackToAlphaTex(
+  document: ScoreDocument,
+  trackId: string,
+  title: string,
+  artist: string,
+): string {
   const track = document.tracks.find((item) => item.id === trackId) ?? preferredTrack(document);
   const lines = [
     `\\title ("${escapeTex(title || track.name)}")`,

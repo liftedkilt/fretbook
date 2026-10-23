@@ -13,7 +13,14 @@
     testid,
     onclose,
     children,
-  }: { open: boolean; title: string; subtitle?: string; testid?: string; onclose: () => void; children: Snippet } = $props();
+  }: {
+    open: boolean;
+    title: string;
+    subtitle?: string;
+    testid?: string;
+    onclose: () => void;
+    children: Snippet;
+  } = $props();
 
   let dialog = $state<HTMLDialogElement | null>(null);
 
@@ -44,7 +51,9 @@
         <h2 class="display">{title}</h2>
         {#if subtitle}<p class="muted">{subtitle}</p>{/if}
       </div>
-      <button class="icon-button ghost" onclick={onclose} aria-label={t("ui.close")}><Icon name="close" /></button>
+      <button class="icon-button ghost" onclick={onclose} aria-label={t("ui.close")}
+        ><Icon name="close" /></button
+      >
     </header>
     {@render children()}
   </div>

@@ -73,7 +73,13 @@ function fittedSize(font: PDFFont, text: string, width: number, size: number): n
   return next;
 }
 
-function drawHeader(page: PDFPage, fonts: PdfFonts, title: string, detail: string, pageNumber: number): void {
+function drawHeader(
+  page: PDFPage,
+  fonts: PdfFonts,
+  title: string,
+  detail: string,
+  pageNumber: number,
+): void {
   const titleFont = fonts.timesBold;
   const detailFont = fonts.times;
   const label = encodable(detailFont, String(pageNumber));
@@ -81,7 +87,13 @@ function drawHeader(page: PDFPage, fonts: PdfFonts, title: string, detail: strin
   const titleText = encodable(titleFont, title.trim() || "Untitled");
   const titleSize = fittedSize(titleFont, titleText, contentWidth() - labelWidth - 16, 14);
   const titleBaseline = PDF_PAGE.height - PDF_PAGE.marginTop - 13;
-  page.drawText(titleText, { x: PDF_PAGE.marginX, y: titleBaseline, size: titleSize, font: titleFont, color: INK });
+  page.drawText(titleText, {
+    x: PDF_PAGE.marginX,
+    y: titleBaseline,
+    size: titleSize,
+    font: titleFont,
+    color: INK,
+  });
   page.drawText(label, {
     x: PDF_PAGE.width - PDF_PAGE.marginX - labelWidth,
     y: titleBaseline,
@@ -109,12 +121,18 @@ function drawHeader(page: PDFPage, fonts: PdfFonts, title: string, detail: strin
   });
 }
 
-function engrave(tex: string, width: number, notation: boolean): { chunks: StaffChunk[]; systems: Box[]; tuning: number[] } {
+function engrave(
+  tex: string,
+  width: number,
+  notation: boolean,
+): { chunks: StaffChunk[]; systems: Box[]; tuning: number[] } {
   const settings = new alphaTab.Settings();
   settings.core.engine = "svg";
   settings.core.enableLazyLoading = false;
   settings.core.logLevel = alphaTab.LogLevel.None;
-  settings.display.staveProfile = notation ? alphaTab.StaveProfile.ScoreTab : alphaTab.StaveProfile.Tab;
+  settings.display.staveProfile = notation
+    ? alphaTab.StaveProfile.ScoreTab
+    : alphaTab.StaveProfile.Tab;
   settings.display.layoutMode = alphaTab.LayoutMode.Page;
   settings.display.barsPerRow = 4;
   // The page header repeats the title, artist, track, and the song's tuning.
@@ -150,7 +168,8 @@ function engrave(tex: string, width: number, notation: boolean): { chunks: Staff
   try {
     const score = alphaTab.importer.ScoreLoader.loadAlphaTex(tex);
     renderer.renderScore(score, [0]);
-    if (failure) throw failure instanceof Error ? failure : new Error("could not engrave the score");
+    if (failure)
+      throw failure instanceof Error ? failure : new Error("could not engrave the score");
     const systems = (renderer.boundsLookup?.staffSystems ?? [])
       .map((system) => ({ y: system.realBounds.y, height: system.realBounds.h }))
       .filter((system) => system.height > 1);
@@ -163,7 +182,9 @@ function engrave(tex: string, width: number, notation: boolean): { chunks: Staff
 }
 
 export async function renderTrackPdf(input: TrackPdfInput): Promise<TrackPdf> {
-  const track = input.document.tracks.find((item) => item.id === input.trackId) ?? preferredTrack(input.document);
+  const track =
+    input.document.tracks.find((item) => item.id === input.trackId) ??
+    preferredTrack(input.document);
   const tex = trackToAlphaTex(input.document, track.id, input.title, input.artist);
   const engraved = engrave(tex, contentWidth(), input.notation ?? true);
   const placed = paginate(engraved.chunks, engraved.systems, contentHeight());
@@ -228,7 +249,9 @@ function wrapWords(text: string, font: PDFFont, size: number, width: number): st
   return lines.length ? lines : [""];
 }
 
-export async function renderChordSheetPdf(input: ChordPdfInput): Promise<{ bytes: Uint8Array; pageCount: number }> {
+export async function renderChordSheetPdf(
+  input: ChordPdfInput,
+): Promise<{ bytes: Uint8Array; pageCount: number }> {
   const sheet = parse(input.chordpro);
   const transpose = input.transpose ?? 0;
   const flats = input.flats ?? false;
@@ -265,7 +288,14 @@ export async function renderChordSheetPdf(input: ChordPdfInput): Promise<{ bytes
     if (block.label) {
       add(18, (page, originTop) => {
         const text = encodable(bodyBold, block.label);
-        if (text) page.drawText(text, { x: PDF_PAGE.marginX, y: originTop - 12, size: 12, font: bodyBold, color: INK });
+        if (text)
+          page.drawText(text, {
+            x: PDF_PAGE.marginX,
+            y: originTop - 12,
+            size: 12,
+            font: bodyBold,
+            color: INK,
+          });
       });
     }
     for (const line of block.lines) {
@@ -277,7 +307,14 @@ export async function renderChordSheetPdf(input: ChordPdfInput): Promise<{ bytes
         for (const row of wrapWords(source, font, 11, width)) {
           add(16, (page, originTop) => {
             const text = encodable(font, row);
-            if (text) page.drawText(text, { x: PDF_PAGE.marginX, y: originTop - 11, size: 11, font, color: DIM });
+            if (text)
+              page.drawText(text, {
+                x: PDF_PAGE.marginX,
+                y: originTop - 11,
+                size: 11,
+                font,
+                color: DIM,
+              });
           });
         }
       } else if (line.kind === "tab") {
@@ -285,15 +322,27 @@ export async function renderChordSheetPdf(input: ChordPdfInput): Promise<{ bytes
         const text = encodable(mono, line.text);
         while (size > 5 && mono.widthOfTextAtSize(text, size) > width) size -= 0.5;
         add(size + 4, (page, originTop) => {
-          if (text) page.drawText(text, { x: PDF_PAGE.marginX, y: originTop - size, size, font: mono, color: INK });
+          if (text)
+            page.drawText(text, {
+              x: PDF_PAGE.marginX,
+              y: originTop - size,
+              size,
+              font: mono,
+              color: INK,
+            });
         });
       } else {
-        const segments = line.segments.map((segment) => ({ chord: shifted(segment.chord), text: segment.text }));
+        const segments = line.segments.map((segment) => ({
+          chord: shifted(segment.chord),
+          text: segment.text,
+        }));
         let row: typeof segments = [];
         let used = 0;
         const widthOf = (segment: { chord: string; text: string }) =>
           Math.max(
-            segment.chord ? chordFont.widthOfTextAtSize(encodable(chordFont, segment.chord), 9) + 6 : 0,
+            segment.chord
+              ? chordFont.widthOfTextAtSize(encodable(chordFont, segment.chord), 9) + 6
+              : 0,
             lyricFont.widthOfTextAtSize(encodable(lyricFont, segment.text || " "), 11),
           );
         const flush = () => {
@@ -315,7 +364,13 @@ export async function renderChordSheetPdf(input: ChordPdfInput): Promise<{ bytes
               }
               const lyric = encodable(lyricFont, segment.text);
               if (lyric) {
-                page.drawText(lyric, { x, y: originTop - 22, size: 11, font: lyricFont, color: INK });
+                page.drawText(lyric, {
+                  x,
+                  y: originTop - 22,
+                  size: 11,
+                  font: lyricFont,
+                  color: INK,
+                });
               }
               x += widthOf(segment);
             }
@@ -378,8 +433,13 @@ export function savePdf(bytes: Uint8Array, filename: string): void {
 export async function downloadTrackPdf(input: Omit<TrackPdfInput, "bravura">): Promise<void> {
   const response = await fetch(new URL("font/Bravura.otf", document.baseURI));
   if (!response.ok) throw new Error("Bravura font");
-  const rendered = await renderTrackPdf({ ...input, bravura: new Uint8Array(await response.arrayBuffer()) });
-  const track = input.document.tracks.find((item) => item.id === input.trackId) ?? preferredTrack(input.document);
+  const rendered = await renderTrackPdf({
+    ...input,
+    bravura: new Uint8Array(await response.arrayBuffer()),
+  });
+  const track =
+    input.document.tracks.find((item) => item.id === input.trackId) ??
+    preferredTrack(input.document);
   savePdf(rendered.bytes, pdfFileName(input.title, track.name));
 }
 

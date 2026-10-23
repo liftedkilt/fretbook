@@ -46,7 +46,11 @@ function asBox(items: Box[]): Box {
  * Group `items` into pages of at most `contentHeight`.
  * `systems` are the staff rows that must stay intact.
  */
-export function paginate<T extends Box>(items: T[], systems: Box[], contentHeight: number): Placed<T>[] {
+export function paginate<T extends Box>(
+  items: T[],
+  systems: Box[],
+  contentHeight: number,
+): Placed<T>[] {
   const ordered = [...items].sort((left, right) => left.y - right.y);
   const blocks: T[][] = [];
   let index = 0;

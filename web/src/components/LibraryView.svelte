@@ -6,7 +6,14 @@
   import { instrumentLabel } from "../lib/instruments";
   import { followLink, hrefFor } from "../lib/router.svelte";
   import type { SongSummary } from "../lib/types";
-  import { countFor, matchesFilter, openSheet, refreshSongs, ui, type LibraryFilter } from "../lib/ui.svelte";
+  import {
+    countFor,
+    matchesFilter,
+    openSheet,
+    refreshSongs,
+    ui,
+    type LibraryFilter,
+  } from "../lib/ui.svelte";
 
   type Sort = "recent" | "title" | "artist";
 
@@ -26,14 +33,22 @@
     const list = ui.songs.filter(
       (song) =>
         matchesFilter(song, ui.filter) &&
-        (!query || song.title.toLocaleLowerCase().includes(query) || song.artist.toLocaleLowerCase().includes(query)),
+        (!query ||
+          song.title.toLocaleLowerCase().includes(query) ||
+          song.artist.toLocaleLowerCase().includes(query)),
     );
     if (sort === "title") return [...list].sort((a, b) => a.title.localeCompare(b.title));
-    if (sort === "artist") return [...list].sort((a, b) => (a.artist || "~").localeCompare(b.artist || "~") || a.title.localeCompare(b.title));
+    if (sort === "artist")
+      return [...list].sort(
+        (a, b) =>
+          (a.artist || "~").localeCompare(b.artist || "~") || a.title.localeCompare(b.title),
+      );
     return [...list].sort((a, b) => b.updated_at.localeCompare(a.updated_at));
   });
 
-  const heading = $derived(t(filters.find((item) => item.id === ui.filter)?.key ?? "library.filterAll"));
+  const heading = $derived(
+    t(filters.find((item) => item.id === ui.filter)?.key ?? "library.filterAll"),
+  );
 
   async function remove(song: SongSummary) {
     if (!confirm(t("library.confirmDelete", { title: song.title }))) return;
@@ -46,7 +61,9 @@
   }
 
   function kindLabel(song: SongSummary): string {
-    return song.content_kind === "chords" ? t("library.chordSheet") : instrumentLabel(song.preferred_instrument);
+    return song.content_kind === "chords"
+      ? t("library.chordSheet")
+      : instrumentLabel(song.preferred_instrument);
   }
 </script>
 
@@ -55,16 +72,26 @@
     <div>
       <p class="eyebrow">{t("library.heading")}</p>
       <h1 class="display hero-title">{ui.filter === "all" ? t("library.welcome") : heading}</h1>
-      <p class="muted" data-testid="library-count">{t("library.count", { count: countFor(ui.filter) })}</p>
+      <p class="muted" data-testid="library-count">
+        {t("library.count", { count: countFor(ui.filter) })}
+      </p>
     </div>
-    <button class="primary hero-add" data-testid="add-song-hero" onclick={() => openSheet("add")}><Icon name="plus" />{t("add.button")}</button>
+    <button class="primary hero-add" data-testid="add-song-hero" onclick={() => openSheet("add")}
+      ><Icon name="plus" />{t("add.button")}</button
+    >
   </header>
 
   {#if ui.songs.length > 0}
     <div class="toolbar">
       <label class="search">
         <Icon name="search" size={18} />
-        <input type="search" data-testid="library-search" bind:value={ui.search} placeholder={t("library.search")} aria-label={t("library.search")} />
+        <input
+          type="search"
+          data-testid="library-search"
+          bind:value={ui.search}
+          placeholder={t("library.search")}
+          aria-label={t("library.search")}
+        />
       </label>
       <label class="sort">
         <span class="visually-hidden">{t("library.sort")}</span>
@@ -78,7 +105,12 @@
 
     <div class="chips" role="group" aria-label={t("library.filters")}>
       {#each filters as item (item.id)}
-        <button class="chip" data-testid={`library-filter-${item.id}`} aria-pressed={ui.filter === item.id} onclick={() => (ui.filter = item.id)}>
+        <button
+          class="chip"
+          data-testid={`library-filter-${item.id}`}
+          aria-pressed={ui.filter === item.id}
+          onclick={() => (ui.filter = item.id)}
+        >
           {t(item.key)}<span class="chip-count">{countFor(item.id)}</span>
         </button>
       {/each}
@@ -90,7 +122,10 @@
   {#if !ui.loaded}
     <div class="song-grid" aria-busy="true">
       {#each [0, 1, 2, 3, 4, 5] as index (index)}
-        <div class="song-card skeleton"><div class="cover cover-md"></div><span></span><span></span></div>
+        <div class="song-card skeleton">
+          <div class="cover cover-md"></div>
+          <span></span><span></span>
+        </div>
       {/each}
     </div>
   {:else if ui.songs.length === 0}
@@ -99,7 +134,9 @@
       <h2 class="display">{t("library.emptyTitle")}</h2>
       <p class="muted">{t("library.empty")}</p>
       <div class="empty-actions">
-        <button class="primary" onclick={() => openSheet("add")}><Icon name="plus" />{t("add.button")}</button>
+        <button class="primary" onclick={() => openSheet("add")}
+          ><Icon name="plus" />{t("add.button")}</button
+        >
       </div>
     </div>
   {:else if visible.length === 0}
@@ -111,14 +148,29 @@
     <div class="song-grid">
       {#each visible as song (song.id)}
         <article class="song-card" data-testid="song-card">
-          <a class="song-link" data-testid="song-link" href={hrefFor(`/songs/${song.id}`)} onclick={(event) => followLink(event, `/songs/${song.id}`)}>
+          <a
+            class="song-link"
+            data-testid="song-link"
+            href={hrefFor(`/songs/${song.id}`)}
+            onclick={(event) => followLink(event, `/songs/${song.id}`)}
+          >
             <span class="song-art">
-              <Cover id={song.id} title={song.title} kind={song.content_kind} strings={song.string_count} />
+              <Cover
+                id={song.id}
+                title={song.title}
+                kind={song.content_kind}
+                strings={song.string_count}
+              />
               <span class="song-kind">
-                <Icon name={song.content_kind === "chords" ? "chords" : "tab"} size={14} />{kindLabel(song)}
+                <Icon
+                  name={song.content_kind === "chords" ? "chords" : "tab"}
+                  size={14}
+                />{kindLabel(song)}
               </span>
               {#if song.has_audio}
-                <span class="song-audio" title={t("library.audio")}><Icon name="waveform" size={14} /></span>
+                <span class="song-audio" title={t("library.audio")}
+                  ><Icon name="waveform" size={14} /></span
+                >
               {/if}
               <span class="song-play" aria-hidden="true"><Icon name="play" size={20} /></span>
             </span>
@@ -127,7 +179,9 @@
               <span class="song-artist">{song.artist || "—"}</span>
               {#if song.content_kind === "tab"}
                 <span class="song-meta">
-                  {t("library.strings", { count: song.string_count })} · {t("library.measures", { count: song.measure_count })} · {t("library.tempo", { bpm: song.bpm })}
+                  {t("library.strings", { count: song.string_count })} · {t("library.measures", {
+                    count: song.measure_count,
+                  })} · {t("library.tempo", { bpm: song.bpm })}
                 </span>
               {/if}
             </span>
@@ -143,7 +197,13 @@
             >
               <Icon name="edit" size={16} />
             </a>
-            <button class="icon-button glass" data-testid="song-delete" onclick={() => void remove(song)} aria-label={`${t("library.delete")}: ${song.title}`} title={t("library.delete")}>
+            <button
+              class="icon-button glass"
+              data-testid="song-delete"
+              onclick={() => void remove(song)}
+              aria-label={`${t("library.delete")}: ${song.title}`}
+              title={t("library.delete")}
+            >
               <Icon name="trash" size={16} />
             </button>
           </div>

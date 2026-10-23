@@ -27,6 +27,7 @@ jobs:
           cache: pip
       - run: pip install -r requirements-dev.txt
       - run: ruff check fretbook tests
+      - run: ruff format --check fretbook tests
       - run: python -m pytest
 
   frontend:
@@ -43,6 +44,8 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
       - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
       - name: Generated API types are current
         run: npm run api-types:check
       - run: npm run check

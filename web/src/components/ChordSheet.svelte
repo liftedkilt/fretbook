@@ -2,7 +2,11 @@
   import { parse, transposeChord } from "../lib/chordpro";
   import { t } from "../lib/i18n.svelte";
 
-  let { text, transpose = 0, flats = false }: { text: string; transpose?: number; flats?: boolean } = $props();
+  let {
+    text,
+    transpose = 0,
+    flats = false,
+  }: { text: string; transpose?: number; flats?: boolean } = $props();
 
   const sheet = $derived(parse(text));
 </script>
@@ -18,7 +22,9 @@
           <div class="chord-line">
             {#each line.segments as segment, segmentIndex (segmentIndex)}
               <span class="chord-segment">
-                <span class="chord-name" data-testid="chord-name">{segment.chord ? transposeChord(segment.chord, transpose, flats) : " "}</span>
+                <span class="chord-name" data-testid="chord-name"
+                  >{segment.chord ? transposeChord(segment.chord, transpose, flats) : " "}</span
+                >
                 <span class="chord-lyric">{segment.text || " "}</span>
               </span>
             {/each}

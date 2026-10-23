@@ -447,9 +447,7 @@ def _to_gray(image) -> GrayImage:
 
 def _match(expected: tuple[TabNote, ...], actual: list[TabNote]) -> tuple[int, int, int]:
     pool = {(note.bar, note.position, note.string, note.fret, note.dead) for note in actual}
-    matched = sum(
-        (note.bar, note.position, note.string, note.fret, note.dead) in pool for note in expected
-    )
+    matched = sum((note.bar, note.position, note.string, note.fret, note.dead) in pool for note in expected)
     return matched, len(expected), len(actual)
 
 

@@ -13,7 +13,9 @@ export default defineConfig({
   workers: process.env.CI ? 2 : undefined,
   timeout: 60_000,
   expect: { timeout: 10_000 },
-  reporter: process.env.CI ? [["list"], ["html", { open: "never", outputFolder: "playwright-report" }]] : "list",
+  reporter: process.env.CI
+    ? [["list"], ["html", { open: "never", outputFolder: "playwright-report" }]]
+    : "list",
   use: {
     trace: "retain-on-failure",
     video: "retain-on-failure",

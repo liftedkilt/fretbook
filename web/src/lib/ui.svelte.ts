@@ -107,7 +107,9 @@ export function applyTheme(): void {
   if (typeof document === "undefined") return;
   const resolved = resolvedTheme(ui.theme);
   document.documentElement.dataset.theme = resolved;
-  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", resolved === "light" ? "#f6f3ee" : "#0c0b10");
+  document
+    .querySelector('meta[name="theme-color"]')
+    ?.setAttribute("content", resolved === "light" ? "#f6f3ee" : "#0c0b10");
 }
 
 export function setTheme(theme: Theme): void {
@@ -133,5 +135,7 @@ export function setNotation(show: boolean): void {
 
 if (typeof window !== "undefined") {
   applyTheme();
-  window.matchMedia?.("(prefers-color-scheme: light)").addEventListener?.("change", () => applyTheme());
+  window
+    .matchMedia?.("(prefers-color-scheme: light)")
+    .addEventListener?.("change", () => applyTheme());
 }

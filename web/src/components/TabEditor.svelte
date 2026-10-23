@@ -40,11 +40,17 @@
   // What the editor loaded: the content to compare against on a conflict, the sync map to re-key, and the bar origins.
   let loadedContent = untrack(() => contentKey(initial.document));
   let loadedBpm = untrack(() => initial.document.bpm);
-  let baseSync: SyncMap = untrack(() => structuredClone($state.snapshot(initial.document.sync)) as SyncMap);
-  let origin = $state<(number | null)[]>(untrack(() => initial.document.bars.map((_, index) => index)));
+  let baseSync: SyncMap = untrack(
+    () => structuredClone($state.snapshot(initial.document.sync)) as SyncMap,
+  );
+  let origin = $state<(number | null)[]>(
+    untrack(() => initial.document.bars.map((_, index) => index)),
+  );
 
   const document_ = $derived(song.document);
-  const track = $derived(document_.tracks.find((item) => item.id === trackId) ?? document_.tracks[0]);
+  const track = $derived(
+    document_.tracks.find((item) => item.id === trackId) ?? document_.tracks[0],
+  );
   const bar = $derived(document_.bars[Math.min(barIndex, document_.bars.length - 1)]);
   const trackBar = $derived(track.bars[Math.min(barIndex, track.bars.length - 1)]);
   const beats = $derived(trackBar.voices[voiceIndex]?.beats ?? []);
@@ -85,7 +91,10 @@
     beat.notes = others.sort((left, right) => left.string - right.string);
   }
 
-  function toggle(note: Note, flag: "dead" | "tie" | "ghost" | "hammer" | "vibrato" | "palm_mute" | "let_ring" | "staccato") {
+  function toggle(
+    note: Note,
+    flag: "dead" | "tie" | "ghost" | "hammer" | "vibrato" | "palm_mute" | "let_ring" | "staccato",
+  ) {
     note[flag] = !note[flag];
   }
 
@@ -110,7 +119,9 @@
   function addBeat() {
     const list = voiceBeats(trackBar, voiceIndex);
     const left = Math.max(0, length - used);
-    const fit = EDITOR_DURATIONS.find((item) => item.tuplet === null && item.ticks <= left) ?? EDITOR_DURATIONS[4];
+    const fit =
+      EDITOR_DURATIONS.find((item) => item.tuplet === null && item.ticks <= left) ??
+      EDITOR_DURATIONS[4];
     list.push({ position: 0, duration: fit.ticks, notes: [], extras: {} });
     reflow(list);
   }
@@ -132,7 +143,8 @@
   function insertBar() {
     const at = barIndex + 1;
     document_.bars.splice(at, 0, { signature: [bar.signature[0], bar.signature[1]], extras: {} });
-    for (const item of document_.tracks) item.bars.splice(at, 0, { voices: [{ beats: [] }], extras: {} });
+    for (const item of document_.tracks)
+      item.bars.splice(at, 0, { voices: [{ beats: [] }], extras: {} });
     origin.splice(at, 0, null);
     barIndex = at;
   }
@@ -148,7 +160,8 @@
 
   function setSignature(part: 0 | 1, raw: string) {
     const value = Number(raw);
-    if (part === 0 && Number.isInteger(value) && value >= 1 && value <= 32) bar.signature[0] = value;
+    if (part === 0 && Number.isInteger(value) && value >= 1 && value <= 32)
+      bar.signature[0] = value;
     if (part === 1 && [1, 2, 4, 8, 16, 32].includes(value)) bar.signature[1] = value;
   }
 
@@ -168,7 +181,9 @@
     if (track.tuning_midi.length <= 1) return;
     const index = track.tuning_midi.length - 1;
     const inUse = track.bars.some((item) =>
-      item.voices.some((voice) => voice.beats.some((beat) => beat.notes.some((note) => note.string === index))),
+      item.voices.some((voice) =>
+        voice.beats.some((beat) => beat.notes.some((note) => note.string === index)),
+      ),
     );
     if (inUse) {
       error = t("editor.stringInUse");
@@ -211,8 +226,17 @@
   // --- save ---------------------------------------------------------------
 
   async function send(revision: number, sync: SyncMap, bpm: number) {
-    const document: ScoreDocument = { ...$state.snapshot(song.document), bpm, sync: remapSync(sync, origin) };
-    return updateSong(song.id, { title: song.title.trim() || t("library.untitled"), artist: song.artist.trim(), revision, document });
+    const document: ScoreDocument = {
+      ...$state.snapshot(song.document),
+      bpm,
+      sync: remapSync(sync, origin),
+    };
+    return updateSong(song.id, {
+      title: song.title.trim() || t("library.untitled"),
+      artist: song.artist.trim(),
+      revision,
+      document,
+    });
   }
 
   async function save() {
@@ -262,17 +286,27 @@
 
 <div class="editor-page">
   <header class="editor-bar">
-    <a class="back-link" href={hrefFor(`/songs/${song.id}`)} onclick={(event) => followLink(event, `/songs/${song.id}`)}>
+    <a
+      class="back-link"
+      href={hrefFor(`/songs/${song.id}`)}
+      onclick={(event) => followLink(event, `/songs/${song.id}`)}
+    >
       <Icon name="play" size={14} />{t("editor.play")}
     </a>
     <h1 class="editor-title" data-testid="editor-title">{song.title || t("editor.heading")}</h1>
     <div class="editor-actions">
-      {#if status}<span class="save-status" role="status" data-testid="editor-status"><Icon name="check" size={16} />{status}</span>{/if}
-      <button class="primary" data-testid="editor-save" onclick={() => void save()}><Icon name="save" size={18} />{t("editor.save")}</button>
+      {#if status}<span class="save-status" role="status" data-testid="editor-status"
+          ><Icon name="check" size={16} />{status}</span
+        >{/if}
+      <button class="primary" data-testid="editor-save" onclick={() => void save()}
+        ><Icon name="save" size={18} />{t("editor.save")}</button
+      >
     </div>
   </header>
 
-  {#if error}<p class="alert" role="alert" data-testid="editor-error"><Icon name="alert" size={18} />{error}</p>{/if}
+  {#if error}<p class="alert" role="alert" data-testid="editor-error">
+      <Icon name="alert" size={18} />{error}
+    </p>{/if}
   {#if conflict}
     <div class="alert alert-action" role="alert">
       <span>{t("editor.conflict")}</span>
@@ -285,9 +319,23 @@
       <section class="card">
         <h2 class="card-title">{t("editor.songCard")}</h2>
         <div class="form-grid">
-          <label class="field span-2"><span>{t("library.title")}</span><input data-testid="editor-song-title" bind:value={song.title} /></label>
-          <label class="field span-2"><span>{t("library.artist")}</span><input bind:value={song.artist} /></label>
-          <label class="field"><span>{t("library.bpm")}</span><input type="number" min="1" max="399" bind:value={song.document.bpm} /></label>
+          <label class="field span-2"
+            ><span>{t("library.title")}</span><input
+              data-testid="editor-song-title"
+              bind:value={song.title}
+            /></label
+          >
+          <label class="field span-2"
+            ><span>{t("library.artist")}</span><input bind:value={song.artist} /></label
+          >
+          <label class="field"
+            ><span>{t("library.bpm")}</span><input
+              type="number"
+              min="1"
+              max="399"
+              bind:value={song.document.bpm}
+            /></label
+          >
         </div>
       </section>
 
@@ -310,8 +358,17 @@
           </div>
         {/if}
         <div class="form-grid">
-          <label class="field span-2"><span>{t("editor.trackName")}</span><input bind:value={track.name} /></label>
-          <label class="field"><span>{t("editor.capo")}</span><input type="number" min="0" max="24" bind:value={track.capo} /></label>
+          <label class="field span-2"
+            ><span>{t("editor.trackName")}</span><input bind:value={track.name} /></label
+          >
+          <label class="field"
+            ><span>{t("editor.capo")}</span><input
+              type="number"
+              min="0"
+              max="24"
+              bind:value={track.capo}
+            /></label
+          >
           <label class="switch">
             <input type="checkbox" checked={track.preferred} onchange={() => setPreferred(track)} />
             <span class="switch-track" aria-hidden="true"></span>
@@ -321,11 +378,17 @@
         <div class="tuning">
           <span class="field-label">{t("editor.tuning")}</span>
           <div class="tuning-strings">
-            {#each track.tuning_midi as midi, index (index)}<span class="string-chip">{midiToName(midi)}</span>{/each}
+            {#each track.tuning_midi as midi, index (index)}<span class="string-chip"
+                >{midiToName(midi)}</span
+              >{/each}
           </div>
           <div class="button-row">
-            <button class="small-button" onclick={addString}><Icon name="plus" size={16} />{t("editor.addString")}</button>
-            <button class="small-button" onclick={removeString}><Icon name="minus" size={16} />{t("editor.removeString")}</button>
+            <button class="small-button" onclick={addString}
+              ><Icon name="plus" size={16} />{t("editor.addString")}</button
+            >
+            <button class="small-button" onclick={removeString}
+              ><Icon name="minus" size={16} />{t("editor.removeString")}</button
+            >
           </div>
         </div>
         <div class="add-track">
@@ -340,7 +403,9 @@
           <button onclick={addTrack}><Icon name="plus" size={16} />{t("editor.addTrack")}</button>
         </div>
         {#if document_.tracks.length > 1}
-          <button class="danger-text small-button" onclick={deleteTrack}><Icon name="trash" size={16} />{t("editor.deleteTrack")}</button>
+          <button class="danger-text small-button" onclick={deleteTrack}
+            ><Icon name="trash" size={16} />{t("editor.deleteTrack")}</button
+          >
         {/if}
       </section>
     </aside>
@@ -348,11 +413,19 @@
     <section class="editor-main">
       <div class="card bar-card">
         <div class="bar-nav">
-          <button class="icon-button" disabled={barIndex <= 0} onclick={() => (barIndex -= 1)} aria-label={t("editor.previous")} title={t("editor.previous")}>
+          <button
+            class="icon-button"
+            disabled={barIndex <= 0}
+            onclick={() => (barIndex -= 1)}
+            aria-label={t("editor.previous")}
+            title={t("editor.previous")}
+          >
             <Icon name="back" />
           </button>
           <div class="bar-current">
-            <strong data-testid="editor-measure" data-bar={barIndex}>{t("editor.measure", { number: barIndex + 1, total: document_.bars.length })}</strong>
+            <strong data-testid="editor-measure" data-bar={barIndex}
+              >{t("editor.measure", { number: barIndex + 1, total: document_.bars.length })}</strong
+            >
             {#if bar.section}<span class="pill pill-accent">{bar.section}</span>{/if}
           </div>
           <button
@@ -367,7 +440,14 @@
         </div>
         <div class="bar-strip" role="group" aria-label={t("editor.bars")}>
           {#each document_.bars as item, index (index)}
-            <button class="bar-chip" data-testid={`bar-chip-${index}`} class:has-section={Boolean(item.section)} aria-current={index === barIndex ? "true" : undefined} onclick={() => (barIndex = index)} title={item.section ?? undefined}>
+            <button
+              class="bar-chip"
+              data-testid={`bar-chip-${index}`}
+              class:has-section={Boolean(item.section)}
+              aria-current={index === barIndex ? "true" : undefined}
+              onclick={() => (barIndex = index)}
+              title={item.section ?? undefined}
+            >
               {index + 1}
             </button>
           {/each}
@@ -376,9 +456,20 @@
           <div class="field">
             <span>{t("library.signature")}</span>
             <span class="signature">
-              <input type="number" min="1" max="32" value={bar.signature[0]} onchange={(event) => setSignature(0, event.currentTarget.value)} aria-label={t("ui.beatsPerBar")} />
+              <input
+                type="number"
+                min="1"
+                max="32"
+                value={bar.signature[0]}
+                onchange={(event) => setSignature(0, event.currentTarget.value)}
+                aria-label={t("ui.beatsPerBar")}
+              />
               <span class="signature-slash">/</span>
-              <select value={bar.signature[1]} onchange={(event) => setSignature(1, event.currentTarget.value)} aria-label={t("ui.beatUnit")}>
+              <select
+                value={bar.signature[1]}
+                onchange={(event) => setSignature(1, event.currentTarget.value)}
+                aria-label={t("ui.beatUnit")}
+              >
                 {#each [1, 2, 4, 8, 16, 32] as value (value)}<option {value}>{value}</option>{/each}
               </select>
             </span>
@@ -386,16 +477,33 @@
           {#if barIndex > 0}
             <label class="field">
               <span>{t("editor.tempoChange")}</span>
-              <input type="number" min="1" max="399" placeholder="—" value={bar.tempo ?? ""} onchange={(event) => setTempo(event.currentTarget.value)} />
+              <input
+                type="number"
+                min="1"
+                max="399"
+                placeholder="—"
+                value={bar.tempo ?? ""}
+                onchange={(event) => setTempo(event.currentTarget.value)}
+              />
             </label>
           {/if}
           <label class="field">
             <span>{t("editor.section")}</span>
-            <input value={bar.section ?? ""} onchange={(event) => (bar.section = event.currentTarget.value.trim() || null)} />
+            <input
+              value={bar.section ?? ""}
+              onchange={(event) => (bar.section = event.currentTarget.value.trim() || null)}
+            />
           </label>
           <div class="button-row bar-buttons">
-            <button class="small-button" data-testid="editor-add-measure" onclick={insertBar}><Icon name="plus" size={16} />{t("editor.addMeasure")}</button>
-            <button class="small-button danger-text" onclick={deleteBar} disabled={document_.bars.length <= 1}><Icon name="trash" size={16} />{t("editor.deleteMeasure")}</button>
+            <button class="small-button" data-testid="editor-add-measure" onclick={insertBar}
+              ><Icon name="plus" size={16} />{t("editor.addMeasure")}</button
+            >
+            <button
+              class="small-button danger-text"
+              onclick={deleteBar}
+              disabled={document_.bars.length <= 1}
+              ><Icon name="trash" size={16} />{t("editor.deleteMeasure")}</button
+            >
           </div>
         </div>
         <p class="muted small">{t("editor.barsAreShared")}</p>
@@ -404,14 +512,24 @@
       <div class="beat-toolbar">
         <div class="segmented" role="radiogroup" aria-label={t("editor.voice")}>
           {#each Array.from({ length: Math.max(2, trackBar.voices.length) }, (_, index) => index) as index (index)}
-            <button role="radio" aria-checked={voiceIndex === index} onclick={() => (voiceIndex = index)}>{t("editor.voice")} {index + 1}</button>
+            <button
+              role="radio"
+              aria-checked={voiceIndex === index}
+              onclick={() => (voiceIndex = index)}>{t("editor.voice")} {index + 1}</button
+            >
           {/each}
         </div>
         <span class="fill-status" class:ok={used === length} class:warn={used !== length}>
           <Icon name={used === length ? "check" : "alert"} size={16} />
-          {used === length ? t("editor.barFull") : used > length ? t("editor.barOver") : t("editor.barShort")}
+          {used === length
+            ? t("editor.barFull")
+            : used > length
+              ? t("editor.barOver")
+              : t("editor.barShort")}
         </span>
-        <button class="primary" data-testid="editor-add-beat" onclick={addBeat}><Icon name="plus" size={18} />{t("editor.addBeat")}</button>
+        <button class="primary" data-testid="editor-add-beat" onclick={addBeat}
+          ><Icon name="plus" size={18} />{t("editor.addBeat")}</button
+        >
       </div>
       <p class="muted small">{t("editor.fretHint")}</p>
 
@@ -421,13 +539,30 @@
             <header class="beat-head">
               <span class="beat-number">{beatIndex + 1}</span>
               <div class="beat-tools">
-                <button class="icon-button ghost" onclick={() => moveBeat(beatIndex, -1)} disabled={beatIndex === 0} aria-label={t("editor.moveEarlier")} title={t("editor.moveEarlier")}>
+                <button
+                  class="icon-button ghost"
+                  onclick={() => moveBeat(beatIndex, -1)}
+                  disabled={beatIndex === 0}
+                  aria-label={t("editor.moveEarlier")}
+                  title={t("editor.moveEarlier")}
+                >
                   <Icon name="back" size={16} />
                 </button>
-                <button class="icon-button ghost" onclick={() => moveBeat(beatIndex, 1)} disabled={beatIndex === beats.length - 1} aria-label={t("editor.moveLater")} title={t("editor.moveLater")}>
+                <button
+                  class="icon-button ghost"
+                  onclick={() => moveBeat(beatIndex, 1)}
+                  disabled={beatIndex === beats.length - 1}
+                  aria-label={t("editor.moveLater")}
+                  title={t("editor.moveLater")}
+                >
                   <Icon name="forward" size={16} />
                 </button>
-                <button class="icon-button ghost danger-text" onclick={() => deleteBeat(beatIndex)} aria-label={t("editor.deleteBeat")} title={t("editor.deleteBeat")}>
+                <button
+                  class="icon-button ghost danger-text"
+                  onclick={() => deleteBeat(beatIndex)}
+                  aria-label={t("editor.deleteBeat")}
+                  title={t("editor.deleteBeat")}
+                >
                   <Icon name="trash" size={16} />
                 </button>
               </div>
@@ -435,18 +570,28 @@
             <div class="beat-fields">
               <label class="field">
                 <span>{t("editor.duration")}</span>
-                <select value={durationValue(beat)} onchange={(event) => setDuration(beat, event.currentTarget.value)}>
+                <select
+                  value={durationValue(beat)}
+                  onchange={(event) => setDuration(beat, event.currentTarget.value)}
+                >
                   {#each EDITOR_DURATIONS as option (option.key)}
-                    <option value={`${option.ticks}:${option.tuplet ?? ""}`}>{t(`durations.${option.key}`)}</option>
+                    <option value={`${option.ticks}:${option.tuplet ?? ""}`}
+                      >{t(`durations.${option.key}`)}</option
+                    >
                   {/each}
                   {#if !EDITOR_DURATIONS.some((option) => `${option.ticks}:${option.tuplet ?? ""}` === durationValue(beat))}
-                    <option value={durationValue(beat)}>{t("durations.other", { ticks: beat.duration })}</option>
+                    <option value={durationValue(beat)}
+                      >{t("durations.other", { ticks: beat.duration })}</option
+                    >
                   {/if}
                 </select>
               </label>
               <label class="field">
                 <span>{t("editor.grace")}</span>
-                <select value={beat.grace ?? ""} onchange={(event) => setGrace(beat, event.currentTarget.value)}>
+                <select
+                  value={beat.grace ?? ""}
+                  onchange={(event) => setGrace(beat, event.currentTarget.value)}
+                >
                   <option value="">—</option>
                   <option value="on_beat">{t("editor.graceOnBeat")}</option>
                   <option value="before_beat">{t("editor.graceBeforeBeat")}</option>
@@ -472,12 +617,22 @@
                       <summary>{t("editor.techniques")}</summary>
                       <div class="tech-grid">
                         {#each ["dead", "tie", "ghost", "hammer", "vibrato", "palm_mute", "let_ring", "staccato"] as const as flag (flag)}
-                          <label class="check"><input type="checkbox" checked={Boolean(note[flag])} onchange={() => toggle(note, flag)} />{t(`tech.${flag}`)}</label>
+                          <label class="check"
+                            ><input
+                              type="checkbox"
+                              checked={Boolean(note[flag])}
+                              onchange={() => toggle(note, flag)}
+                            />{t(`tech.${flag}`)}</label
+                          >
                         {/each}
                       </div>
                       <label class="field">
                         <span>{t("tech.slide")}</span>
-                        <select value={note.slide ?? ""} onchange={(event) => (note.slide = (event.currentTarget.value || null) as SlideKind | null)}>
+                        <select
+                          value={note.slide ?? ""}
+                          onchange={(event) =>
+                            (note.slide = (event.currentTarget.value || null) as SlideKind | null)}
+                        >
                           <option value="">—</option>
                           {#each ["shift", "legato", "in_below", "in_above", "out_up", "out_down"] as kind (kind)}
                             <option value={kind}>{t(`tech.slides.${kind}`)}</option>
@@ -486,7 +641,12 @@
                       </label>
                       <label class="field">
                         <span>{t("tech.harmonic")}</span>
-                        <select value={note.harmonic ?? ""} onchange={(event) => (note.harmonic = (event.currentTarget.value || null) as HarmonicKind | null)}>
+                        <select
+                          value={note.harmonic ?? ""}
+                          onchange={(event) =>
+                            (note.harmonic = (event.currentTarget.value ||
+                              null) as HarmonicKind | null)}
+                        >
                           <option value="">—</option>
                           {#each ["natural", "artificial", "pinch", "tap", "semi"] as kind (kind)}
                             <option value={kind}>{t(`tech.harmonics.${kind}`)}</option>
@@ -514,7 +674,9 @@
             </div>
           </article>
         {/each}
-        <button class="beat-add" onclick={addBeat}><Icon name="plus" size={22} /><span>{t("editor.addBeat")}</span></button>
+        <button class="beat-add" onclick={addBeat}
+          ><Icon name="plus" size={22} /><span>{t("editor.addBeat")}</span></button
+        >
       </div>
     </section>
   </div>

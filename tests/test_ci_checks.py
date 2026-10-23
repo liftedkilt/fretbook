@@ -66,7 +66,7 @@ def test_locales_valid_pass(tmp_path):
 
 
 def test_locale_invalid_json_fails(tmp_path):
-    write_locale(tmp_path, "en.json", "{\n  \"a\": 1,\n}\n")
+    write_locale(tmp_path, "en.json", '{\n  "a": 1,\n}\n')
     result = run("check_locales.py", tmp_path)
     assert result.returncode == 1
     assert "en.json: invalid JSON" in result.stderr

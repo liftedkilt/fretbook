@@ -27,9 +27,15 @@
     "confirmSignOut": "Desconectar {name} de todos os navegadores?",
     "signedOut": { "one": "{count} sessão encerrada.", "other": "{count} sessões encerradas." },
     "adoptHeading": "Biblioteca do modo de usuário único",
-    "adoptHint": { "one": "{count} música foi adicionada antes de a entrada ser ativada. Ninguém a vê até que um administrador a mova para uma biblioteca.", "other": "{count} músicas foram adicionadas antes de a entrada ser ativada. Ninguém as vê até que um administrador as mova para uma biblioteca." },
+    "adoptHint": {
+      "one": "{count} música foi adicionada antes de a entrada ser ativada. Ninguém a vê até que um administrador a mova para uma biblioteca.",
+      "other": "{count} músicas foram adicionadas antes de a entrada ser ativada. Ninguém as vê até que um administrador as mova para uma biblioteca."
+    },
     "adopt": "Mover para minha biblioteca",
-    "adopted": { "one": "{count} música movida para sua biblioteca.", "other": "{count} músicas movidas para sua biblioteca." }
+    "adopted": {
+      "one": "{count} música movida para sua biblioteca.",
+      "other": "{count} músicas movidas para sua biblioteca."
+    }
   },
   "language": {
     "label": "Idioma",
@@ -54,9 +60,15 @@
     "label": "Baixador de áudio (yt-dlp)",
     "hint": "O Fretbook usa o yt-dlp para baixar o áudio de um vídeo sincronizado. O YouTube muda com frequência, então uma versão antiga deixa de funcionar.",
     "version": "Versão {version}",
-    "released": { "one": "Lançada em {date}, há {count} dia.", "other": "Lançada em {date}, há {count} dias." },
+    "released": {
+      "one": "Lançada em {date}, há {count} dia.",
+      "other": "Lançada em {date}, há {count} dias."
+    },
     "unknown": "Não foi possível ler a versão.",
-    "stale": { "one": "Este yt-dlp tem {count} dia. Os downloads de áudio podem falhar. Atualize-o, defina FRETBOOK_YTDLP_AUTO_UPDATE=true ou envie o áudio.", "other": "Este yt-dlp tem {count} dias. Os downloads de áudio podem falhar. Atualize-o, defina FRETBOOK_YTDLP_AUTO_UPDATE=true ou envie o áudio." },
+    "stale": {
+      "one": "Este yt-dlp tem {count} dia. Os downloads de áudio podem falhar. Atualize-o, defina FRETBOOK_YTDLP_AUTO_UPDATE=true ou envie o áudio.",
+      "other": "Este yt-dlp tem {count} dias. Os downloads de áudio podem falhar. Atualize-o, defina FRETBOOK_YTDLP_AUTO_UPDATE=true ou envie o áudio."
+    },
     "autoUpdateOn": "Atualiza sozinho ao iniciar e uma vez por dia.",
     "autoUpdateOff": "Não atualiza sozinho."
   },

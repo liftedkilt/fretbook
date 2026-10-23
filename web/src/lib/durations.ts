@@ -53,7 +53,9 @@ function candidates(tuplet: number | null): Notation[] {
  * and common tuplets. Falls back to the nearest plain or dotted value.
  */
 export function notation(ticks: number, hint: number | null = null): Notation {
-  const tuplets = [hint, null, 3, 5, 6, 7, 9].filter((item, index, all) => all.indexOf(item) === index);
+  const tuplets = [hint, null, 3, 5, 6, 7, 9].filter(
+    (item, index, all) => all.indexOf(item) === index,
+  );
   for (const tuplet of tuplets) {
     const found = candidates(tuplet).find((item) => Math.abs(item.ticks - ticks) <= 1);
     if (found) return { ...found, ticks };

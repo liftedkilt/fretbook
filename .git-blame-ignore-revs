@@ -1,0 +1,3 @@
+# One-off reformat with ruff format and Prettier (#24).
+# Use: git config blame.ignoreRevsFile .git-blame-ignore-revs
+930ffd12e6dff2052eabacff43956ac81fde349a

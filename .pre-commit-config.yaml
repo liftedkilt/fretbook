@@ -1,0 +1,23 @@
+# Install once with `pre-commit install` (pip install pre-commit). See CONTRIBUTING.md.
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.2 # keep in step with requirements-dev.txt
+    hooks:
+      - id: ruff-check
+        files: ^(fretbook|tests)/
+      - id: ruff-format
+        files: ^(fretbook|tests)/
+  - repo: local
+    hooks:
+      - id: prettier
+        name: prettier
+        language: system # runs from web/ (paths are repo-relative) so its config and ignore file apply
+        entry: bash -c 'cd web && exec npx prettier --write --ignore-unknown "${@#web/}"' --
+        files: ^web/
+        exclude: ^web/(package-lock\.json|src/lib/api-types\.ts)$
+      - id: eslint
+        name: eslint
+        language: system
+        entry: npm --prefix web run lint --
+        files: ^web/.*\.(js|ts|svelte)$
+        pass_filenames: false

@@ -27,9 +27,15 @@
     "confirmSignOut": "Sign {name} out of every browser?",
     "signedOut": { "one": "Ended {count} session.", "other": "Ended {count} sessions." },
     "adoptHeading": "Library from single-user mode",
-    "adoptHint": { "one": "{count} song was added before sign-in was turned on. Nobody can see it until an admin moves it into a library.", "other": "{count} songs were added before sign-in was turned on. Nobody can see them until an admin moves them into a library." },
+    "adoptHint": {
+      "one": "{count} song was added before sign-in was turned on. Nobody can see it until an admin moves it into a library.",
+      "other": "{count} songs were added before sign-in was turned on. Nobody can see them until an admin moves them into a library."
+    },
     "adopt": "Move into my library",
-    "adopted": { "one": "Moved {count} song into your library.", "other": "Moved {count} songs into your library." }
+    "adopted": {
+      "one": "Moved {count} song into your library.",
+      "other": "Moved {count} songs into your library."
+    }
   },
   "language": {
     "label": "Language",
@@ -54,9 +60,15 @@
     "label": "Audio downloader (yt-dlp)",
     "hint": "Fretbook uses yt-dlp to download the audio of a synced video. YouTube changes often, so an old version stops working.",
     "version": "Version {version}",
-    "released": { "one": "Released {date}, {count} day ago.", "other": "Released {date}, {count} days ago." },
+    "released": {
+      "one": "Released {date}, {count} day ago.",
+      "other": "Released {date}, {count} days ago."
+    },
     "unknown": "The version could not be read.",
-    "stale": { "one": "This yt-dlp is {count} day old. Audio downloads may fail. Update it, or set FRETBOOK_YTDLP_AUTO_UPDATE=true, or upload audio instead.", "other": "This yt-dlp is {count} days old. Audio downloads may fail. Update it, or set FRETBOOK_YTDLP_AUTO_UPDATE=true, or upload audio instead." },
+    "stale": {
+      "one": "This yt-dlp is {count} day old. Audio downloads may fail. Update it, or set FRETBOOK_YTDLP_AUTO_UPDATE=true, or upload audio instead.",
+      "other": "This yt-dlp is {count} days old. Audio downloads may fail. Update it, or set FRETBOOK_YTDLP_AUTO_UPDATE=true, or upload audio instead."
+    },
     "autoUpdateOn": "Updates itself at start and once a day.",
     "autoUpdateOff": "Does not update itself."
   },

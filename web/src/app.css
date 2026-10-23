@@ -58,7 +58,8 @@
 
   --font-sans: "Inter Variable", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-display: "Instrument Serif", "Iowan Old Style", Georgia, serif;
-  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-mono:
+    "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
   --side-w: 268px;
   --pad: clamp(16px, 3.2vw, 44px);
@@ -530,7 +531,9 @@ textarea {
 .segmented button[aria-selected="true"] {
   background: var(--surface);
   color: var(--text);
-  box-shadow: var(--shadow-sm), 0 0 0 1px var(--line-strong);
+  box-shadow:
+    var(--shadow-sm),
+    0 0 0 1px var(--line-strong);
 }
 
 :root[data-theme="light"] .segmented button[aria-checked="true"],
@@ -1121,7 +1124,9 @@ textarea {
     border-radius: 50%;
     background: var(--grad);
     color: #fff;
-    box-shadow: var(--glow), 0 0 0 5px var(--bg);
+    box-shadow:
+      var(--glow),
+      0 0 0 5px var(--bg);
   }
 
   .toast {
@@ -1368,12 +1373,24 @@ textarea {
   animation: fade-up 0.45s var(--ease) both;
 }
 
-.song-card:nth-child(2) { animation-delay: 30ms; }
-.song-card:nth-child(3) { animation-delay: 60ms; }
-.song-card:nth-child(4) { animation-delay: 90ms; }
-.song-card:nth-child(5) { animation-delay: 120ms; }
-.song-card:nth-child(6) { animation-delay: 150ms; }
-.song-card:nth-child(n + 7) { animation-delay: 180ms; }
+.song-card:nth-child(2) {
+  animation-delay: 30ms;
+}
+.song-card:nth-child(3) {
+  animation-delay: 60ms;
+}
+.song-card:nth-child(4) {
+  animation-delay: 90ms;
+}
+.song-card:nth-child(5) {
+  animation-delay: 120ms;
+}
+.song-card:nth-child(6) {
+  animation-delay: 150ms;
+}
+.song-card:nth-child(n + 7) {
+  animation-delay: 180ms;
+}
 
 @keyframes fade-up {
   from {
@@ -1930,7 +1947,11 @@ textarea {
   padding: 0;
   border: 0;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--accent) 0 var(--fill), var(--surface-3) var(--fill) 100%);
+  background: linear-gradient(
+    90deg,
+    var(--accent) 0 var(--fill),
+    var(--surface-3) var(--fill) 100%
+  );
   cursor: pointer;
   box-shadow: none;
 }
@@ -2417,7 +2438,9 @@ textarea {
 .track-tabs button[aria-selected="true"] {
   background: var(--surface);
   color: var(--text);
-  box-shadow: var(--shadow-sm), 0 0 0 1px var(--line-strong);
+  box-shadow:
+    var(--shadow-sm),
+    0 0 0 1px var(--line-strong);
 }
 
 .dot {

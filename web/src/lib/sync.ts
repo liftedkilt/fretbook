@@ -29,7 +29,8 @@ export function measureStarts(barLengths: number[], anchors: Record<number, numb
   const first = ordered[0];
   const last = ordered[ordered.length - 1];
   const previous = ordered[ordered.length - 2];
-  const tailScale = ordered.length > 1 ? (at(last) - at(previous)) / (natural[last] - natural[previous]) : 1;
+  const tailScale =
+    ordered.length > 1 ? (at(last) - at(previous)) / (natural[last] - natural[previous]) : 1;
   const starts = new Array<number>(count + 1);
   let cursor = 0;
   for (let index = 0; index <= count; index += 1) {
@@ -110,11 +111,14 @@ export function moveAnchor(
 export function remapSync(sync: SyncMap, origin: (number | null)[]): SyncMap {
   const anchors: Record<string, number> = {};
   origin.forEach((source, index) => {
-    if (source != null && sync.anchors[String(source)] != null) anchors[String(index)] = sync.anchors[String(source)];
+    if (source != null && sync.anchors[String(source)] != null)
+      anchors[String(index)] = sync.anchors[String(source)];
   });
   return {
     video_id: sync.video_id,
-    points: sync.points.length ? origin.map((source) => (source != null ? (sync.points[source] ?? null) : null)) : [],
+    points: sync.points.length
+      ? origin.map((source) => (source != null ? (sync.points[source] ?? null) : null))
+      : [],
     anchors,
   };
 }
@@ -132,7 +136,12 @@ export function flatSyncPoints(starts: number[]): { points: FlatSyncPoint[]; shi
   const count = milliseconds.length - 1;
   const points: FlatSyncPoint[] = [];
   for (let index = 0; index < count; index += 1) {
-    points.push({ barIndex: index, barPosition: 0, barOccurence: 0, millisecondOffset: milliseconds[index] + shiftMs });
+    points.push({
+      barIndex: index,
+      barPosition: 0,
+      barOccurence: 0,
+      millisecondOffset: milliseconds[index] + shiftMs,
+    });
   }
   if (count > 0) {
     let end = milliseconds[count] + shiftMs;

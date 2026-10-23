@@ -46,10 +46,16 @@ test("a song with audio plays the audio and follows its sync marks", async ({ pa
 
   const audio = page.getByTestId("player-audio");
   await expect(audio).toHaveCount(1);
-  await expect.poll(() => audio.evaluate((element: HTMLAudioElement) => element.readyState)).toBeGreaterThanOrEqual(3);
+  await expect
+    .poll(() => audio.evaluate((element: HTMLAudioElement) => element.readyState))
+    .toBeGreaterThanOrEqual(3);
 
   await page.getByTestId("player-play").click();
-  await expect.poll(() => audio.evaluate((element: HTMLAudioElement) => element.currentTime), { timeout: 15_000 }).toBeGreaterThan(1.2);
+  await expect
+    .poll(() => audio.evaluate((element: HTMLAudioElement) => element.currentTime), {
+      timeout: 15_000,
+    })
+    .toBeGreaterThan(1.2);
   // Sync points put a bar at each second, so by now the status is on bar 2 or later.
   await expect(page.getByTestId("player-status")).toHaveAttribute("data-measure", /^[1-3]$/);
 });

@@ -66,17 +66,25 @@ export function openMusicFont(bravura: Uint8Array): MusicFont {
 }
 
 export async function embedFonts(pdf: PDFDocument): Promise<PdfFonts> {
-  const [helvetica, helveticaBold, helveticaOblique, helveticaBoldOblique, times, timesBold, timesItalic, timesBoldItalic] =
-    await Promise.all([
-      pdf.embedFont(StandardFonts.Helvetica),
-      pdf.embedFont(StandardFonts.HelveticaBold),
-      pdf.embedFont(StandardFonts.HelveticaOblique),
-      pdf.embedFont(StandardFonts.HelveticaBoldOblique),
-      pdf.embedFont(StandardFonts.TimesRoman),
-      pdf.embedFont(StandardFonts.TimesRomanBold),
-      pdf.embedFont(StandardFonts.TimesRomanItalic),
-      pdf.embedFont(StandardFonts.TimesRomanBoldItalic),
-    ]);
+  const [
+    helvetica,
+    helveticaBold,
+    helveticaOblique,
+    helveticaBoldOblique,
+    times,
+    timesBold,
+    timesItalic,
+    timesBoldItalic,
+  ] = await Promise.all([
+    pdf.embedFont(StandardFonts.Helvetica),
+    pdf.embedFont(StandardFonts.HelveticaBold),
+    pdf.embedFont(StandardFonts.HelveticaOblique),
+    pdf.embedFont(StandardFonts.HelveticaBoldOblique),
+    pdf.embedFont(StandardFonts.TimesRoman),
+    pdf.embedFont(StandardFonts.TimesRomanBold),
+    pdf.embedFont(StandardFonts.TimesRomanItalic),
+    pdf.embedFont(StandardFonts.TimesRomanBoldItalic),
+  ]);
   return {
     music: null,
     helvetica,
@@ -137,10 +145,21 @@ export function parseTransform(value: string): Matrix {
       next = { a: sx, b: 0, c: 0, d: args.length > 1 ? args[1] : sx, e: 0, f: 0 };
     } else if (kind === "rotate") {
       const angle = ((args[0] || 0) * Math.PI) / 180;
-      const rot: Matrix = { a: Math.cos(angle), b: Math.sin(angle), c: -Math.sin(angle), d: Math.cos(angle), e: 0, f: 0 };
+      const rot: Matrix = {
+        a: Math.cos(angle),
+        b: Math.sin(angle),
+        c: -Math.sin(angle),
+        d: Math.cos(angle),
+        e: 0,
+        f: 0,
+      };
       next =
         args.length >= 3
-          ? multiply(multiply({ ...IDENTITY, e: args[1], f: args[2] }, rot), { ...IDENTITY, e: -args[1], f: -args[2] })
+          ? multiply(multiply({ ...IDENTITY, e: args[1], f: args[2] }, rot), {
+              ...IDENTITY,
+              e: -args[1],
+              f: -args[2],
+            })
           : rot;
     } else next = { a: args[0], b: args[1], c: args[2], d: args[3], e: args[4], f: args[5] };
     matrix = multiply(matrix, next);
@@ -157,7 +176,9 @@ interface SvgNode {
 
 function decode(value: string): string {
   return value
-    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex: string) => String.fromCodePoint(Number.parseInt(hex, 16)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex: string) =>
+      String.fromCodePoint(Number.parseInt(hex, 16)),
+    )
     .replace(/&#(\d+);/g, (_, dec: string) => String.fromCodePoint(Number.parseInt(dec, 10)))
     .replace(/&quot;/g, '"')
     .replace(/&apos;/g, "'")
@@ -263,7 +284,12 @@ function parseStyle(value: string | undefined): Record<string, string> {
   return style;
 }
 
-function parseFont(value: string): { size?: number; weight?: "bold" | "normal"; fontStyle?: "italic" | "normal"; family?: string } {
+function parseFont(value: string): {
+  size?: number;
+  weight?: "bold" | "normal";
+  fontStyle?: "italic" | "normal";
+  family?: string;
+} {
   const parts = value.trim().split(/\s+/);
   let weight: "bold" | "normal" | undefined;
   let fontStyle: "italic" | "normal" | undefined;
@@ -478,7 +504,9 @@ function transformPath(path: string, matrix: Matrix): string {
 function childContext(el: SvgNode, parent: DrawContext): DrawContext {
   const style = parseStyle(el.attrs.style);
   const next: DrawContext = {
-    matrix: el.attrs.transform ? multiply(parent.matrix, parseTransform(el.attrs.transform)) : parent.matrix,
+    matrix: el.attrs.transform
+      ? multiply(parent.matrix, parseTransform(el.attrs.transform))
+      : parent.matrix,
     music: parent.music,
     fontSize: parent.fontSize,
     fill: parent.fill,
@@ -501,10 +529,12 @@ function childContext(el: SvgNode, parent: DrawContext): DrawContext {
       next.music = /alphatab/i.test(parsed.family);
     }
   }
-    if (style["font-size"]) {
+  if (style["font-size"]) {
     const raw = style["font-size"];
     // A percentage is relative to the size already chosen for this element (the `.at` music size).
-    next.fontSize = raw.endsWith("%") ? next.fontSize * (Number.parseFloat(raw) / 100) : Number.parseFloat(raw);
+    next.fontSize = raw.endsWith("%")
+      ? next.fontSize * (Number.parseFloat(raw) / 100)
+      : Number.parseFloat(raw);
   }
   const fill = style.fill ?? el.attrs.fill;
   if (fill !== undefined) next.fill = fill === "none" ? null : parseColor(fill);
@@ -542,7 +572,12 @@ export function drawSvg(page: PDFPage, svg: string, fonts: PdfFonts, place: SvgP
       const w = Number.parseFloat(el.attrs.width ?? "0");
       const h = Number.parseFloat(el.attrs.height ?? "0");
       if (w > 0 && h > 0) {
-        const corners = [apply(ctx.matrix, x, y), apply(ctx.matrix, x + w, y), apply(ctx.matrix, x + w, y + h), apply(ctx.matrix, x, y + h)];
+        const corners = [
+          apply(ctx.matrix, x, y),
+          apply(ctx.matrix, x + w, y),
+          apply(ctx.matrix, x + w, y + h),
+          apply(ctx.matrix, x, y + h),
+        ];
         const xs = corners.map((corner) => corner[0]);
         const ys = corners.map((corner) => corner[1]);
         const left = Math.min(...xs);
@@ -559,12 +594,18 @@ export function drawSvg(page: PDFPage, svg: string, fonts: PdfFonts, place: SvgP
             color: ctx.fill,
           });
         } else {
-          page.drawSvgPath(transformPath(`M ${x} ${y} L ${x + w} ${y} L ${x + w} ${y + h} L ${x} ${y + h} Z`, ctx.matrix), {
-            x: place.originX,
-            y: place.originTop,
-            scale: place.scale,
-            color: ctx.fill,
-          });
+          page.drawSvgPath(
+            transformPath(
+              `M ${x} ${y} L ${x + w} ${y} L ${x + w} ${y + h} L ${x} ${y + h} Z`,
+              ctx.matrix,
+            ),
+            {
+              x: place.originX,
+              y: place.originTop,
+              scale: place.scale,
+              color: ctx.fill,
+            },
+          );
         }
       }
     } else if (el.tag === "path" && el.attrs.d) {
@@ -572,7 +613,8 @@ export function drawSvg(page: PDFPage, svg: string, fonts: PdfFonts, place: SvgP
       const stroke = strokeRaw && strokeRaw !== "none" ? parseColor(strokeRaw) : null;
       const fill = ctx.fill;
       if (fill || stroke) {
-        const width = Number.parseFloat(style["stroke-width"] ?? el.attrs["stroke-width"] ?? "1") || 1;
+        const width =
+          Number.parseFloat(style["stroke-width"] ?? el.attrs["stroke-width"] ?? "1") || 1;
         page.drawSvgPath(transformPath(el.attrs.d, ctx.matrix), {
           x: place.originX,
           y: place.originTop,
@@ -584,7 +626,11 @@ export function drawSvg(page: PDFPage, svg: string, fonts: PdfFonts, place: SvgP
       }
     } else if ((el.tag === "text" || el.tag === "tspan") && el.text.trim() && ctx.fill) {
       const anchor = el.attrs["text-anchor"] ?? style["text-anchor"] ?? "start";
-      const baseline = (style["dominant-baseline"] ?? el.attrs["dominant-baseline"] ?? "alphabetic").toLowerCase();
+      const baseline = (
+        style["dominant-baseline"] ??
+        el.attrs["dominant-baseline"] ??
+        "alphabetic"
+      ).toLowerCase();
       let x = Number.parseFloat(el.attrs.x ?? "0") || 0;
       let y = Number.parseFloat(el.attrs.y ?? "0") || 0;
       const music = ctx.music ? fonts.music : null;
@@ -598,7 +644,10 @@ export function drawSvg(page: PDFPage, svg: string, fonts: PdfFonts, place: SvgP
         let pen = x;
         for (const glyph of glyphs) {
           if (glyph.path.trim()) {
-            const outline = transformPath(glyph.path, multiply(ctx.matrix, { a: em, b: 0, c: 0, d: -em, e: pen, f: y }));
+            const outline = transformPath(
+              glyph.path,
+              multiply(ctx.matrix, { a: em, b: 0, c: 0, d: -em, e: pen, f: y }),
+            );
             if (outline) {
               page.drawSvgPath(outline, {
                 x: place.originX,

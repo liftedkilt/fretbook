@@ -7,7 +7,13 @@
     kind = "tab",
     strings = 6,
     size = "md",
-  }: { id: string; title: string; kind?: "tab" | "chords"; strings?: number; size?: "sm" | "md" | "lg" } = $props();
+  }: {
+    id: string;
+    title: string;
+    kind?: "tab" | "chords";
+    strings?: number;
+    size?: "sm" | "md" | "lg";
+  } = $props();
 
   const palette = $derived(paletteFor(id));
   const letters = $derived(monogram(title));
@@ -34,7 +40,13 @@
       {/each}
     {:else}
       {#each Array.from({ length: lines }, (_, index) => index) as row (row)}
-        <line x1="0" x2="100" y1={52 + row * (40 / lines)} y2={52 + row * (40 / lines)} style="stroke-width:{0.5 + row * 0.18}" />
+        <line
+          x1="0"
+          x2="100"
+          y1={52 + row * (40 / lines)}
+          y2={52 + row * (40 / lines)}
+          style="stroke-width:{0.5 + row * 0.18}"
+        />
       {/each}
       {#each [24, 48, 72, 96] as fret (fret)}
         <line class="fret" x1={fret} x2={fret} y1="50" y2="94" />

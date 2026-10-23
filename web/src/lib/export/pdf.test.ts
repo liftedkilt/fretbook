@@ -10,11 +10,14 @@ import { paginate } from "./layout";
 import { contentHeight, renderChordSheetPdf, renderTrackPdf, type TrackPdf } from "./pdf";
 
 const bravura = new Uint8Array(
-  readFileSync(new URL("../../../node_modules/@coderline/alphatab/dist/font/Bravura.otf", import.meta.url)),
+  readFileSync(
+    new URL("../../../node_modules/@coderline/alphatab/dist/font/Bravura.otf", import.meta.url),
+  ),
 );
 
 function inflate(data: Uint8Array): Uint8Array {
-  const trimmed = data[data.length - 1] === 10 || data[data.length - 1] === 13 ? data.subarray(0, -1) : data;
+  const trimmed =
+    data[data.length - 1] === 10 || data[data.length - 1] === 13 ? data.subarray(0, -1) : data;
   try {
     return inflateSync(trimmed);
   } catch {
@@ -32,7 +35,9 @@ function quarters(spec: (number | number[])[]): Beat[] {
   return spec.map((frets, index) => ({
     position: index * 960,
     duration: 960,
-    notes: (Array.isArray(frets) ? frets : [frets]).filter((fret) => fret >= 0).map((fret, string) => ({ string, fret })),
+    notes: (Array.isArray(frets) ? frets : [frets])
+      .filter((fret) => fret >= 0)
+      .map((fret, string) => ({ string, fret })),
   }));
 }
 
@@ -46,7 +51,13 @@ function song(tracks: Track[]): ScoreDocument {
   };
 }
 
-function makeTrack(id: string, name: string, instrument: string, tuning: number[], bars: Beat[][]): Track {
+function makeTrack(
+  id: string,
+  name: string,
+  instrument: string,
+  tuning: number[],
+  bars: Beat[][],
+): Track {
   return {
     id,
     name,
@@ -74,7 +85,11 @@ function bars(count: number, strings: number): Beat[][] {
             { string: Math.min(1, strings - 1), fret: 7 },
           ],
         },
-        { position: 2880, duration: 960, notes: strings > 4 ? [{ string: strings - 1, fret: 0 }] : [] },
+        {
+          position: 2880,
+          duration: 960,
+          notes: strings > 4 ? [{ string: strings - 1, fret: 0 }] : [],
+        },
       ];
     }
     return quarters(pattern.map((fret) => (fret + index) % 13));
@@ -134,7 +149,9 @@ function assertPage(result: TrackPdf, plain: string, curves: number, title: stri
   expect(result.pageCount).toBeGreaterThan(1);
   expect(result.systems.length).toBeGreaterThan(1);
   for (const system of result.systems) {
-    const hits = result.pages.filter((page) => system.y >= page.top - 2 && system.y + system.height <= page.bottom + 2);
+    const hits = result.pages.filter(
+      (page) => system.y >= page.top - 2 && system.y + system.height <= page.bottom + 2,
+    );
     expect(hits).toHaveLength(1);
   }
 }
@@ -170,7 +187,13 @@ describe("renderTrackPdf", () => {
   it("paginates a 4-string bass track with the song tuning in the header", async () => {
     const tuning = [43, 38, 33, 28];
     const document = song([makeTrack("bass", "Bass", "bass-guitar", tuning, bars(24, 4))]);
-    const result = await renderTrackPdf({ document, trackId: "bass", title: "Four String", artist: "Ada", bravura });
+    const result = await renderTrackPdf({
+      document,
+      trackId: "bass",
+      title: "Four String",
+      artist: "Ada",
+      bravura,
+    });
     const decoded = await pdfText(result.bytes);
     const plain = decoded.text;
     const loaded = await PDFDocument.load(result.bytes);
@@ -187,7 +210,13 @@ describe("renderTrackPdf", () => {
   it("paginates a 5-string bass track using the low B from the song", async () => {
     const tuning = [43, 38, 33, 28, 23];
     const document = song([makeTrack("low-b", "Low B", "bass-guitar", tuning, bars(24, 5))]);
-    const result = await renderTrackPdf({ document, trackId: "low-b", title: "Five String", artist: "Bea", bravura });
+    const result = await renderTrackPdf({
+      document,
+      trackId: "low-b",
+      title: "Five String",
+      artist: "Bea",
+      bravura,
+    });
     const decoded = await pdfText(result.bytes);
     const plain = decoded.text;
     expect(result.tuning).toEqual(tuning);
@@ -214,7 +243,13 @@ describe("renderTrackPdf", () => {
       capoLabel: "Capo 2",
       bravura,
     });
-    const bass = await renderTrackPdf({ document, trackId: "bass", title: "Six String", artist: "Cy", bravura });
+    const bass = await renderTrackPdf({
+      document,
+      trackId: "bass",
+      title: "Six String",
+      artist: "Cy",
+      bravura,
+    });
     const guitarDecoded = await pdfText(guitar.bytes);
     const bassDecoded = await pdfText(bass.bytes);
     const guitarText = guitarDecoded.text;
@@ -235,7 +270,10 @@ describe("renderTrackPdf", () => {
 
 describe("renderChordSheetPdf", () => {
   it("paginates a transposed chord sheet with the title on every page", async () => {
-    const body = Array.from({ length: 40 }, (_, index) => `[F#m7]Line ${index} keeps its chord`).join("\n");
+    const body = Array.from(
+      { length: 40 },
+      (_, index) => `[F#m7]Line ${index} keeps its chord`,
+    ).join("\n");
     const result = await renderChordSheetPdf({
       chordpro: `{comment: Intro}\n${body}`,
       title: "Campfire",

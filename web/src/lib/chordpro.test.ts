@@ -19,7 +19,9 @@ describe("chordpro", () => {
   });
 
   it("reads metadata, comments, and sections", () => {
-    const sheet = parse("{title: Song}\n{st: Someone}\n{c: Intro}\n[G]Hi\n\n{soc}\n[C]La\n{eoc}\n{sot}\ne|--3--|\n{eot}\n");
+    const sheet = parse(
+      "{title: Song}\n{st: Someone}\n{c: Intro}\n[G]Hi\n\n{soc}\n[C]La\n{eoc}\n{sot}\ne|--3--|\n{eot}\n",
+    );
     expect(sheet.meta).toMatchObject({ title: "Song", artist: "Someone" });
     expect(sheet.blocks.map((block) => block.kind)).toEqual(["", "chorus", "tab"]);
     expect(sheet.blocks[0].lines[0]).toEqual({ kind: "comment", text: "Intro" });

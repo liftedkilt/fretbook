@@ -65,7 +65,8 @@ let locale = $state(readLocale());
 
 function lookup(catalog: Catalog, key: string): unknown {
   return key.split(".").reduce<unknown>((node, part) => {
-    if (node && typeof node === "object" && part in node) return (node as Record<string, unknown>)[part];
+    if (node && typeof node === "object" && part in node)
+      return (node as Record<string, unknown>)[part];
     return undefined;
   }, catalog);
 }
@@ -80,7 +81,8 @@ function resolve(key: string, vars?: Record<string, string | number>): string | 
   }
   if (typeof value !== "string") return undefined;
   let text = value;
-  for (const [name, item] of Object.entries(vars ?? {})) text = text.replaceAll(`{${name}}`, String(item));
+  for (const [name, item] of Object.entries(vars ?? {}))
+    text = text.replaceAll(`{${name}}`, String(item));
   return text;
 }
 
@@ -103,7 +105,11 @@ export function tOr(key: string, fallback: string, vars?: Record<string, string 
 
 /** A server error or warning in the reader's language. */
 export function keyed(message: Partial<Keyed> & { message?: string }): string {
-  return tOr(message.key ? `errors.${message.key}` : "", message.message || t("error.generic"), message.params);
+  return tOr(
+    message.key ? `errors.${message.key}` : "",
+    message.message || t("error.generic"),
+    message.params,
+  );
 }
 
 /** Remember `next` (an exact catalog id, or a tag `pickLocale` can match). */

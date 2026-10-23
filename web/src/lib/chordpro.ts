@@ -48,7 +48,17 @@ const ALIASES: Record<string, string> = {
   sot: "start_of_tab",
   eot: "end_of_tab",
 };
-const META = new Set(["title", "subtitle", "artist", "key", "capo", "tempo", "composer", "album", "year"]);
+const META = new Set([
+  "title",
+  "subtitle",
+  "artist",
+  "key",
+  "capo",
+  "tempo",
+  "composer",
+  "album",
+  "year",
+]);
 
 export function parseLyrics(line: string): Segment[] {
   const segments: Segment[] = [];
@@ -108,7 +118,9 @@ export function parse(text: string): Sheet {
     }
   }
   if (!meta.artist && meta.subtitle) meta.artist = meta.subtitle;
-  const kept = blocks.filter((block) => block.label || block.lines.some((line) => line.kind !== "empty"));
+  const kept = blocks.filter(
+    (block) => block.label || block.lines.some((line) => line.kind !== "empty"),
+  );
   return { meta, blocks: kept };
 }
 

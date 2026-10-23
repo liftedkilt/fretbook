@@ -9,7 +9,14 @@
   import SongView from "./components/SongView.svelte";
   import { t } from "./lib/i18n.svelte";
   import { followLink, hrefFor, navigate, routePath } from "./lib/router.svelte";
-  import { countFor, loadMeta, openSheet, refreshSongs, ui, type LibraryFilter } from "./lib/ui.svelte";
+  import {
+    countFor,
+    loadMeta,
+    openSheet,
+    refreshSongs,
+    ui,
+    type LibraryFilter,
+  } from "./lib/ui.svelte";
 
   const path = $derived(routePath());
   const edit = $derived(path.match(/^\/songs\/([^/]+)\/edit\/?$/));
@@ -25,7 +32,9 @@
     { id: "chords", icon: "chords", key: "library.filterChords" },
   ];
 
-  const recent = $derived([...ui.songs].sort((a, b) => b.updated_at.localeCompare(a.updated_at)).slice(0, 5));
+  const recent = $derived(
+    [...ui.songs].sort((a, b) => b.updated_at.localeCompare(a.updated_at)).slice(0, 5),
+  );
   const activeSong = $derived(edit?.[1] ?? play?.[1] ?? "");
 
   $effect(() => {
@@ -59,7 +68,13 @@
       </span>
     </a>
 
-    <button class="primary new-button" data-testid="add-song" onclick={() => openSheet("add")} aria-label={t("add.button")} title={t("add.button")}>
+    <button
+      class="primary new-button"
+      data-testid="add-song"
+      onclick={() => openSheet("add")}
+      aria-label={t("add.button")}
+      title={t("add.button")}
+    >
       <Icon name="plus" /><span class="rail-hide">{t("add.button")}</span>
     </button>
 
@@ -89,7 +104,13 @@
             href={hrefFor(`/songs/${song.id}`)}
             onclick={(event) => followLink(event, `/songs/${song.id}`)}
           >
-            <Cover id={song.id} title={song.title} kind={song.content_kind} strings={song.string_count} size="sm" />
+            <Cover
+              id={song.id}
+              title={song.title}
+              kind={song.content_kind}
+              strings={song.string_count}
+              size="sm"
+            />
             <span>
               <strong>{song.title}</strong>
               <small>{song.artist || "—"}</small>
@@ -111,7 +132,12 @@
       </a>
     {/if}
 
-    <button class="side-link side-settings" data-testid="open-settings" onclick={() => openSheet("settings")} title={t("settings.heading")}>
+    <button
+      class="side-link side-settings"
+      data-testid="open-settings"
+      onclick={() => openSheet("settings")}
+      title={t("settings.heading")}
+    >
       <Icon name="settings" size={19} /><span class="rail-hide">{t("settings.heading")}</span>
     </button>
   </aside>
@@ -122,10 +148,20 @@
       <span class="wordmark" aria-hidden="true">Fret<em>book</em></span>
     </a>
     <div class="topbar-actions">
-      <button class="icon-button ghost" data-testid="open-settings-topbar" onclick={() => openSheet("settings")} aria-label={t("settings.heading")}>
+      <button
+        class="icon-button ghost"
+        data-testid="open-settings-topbar"
+        onclick={() => openSheet("settings")}
+        aria-label={t("settings.heading")}
+      >
         <Icon name="settings" />
       </button>
-      <button class="icon-button primary" data-testid="add-song-topbar" onclick={() => openSheet("add")} aria-label={t("add.button")}>
+      <button
+        class="icon-button primary"
+        data-testid="add-song-topbar"
+        onclick={() => openSheet("add")}
+        aria-label={t("add.button")}
+      >
         <Icon name="plus" />
       </button>
     </div>
@@ -147,17 +183,27 @@
       <div class="empty-state">
         <span class="empty-art"><Icon name="library" size={34} /></span>
         <h1 class="display">{t("app.notFound")}</h1>
-        <a class="button" href={hrefFor("/")} onclick={(event) => followLink(event, "/")}>{t("app.back")}</a>
+        <a class="button" href={hrefFor("/")} onclick={(event) => followLink(event, "/")}
+          >{t("app.back")}</a
+        >
       </div>
     {/if}
   </main>
 
   {#if isLibrary}
     <nav class="tabbar" aria-label={t("nav.main")}>
-      <button class="tab-item" aria-current="page" onclick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
+      <button
+        class="tab-item"
+        aria-current="page"
+        onclick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+      >
         <Icon name="library" /><span>{t("library.heading")}</span>
       </button>
-      <button class="tab-item tab-add" onclick={() => openSheet("add")} aria-label={t("add.button")}>
+      <button
+        class="tab-item tab-add"
+        onclick={() => openSheet("add")}
+        aria-label={t("add.button")}
+      >
         <span><Icon name="plus" size={26} /></span>
       </button>
       <button class="tab-item" onclick={() => openSheet("settings")}>

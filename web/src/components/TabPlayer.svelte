@@ -43,13 +43,19 @@
   let pendingSync: (() => Promise<void>) | null = null;
 
   const document_ = $derived(song.document);
-  const track = $derived(document_.tracks.find((item) => item.id === trackId) ?? preferredTrack(document_));
+  const track = $derived(
+    document_.tracks.find((item) => item.id === trackId) ?? preferredTrack(document_),
+  );
   const barCount = $derived(document_.bars.length);
-  const audioSrc = $derived(song.audio_url ? new URL(song.audio_url, document.baseURI).toString() : "");
+  const audioSrc = $derived(
+    song.audio_url ? new URL(song.audio_url, document.baseURI).toString() : "",
+  );
   // With audio, the <audio> clock and sync points set the pace, so a BPM edit must not rebuild the score.
   // Without audio, alphaTab's synth plays at the written tempo, so it does.
   const renderBpm = $derived(song.has_audio ? untrack(() => song.document.bpm) : document_.bpm);
-  const tex = $derived(trackToAlphaTex({ ...document_, bpm: renderBpm }, trackId, song.title, song.artist));
+  const tex = $derived(
+    trackToAlphaTex({ ...document_, bpm: renderBpm }, trackId, song.title, song.artist),
+  );
 
   function staveProfile(notation: boolean): alphaTab.StaveProfile {
     return notation ? alphaTab.StaveProfile.ScoreTab : alphaTab.StaveProfile.Tab;
@@ -111,7 +117,8 @@
   function paintAudioClock() {
     if (!song.has_audio || !audioEl) return;
     const seconds = audioEl.currentTime;
-    const output = player.api?.player?.output as alphaTab.synth.IExternalMediaSynthOutput | undefined;
+    const output = player.api?.player?.output as
+      alphaTab.synth.IExternalMediaSynthOutput | undefined;
     output?.updatePosition(seconds * 1000 + shiftMs);
     const starts = startsNow();
     currentMeasure = measureAt(starts, seconds);
@@ -131,14 +138,18 @@
     settings.core.fontDirectory = new URL("font/", document.baseURI).href;
     settings.core.logLevel = alphaTab.LogLevel.Warning;
     settings.display.staveProfile = staveProfile(untrack(() => ui.notation));
-    settings.player.playerMode = useAudio ? alphaTab.PlayerMode.EnabledExternalMedia : alphaTab.PlayerMode.EnabledSynthesizer;
+    settings.player.playerMode = useAudio
+      ? alphaTab.PlayerMode.EnabledExternalMedia
+      : alphaTab.PlayerMode.EnabledSynthesizer;
     settings.player.soundFont = new URL("soundfont/sonivox.sf2", document.baseURI).href;
     settings.player.enableCursor = true;
     settings.player.enableElementHighlighting = true;
     settings.player.enableUserInteraction = true;
     settings.player.scrollElement = element;
     settings.player.scrollOffsetY = 16;
-    settings.player.scrollMode = untrack(() => follow) ? alphaTab.ScrollMode.Continuous : alphaTab.ScrollMode.Off;
+    settings.player.scrollMode = untrack(() => follow)
+      ? alphaTab.ScrollMode.Continuous
+      : alphaTab.ScrollMode.Off;
     const instance = new alphaTab.AlphaTabApi(element, settings);
     player.api = instance;
     instance.scoreLoaded.on(() => {
@@ -148,7 +159,8 @@
     });
     instance.playerReady.on(() => {
       if (!useAudio || !audioEl) return;
-      const output = instance.player?.output as alphaTab.synth.IExternalMediaSynthOutput | undefined;
+      const output = instance.player?.output as
+        alphaTab.synth.IExternalMediaSynthOutput | undefined;
       if (output) output.handler = new AudioMedia(audioEl, () => shiftMs);
       audioEl.playbackRate = untrack(() => rate);
     });
@@ -247,7 +259,8 @@
       audioEl.currentTime = Math.max(0, startsNow()[index] ?? 0);
     } else if (player.api) {
       let tick = 0;
-      for (let cursor = 0; cursor < index; cursor += 1) tick += barTicks(song.document.bars[cursor].signature);
+      for (let cursor = 0; cursor < index; cursor += 1)
+        tick += barTicks(song.document.bars[cursor].signature);
       player.api.tickPosition = tick;
       currentMeasure = index;
     }
@@ -262,7 +275,9 @@
   function nudge(delta: number) {
     if (currentMeasure < 0 || currentMeasure >= barCount) return;
     const starts = startsNow();
-    commitAnchors(moveAnchor(seedAnchors(), starts, currentMeasure, starts[currentMeasure] + delta));
+    commitAnchors(
+      moveAnchor(seedAnchors(), starts, currentMeasure, starts[currentMeasure] + delta),
+    );
   }
 
   function clearCurrent() {
@@ -287,7 +302,9 @@
     follow = checked;
     const api = player.api;
     if (!api) return;
-    api.settings.player.scrollMode = checked ? alphaTab.ScrollMode.Continuous : alphaTab.ScrollMode.Off;
+    api.settings.player.scrollMode = checked
+      ? alphaTab.ScrollMode.Continuous
+      : alphaTab.ScrollMode.Off;
     api.updateSettings();
   }
 
@@ -351,7 +368,9 @@
 
 <div class="song-page player-page">
   <header class="song-header">
-    <a class="back-link" href={hrefFor("/")} onclick={(event) => followLink(event, "/")}><Icon name="back" size={18} />{t("app.back")}</a>
+    <a class="back-link" href={hrefFor("/")} onclick={(event) => followLink(event, "/")}
+      ><Icon name="back" size={18} />{t("app.back")}</a
+    >
     <div class="song-hero">
       <Cover id={song.id} title={song.title} strings={track.tuning_midi.length} size="lg" />
       <div class="song-hero-text">
@@ -360,14 +379,23 @@
         {#if song.artist}<p class="song-byline">{song.artist}</p>{/if}
         <div class="pills">
           <span class="pill">{tuningLabel(track.tuning_midi)}</span>
-          <span class="pill">{track.capo > 0 ? t("player.capo", { fret: track.capo }) : t("player.noCapo")}</span>
+          <span class="pill"
+            >{track.capo > 0 ? t("player.capo", { fret: track.capo }) : t("player.noCapo")}</span
+          >
           <span class="pill">{t("library.tempo", { bpm: song.document.bpm })}</span>
           <span class="pill">{t("library.measures", { count: barCount })}</span>
-          {#if song.has_audio}<span class="pill pill-accent"><Icon name="waveform" size={14} />{t("library.audio")}</span>{/if}
+          {#if song.has_audio}<span class="pill pill-accent"
+              ><Icon name="waveform" size={14} />{t("library.audio")}</span
+            >{/if}
         </div>
       </div>
       <div class="hero-actions">
-        <a class="button" data-testid="song-edit-link" href={hrefFor(`/songs/${song.id}/edit`)} onclick={(event) => followLink(event, `/songs/${song.id}/edit`)}>
+        <a
+          class="button"
+          data-testid="song-edit-link"
+          href={hrefFor(`/songs/${song.id}/edit`)}
+          onclick={(event) => followLink(event, `/songs/${song.id}/edit`)}
+        >
           <Icon name="edit" size={18} /><span>{t("player.edit")}</span>
         </a>
         <Menu label={t("player.export")} icon="download" testid="export-menu">
@@ -383,10 +411,26 @@
               }}
             >
               <Icon name="file" size={18} />
-              {exporting ? t("player.exportingPdf") : song.document.tracks.length > 1 ? t("player.exportPdfTrack", { name: track.name }) : t("player.exportPdf")}
+              {exporting
+                ? t("player.exportingPdf")
+                : song.document.tracks.length > 1
+                  ? t("player.exportPdfTrack", { name: track.name })
+                  : t("player.exportPdf")}
             </button>
-            <a class="menu-item" data-testid="export-musicxml" role="menuitem" href={exportUrl("musicxml")} onclick={close}><Icon name="layers" size={18} />{t("player.exportMusicXml")}</a>
-            <a class="menu-item" data-testid="export-json" role="menuitem" href={exportUrl("json")} onclick={close}><Icon name="download" size={18} />{t("player.exportJson")}</a>
+            <a
+              class="menu-item"
+              data-testid="export-musicxml"
+              role="menuitem"
+              href={exportUrl("musicxml")}
+              onclick={close}><Icon name="layers" size={18} />{t("player.exportMusicXml")}</a
+            >
+            <a
+              class="menu-item"
+              data-testid="export-json"
+              role="menuitem"
+              href={exportUrl("json")}
+              onclick={close}><Icon name="download" size={18} />{t("player.exportJson")}</a
+            >
           {/snippet}
         </Menu>
       </div>
@@ -399,7 +443,14 @@
   {/if}
   <!-- Scrolls on its own, so keyboard users need to be able to focus it. -->
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-  <div class="paper score" data-testid="player-score" bind:this={host} role="region" aria-label={t("player.score")} tabindex="0"></div>
+  <div
+    class="paper score"
+    data-testid="player-score"
+    bind:this={host}
+    role="region"
+    aria-label={t("player.score")}
+    tabindex="0"
+  ></div>
 
   <div class="dock">
     {#if panelOpen}
@@ -419,12 +470,18 @@
           <div class="panel-group">
             <h3>{t("player.syncMarks")}</h3>
             <div class="button-row">
-              <button class="accent" data-testid="player-tap" onclick={tap}><Icon name="tap" size={18} />{t("player.tap")}</button>
+              <button class="accent" data-testid="player-tap" onclick={tap}
+                ><Icon name="tap" size={18} />{t("player.tap")}</button
+              >
               <button onclick={() => nudge(-0.05)}>{t("player.nudgeBack")}</button>
               <button onclick={() => nudge(0.05)}>{t("player.nudgeForward")}</button>
               <button onclick={clearCurrent}>{t("player.clearAnchor")}</button>
-              <button onclick={() => commitAnchors(pointAnchors(song.document.sync, barCount))}>{t("player.restore")}</button>
-              <button class="danger-text" onclick={() => commitAnchors({})}>{t("player.clearAll")}</button>
+              <button onclick={() => commitAnchors(pointAnchors(song.document.sync, barCount))}
+                >{t("player.restore")}</button
+              >
+              <button class="danger-text" onclick={() => commitAnchors({})}
+                >{t("player.clearAll")}</button
+              >
             </div>
             <p class="muted small">
               {t("player.nextTap", { measure: tapIndex + 1 })}{#if saveLabel}&nbsp;· {saveLabel}{/if}
@@ -433,10 +490,20 @@
           <div class="panel-group">
             <h3>{t("player.loop")}</h3>
             <div class="button-row">
-              <button onclick={() => setLoop("a")}><Icon name="repeat" size={16} />{t("player.loopA")}</button>
+              <button onclick={() => setLoop("a")}
+                ><Icon name="repeat" size={16} />{t("player.loopA")}</button
+              >
               <button onclick={() => setLoop("b")}>{t("player.loopB")}</button>
-              <button onclick={() => { loopA = null; loopB = null; }} disabled={loopA == null}>{t("player.clearLoop")}</button>
-              {#if loopA != null && loopB != null}<span class="pill pill-accent">{t("player.loopRange", { a: loopA + 1, b: loopB + 1 })}</span>{/if}
+              <button
+                onclick={() => {
+                  loopA = null;
+                  loopB = null;
+                }}
+                disabled={loopA == null}>{t("player.clearLoop")}</button
+              >
+              {#if loopA != null && loopB != null}<span class="pill pill-accent"
+                  >{t("player.loopRange", { a: loopA + 1, b: loopB + 1 })}</span
+                >{/if}
             </div>
           </div>
         {/if}
@@ -473,13 +540,31 @@
 
     <div class="dock-bar">
       <div class="dock-transport">
-        <button class="icon-button ghost" data-testid="player-prev" onclick={() => step(-1)} aria-label={t("player.previousBar")} title={t("player.previousBar")}>
+        <button
+          class="icon-button ghost"
+          data-testid="player-prev"
+          onclick={() => step(-1)}
+          aria-label={t("player.previousBar")}
+          title={t("player.previousBar")}
+        >
           <Icon name="prev" size={18} />
         </button>
-        <button class="play-button" data-testid="player-play" data-playing={playing} onclick={toggle} aria-label={playing ? t("player.pause") : t("player.play")}>
+        <button
+          class="play-button"
+          data-testid="player-play"
+          data-playing={playing}
+          onclick={toggle}
+          aria-label={playing ? t("player.pause") : t("player.play")}
+        >
           <Icon name={playing ? "pause" : "play"} size={24} />
         </button>
-        <button class="icon-button ghost" data-testid="player-next" onclick={() => step(1)} aria-label={t("player.nextBar")} title={t("player.nextBar")}>
+        <button
+          class="icon-button ghost"
+          data-testid="player-next"
+          onclick={() => step(1)}
+          aria-label={t("player.nextBar")}
+          title={t("player.nextBar")}
+        >
           <Icon name="next" size={18} />
         </button>
       </div>
@@ -503,7 +588,9 @@
             max={Math.max(0, barCount - 1)}
             step="1"
             value={Math.max(0, currentMeasure)}
-            style="--fill:{barCount > 1 ? (Math.max(0, currentMeasure) / (barCount - 1)) * 100 : 0}%"
+            style="--fill:{barCount > 1
+              ? (Math.max(0, currentMeasure) / (barCount - 1)) * 100
+              : 0}%"
             aria-label={t("player.position")}
             oninput={(event) => goToBar(Number(event.currentTarget.value))}
           />
@@ -525,7 +612,11 @@
         <label class="dock-select">
           <span class="visually-hidden">{t("player.rate")}</span>
           <Icon name="gauge" size={16} />
-          <select value={rate} aria-label={t("player.rate")} onchange={(event) => setRate(Number(event.currentTarget.value))}>
+          <select
+            value={rate}
+            aria-label={t("player.rate")}
+            onchange={(event) => setRate(Number(event.currentTarget.value))}
+          >
             {#each [0.5, 0.75, 1, 1.25, 1.5] as value (value)}
               <option {value}>{value}×</option>
             {/each}

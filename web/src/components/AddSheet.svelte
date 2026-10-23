@@ -85,7 +85,11 @@
   async function createSheet() {
     error = "";
     try {
-      const song = await createChordSheet({ title: sheetTitle.trim(), artist: sheetArtist.trim(), chordpro: sheetText });
+      const song = await createChordSheet({
+        title: sheetTitle.trim(),
+        artist: sheetArtist.trim(),
+        chordpro: sheetText,
+      });
       sheetTitle = "";
       sheetArtist = "";
       sheetText = "";
@@ -102,10 +106,13 @@
   async function runJob(jobId: string) {
     const job = await waitForJob(jobId, progress);
     if (job.status === "error") {
-      throw new Error(keyed({ key: job.error_key, message: job.error ?? "", params: job.error_params }));
+      throw new Error(
+        keyed({ key: job.error_key, message: job.error ?? "", params: job.error_params }),
+      );
     }
     const warnings = job.result?.warnings ?? [];
-    if (warnings.length) notice = t("library.warnings", { warnings: warnings.map((item) => keyed(item)).join(" ") });
+    if (warnings.length)
+      notice = t("library.warnings", { warnings: warnings.map((item) => keyed(item)).join(" ") });
     if (job.result?.song_id) {
       url = "";
       videoId = "";
@@ -160,7 +167,9 @@
     previewUrl = target;
     picker = preview;
     const family = defaultFamily();
-    const matching = preview.tracks.filter((track) => (track.is_bass ? "bass" : "guitar") === family);
+    const matching = preview.tracks.filter(
+      (track) => (track.is_bass ? "bass" : "guitar") === family,
+    );
     const initial = matching.length ? matching : preview.tracks.slice(0, 1);
     selected = initial.map((track) => track.part_id);
     busy = "";
@@ -172,7 +181,10 @@
     busy = t("library.importing");
     try {
       if (/\.(gp|gp3|gp4|gp5|gpx)$/i.test(file.name)) {
-        const parsed = documentFromGuitarPro(new Uint8Array(await file.arrayBuffer()), defaultFamily());
+        const parsed = documentFromGuitarPro(
+          new Uint8Array(await file.arrayBuffer()),
+          defaultFamily(),
+        );
         const saved = await importDocument({
           title: parsed.title,
           artist: parsed.artist,
@@ -196,7 +208,13 @@
   }
 </script>
 
-<Sheet {open} title={t("add.heading")} subtitle={t("add.subtitle")} testid="add-sheet" onclose={closeSheet}>
+<Sheet
+  {open}
+  title={t("add.heading")}
+  subtitle={t("add.subtitle")}
+  testid="add-sheet"
+  onclose={closeSheet}
+>
   <div class="mode-grid" role="tablist" aria-label={t("add.heading")}>
     {#each modes as item (item.id)}
       <button
@@ -231,7 +249,13 @@
           <span>{t("library.url")}</span>
           <span class="input-icon">
             <Icon name="link" size={18} />
-            <input data-testid="add-url" bind:value={url} placeholder={t("library.urlHint")} inputmode="url" autocomplete="off" />
+            <input
+              data-testid="add-url"
+              bind:value={url}
+              placeholder={t("library.urlHint")}
+              inputmode="url"
+              autocomplete="off"
+            />
           </span>
         </label>
         <label class="field">
@@ -247,7 +271,9 @@
       {#if picker}
         <div class="track-picker">
           <h3>{t("library.pickTracks")}</h3>
-          <p class="muted">{t("library.pickTracksHint", { title: picker.title || picker.artist })}</p>
+          <p class="muted">
+            {t("library.pickTracksHint", { title: picker.title || picker.artist })}
+          </p>
           <div class="choice-list">
             {#each picker.tracks as track (track.part_id)}
               <label class="choice">
@@ -257,7 +283,10 @@
                   onchange={(event) => togglePart(track.part_id, event.currentTarget.checked)}
                 />
                 <span class="choice-text">
-                  <strong>{track.name || instrumentLabel(track.canonical_instrument || track.instrument)}</strong>
+                  <strong
+                    >{track.name ||
+                      instrumentLabel(track.canonical_instrument || track.instrument)}</strong
+                  >
                   <small>
                     {instrumentLabel(track.canonical_instrument || track.instrument)}
                     · {tuningLabel(track.tuning)}
@@ -268,10 +297,16 @@
             {/each}
           </div>
           <div class="row">
-            <button class="primary" disabled={Boolean(busy) || selected.length === 0} onclick={() => void startImport(previewUrl, selected)}>
+            <button
+              class="primary"
+              disabled={Boolean(busy) || selected.length === 0}
+              onclick={() => void startImport(previewUrl, selected)}
+            >
               {t("library.importSelected")}
             </button>
-            <button class="ghost" type="button" onclick={() => (picker = null)}>{t("library.cancel")}</button>
+            <button class="ghost" type="button" onclick={() => (picker = null)}
+              >{t("library.cancel")}</button
+            >
           </div>
         </div>
       {/if}
@@ -316,8 +351,16 @@
           void create();
         }}
       >
-        <label class="field span-2"><span>{t("library.title")}</span><input data-testid="add-tab-title" bind:value={title} placeholder={t("library.untitled")} /></label>
-        <label class="field span-2"><span>{t("library.artist")}</span><input bind:value={artist} /></label>
+        <label class="field span-2"
+          ><span>{t("library.title")}</span><input
+            data-testid="add-tab-title"
+            bind:value={title}
+            placeholder={t("library.untitled")}
+          /></label
+        >
+        <label class="field span-2"
+          ><span>{t("library.artist")}</span><input bind:value={artist} /></label
+        >
         <label class="field span-2">
           <span>{t("library.preset")}</span>
           <select value={chosenPreset} onchange={(event) => (preset = event.currentTarget.value)}>
@@ -326,12 +369,32 @@
             {/each}
           </select>
         </label>
-        <label class="field"><span>{t("library.bpm")}</span><input type="number" min="1" max="399" bind:value={bpm} /></label>
-        <label class="field"><span>{t("library.measureCount")}</span><input type="number" min="1" max="500" bind:value={measures} /></label>
+        <label class="field"
+          ><span>{t("library.bpm")}</span><input
+            type="number"
+            min="1"
+            max="399"
+            bind:value={bpm}
+          /></label
+        >
+        <label class="field"
+          ><span>{t("library.measureCount")}</span><input
+            type="number"
+            min="1"
+            max="500"
+            bind:value={measures}
+          /></label
+        >
         <div class="field span-2">
           <span>{t("library.signature")}</span>
           <span class="signature">
-            <input type="number" min="1" max="32" bind:value={numerator} aria-label={t("ui.beatsPerBar")} />
+            <input
+              type="number"
+              min="1"
+              max="32"
+              bind:value={numerator}
+              aria-label={t("ui.beatsPerBar")}
+            />
             <span class="signature-slash">/</span>
             <select bind:value={denominator} aria-label={t("ui.beatUnit")}>
               {#each [1, 2, 4, 8, 16, 32] as value (value)}<option {value}>{value}</option>{/each}
@@ -339,7 +402,9 @@
           </span>
         </div>
         <div class="span-2 form-actions">
-          <button class="primary" type="submit" data-testid="add-tab-submit"><Icon name="sparkle" size={18} />{t("library.create")}</button>
+          <button class="primary" type="submit" data-testid="add-tab-submit"
+            ><Icon name="sparkle" size={18} />{t("library.create")}</button
+          >
         </div>
       </form>
     {:else}
@@ -350,14 +415,31 @@
           void createSheet();
         }}
       >
-        <label class="field"><span>{t("library.title")}</span><input data-testid="add-sheet-title" bind:value={sheetTitle} /></label>
-        <label class="field"><span>{t("library.artist")}</span><input bind:value={sheetArtist} /></label>
+        <label class="field"
+          ><span>{t("library.title")}</span><input
+            data-testid="add-sheet-title"
+            bind:value={sheetTitle}
+          /></label
+        >
+        <label class="field"
+          ><span>{t("library.artist")}</span><input bind:value={sheetArtist} /></label
+        >
         <label class="field span-2">
           <span>{t("chords.paste")}</span>
-          <textarea data-testid="add-sheet-text" bind:value={sheetText} rows="9" spellcheck="false" placeholder={t("chords.pasteHint")}></textarea>
+          <textarea
+            data-testid="add-sheet-text"
+            bind:value={sheetText}
+            rows="9"
+            spellcheck="false"
+            placeholder={t("chords.pasteHint")}></textarea>
         </label>
         <div class="span-2 form-actions">
-          <button class="primary" type="submit" data-testid="add-sheet-submit" disabled={!sheetText.trim()}><Icon name="check" size={18} />{t("chords.create")}</button>
+          <button
+            class="primary"
+            type="submit"
+            data-testid="add-sheet-submit"
+            disabled={!sheetText.trim()}><Icon name="check" size={18} />{t("chords.create")}</button
+          >
         </div>
       </form>
     {/if}
@@ -365,7 +447,9 @@
     {#if busy}
       <div class="progress-note" role="status"><span class="spinner"></span>{busy}</div>
     {/if}
-    {#if error}<p class="alert" role="alert" data-testid="add-error"><Icon name="alert" size={18} />{error}</p>{/if}
+    {#if error}<p class="alert" role="alert" data-testid="add-error">
+        <Icon name="alert" size={18} />{error}
+      </p>{/if}
     {#if notice}<p class="notice">{notice}</p>{/if}
   </div>
 </Sheet>

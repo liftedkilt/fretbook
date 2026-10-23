@@ -72,4 +72,3 @@ def measure_at(starts: list[float], time_seconds: float) -> int:
         else:
             high = mid - 1
     return low
-

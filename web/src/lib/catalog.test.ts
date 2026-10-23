@@ -18,7 +18,9 @@ function messageKeys(node: unknown, prefix = ""): string[] {
   if (!node || typeof node !== "object" || Array.isArray(node)) return [];
   const record = node as Record<string, unknown>;
   if (typeof record.other === "string") return prefix ? [prefix] : [];
-  return Object.entries(record).flatMap(([key, value]) => messageKeys(value, prefix ? `${prefix}.${key}` : key));
+  return Object.entries(record).flatMap(([key, value]) =>
+    messageKeys(value, prefix ? `${prefix}.${key}` : key),
+  );
 }
 
 function has(catalog: unknown, key: string): boolean {
@@ -28,7 +30,11 @@ function has(catalog: unknown, key: string): boolean {
     node = (node as Record<string, unknown>)[part];
   }
   if (typeof node === "string") return true;
-  return typeof node === "object" && node !== null && typeof (node as { other?: unknown }).other === "string";
+  return (
+    typeof node === "object" &&
+    node !== null &&
+    typeof (node as { other?: unknown }).other === "string"
+  );
 }
 
 function nodeAt(catalog: unknown, key: string): unknown {
@@ -44,14 +50,22 @@ function placeholders(node: unknown): string[] {
   const texts: string[] = [];
   const walk = (value: unknown) => {
     if (typeof value === "string") texts.push(value);
-    else if (value && typeof value === "object") for (const child of Object.values(value)) walk(child);
+    else if (value && typeof value === "object")
+      for (const child of Object.values(value)) walk(child);
   };
   walk(node);
-  return [...new Set(texts.flatMap((text) => [...text.matchAll(/\{([a-zA-Z]+)\}/g)].map((match) => match[1])))].sort();
+  return [
+    ...new Set(
+      texts.flatMap((text) => [...text.matchAll(/\{([a-zA-Z]+)\}/g)].map((match) => match[1])),
+    ),
+  ].sort();
 }
 
 function nearestEach(source: string, index: number, variable: string): string[] | null {
-  const pattern = new RegExp(`\\{#each\\s+\\[([^\\]]+)\\]\\s+as\\s+(?:const\\s+as\\s+)?${variable}\\b`, "g");
+  const pattern = new RegExp(
+    `\\{#each\\s+\\[([^\\]]+)\\]\\s+as\\s+(?:const\\s+as\\s+)?${variable}\\b`,
+    "g",
+  );
   let items: string[] | null = null;
   for (const match of source.matchAll(pattern)) {
     if (match.index !== undefined && match.index < index) {
@@ -65,9 +79,13 @@ function nearestEach(source: string, index: number, variable: string): string[] 
 function usedKeys(): string[] {
   const keys = new Set<string>();
   for (const source of Object.values(sources)) {
-    for (const match of source.matchAll(/\b(?:t|tOr)\(\s*["']([a-zA-Z0-9_.]+)["']/g)) keys.add(match[1]);
-    for (const match of source.matchAll(/labelKey:\s*["']([a-zA-Z0-9_.]+)["']/g)) keys.add(match[1]);
-    for (const match of source.matchAll(/\b(?:t|tOr)\(\s*`([a-zA-Z0-9_.]*)\$\{([A-Za-z_][A-Za-z0-9_.]*)\}`/g)) {
+    for (const match of source.matchAll(/\b(?:t|tOr)\(\s*["']([a-zA-Z0-9_.]+)["']/g))
+      keys.add(match[1]);
+    for (const match of source.matchAll(/labelKey:\s*["']([a-zA-Z0-9_.]+)["']/g))
+      keys.add(match[1]);
+    for (const match of source.matchAll(
+      /\b(?:t|tOr)\(\s*`([a-zA-Z0-9_.]*)\$\{([A-Za-z_][A-Za-z0-9_.]*)\}`/g,
+    )) {
       const prefix = match[1];
       const variable = match[2];
       if (prefix === "durations." && variable === "option.key") {
@@ -102,7 +120,9 @@ describe("locale catalogs", () => {
 
   it("has every key the UI passes to t() in every locale", () => {
     expect(used.length).toBeGreaterThan(50);
-    const missing = files.flatMap((file) => used.filter((key) => !has(file.catalog, key)).map((key) => `${file.tag}: ${key}`));
+    const missing = files.flatMap((file) =>
+      used.filter((key) => !has(file.catalog, key)).map((key) => `${file.tag}: ${key}`),
+    );
     expect(missing).toEqual([]);
   });
 

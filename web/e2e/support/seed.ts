@@ -8,7 +8,11 @@ import { fixture } from "./paths";
 export type SeededSong = { id: string; title: string };
 
 type SongBody = { id: string; title: string };
-type JobBody = { status: "queued" | "running" | "done" | "error"; error: string | null; result: { song_id?: string } | null };
+type JobBody = {
+  status: "queued" | "running" | "done" | "error";
+  error: string | null;
+  result: { song_id?: string } | null;
+};
 
 /**
  * Creates songs through the HTTP API, the way a script or another client would.
@@ -19,7 +23,8 @@ export class Seeder {
   constructor(private readonly request: APIRequestContext) {}
 
   private async ok<T>(response: APIResponse): Promise<T> {
-    if (!response.ok()) throw new Error(`${response.url()} answered ${response.status()}: ${await response.text()}`);
+    if (!response.ok())
+      throw new Error(`${response.url()} answered ${response.status()}: ${await response.text()}`);
     return (await response.json()) as T;
   }
 
@@ -40,7 +45,9 @@ export class Seeder {
   async importFile(name: string, mimeType: string): Promise<string> {
     const accepted = await this.ok<{ job_id: string }>(
       await this.request.post("/api/imports/file", {
-        multipart: { file: { name: path.basename(name), mimeType, buffer: readFileSync(fixture(name)) } },
+        multipart: {
+          file: { name: path.basename(name), mimeType, buffer: readFileSync(fixture(name)) },
+        },
       }),
     );
     return this.waitForJob(accepted.job_id);
@@ -59,7 +66,12 @@ export class Seeder {
   }
 
   /** A blank guitar tab or chord sheet made with `POST /api/songs`. */
-  async create(body: { title: string; artist?: string; preset?: string; chordpro?: string }): Promise<SeededSong> {
+  async create(body: {
+    title: string;
+    artist?: string;
+    preset?: string;
+    chordpro?: string;
+  }): Promise<SeededSong> {
     const song = await this.ok<SongBody>(
       await this.request.post("/api/songs", {
         data: { content_kind: body.chordpro === undefined ? "tab" : "chords", ...body },
@@ -73,7 +85,13 @@ export class Seeder {
     const id = await this.importFile("synced-groove.json", "application/json");
     await this.ok(
       await this.request.post(`/api/songs/${id}/audio`, {
-        multipart: { file: { name: "click-track.wav", mimeType: "audio/wav", buffer: readFileSync(fixture("click-track.wav")) } },
+        multipart: {
+          file: {
+            name: "click-track.wav",
+            mimeType: "audio/wav",
+            buffer: readFileSync(fixture("click-track.wav")),
+          },
+        },
       }),
     );
     return { id, title: "Synced Groove" };

@@ -27,10 +27,17 @@ export function freePort(): Promise<number> {
   });
 }
 
-async function waitForHealth(url: string, child: ChildProcess, output: () => string): Promise<void> {
+async function waitForHealth(
+  url: string,
+  child: ChildProcess,
+  output: () => string,
+): Promise<void> {
   const deadline = Date.now() + 30_000;
   while (Date.now() < deadline) {
-    if (child.exitCode !== null) throw new Error(`fretbook exited with code ${child.exitCode} before it was ready:\n${output()}`);
+    if (child.exitCode !== null)
+      throw new Error(
+        `fretbook exited with code ${child.exitCode} before it was ready:\n${output()}`,
+      );
     try {
       const response = await fetch(`${url}/api/health`, { signal: AbortSignal.timeout(1000) });
       if (response.ok) return;
@@ -47,9 +54,13 @@ async function waitForHealth(url: string, child: ChildProcess, output: () => str
  * `port` pins the port (from `freePort()`, when something else must know it first); `env` overrides or adds
  * FRETBOOK_* variables, such as the OIDC settings.
  */
-export async function startServer(options: { port?: number; env?: Record<string, string> } = {}): Promise<RunningServer> {
+export async function startServer(
+  options: { port?: number; env?: Record<string, string> } = {},
+): Promise<RunningServer> {
   if (!existsSync(path.join(distDir, "index.html"))) {
-    throw new Error("web/dist is missing. Run `npm run build` in web/ before the e2e tests (`npm run e2e` does).");
+    throw new Error(
+      "web/dist is missing. Run `npm run build` in web/ before the e2e tests (`npm run e2e` does).",
+    );
   }
   const port = options.port ?? (await freePort());
   const dataDir = await mkdtemp(path.join(os.tmpdir(), "fretbook-e2e-"));

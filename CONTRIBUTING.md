@@ -26,9 +26,10 @@ CI runs the same commands:
 
 ```sh
 .venv/bin/ruff check fretbook tests
+.venv/bin/ruff format --check fretbook tests
 .venv/bin/python -m pytest
 .venv/bin/python -m fretbook.openapi --check
-cd web && npm run api-types:check && npm run check && npm test && npm run build
+cd web && npm run lint && npm run format:check && npm run api-types:check && npm run check && npm test && npm run build
 ```
 
 The `repo-checks` CI job also runs two cheap guards you can run locally:
@@ -39,6 +40,18 @@ python scripts/check_locales.py      # locale files are valid JSON, LF, one trai
 ```
 
 If another pull request took your migration number, `check_migrations.py` fails with the duplicate; rebase on `main` and rename your file to the next free number.
+
+### Formatting and pre-commit
+
+Python is formatted with `ruff format` (run `.venv/bin/ruff format fretbook tests`), and `web/` with Prettier (`npm run format --prefix web`) and linted with ESLint (`npm run lint --prefix web`). `api-types.ts` is generated and excluded. [`.editorconfig`](.editorconfig) sets the editor defaults.
+
+To run these on every commit, install [pre-commit](https://pre-commit.com) once (the web hooks need `npm ci` in `web/` first):
+
+```sh
+.venv/bin/pip install pre-commit && .venv/bin/pre-commit install
+```
+
+To keep `git blame` useful after the one-off reformat: `git config blame.ignoreRevsFile .git-blame-ignore-revs`.
 
 ### End-to-end tests
 

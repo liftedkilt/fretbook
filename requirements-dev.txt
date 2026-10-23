@@ -1,5 +1,5 @@
 -r requirements.txt
 pytest>=8.3
-ruff>=0.7
+ruff==0.17.2
 # Synthetic tab frames for the issue #6 spike. Not used by the server or the image.
 pillow>=10

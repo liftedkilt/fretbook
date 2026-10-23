@@ -14,9 +14,21 @@ import type {
 } from "./api-types";
 import { keyed } from "./i18n.svelte";
 import { currentPath } from "./router.svelte";
-import type { AdminUser, ImportPreview, Job, Keyed, Me, Meta, ScoreDocument, Settings, SongDetail, SongSummary } from "./types";
+import type {
+  AdminUser,
+  ImportPreview,
+  Job,
+  Keyed,
+  Me,
+  Meta,
+  ScoreDocument,
+  Settings,
+  SongDetail,
+  SongSummary,
+} from "./types";
 
 /** Flat contract responses must be usable as the UI models in `./types`. */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- `From` is only checked by the constraint
 type AssertAssignable<From extends To, To> = true;
 type _matchesContract = [
   AssertAssignable<ContractMe, Me>,
@@ -39,7 +51,12 @@ export class ApiError extends Error {
   key: string;
   params: Record<string, string | number>;
 
-  constructor(status: number, message: string, key = "", params: Record<string, string | number> = {}) {
+  constructor(
+    status: number,
+    message: string,
+    key = "",
+    params: Record<string, string | number> = {},
+  ) {
     super(message);
     this.status = status;
     this.key = key;
@@ -55,17 +72,30 @@ async function toError(response: Response): Promise<ApiError> {
   try {
     const body = (await response.json()) as { detail?: unknown };
     const detail = body.detail;
-    if (detail && typeof detail === "object" && !Array.isArray(detail) && "message" in detail && "key" in detail) {
+    if (
+      detail &&
+      typeof detail === "object" &&
+      !Array.isArray(detail) &&
+      "message" in detail &&
+      "key" in detail
+    ) {
       const item = detail as ErrorDetail;
       const params = (item.params ?? {}) as Keyed["params"];
-      return new ApiError(response.status, keyed({ key: item.key, message: item.message, params }), item.key, params);
+      return new ApiError(
+        response.status,
+        keyed({ key: item.key, message: item.message, params }),
+        item.key,
+        params,
+      );
     }
     if (typeof detail === "string") return new ApiError(response.status, detail);
     if (Array.isArray(detail)) {
       const text = detail
         .map((item) => {
           if (item && typeof item === "object" && "msg" in item) {
-            const loc = Array.isArray(item.loc) ? item.loc.filter((part: unknown) => part !== "body").join(".") : "";
+            const loc = Array.isArray(item.loc)
+              ? item.loc.filter((part: unknown) => part !== "body").join(".")
+              : "";
             return loc ? `${loc}: ${String(item.msg)}` : String(item.msg);
           }
           return JSON.stringify(item);
@@ -128,23 +158,40 @@ export function createTab(body: {
   measures: number;
   signature: [number, number];
 }): Promise<SongDetail> {
-  return view(request<ContractSongDetail>("/api/songs", json("POST", { content_kind: "tab", ...body })));
+  return view(
+    request<ContractSongDetail>("/api/songs", json("POST", { content_kind: "tab", ...body })),
+  );
 }
 
 /** `chordpro` may be ChordPro or a pasted chords-over-lyrics sheet; the server converts. */
-export function createChordSheet(body: { title: string; artist: string; chordpro: string }): Promise<SongDetail> {
-  return view(request<ContractSongDetail>("/api/songs", json("POST", { content_kind: "chords", ...body })));
+export function createChordSheet(body: {
+  title: string;
+  artist: string;
+  chordpro: string;
+}): Promise<SongDetail> {
+  return view(
+    request<ContractSongDetail>("/api/songs", json("POST", { content_kind: "chords", ...body })),
+  );
 }
 
 /** Rejected with a 409 `song.conflict` when the song changed since `revision`. */
 export function updateSong(
   id: string,
-  body: { title: string; artist: string; revision: number; document?: ScoreDocument; chordpro?: string },
+  body: {
+    title: string;
+    artist: string;
+    revision: number;
+    document?: ScoreDocument;
+    chordpro?: string;
+  },
 ): Promise<SongDetail> {
   return view(request<ContractSongDetail>(`/api/songs/${id}`, json("PUT", body)));
 }
 
-export function patchSync(id: string, body: { bpm: number; anchors: Record<string, number> }): Promise<SongDetail> {
+export function patchSync(
+  id: string,
+  body: { bpm: number; anchors: Record<string, number> },
+): Promise<SongDetail> {
   return view(request<ContractSongDetail>(`/api/songs/${id}/sync`, json("PATCH", body)));
 }
 
@@ -155,15 +202,24 @@ export function deleteSong(id: string): Promise<void> {
 export function uploadAudio(id: string, file: File): Promise<SongDetail> {
   const data = new FormData();
   data.append("file", file);
-  return view(request<ContractSongDetail>(`/api/songs/${id}/audio`, { method: "POST", body: data }));
+  return view(
+    request<ContractSongDetail>(`/api/songs/${id}/audio`, { method: "POST", body: data }),
+  );
 }
 
 export function previewImport(url: string): Promise<ImportPreview> {
   return request<ContractImportPreview>("/api/imports/preview", json("POST", { url }));
 }
 
-export function importUrl(url: string, videoId: string, partIds?: number[] | null): Promise<JobAccepted> {
-  const body: { url: string; video_id: string | null; part_ids?: number[] } = { url, video_id: videoId || null };
+export function importUrl(
+  url: string,
+  videoId: string,
+  partIds?: number[] | null,
+): Promise<JobAccepted> {
+  const body: { url: string; video_id: string | null; part_ids?: number[] } = {
+    url,
+    video_id: videoId || null,
+  };
   if (partIds && partIds.length) body.part_ids = partIds;
   return request<JobAccepted>("/api/imports", json("POST", body));
 }

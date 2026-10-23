@@ -10,10 +10,10 @@ Closes #
 
 ## Checks
 
-- [ ] `.venv/bin/ruff check fretbook tests`
+- [ ] `.venv/bin/ruff check fretbook tests && .venv/bin/ruff format --check fretbook tests`
 - [ ] `.venv/bin/python -m pytest`
 - [ ] `.venv/bin/python -m fretbook.openapi --check`
-- [ ] `cd web && npm run api-types:check && npm run check && npm test && npm run build`
+- [ ] `cd web && npm run lint && npm run format:check && npm run api-types:check && npm run check && npm test && npm run build`
 - [ ] Tests added or updated for the new behaviour
 
 ## Checklist

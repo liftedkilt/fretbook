@@ -26,7 +26,8 @@ export function navigate(path: string): void {
 }
 
 export function followLink(event: MouseEvent, path: string): void {
-  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0)
+    return;
   event.preventDefault();
   navigate(path);
 }
