@@ -153,7 +153,7 @@ def seed_v2(conn: sqlite3.Connection) -> None:
             token_hash, user_id, role, id_token, created_at, expires_at
         ) VALUES (
             'hash-admin', 'user-v2-admin', 'admin', 'jwt-id-token',
-            '2026-01-02T10:00:00Z', '2026-01-09T10:00:00Z'
+            '2026-01-02T10:00:00Z', '2026-01-06T10:00:00Z'
         )
         """
     )
@@ -357,28 +357,28 @@ def verify_v5(conn: sqlite3.Connection) -> None:
     assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
 
 
-def seed_v9(conn: sqlite3.Connection) -> None:
+def seed_v6(conn: sqlite3.Connection) -> None:
     conn.execute(
         """
         INSERT INTO users (id, external_subject, display_name, created_at)
-        VALUES ('user-v9', 'sub-v9', 'User V9', '2026-01-09T00:00:00Z')
+        VALUES ('user-v6', 'sub-v6', 'User V6', '2026-01-06T00:00:00Z')
         """
     )
     conn.execute(
         """
         INSERT INTO api_tokens (id, user_id, name, prefix, token_hash, created_at, expires_at)
-        VALUES ('token-v9', 'user-v9', 'nightly import', 'fb_abcde', 'hash-v9', '2026-01-09T00:00:00Z', NULL)
+        VALUES ('token-v6', 'user-v6', 'nightly import', 'fb_abcde', 'hash-v6', '2026-01-06T00:00:00Z', NULL)
         """
     )
     conn.commit()
 
 
-def verify_v9(conn: sqlite3.Connection) -> None:
-    row = conn.execute("SELECT name, token_hash, last_used_at FROM api_tokens WHERE id = 'token-v9'").fetchone()
-    assert tuple(row) == ("nightly import", "hash-v9", None)
+def verify_v6(conn: sqlite3.Connection) -> None:
+    row = conn.execute("SELECT name, token_hash, last_used_at FROM api_tokens WHERE id = 'token-v6'").fetchone()
+    assert tuple(row) == ("nightly import", "hash-v6", None)
     # Tokens go with their owner.
-    conn.execute("DELETE FROM users WHERE id = 'user-v9'")
-    assert conn.execute("SELECT count(*) FROM api_tokens WHERE id = 'token-v9'").fetchone()[0] == 0
+    conn.execute("DELETE FROM users WHERE id = 'user-v6'")
+    assert conn.execute("SELECT count(*) FROM api_tokens WHERE id = 'token-v6'").fetchone()[0] == 0
     conn.rollback()
     assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
 
@@ -389,7 +389,7 @@ SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.C
     3: (seed_v3, verify_v3),
     4: (seed_v4, verify_v4),
     5: (seed_v5, verify_v5),
-    9: (seed_v9, verify_v9),
+    6: (seed_v6, verify_v6),
 }
 
 
