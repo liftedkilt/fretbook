@@ -59,3 +59,29 @@ test("a song with audio plays the audio and follows its sync marks", async ({ pa
   // Sync points put a bar at each second, so by now the status is on bar 2 or later.
   await expect(page.getByTestId("player-status")).toHaveAttribute("data-measure", /^[1-3]$/);
 });
+
+test("switches between Tab, Highway and Split views and remembers the choice", async ({
+  page,
+  seed,
+}) => {
+  const song = await seed.musicXmlTab();
+  await page.goto(`/songs/${song.id}`);
+
+  const stage = page.getByTestId("player-stage");
+  await expect(stage).toHaveAttribute("data-view", "tab");
+  await expect(page.getByTestId("player-highway")).toHaveCount(0);
+
+  await page.getByTestId("player-view-highway").click();
+  await expect(stage).toHaveAttribute("data-view", "highway");
+  await expect(page.getByTestId("highway-canvas")).toBeVisible();
+
+  await page.getByTestId("player-view-split").click();
+  await expect(stage).toHaveAttribute("data-view", "split");
+  await expect(page.getByTestId("highway-canvas")).toBeVisible();
+  await expect(page.getByTestId("player-score").locator("svg").first()).toBeVisible();
+
+  // Reloading keeps the chosen view.
+  await page.reload();
+  await expect(page.getByTestId("player-stage")).toHaveAttribute("data-view", "split");
+  await expect(page.getByTestId("highway-canvas")).toBeVisible();
+});

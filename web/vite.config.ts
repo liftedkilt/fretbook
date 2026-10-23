@@ -38,6 +38,7 @@ export default defineConfig({
             "src/components/**/*.test.ts",
             // Components import these too. v8 reports each project separately and the merged figure
             // follows whichever report wins, so run their tests here as well to keep it steady.
+            "src/lib/highway.test.ts",
             "src/lib/playback.test.ts",
             "src/lib/tuner.test.ts",
             "src/lib/ui.svelte.test.ts",
