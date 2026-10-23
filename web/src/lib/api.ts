@@ -241,6 +241,14 @@ export function importFile(file: File): Promise<JobAccepted> {
   return request<JobAccepted>("/api/imports/file", { method: "POST", body: data });
 }
 
+/** Queue a restore of a library archive into the signed-in user's library. */
+export function importLibrary(file: File, mode: "skip" | "copy"): Promise<JobAccepted> {
+  const data = new FormData();
+  data.append("file", file);
+  data.append("mode", mode);
+  return request<JobAccepted>("/api/library/import", { method: "POST", body: data });
+}
+
 export function importDocument(body: {
   title: string;
   artist: string;

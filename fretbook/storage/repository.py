@@ -219,6 +219,25 @@ class SongRepository:
             ).fetchone()
         return self.get_song(owner_id, row["id"]) if row else None
 
+    def id_taken(self, song_id: str) -> bool:
+        """Song ids are global, so this looks at every owner."""
+        with self._session() as conn:
+            return conn.execute("SELECT 1 FROM songs WHERE id = ?", (song_id,)).fetchone() is not None
+
+    def find_duplicate(self, owner_id: str, title: str, artist: str, source_kind: str) -> bool:
+        """Whether the owner has a song with the same title, artist and source (case-insensitive)."""
+        with self._session() as conn:
+            return (
+                conn.execute(
+                    """
+                    SELECT 1 FROM songs
+                    WHERE owner_id = ? AND lower(title) = lower(?) AND lower(artist) = lower(?) AND source_kind = ?
+                    """,
+                    (owner_id, title.strip(), artist.strip(), source_kind),
+                ).fetchone()
+                is not None
+            )
+
     def create_song(
         self,
         owner_id: str,
@@ -230,8 +249,10 @@ class SongRepository:
         slug: str | None = None,
         document: ScoreDocument | None = None,
         chordpro: str | None = None,
+        song_id: str | None = None,
     ) -> dict[str, Any]:
-        song_id = uuid.uuid4().hex
+        """Add a song. ``song_id`` keeps an id from a restored archive; it must not be :meth:`id_taken`."""
+        song_id = song_id or uuid.uuid4().hex
         now = utcnow()
         base = _slugify(slug or title)
         fields = _content_fields(document, chordpro)

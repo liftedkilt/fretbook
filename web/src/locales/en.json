@@ -72,6 +72,21 @@
     "autoUpdateOn": "Updates itself at start and once a day.",
     "autoUpdateOff": "Does not update itself."
   },
+  "backup": {
+    "heading": "Backup and restore",
+    "hint": "Download your whole library as one zip, or restore one into this library.",
+    "export": "Download library",
+    "exportAll": "Download everyone's library",
+    "restore": "Restore from a backup",
+    "choose": "Choose a backup file",
+    "modeLabel": "If a song is already here",
+    "modeSkip": "Skip it",
+    "modeCopy": "Keep both",
+    "restoring": "Restoring your library",
+    "start": "Restore",
+    "done": "Added {imported}, skipped {skipped}, kept {copied} as copies, {failed} failed.",
+    "warningsHeading": "Some items need a look"
+  },
   "library": {
     "heading": "Library",
     "empty": "No songs yet. Import a Songsterr link or a file, start a blank tab, or paste a chord sheet.",
@@ -376,6 +391,19 @@
       "interrupted": "The server restarted during this import. Start it again.",
       "noHandler": "This kind of import is not available.",
       "timeout": "The import is taking too long."
+    },
+    "backup": {
+      "notArchive": "That file is not a Fretbook backup.",
+      "tooManyFiles": "That backup has too many files.",
+      "unsafePath": "That backup contains an unsafe file name.",
+      "encrypted": "Encrypted backups are not supported.",
+      "tooLarge": "That backup is too large when unpacked.",
+      "suspicious": "That backup looks damaged or unsafe.",
+      "noManifest": "That backup has no manifest.",
+      "badManifest": "That backup's manifest is not valid.",
+      "newerFormat": "That backup was made by a newer version of Fretbook.",
+      "songFailed": "Could not restore {title}.",
+      "mediaFailed": "Could not restore a file of {title}."
     },
     "import": {
       "failed": "The import failed.",
