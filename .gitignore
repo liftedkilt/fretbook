@@ -9,6 +9,7 @@ data/
 # Frontend
 web/node_modules/
 web/dist/
+web/dist-gp/
 # Copied from @coderline/alphatab by the Vite plugin on build.
 web/public/font/
 web/public/soundfont/

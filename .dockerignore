@@ -4,6 +4,7 @@
 **/*.pyc
 web/node_modules
 web/dist
+web/dist-gp
 data
 tests
 *.sqlite

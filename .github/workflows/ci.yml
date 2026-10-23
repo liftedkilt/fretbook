@@ -26,6 +26,15 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
       - run: pip install -r requirements-dev.txt
+      # Guitar Pro is read on the server by alphaTab under Node; the tests need the bundled converter.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Build the Guitar Pro converter
+        working-directory: web
+        run: npm ci && npm run build:gp-cli
       - run: ruff check fretbook tests
       - run: ruff format --check fretbook tests
       - run: mypy
