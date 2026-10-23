@@ -129,7 +129,7 @@
     "filterElectric": "Electric guitar",
     "filterAcoustic": "Acoustic guitar",
     "filterEmpty": "No songs match this filter.",
-    "file": "MusicXML, Guitar Pro, ChordPro, text, or Fretbook JSON",
+    "file": "MusicXML, Guitar Pro, ChordPro, ASCII tab, or Fretbook JSON",
     "importing": "Importing…",
     "warnings": "Imported with warnings: {warnings}",
     "untitled": "Untitled",

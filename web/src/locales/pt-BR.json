@@ -129,7 +129,7 @@
     "filterElectric": "Guitarra elétrica",
     "filterAcoustic": "Violão",
     "filterEmpty": "Nenhuma música corresponde a este filtro.",
-    "file": "MusicXML, Guitar Pro, ChordPro, texto ou JSON do Fretbook",
+    "file": "MusicXML, Guitar Pro, ChordPro, tablatura em texto ou JSON do Fretbook",
     "importing": "Importando…",
     "warnings": "Importado com avisos: {warnings}",
     "untitled": "Sem título",

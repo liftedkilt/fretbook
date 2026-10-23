@@ -426,7 +426,7 @@
           data-testid="add-file-input"
           type="file"
           disabled={Boolean(busy)}
-          accept=".musicxml,.xml,.json,.gp,.gp3,.gp4,.gp5,.gpx,.cho,.chordpro,.chopro,.crd,.txt"
+          accept=".musicxml,.xml,.json,.gp,.gp3,.gp4,.gp5,.gpx,.cho,.chordpro,.chopro,.crd,.txt,.tab"
           onchange={(event) => {
             const file = event.currentTarget.files?.[0];
             event.currentTarget.value = "";

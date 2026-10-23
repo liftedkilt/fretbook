@@ -276,11 +276,12 @@ def test_short_fragments_and_odd_systems_are_skipped() -> None:
 def test_stacked_systems_without_a_blank_line_are_split() -> None:
     row = "e|-0-----|\nB|-------|\nG|-------|\nD|-------|\n"
     assert len(ascii_tab.parse(row * 3).document.bars) == 3
-    assert len(ascii_tab.parse(row * 2 + "A|-------|\n" * 2 + "E|-0-----|\n" * 2).document.bars) >= 1
+    assert len(ascii_tab.parse(row * 2 + "A|-------|\n" * 2 + "E|-0-----|\n" * 2).document.bars) == 3
 
 
 def test_rows_that_fit_no_system_size_are_dropped() -> None:
     nine = "".join(f"{label}|-0-----|\n" for label in "eBGDAEBGD")
+    assert not ascii_tab.looks_like_ascii_tab(nine)
     with pytest.raises(ImportError) as caught:
         ascii_tab.parse(nine)
     assert caught.value.key == "asciiTab.noTab"

@@ -216,9 +216,9 @@ def _blocks(lines: list[_Line]) -> list[tuple[int, int]]:
 
 
 def looks_like_ascii_tab(text: str) -> bool:
-    """True when the text holds at least one tab system of four or more string rows with a note in it."""
+    """True when the text holds at least one tab system of four to eight string rows with a note in it."""
     lines = [_classify(line) for line in text.replace("\r\n", "\n").split("\n")]
-    return bool(_blocks(lines))
+    return bool(_gather(lines)[0])
 
 
 # ---------------------------------------------------------------------------
