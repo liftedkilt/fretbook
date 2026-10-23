@@ -64,10 +64,15 @@ export const INSTRUMENTS: InstrumentDefinition[] = [
     tunings: [
       { id: "standard", labelKey: "tools.tunings.standard", midi: [64, 59, 55, 50, 45, 40] },
       { id: "dropD", labelKey: "tools.tunings.dropD", midi: [64, 59, 55, 50, 45, 38] },
-      { id: "halfStepDown", labelKey: "tools.tunings.halfStepDown", midi: [63, 58, 54, 49, 44, 39] },
+      {
+        id: "halfStepDown",
+        labelKey: "tools.tunings.halfStepDown",
+        midi: [63, 58, 54, 49, 44, 39],
+      },
       { id: "dadgad", labelKey: "tools.tunings.dadgad", midi: [62, 57, 55, 50, 45, 38] },
       { id: "openG", labelKey: "tools.tunings.openG", midi: [62, 59, 55, 50, 43, 38] },
       { id: "openD", labelKey: "tools.tunings.openD", midi: [62, 57, 54, 50, 45, 38] },
+      { id: "custom", labelKey: "tools.tunings.custom", midi: [] },
     ],
   },
   {
@@ -76,7 +81,12 @@ export const INSTRUMENTS: InstrumentDefinition[] = [
     tunings: [
       { id: "standard", labelKey: "tools.tunings.standard", midi: [64, 59, 55, 50, 45, 40, 35] },
       { id: "dropA", labelKey: "tools.tunings.dropA", midi: [64, 59, 55, 50, 45, 40, 33] },
-      { id: "halfStepDown", labelKey: "tools.tunings.halfStepDown", midi: [63, 58, 54, 49, 44, 39, 34] },
+      {
+        id: "halfStepDown",
+        labelKey: "tools.tunings.halfStepDown",
+        midi: [63, 58, 54, 49, 44, 39, 34],
+      },
+      { id: "custom", labelKey: "tools.tunings.custom", midi: [] },
     ],
   },
   {
@@ -86,6 +96,7 @@ export const INSTRUMENTS: InstrumentDefinition[] = [
       { id: "standard", labelKey: "tools.tunings.standard", midi: [43, 38, 33, 28] },
       { id: "dropD", labelKey: "tools.tunings.dropD", midi: [43, 38, 33, 26] },
       { id: "halfStepDown", labelKey: "tools.tunings.halfStepDown", midi: [42, 37, 32, 27] },
+      { id: "custom", labelKey: "tools.tunings.custom", midi: [] },
     ],
   },
   {
@@ -95,6 +106,7 @@ export const INSTRUMENTS: InstrumentDefinition[] = [
       { id: "standard", labelKey: "tools.tunings.standard", midi: [43, 38, 33, 28, 23] },
       { id: "halfStepDown", labelKey: "tools.tunings.halfStepDown", midi: [42, 37, 32, 27, 22] },
       { id: "dropA", labelKey: "tools.tunings.dropA", midi: [43, 38, 33, 28, 21] },
+      { id: "custom", labelKey: "tools.tunings.custom", midi: [] },
     ],
   },
   {
@@ -103,6 +115,8 @@ export const INSTRUMENTS: InstrumentDefinition[] = [
     tunings: [
       { id: "standard", labelKey: "tools.tunings.standard", midi: [69, 64, 60, 67] },
       { id: "lowG", labelKey: "tools.tunings.lowG", midi: [69, 64, 60, 55] },
+      { id: "halfStepDown", labelKey: "tools.tunings.halfStepDown", midi: [68, 63, 59, 66] },
+      { id: "custom", labelKey: "tools.tunings.custom", midi: [] },
     ],
   },
   {
@@ -111,6 +125,49 @@ export const INSTRUMENTS: InstrumentDefinition[] = [
     tunings: [],
   },
 ];
+
+const TUNER_INSTRUMENT_KEY = "fretbook.tuner.instrument";
+const TUNER_TUNING_KEY = "fretbook.tuner.tuning";
+const TUNER_CUSTOM_KEY = "fretbook.tuner.custom";
+
+export interface TunerChoice {
+  instrument: string;
+  tuning: string;
+  customMidi?: number[] | null;
+}
+
+export function loadTunerChoice(): TunerChoice {
+  try {
+    if (typeof localStorage === "undefined") {
+      return { instrument: "guitar6", tuning: "standard", customMidi: null };
+    }
+    const instrument = localStorage.getItem(TUNER_INSTRUMENT_KEY) || "guitar6";
+    const tuning = localStorage.getItem(TUNER_TUNING_KEY) || "standard";
+    const customRaw = localStorage.getItem(TUNER_CUSTOM_KEY);
+    const customMidi = customRaw ? JSON.parse(customRaw) : null;
+    const validInstrument = INSTRUMENTS.some((i) => i.id === instrument) ? instrument : "guitar6";
+    return {
+      instrument: validInstrument,
+      tuning,
+      customMidi: Array.isArray(customMidi) ? customMidi : null,
+    };
+  } catch {
+    return { instrument: "guitar6", tuning: "standard", customMidi: null };
+  }
+}
+
+export function saveTunerChoice(choice: TunerChoice): void {
+  try {
+    if (typeof localStorage === "undefined") return;
+    localStorage.setItem(TUNER_INSTRUMENT_KEY, choice.instrument);
+    localStorage.setItem(TUNER_TUNING_KEY, choice.tuning);
+    if (choice.customMidi) {
+      localStorage.setItem(TUNER_CUSTOM_KEY, JSON.stringify(choice.customMidi));
+    }
+  } catch {
+    // ignore
+  }
+}
 
 export function clampA4(value: number): number {
   if (!Number.isFinite(value)) return DEFAULT_A4;

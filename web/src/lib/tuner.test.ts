@@ -17,6 +17,8 @@ import {
   nearestString,
   needlePosition,
   withCapo,
+  loadTunerChoice,
+  saveTunerChoice,
 } from "./tuner";
 import { nameToMidi, parseCustomTuning } from "./tuning";
 
@@ -280,5 +282,31 @@ describe("instruments and custom tuning", () => {
     expect(parseCustomTuning("D4, A3, G3, D3, A2, D2")).toEqual([62, 57, 55, 50, 45, 38]);
     expect(parseCustomTuning("")).toBeNull();
     expect(parseCustomTuning("E4 Foo G3")).toBeNull();
+  });
+
+  it("loads and saves tuner choices to localStorage", () => {
+    const store = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => store.set(k, v),
+      removeItem: (k: string) => store.delete(k),
+      clear: () => store.clear(),
+    });
+
+    const initial = loadTunerChoice();
+    expect(initial.instrument).toBe("guitar6");
+    expect(initial.tuning).toBe("standard");
+
+    saveTunerChoice({
+      instrument: "bass4",
+      tuning: "dropD",
+      customMidi: [43, 38, 33, 26],
+    });
+
+    const loaded = loadTunerChoice();
+    expect(loaded.instrument).toBe("bass4");
+    expect(loaded.tuning).toBe("dropD");
+    expect(loaded.customMidi).toEqual([43, 38, 33, 26]);
+    vi.unstubAllGlobals();
   });
 });

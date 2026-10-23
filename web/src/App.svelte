@@ -11,6 +11,9 @@
   import SetlistView from "./components/SetlistView.svelte";
   import SettingsSheet from "./components/SettingsSheet.svelte";
   import SongView from "./components/SongView.svelte";
+  import StandaloneMetronomeView from "./components/StandaloneMetronomeView.svelte";
+  import StandaloneTunerView from "./components/StandaloneTunerView.svelte";
+  import ToolsView from "./components/ToolsView.svelte";
   import TunerSheet from "./components/TunerSheet.svelte";
   import { t } from "./lib/i18n.svelte";
   import { followLink, hrefFor, navigate, routePath } from "./lib/router.svelte";
@@ -30,6 +33,10 @@
   const setlistPlay = $derived(path.match(/^\/setlists\/([^/]+)\/play(?:\/([^/]+))?\/?$/));
   const setlistPage = $derived(path.match(/^\/setlists\/([^/]+)\/?$/));
   const isSetlists = $derived(path === "/setlists" || path === "/setlists/");
+  const isTools = $derived(path === "/tools" || path === "/tools/");
+  const isToolsTuner = $derived(path === "/tools/tuner" || path === "/tools/tuner/");
+  const isToolsMetronome = $derived(path === "/tools/metronome" || path === "/tools/metronome/");
+  const isToolsActive = $derived(path.startsWith("/tools"));
   const isLibrary = $derived(path === "/");
   const isAdmin = $derived(ui.me?.role === "admin");
 
@@ -65,7 +72,7 @@
   }
 </script>
 
-<div class="shell" class:shell-library={isLibrary}>
+<div class="shell" class:shell-library={isLibrary || isTools || isSetlists}>
   <aside class="sidebar">
     <a class="brand" href={hrefFor("/")} onclick={(event) => followLink(event, "/")}>
       <img src="favicon.svg" alt={t("app.title")} width="36" height="36" />
@@ -110,6 +117,17 @@
       title={t("setlists.nav")}
     >
       <Icon name="list" size={19} /><span class="rail-hide">{t("setlists.nav")}</span>
+    </a>
+
+    <a
+      class="side-link"
+      data-testid="nav-tools"
+      href={hrefFor("/tools")}
+      aria-current={isToolsActive ? "page" : undefined}
+      onclick={(event) => followLink(event, "/tools")}
+      title={t("tools.nav")}
+    >
+      <Icon name="wrench" size={19} /><span class="rail-hide">{t("tools.nav")}</span>
     </a>
 
     {#if recent.length}
@@ -227,6 +245,12 @@
     {#if ui.error}<p class="alert" role="alert"><Icon name="alert" size={18} />{ui.error}</p>{/if}
     {#if isLibrary}
       <LibraryView />
+    {:else if isTools}
+      <ToolsView />
+    {:else if isToolsTuner}
+      <StandaloneTunerView />
+    {:else if isToolsMetronome}
+      <StandaloneMetronomeView />
     {:else if path === "/admin" && isAdmin && ui.me}
       <AdminView self={ui.me.user_id} />
     {:else if path === "/admin" && !ui.me}
@@ -252,15 +276,26 @@
     {/if}
   </main>
 
-  {#if isLibrary}
+  {#if isLibrary || isTools || isSetlists}
     <nav class="tabbar" aria-label={t("nav.main")}>
-      <button
+      <a
         class="tab-item"
-        aria-current="page"
-        onclick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        data-testid="tab-library"
+        href={hrefFor("/")}
+        aria-current={isLibrary ? "page" : undefined}
+        onclick={(event) => followLink(event, "/")}
       >
         <Icon name="library" /><span>{t("library.heading")}</span>
-      </button>
+      </a>
+      <a
+        class="tab-item"
+        data-testid="tab-setlists"
+        href={hrefFor("/setlists")}
+        aria-current={path.startsWith("/setlists") ? "page" : undefined}
+        onclick={(event) => followLink(event, "/setlists")}
+      >
+        <Icon name="list" /><span>{t("setlists.nav")}</span>
+      </a>
       <button
         class="tab-item tab-add"
         onclick={() => openSheet("add")}
@@ -268,6 +303,15 @@
       >
         <span><Icon name="plus" size={26} /></span>
       </button>
+      <a
+        class="tab-item"
+        data-testid="tab-tools"
+        href={hrefFor("/tools")}
+        aria-current={isToolsActive ? "page" : undefined}
+        onclick={(event) => followLink(event, "/tools")}
+      >
+        <Icon name="wrench" /><span>{t("tools.heading")}</span>
+      </a>
       <button class="tab-item" onclick={() => openSheet("settings")}>
         <Icon name="settings" /><span>{t("settings.heading")}</span>
       </button>

@@ -23,10 +23,10 @@ export const TIME_SIGNATURES: TimeSignatureOption[] = [
 ];
 
 export const SUBDIVISIONS = [
-  { id: 1, labelKey: "metronome.subdivision.none" },
-  { id: 2, labelKey: "metronome.subdivision.eighth" },
-  { id: 3, labelKey: "metronome.subdivision.triplet" },
-  { id: 4, labelKey: "metronome.subdivision.sixteenth" },
+  { id: 1, labelKey: "tools.subdivisionNone" },
+  { id: 2, labelKey: "tools.subdivisionEighth" },
+  { id: 3, labelKey: "tools.subdivisionTriplet" },
+  { id: 4, labelKey: "tools.subdivisionSixteenth" },
 ];
 
 export function clampBpm(bpm: number): number {

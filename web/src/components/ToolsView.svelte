@@ -1,0 +1,58 @@
+<script lang="ts">
+  import Icon from "./Icon.svelte";
+  import { t } from "../lib/i18n.svelte";
+  import { followLink, hrefFor } from "../lib/router.svelte";
+
+  const tools = [
+    {
+      id: "tuner",
+      titleKey: "tools.tuner",
+      descKey: "tools.tunerDescription",
+      openKey: "tools.openTuner",
+      icon: "tuner",
+      path: "/tools/tuner",
+      testId: "tool-card-tuner",
+    },
+    {
+      id: "metronome",
+      titleKey: "tools.metronome",
+      descKey: "tools.metronomeDescription",
+      openKey: "tools.openMetronome",
+      icon: "gauge",
+      path: "/tools/metronome",
+      testId: "tool-card-metronome",
+    },
+  ];
+</script>
+
+<div class="tools-page" data-testid="tools-view">
+  <header class="tools-header">
+    <h1 class="display">{t("tools.heading")}</h1>
+    <p class="muted">{t("tools.subtitle")}</p>
+  </header>
+
+  <div class="tools-grid">
+    {#each tools as tool (tool.id)}
+      <a
+        class="tool-card"
+        data-testid={tool.testId}
+        href={hrefFor(tool.path)}
+        onclick={(event) => followLink(event, tool.path)}
+      >
+        <div class="tool-card-icon">
+          <Icon name={tool.icon} size={32} />
+        </div>
+        <div class="tool-card-body">
+          <h2 class="tool-card-title">{t(tool.titleKey)}</h2>
+          <p class="tool-card-desc">{t(tool.descKey)}</p>
+        </div>
+        <div class="tool-card-action">
+          <span class="button secondary tool-card-btn">
+            {t(tool.openKey)}
+            <Icon name="forward" size={16} />
+          </span>
+        </div>
+      </a>
+    {/each}
+  </div>
+</div>
