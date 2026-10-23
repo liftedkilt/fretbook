@@ -3,6 +3,8 @@
   import { onMount, untrack } from "svelte";
 
   import Cover from "./Cover.svelte";
+  import Fretboard from "./Fretboard.svelte";
+  import FretboardPanel from "./FretboardPanel.svelte";
   import Icon from "./Icon.svelte";
   import Menu from "./Menu.svelte";
   import PracticePanel from "./PracticePanel.svelte";
@@ -14,6 +16,14 @@
   import { Clicker } from "../lib/clicker";
   import { barTicks } from "../lib/durations";
   import { t } from "../lib/i18n.svelte";
+  import {
+    buildFretEvents,
+    defaultRoot,
+    focusAt,
+    fretCount,
+    playedBarTicks,
+    positionInBar,
+  } from "../lib/fretboard";
   import { instrumentLabel } from "../lib/instruments";
   import { describeProblem, ListenError, startListening } from "../lib/listen";
   import { buildWaitSteps, stepIndexAt, type WaitStep } from "../lib/listen/wait";
@@ -64,6 +74,8 @@
   let follow = $state(true);
   let rate = $state(1);
   let currentMeasure = $state(-1);
+  // Ticks into the current played bar, for the fretboard.
+  let currentPosition = $state(0);
   let clock = $state("0:00.0");
   let playing = $state(false);
   let practice = $state(untrack(() => loadPractice(initial.id)));
@@ -103,6 +115,8 @@
   const tex = $derived(scoreToAlphaTex({ ...document_, bpm: renderBpm }, song.title, song.artist));
   const trackIndex = $derived(Math.max(0, document_.tracks.indexOf(track)));
   const waitSteps = $derived(buildWaitSteps(document_, track));
+  const fretEvents = $derived(practice.fretboard.on ? buildFretEvents(document_, track) : []);
+  const fretFocus = $derived(focusAt(fretEvents, currentMeasure, currentPosition));
 
   function staveProfile(notation: boolean): alphaTab.StaveProfile {
     return notation ? alphaTab.StaveProfile.ScoreTab : alphaTab.StaveProfile.Tab;
@@ -169,6 +183,12 @@
     output?.updatePosition(seconds * 1000 + shiftMs);
     const starts = startsNow();
     currentMeasure = measureAt(starts, seconds);
+    currentPosition = positionInBar(
+      starts,
+      currentMeasure,
+      seconds,
+      playedBarTicks(song.document, currentMeasure),
+    );
     if (loopA != null && loopB != null && currentMeasure > loopB && !audioEl.paused) {
       const target = Math.max(0, starts[loopA] ?? 0);
       scheduler.reset();
@@ -230,6 +250,7 @@
         beat.voice.bar.index,
         currentMeasure,
       );
+      currentPosition = beat.displayStart;
       // The synth has no loop of its own: past the end of the range, go back to its start.
       if (loopA != null && loopB != null && currentMeasure > loopB && playing) {
         goToBar(loopA);
@@ -766,6 +787,21 @@
     tabindex="0"
   ></div>
 
+  {#if practice.fretboard.on}
+    <div class="fretboard-wrap" data-testid="player-fretboard">
+      <Fretboard
+        tuning={track.tuning_midi}
+        capo={track.capo}
+        frets={fretCount(track)}
+        current={fretFocus.current}
+        next={fretFocus.next}
+        label={practice.fretboard.label}
+        root={practice.fretboard.root ?? defaultRoot(track.tuning_midi)}
+        leftHanded={practice.fretboard.leftHanded}
+      />
+    </div>
+  {/if}
+
   <div class="dock">
     {#if panelOpen}
       <section class="dock-panel" aria-label={t("player.syncPanel")}>
@@ -786,6 +822,7 @@
           tracks={song.document.tracks}
           onchange={practiceChanged}
         />
+        <FretboardPanel {practice} onchange={practiceChanged} />
         <WaitPanel
           {practice}
           on={waitOn}

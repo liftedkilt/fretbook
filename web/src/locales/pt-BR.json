@@ -690,7 +690,10 @@
     "addPlaceholder": "Adicionar uma etiqueta…",
     "remove": "Remover etiqueta {tag}",
     "select": "Selecionar",
-    "selected": { "one": "{count} selecionada", "other": "{count} selecionadas" },
+    "selected": {
+      "one": "{count} selecionada",
+      "other": "{count} selecionadas"
+    },
     "selectAll": "Selecionar todas as exibidas",
     "selectSong": "Selecionar música",
     "bulkAdd": "Adicionar etiqueta às selecionadas",
@@ -729,5 +732,22 @@
     "tagsPlaceholder": "ex: rock, ao vivo",
     "parsing": "Processando Guitar Pro no worker…",
     "saving": "Salvando…"
+  },
+  "fretboard": {
+    "title": "Braço",
+    "show": "Mostrar o braço sob a partitura",
+    "leftHanded": "Canhoto",
+    "labels": "Mostrar nas notas",
+    "root": "Intervalos a partir de",
+    "rootAuto": "Corda mais grave",
+    "label": "Braço com {strings} cordas",
+    "capo": "Capotraste na casa {fret}",
+    "now": "Agora: {notes}",
+    "idle": "Aguardando a primeira nota",
+    "noteAt": "corda {string}, casa {fret}",
+    "labelNone": "Nada",
+    "labelNames": "Nomes das notas",
+    "labelIntervals": "Intervalos",
+    "labelFrets": "Números das casas"
   }
 }
