@@ -49,7 +49,8 @@ export class Clicker {
     const peak = volume * (type === "accent" ? 0.6 : type === "subdivision" ? 0.25 : 0.4);
     gain.gain.setValueAtTime(peak, start);
     gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.05);
-    oscillator.connect(gain).connect(context.destination);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
     oscillator.start(start);
     oscillator.stop(start + 0.06);
   }
