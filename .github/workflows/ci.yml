@@ -192,12 +192,34 @@ jobs:
             web/playwright-report/
           retention-days: 7
 
+  audit:
+    # Known-vulnerable dependencies. Runs against the lockfile and requirements,
+    # so it can start failing on an unchanged tree when a new advisory lands.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: pip-audit on requirements.txt
+        run: |
+          pip install pip-audit
+          pip-audit -r requirements.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: npm audit (production dependencies, high and critical)
+        working-directory: web
+        run: npm audit --omit=dev --audit-level=high
+
   ci-ok:
     # The single check to require in branch protection. Add every new job to
     # `needs` so the required check keeps covering it without editing the
     # branch-protection settings.
     if: always()
-    needs: [backend, frontend, openapi, repo-checks, pr-title, ui-only, e2e]
+    needs: [backend, frontend, openapi, repo-checks, pr-title, ui-only, e2e, audit]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

@@ -394,3 +394,44 @@ def test_english_catalog_covers_server_keys() -> None:
     missing_progress = sorted(key for key in progress_keys if not isinstance(_lookup(catalog, key), str))
     assert missing_progress == []
     assert catalog["app"]["title"] == "Fretbook"
+
+
+def test_upload_filename_cannot_escape_the_inbox(tmp_path: Path) -> None:
+    with _client(tmp_path) as client:
+        hostile = "../../../evil/..\\..\\song.xml"
+        response = client.post("/api/imports/file", files={"file": (hostile, XML, "application/xml")})
+        assert response.status_code == 202
+        job = _wait(client, response.json()["job_id"])
+        assert job["status"] == "done"
+        written = [path for path in tmp_path.rglob("*") if path.is_file() and "evil" in str(path)]
+        assert written == []
+        inbox = tmp_path / "inbox"
+        for path in inbox.iterdir():
+            assert path.resolve().parent == inbox.resolve()
+
+        song_id = client.post("/api/songs", json={"title": "Audio"}).json()["id"]
+        audio = client.post(f"/api/songs/{song_id}/audio", files={"file": ("../../../escape.wav", WAV, "audio/wav")})
+        assert audio.status_code == 200
+        assert not (tmp_path.parent / "escape.wav").exists()
+        assert not [path for path in tmp_path.rglob("escape*")]
+
+
+def test_import_upload_over_the_limit_is_refused(tmp_path: Path) -> None:
+    with _client(tmp_path) as client:
+        response = client.post("/api/imports/file", files={"file": ("big.xml", b"<a>" + b"x" * 2_100_000, "text/xml")})
+        assert response.status_code == 413
+        assert list((tmp_path / "inbox").iterdir()) == []
+
+
+def test_import_survives_an_xml_entity_expansion_bomb(tmp_path: Path) -> None:
+    lols = "".join(
+        f'<!ENTITY l{i} "&l{i - 1};&l{i - 1};&l{i - 1};&l{i - 1};&l{i - 1};&l{i - 1};&l{i - 1};&l{i - 1};">'
+        for i in range(1, 9)
+    )
+    doctype = f'<!DOCTYPE score-partwise [<!ENTITY l0 "{"x" * 1000}">{lols}]>'
+    bomb = f'<?xml version="1.0"?>{doctype}<score-partwise>&l8;</score-partwise>'
+    with _client(tmp_path) as client:
+        response = client.post("/api/imports/file", files={"file": ("bomb.xml", bomb, "application/xml")})
+        assert response.status_code == 202
+        job = _wait(client, response.json()["job_id"])
+        assert job["status"] == "error"

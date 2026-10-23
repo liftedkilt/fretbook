@@ -102,7 +102,7 @@ The Python tests fail on an unclosed database connection, and check that the Eng
 
 ## CI and branch protection
 
-`.github/workflows/ci.yml` runs `backend` (Python 3.12 and 3.13), `frontend`, `openapi`, `repo-checks`, `ui-only` and `e2e`, each with a timeout. A final `ci-ok` job `needs:` all of them and fails if any did not succeed, so it is the one check to require; add new CI jobs to its `needs:` list. A new push to a pull request cancels the superseded run (pushes to branches are never cancelled).
+`.github/workflows/ci.yml` runs `backend` (Python 3.12 and 3.13), `frontend`, `openapi`, `repo-checks`, `ui-only`, `e2e` and `audit` (`pip-audit` and `npm audit --omit=dev --audit-level=high`), each with a timeout. A final `ci-ok` job `needs:` all of them and fails if any did not succeed, so it is the one check to require; add new CI jobs to its `needs:` list. `.github/workflows/codeql.yml` runs CodeQL on Python and JavaScript/TypeScript for every pull request, every push to `main`, and weekly. Report vulnerabilities as described in [SECURITY.md](SECURITY.md). A new push to a pull request cancels the superseded run (pushes to branches are never cancelled).
 
 Suggested branch-protection settings for `main`:
 
