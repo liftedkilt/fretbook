@@ -167,6 +167,9 @@ class SongSummary(BaseModel):
     # Null when the song has no published sync points. Always present in the JSON.
     duration: float | None
     updated_at: str
+    favourite: bool
+    # The caller's tags for this song, sorted A to Z ignoring case.
+    tags: list[str]
 
 
 class LibraryCounts(BaseModel):
@@ -177,6 +180,24 @@ class LibraryCounts(BaseModel):
     electric: int
     acoustic: int
     chords: int
+    favourites: int
+
+
+class TagCount(BaseModel):
+    tag: str
+    count: int
+
+
+class SongTags(BaseModel):
+    tags: list[str]
+
+
+class TagsAdded(BaseModel):
+    updated: int
+
+
+class Favourite(BaseModel):
+    favourite: bool
 
 
 class SongPage(BaseModel):

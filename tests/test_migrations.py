@@ -322,11 +322,45 @@ def test_migration_004_updates_existing_sync_marks_to_played(tmp_path: Path) -> 
         conn.close()
 
 
+def seed_v5(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        INSERT INTO users (id, external_subject, display_name, created_at)
+        VALUES ('user-v5', 'sub-v5', 'User V5', '2026-01-05T00:00:00Z')
+        """
+    )
+    conn.execute(
+        """
+        INSERT INTO songs (
+            id, owner_id, slug, title, artist, content_kind, source_kind, source_ref,
+            revision, bpm, measure_count, track_count, string_count, preferred_instrument,
+            preferred_track_id, has_sync, duration, document, chordpro, created_at, updated_at, favourite
+        ) VALUES (
+            'song-v5', 'user-v5', 'song-v5', 'Tagged', 'V5 Artist', 'chords', 'manual', '{}',
+            1, 0.0, 0, 0, 0, '', '', 0, NULL, NULL, '[C]Yo',
+            '2026-01-05T00:00:00Z', '2026-01-05T00:00:00Z', 1
+        )
+        """
+    )
+    conn.execute("INSERT INTO song_tags (song_id, tag) VALUES ('song-v5', 'Funk')")
+    conn.commit()
+
+
+def verify_v5(conn: sqlite3.Connection) -> None:
+    assert conn.execute("SELECT favourite FROM songs WHERE id = 'song-v5'").fetchone()[0] == 1
+    assert conn.execute("SELECT tag FROM song_tags WHERE song_id = 'song-v5' AND tag = 'funk'").fetchone()[0] == "Funk"
+    conn.execute("DELETE FROM songs WHERE id = 'song-v5'")
+    assert conn.execute("SELECT count(*) FROM song_tags WHERE song_id = 'song-v5'").fetchone()[0] == 0
+    conn.rollback()
+    assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+
+
 SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.Connection], None]]] = {
     1: (seed_v1, verify_v1),
     2: (seed_v2, verify_v2),
     3: (seed_v3, verify_v3),
     4: (seed_v4, verify_v4),
+    5: (seed_v5, verify_v5),
 }
 
 

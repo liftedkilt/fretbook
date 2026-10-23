@@ -109,7 +109,7 @@ def test_instrument_filters_and_counts(client: TestClient) -> None:
     page = client.get("/api/songs", params={"instrument": "bass"}).json()
     assert [item["title"] for item in page["items"]] == ["Bass One"]
     assert page["total"] == 1
-    assert page["counts"] == {"all": 3, "bass": 1, "electric": 1, "acoustic": 0, "chords": 1}
+    assert page["counts"] == {"all": 3, "bass": 1, "electric": 1, "acoustic": 0, "chords": 1, "favourites": 0}
     assert _titles(client, instrument="chords") == ["Chords One"]
     assert _titles(client, instrument="electric") == ["Guitar One"]
 

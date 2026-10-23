@@ -21,6 +21,7 @@ from fretbook.api.backup import RESTORE_PATH
 from fretbook.api.backup import router as backup_router
 from fretbook.api.middleware import BodyLimitMiddleware, SameOriginMiddleware
 from fretbook.api.routes import router
+from fretbook.api.tag_routes import router as tag_router
 from fretbook.api.universal_routes import router as universal_router
 from fretbook.audio.ytdlp_health import AutoUpdater
 from fretbook.auth import build_auth
@@ -202,6 +203,10 @@ def create_app(
                 "name": "jobs",
                 "description": "Background job status, progress keys, and errors.",
             },
+            {
+                "name": "tags",
+                "description": "Free-form tags and the favourite star on the caller's songs.",
+            },
         ],
         # Output schemas mark defaulted fields as present, which is what responses actually send.
         separate_input_output_schemas=True,
@@ -219,6 +224,7 @@ def create_app(
     app.include_router(backup_router)
     app.include_router(ascii_tab_router)
     app.include_router(universal_router)
+    app.include_router(tag_router)
     auth_routes = ctx.auth.routes()
     if auth_routes is not None:
         app.include_router(auth_routes)
