@@ -26,8 +26,10 @@ import {
   refreshSongs,
   setDefaultInstrument,
   setNotation,
+  setPlayerView,
   setSort,
   setTheme,
+  storedPlayerView,
   ui,
 } from "./ui.svelte";
 
@@ -137,7 +139,7 @@ describe("settings", () => {
     expect(defaultFamily()).toBe("bass");
   });
 
-  it("keeps the theme and notation when storage is unavailable", () => {
+  it("keeps the theme, notation and player view when storage is unavailable", () => {
     setTheme("light");
     expect(ui.theme).toBe("light");
     setTheme("system");
@@ -146,5 +148,12 @@ describe("settings", () => {
     expect(ui.notation).toBe(true);
     setNotation(false);
     expect(ui.notation).toBe(false);
+    setPlayerView("highway");
+    expect(ui.playerView).toBe("highway");
+    setPlayerView("split");
+    expect(ui.playerView).toBe("split");
+    setPlayerView("tab");
+    expect(ui.playerView).toBe("tab");
+    expect(storedPlayerView("user-1")).toBe("tab");
   });
 });

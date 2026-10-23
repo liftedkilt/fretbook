@@ -885,5 +885,18 @@
     "playTranspose": "Transposed {semitones}",
     "playEmpty": "This setlist has no songs to play.",
     "playNav": "Setlist navigation"
+  },
+  "highway": {
+    "view": "Player view",
+    "tab": "Tab",
+    "highway": "Highway",
+    "split": "Split",
+    "label": "Scrolling note highway with {strings} strings",
+    "sectionNow": "Section: {section}",
+    "sectionNext": "Up next: {section}",
+    "chordNow": "Chord: {chord}",
+    "now": "Now: {notes}",
+    "idle": "Waiting for the first note",
+    "noteAt": "string {string}, fret {fret}"
   }
 }

@@ -5,6 +5,7 @@
   import Cover from "./Cover.svelte";
   import Fretboard from "./Fretboard.svelte";
   import FretboardPanel from "./FretboardPanel.svelte";
+  import Highway from "./Highway.svelte";
   import Icon from "./Icon.svelte";
   import Menu from "./Menu.svelte";
   import PracticePanel from "./PracticePanel.svelte";
@@ -24,6 +25,7 @@
     playedBarTicks,
     positionInBar,
   } from "../lib/fretboard";
+  import { gemKey, highwayStarts, timeAtBarPosition, type GemState } from "../lib/highway";
   import { instrumentLabel } from "../lib/instruments";
   import { describeProblem, ListenError, startListening } from "../lib/listen";
   import { buildWaitSteps, stepIndexAt, type WaitStep } from "../lib/listen/wait";
@@ -51,7 +53,7 @@
   } from "../lib/sync";
   import { midiToName, tuningLabel } from "../lib/tuning";
   import type { SongDetail, TabSong } from "../lib/types";
-  import { openTuner, setNotation, ui } from "../lib/ui.svelte";
+  import { openTuner, setNotation, setPlayerView, ui } from "../lib/ui.svelte";
 
   let { song: initial }: { song: TabSong } = $props();
 
@@ -76,6 +78,8 @@
   let currentMeasure = $state(-1);
   // Ticks into the current played bar, for the fretboard.
   let currentPosition = $state(0);
+  // Seconds on the playback clock, for the scrolling note highway.
+  let currentSeconds = $state(0);
   let clock = $state("0:00.0");
   let playing = $state(false);
   let practice = $state(untrack(() => loadPractice(initial.id)));
@@ -94,6 +98,7 @@
   let waitStep = $state<WaitStep | null>(null);
   let waitHint = $state(false);
   let waitError = $state("");
+  let waitGrades = $state<Record<string, GemState>>({});
   let waitRun: WaitRun | null = null;
   let waitFlash = 0;
 
@@ -202,6 +207,7 @@
       }
     }
     clock = formatTime(seconds);
+    currentSeconds = seconds;
     playing = !audioEl.paused;
   }
 
@@ -213,6 +219,7 @@
     const settings = new alphaTab.Settings();
     settings.core.fontDirectory = new URL("font/", document.baseURI).href;
     settings.core.logLevel = alphaTab.LogLevel.Warning;
+    settings.core.enableLazyLoading = false;
     settings.display.staveProfile = staveProfile(untrack(() => ui.notation));
     settings.player.playerMode = useAudio
       ? alphaTab.PlayerMode.EnabledExternalMedia
@@ -251,6 +258,13 @@
         currentMeasure,
       );
       currentPosition = beat.displayStart;
+      const doc = untrack(() => song.document);
+      currentSeconds = timeAtBarPosition(
+        highwayStarts(doc, false),
+        currentMeasure,
+        currentPosition,
+        playedBarTicks(doc, currentMeasure),
+      );
       // The synth has no loop of its own: past the end of the range, go back to its start.
       if (loopA != null && loopB != null && currentMeasure > loopB && playing) {
         goToBar(loopA);
@@ -272,7 +286,10 @@
       waitRun.seek(0);
     });
     instance.playerPositionChanged.on((event) => {
-      if (!useAudio) clock = formatTime(event.currentTime / 1000);
+      if (!useAudio) {
+        clock = formatTime(event.currentTime / 1000);
+        if (untrack(() => waitState) !== "waiting") currentSeconds = event.currentTime / 1000;
+      }
     });
     instance.playerStateChanged.on((event) => {
       if (!useAudio) playing = event.state === alphaTab.synth.PlayerState.Playing;
@@ -326,7 +343,7 @@
   // Follow scrolls inside the score, so the score itself must sit clear of the
   // floating dock; its scroll-margin-bottom in app.css leaves room for the dock.
   $effect(() => {
-    if (!playing || !follow || !host) return;
+    if (!playing || !follow || !host || ui.playerView === "highway") return;
     const score = host;
     untrack(() => {
       const dock = document.querySelector(".dock-bar")?.getBoundingClientRect();
@@ -498,12 +515,17 @@
     if (barCount <= 0) return;
     const index = Math.min(barCount - 1, Math.max(0, target));
     tapIndex = index;
+    currentPosition = 0;
     if (song.has_audio && audioEl) {
-      audioEl.currentTime = Math.max(0, startsNow()[index] ?? 0);
+      const targetTime = Math.max(0, startsNow()[index] ?? 0);
+      audioEl.currentTime = targetTime;
+      currentSeconds = targetTime;
+      currentMeasure = index;
     } else if (player.api) {
       const tick = tickOfBar(index);
       player.api.tickPosition = tick;
       currentMeasure = index;
+      currentSeconds = Math.max(0, highwayStarts(song.document, false)[index] ?? 0);
       if (waitRun) {
         waitRun.seek(tick);
         waitStep = null;
@@ -548,6 +570,7 @@
     const api = player.api;
     if (!api || song.has_audio || waitRun) return;
     waitError = "";
+    waitGrades = {};
     const run = new WaitRun({
       steps: waitSteps,
       listen: startListening,
@@ -559,9 +582,20 @@
         waitStep = step;
         waitHint = false;
         waitState = "waiting";
+        currentSeconds = timeAtBarPosition(
+          highwayStarts(song.document, false),
+          step.bar,
+          step.position,
+          playedBarTicks(song.document, step.bar),
+        );
       },
-      onHit: () => {
+      onHit: (step) => {
+        const wasHit = run.hits > waitHits;
         waitHits = run.hits;
+        waitGrades = {
+          ...waitGrades,
+          [gemKey(step.bar, step.position)]: wasHit ? "hit" : "missed",
+        };
         waitHint = false;
         waitStep = null;
         waitState = "hit";
@@ -595,6 +629,7 @@
     waitState = "idle";
     waitStep = null;
     waitHint = false;
+    waitGrades = {};
     applyPractice();
   }
 
@@ -718,6 +753,37 @@
         </div>
       </div>
       <div class="hero-actions">
+        <div
+          class="segmented"
+          role="group"
+          aria-label={t("highway.view")}
+          data-testid="player-view-switcher"
+        >
+          <button
+            type="button"
+            data-testid="player-view-tab"
+            aria-pressed={ui.playerView === "tab"}
+            onclick={() => setPlayerView("tab")}
+          >
+            {t("highway.tab")}
+          </button>
+          <button
+            type="button"
+            data-testid="player-view-highway"
+            aria-pressed={ui.playerView === "highway"}
+            onclick={() => setPlayerView("highway")}
+          >
+            {t("highway.highway")}
+          </button>
+          <button
+            type="button"
+            data-testid="player-view-split"
+            aria-pressed={ui.playerView === "split"}
+            onclick={() => setPlayerView("split")}
+          >
+            {t("highway.split")}
+          </button>
+        </div>
         <a
           class="button"
           data-testid="song-edit-link"
@@ -775,17 +841,39 @@
   {#if song.has_audio}
     <audio data-testid="player-audio" bind:this={audioEl} src={audioSrc} preload="auto"></audio>
   {/if}
-  <!-- Scrolls on its own, so keyboard users need to be able to focus it. -->
-  <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-  <div
-    class="paper score"
-    data-testid="player-score"
-    data-wait={waitOn ? waitState : undefined}
-    bind:this={host}
-    role="region"
-    aria-label={t("player.score")}
-    tabindex="0"
-  ></div>
+  <div class="player-stage" data-testid="player-stage" data-view={ui.playerView}>
+    {#if ui.playerView === "highway" || ui.playerView === "split"}
+      <div class="highway-wrap" data-testid="player-highway">
+        <Highway
+          document={document_}
+          {track}
+          hasAudio={song.has_audio}
+          currentTime={currentSeconds}
+          {playing}
+          {rate}
+          {loopA}
+          {loopB}
+          grades={waitOn ? waitGrades : undefined}
+          waitingAt={waitOn && waitState === "waiting" && waitStep
+            ? { bar: waitStep.bar, position: waitStep.position }
+            : null}
+          onseek={goToBar}
+        />
+      </div>
+    {/if}
+    <!-- Scrolls on its own, so keyboard users need to be able to focus it. -->
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+    <div
+      class="paper score"
+      data-testid="player-score"
+      data-hidden={ui.playerView === "highway" ? "true" : undefined}
+      data-wait={waitOn ? waitState : undefined}
+      bind:this={host}
+      role="region"
+      aria-label={t("player.score")}
+      tabindex={ui.playerView === "highway" ? -1 : 0}
+    ></div>
+  </div>
 
   {#if practice.fretboard.on}
     <div class="fretboard-wrap" data-testid="player-fretboard">

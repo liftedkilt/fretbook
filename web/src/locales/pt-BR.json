@@ -885,5 +885,18 @@
     "playTranspose": "Transposta {semitones}",
     "playEmpty": "Este repertório não tem músicas para tocar.",
     "playNav": "Navegação do repertório"
+  },
+  "highway": {
+    "view": "Visualização",
+    "tab": "Tablatura",
+    "highway": "Pista",
+    "split": "Dividida",
+    "label": "Pista de notas rolante com {strings} cordas",
+    "sectionNow": "Seção: {section}",
+    "sectionNext": "A seguir: {section}",
+    "chordNow": "Acorde: {chord}",
+    "now": "Agora: {notes}",
+    "idle": "Aguardando a primeira nota",
+    "noteAt": "corda {string}, casa {fret}"
   }
 }

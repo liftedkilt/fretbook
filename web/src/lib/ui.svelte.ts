@@ -21,6 +21,9 @@ import type {
 export type { LibraryFilter };
 export type Theme = "system" | "dark" | "light";
 export type Sheet = "" | "add" | "settings" | "tuner" | "calibration";
+export type PlayerView = "tab" | "highway" | "split";
+
+export const PLAYER_VIEWS: readonly PlayerView[] = ["tab", "highway", "split"];
 
 /** What the song page hands the tuner: the track's strings (highest first) and capo. */
 export interface TunerRequest {
@@ -30,6 +33,7 @@ export interface TunerRequest {
 
 const THEME_KEY = "fretbook.theme";
 const NOTATION_KEY = "fretbook.notation";
+const VIEW_KEY = "fretbook.playerView";
 const SORT_KEY = "fretbook.librarySort";
 
 /** Songs per request. The library shows more through "Load more". */
@@ -76,6 +80,17 @@ function storedNotation(): boolean {
   }
 }
 
+export function storedPlayerView(userId?: string | null): PlayerView {
+  try {
+    if (typeof localStorage === "undefined") return "tab";
+    const perUser = userId ? localStorage.getItem(`${VIEW_KEY}.${userId}`) : null;
+    const raw = perUser ?? localStorage.getItem(VIEW_KEY);
+    return PLAYER_VIEWS.includes(raw as PlayerView) ? (raw as PlayerView) : "tab";
+  } catch {
+    return "tab";
+  }
+}
+
 const initialSort = storedSort();
 
 export const ui = $state({
@@ -114,6 +129,8 @@ export const ui = $state({
   theme: storedTheme(),
   /** Standard notation above the tab. Off by default: most players only read the tab. */
   notation: storedNotation(),
+  /** Tab, scrolling note highway, or split view on the song page. */
+  playerView: storedPlayerView(),
   error: "",
 });
 
@@ -227,6 +244,7 @@ export async function loadMeta(): Promise<void> {
   ui.version = meta.version;
   ui.commit = meta.commit;
   ui.defaultInstrument = me.settings.default_instrument;
+  ui.playerView = storedPlayerView(me.user_id);
   metaLoaded = true;
 }
 
@@ -284,6 +302,16 @@ export function setNotation(show: boolean): void {
   try {
     if (show) localStorage.setItem(NOTATION_KEY, "1");
     else localStorage.removeItem(NOTATION_KEY);
+  } catch {
+    /* storage may be unavailable */
+  }
+}
+
+export function setPlayerView(view: PlayerView): void {
+  ui.playerView = view;
+  try {
+    localStorage.setItem(VIEW_KEY, view);
+    if (ui.me?.user_id) localStorage.setItem(`${VIEW_KEY}.${ui.me.user_id}`, view);
   } catch {
     /* storage may be unavailable */
   }
