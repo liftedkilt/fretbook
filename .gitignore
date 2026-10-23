@@ -24,3 +24,8 @@ source/*.html
 # Playwright
 web/test-results/
 web/playwright-report/
+
+# Coverage reports
+.coverage
+htmlcov/
+web/coverage/

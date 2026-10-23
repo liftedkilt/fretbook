@@ -8,6 +8,7 @@ export default ts.config(
   {
     ignores: [
       "dist/",
+      "coverage/",
       "node_modules/",
       "public/font/",
       "public/soundfont/",

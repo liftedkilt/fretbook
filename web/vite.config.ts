@@ -38,5 +38,17 @@ export default defineConfig({
         },
       },
     ],
+    coverage: {
+      provider: "v8",
+      // Svelte components are left out: v8 cannot attribute coverage to them under Vitest's node
+      // environment (untested ones report 100%), and Playwright covers them as user flows.
+      include: ["src/**/*.ts"],
+      // Generated from openapi.json, entry point, and ambient type declarations.
+      exclude: ["src/**/*.test.ts", "src/lib/api-types.ts", "src/main.ts", "src/**/*.d.ts"],
+      reporter: ["text-summary", "html", "json-summary"],
+      reportsDirectory: "coverage",
+      // The floor: current coverage rounded down. Raise it as tests are added; never lower it.
+      thresholds: { lines: 84, statements: 84, functions: 88, branches: 73 },
+    },
   },
 });

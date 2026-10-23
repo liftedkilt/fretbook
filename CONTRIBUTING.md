@@ -42,6 +42,17 @@ python scripts/check_locales.py      # locale files are valid JSON, LF, one trai
 
 If another pull request took your migration number, `check_migrations.py` fails with the duplicate; rebase on `main` and rename your file to the next free number.
 
+### Coverage
+
+CI measures coverage for `fretbook/` (`pytest-cov`, line and branch) and `web/src/**/*.ts` (`@vitest/coverage-v8`), writes the totals to the job summary, and uploads the HTML reports as the `coverage-server` and `coverage-web` artifacts. A drop below the floor fails the job.
+
+```sh
+.venv/bin/python -m pytest --cov --cov-report=term --cov-report=html   # htmlcov/
+cd web && npm run test:coverage                                         # web/coverage/
+```
+
+The floors are the current totals rounded down: `fail_under` in `pyproject.toml` (server) and `test.coverage.thresholds` in `web/vite.config.ts`. Raise them in the PR that raises coverage; never lower them. Excluded from the web numbers: `api-types.ts` (generated), `main.ts`, and Svelte components (v8 cannot attribute coverage to them under Vitest; Playwright covers them as flows). The vision modules are included because the server imports them.
+
 ### Formatting and pre-commit
 
 Python is formatted with `ruff format` (run `.venv/bin/ruff format fretbook tests`), and `web/` with Prettier (`npm run format --prefix web`) and linted with ESLint (`npm run lint --prefix web`). `api-types.ts` is generated and excluded. [`.editorconfig`](.editorconfig) sets the editor defaults.

@@ -44,3 +44,13 @@ select = ["E", "F", "I", "UP"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["fretbook"]
+
+[tool.coverage.run]
+source = ["fretbook"]
+branch = true
+
+[tool.coverage.report]
+# The floor: current total (lines and branches, 86.6%) rounded down. Raise it as tests are added; never lower it.
+fail_under = 86
+show_missing = true
+skip_covered = true
