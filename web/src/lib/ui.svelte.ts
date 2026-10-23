@@ -1,11 +1,11 @@
 import { getMe, getMeta, listSongs, saveSettings } from "./api";
 import { instrumentFamily, type InstrumentFilter } from "./instruments";
-import type { InstrumentPreset, SongSummary } from "./types";
+import type { InstrumentPreset, Me, SongSummary } from "./types";
 
 /*
  * State shared by the app shell and the pages: the library list (the sidebar
  * shows counts), the instrument presets and default, the library filter and
- * search, which sheet is open, and the colour theme.
+ * search, which sheet is open, the colour theme, and who is signed in.
  */
 
 export type LibraryFilter = "all" | InstrumentFilter | "chords";
@@ -24,6 +24,8 @@ function storedTheme(): Theme {
 }
 
 export const ui = $state({
+  /** The caller. `authenticated` is false in single-user mode, where there is no sign-in. */
+  me: null as Me | null,
   songs: [] as SongSummary[],
   loaded: false,
   presets: [] as InstrumentPreset[],
@@ -55,6 +57,7 @@ let metaLoaded = false;
 export async function loadMeta(): Promise<void> {
   if (metaLoaded) return;
   const [meta, me] = await Promise.all([getMeta(), getMe()]);
+  ui.me = me;
   ui.presets = meta.instruments;
   ui.defaultInstrument = me.settings.default_instrument;
   metaLoaded = true;

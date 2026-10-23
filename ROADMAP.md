@@ -11,7 +11,6 @@ These are already being worked on. Coordinate with them before touching the same
 | Work | Tracking |
 | --- | --- |
 | UI redesign | In progress |
-| Multi-user sign-in with OIDC (Pocket ID) | [#5](https://github.com/liftedkilt/fretbook/issues/5), [PR #10](https://github.com/liftedkilt/fretbook/pull/10) |
 | Importing tabs from YouTube lesson videos (design and spike: [docs/design/youtube-tab-import.md](docs/design/youtube-tab-import.md)) | [#6](https://github.com/liftedkilt/fretbook/issues/6) |
 
 ## Essential
@@ -23,7 +22,7 @@ Everything lives in one SQLite file and a media folder, so a lost volume loses t
 - a matching import that restores it into an empty or existing library
 - a `python -m fretbook backup` command that takes a consistent SQLite snapshot (the online backup API, not a file copy) for cron or a container sidecar
 
-Once [#5](https://github.com/liftedkilt/fretbook/issues/5) lands, export and import work per user, and an admin can back up everything.
+With sign-in on, export and import should work per user, and an admin should be able to back up everything.
 
 ### Published, versioned Docker image
 

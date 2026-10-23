@@ -1,16 +1,20 @@
 import type {
+  AdminUser as ContractAdminUser,
   ErrorDetail,
   ImportPreview as ContractImportPreview,
   Job as ContractJob,
   JobAccepted,
   Me as ContractMe,
   Meta as ContractMeta,
+  SessionsEnded,
   Settings as ContractSettings,
   SongDetail as ContractSongDetail,
   SongSummary as ContractSongSummary,
+  SongsMoved,
 } from "./api-types";
 import { keyed } from "./i18n.svelte";
-import type { ImportPreview, Job, Keyed, Me, Meta, ScoreDocument, Settings, SongDetail, SongSummary } from "./types";
+import { currentPath } from "./router.svelte";
+import type { AdminUser, ImportPreview, Job, Keyed, Me, Meta, ScoreDocument, Settings, SongDetail, SongSummary } from "./types";
 
 /** Flat contract responses must be usable as the UI models in `./types`. */
 type AssertAssignable<From extends To, To> = true;
@@ -20,6 +24,7 @@ type _matchesContract = [
   AssertAssignable<ContractSettings, Settings>,
   AssertAssignable<ContractSongSummary, SongSummary>,
   AssertAssignable<ContractImportPreview, ImportPreview>,
+  AssertAssignable<ContractAdminUser, AdminUser>,
 ];
 
 // Score documents and jobs are parsed as the contract types, then viewed through
@@ -74,9 +79,19 @@ async function toError(response: Response): Promise<ApiError> {
   return new ApiError(response.status, response.statusText || `HTTP ${response.status}`);
 }
 
+/** Where a signed-out browser goes to sign in, returning to the current page afterwards. */
+export function loginUrl(): string {
+  return `${apiUrl("/auth/login")}?next=${encodeURIComponent(currentPath().slice(1) + location.search)}`;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(apiUrl(path), init);
-  if (!response.ok) throw await toError(response);
+  if (!response.ok) {
+    const error = await toError(response);
+    // Only OIDC mode answers 401: the session ended, so sign in again.
+    if (error.status === 401 && error.key === "auth.required") location.assign(loginUrl());
+    throw error;
+  }
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
 }
@@ -180,4 +195,17 @@ export async function waitForJob(id: string, onProgress?: (job: Job) => void): P
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
   throw new ApiError(408, "import timed out", "job.timeout");
+}
+
+export function listUsers(): Promise<AdminUser[]> {
+  return request<ContractAdminUser[]>("/api/admin/users");
+}
+
+export function signOutUser(id: string): Promise<SessionsEnded> {
+  return request(`/api/admin/users/${id}/sign-out`, { method: "POST" });
+}
+
+/** Moves the single-user library into the signed-in admin's own. */
+export function adoptLocal(): Promise<SongsMoved> {
+  return request("/api/admin/adopt-local", { method: "POST" });
 }

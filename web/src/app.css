@@ -863,6 +863,62 @@ textarea {
   margin-top: auto;
 }
 
+.side-users {
+  display: flex;
+  align-items: center;
+  margin-top: auto;
+  text-decoration: none;
+}
+
+.side-users + .side-settings {
+  margin-top: 0;
+}
+
+.account-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.account-row form {
+  margin: 0;
+}
+
+.admin-page {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.admin-page .display {
+  margin: 0 0 0.4rem;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.user-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.user-table th,
+.user-table td {
+  padding: 0.6rem 0.7rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.user-table th {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
 .recent-link {
   display: flex;
   align-items: center;

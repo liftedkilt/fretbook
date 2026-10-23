@@ -62,12 +62,6 @@ class ValidationBody(BaseModel):
     detail: list[ValidationIssue]
 
 
-class PlainErrorBody(BaseModel):
-    """An error whose ``detail`` is a plain string (OIDC is not implemented, HTTP 501)."""
-
-    detail: str
-
-
 class Health(BaseModel):
     ok: bool
     name: str
@@ -103,12 +97,39 @@ class Settings(BaseModel):
 
 
 class Me(BaseModel):
-    """The caller. In single-user mode this is the ``local`` user and ``authenticated`` is false."""
+    """The caller. In single-user mode this is the ``local`` user and ``authenticated`` is false.
+
+    ``role`` comes from the provider's groups at sign-in; it is always ``user`` in single-user mode.
+    """
 
     user_id: str
     display_name: str
+    email: str
     authenticated: bool
+    role: Literal["user", "admin"]
     settings: Settings
+
+
+class AdminUser(BaseModel):
+    """An account as an admin sees it. ``local`` marks the owner of songs from single-user mode."""
+
+    id: str
+    display_name: str
+    email: str
+    role: Literal["user", "admin"]
+    local: bool
+    created_at: str
+    last_login_at: str | None
+    song_count: int
+    session_count: int
+
+
+class SessionsEnded(BaseModel):
+    ended: int
+
+
+class SongsMoved(BaseModel):
+    moved: int
 
 
 class SongSummary(BaseModel):
@@ -224,14 +245,13 @@ ERROR_RESPONSES: dict[int, dict[str, Any]] = {
     },
 }
 
-# Authenticated routes raise this when FRETBOOK_AUTH_MODE=oidc and sign-in is not built.
+# With sign-in (OIDC mode), a request without a live session gets 401 ``auth.required``.
 AUTH_RESPONSES: dict[int, dict[str, Any]] = {
     **ERROR_RESPONSES,
-    501: {
-        "model": PlainErrorBody,
-        "description": (
-            "OIDC sign-in is not implemented. `detail` is a string. "
-            "Unset FRETBOOK_AUTH_MODE to use single-user mode."
-        ),
-    },
+    401: {"model": ErrorBody, "description": _KEYED + " `auth.required`: no session; sign in at `/auth/login`."},
+}
+
+ADMIN_RESPONSES: dict[int, dict[str, Any]] = {
+    **AUTH_RESPONSES,
+    403: {"model": ErrorBody, "description": _KEYED + " `auth.adminOnly`: the caller is not an admin."},
 }

@@ -13,19 +13,23 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from fretbook import __version__
-from fretbook.api.deps import context, principal, require_song
+from fretbook.api.deps import admin, context, principal, require_song
 from fretbook.api.errors import api_error
 from fretbook.api.schemas import (
+    ADMIN_RESPONSES,
     AUTH_RESPONSES,
+    AdminUser,
     Health,
     ImportPreview,
     Job,
     JobAccepted,
     Me,
     Meta,
+    SessionsEnded,
     Settings,
     SongDetail,
     SongExport,
+    SongsMoved,
     SongSummary,
 )
 from fretbook.auth.base import Principal
@@ -172,8 +176,8 @@ def health() -> JSONResponse:
 
 
 @router.get("/api/meta", response_model=Meta, tags=["meta"])
-def meta(ctx: AppContext = Depends(_ctx)) -> JSONResponse:
-    """Name, version, auth mode, exporters, and instrument presets. No authentication."""
+def meta(ctx: AppContext = Depends(_ctx), _user: Principal = Depends(_user)) -> JSONResponse:
+    """Name, version, auth mode, exporters, and instrument presets."""
     return _json(
         {
             "name": "Fretbook",
@@ -193,7 +197,9 @@ def me(ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> JSO
         {
             "user_id": user.user_id,
             "display_name": user.display_name,
+            "email": user.email,
             "authenticated": user.authenticated,
+            "role": user.role,
             "settings": ctx.songs.get_settings(user.user_id),
         }
     )
@@ -588,3 +594,29 @@ def get_job(job_id: str, ctx: AppContext = Depends(_ctx), user: Principal = Depe
     for private in ("owner_id", "payload", "attempts"):
         job.pop(private, None)
     return _json(job)
+
+
+# --- administration (OIDC mode; admins come from FRETBOOK_OIDC_ADMIN_GROUP) ---
+
+
+@router.get("/api/admin/users", response_model=list[AdminUser], tags=["admin"], responses=ADMIN_RESPONSES)
+def admin_users(ctx: AppContext = Depends(_ctx), _admin: Principal = Depends(admin)) -> JSONResponse:
+    """Every account, with role, song count, last sign-in and live sessions. The ``local`` row holds
+    songs from single-user mode."""
+    return _json(ctx.users.list_users())
+
+
+@router.post(
+    "/api/admin/users/{user_id}/sign-out", response_model=SessionsEnded, tags=["admin"], responses=ADMIN_RESPONSES
+)
+def admin_sign_out(user_id: str, ctx: AppContext = Depends(_ctx), _admin: Principal = Depends(admin)) -> JSONResponse:
+    """End every session of a user. Their next visit signs in again and re-reads their groups."""
+    if not ctx.users.exists(user_id):
+        raise api_error(404, "user.notFound", "user not found")
+    return _json({"ended": ctx.users.revoke_sessions(user_id)})
+
+
+@router.post("/api/admin/adopt-local", response_model=SongsMoved, tags=["admin"], responses=ADMIN_RESPONSES)
+def admin_adopt_local(ctx: AppContext = Depends(_ctx), user: Principal = Depends(admin)) -> JSONResponse:
+    """Move the songs from single-user mode into the calling admin's library."""
+    return _json({"moved": ctx.users.adopt_local(user.user_id)})

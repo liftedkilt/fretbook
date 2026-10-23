@@ -7,6 +7,7 @@ from fretbook.config import Settings
 from fretbook.jobs.runner import JobRunner
 from fretbook.storage.media import MediaStore
 from fretbook.storage.repository import SongRepository
+from fretbook.storage.users import UserStore
 
 
 @dataclass
@@ -15,4 +16,5 @@ class AppContext:
     songs: SongRepository
     media: MediaStore
     jobs: JobRunner
+    users: UserStore
     auth: AuthBackend

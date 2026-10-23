@@ -1,7 +1,9 @@
 <script lang="ts">
   import Icon from "./Icon.svelte";
   import Sheet from "./Sheet.svelte";
+  import { apiUrl } from "../lib/api";
   import { currentLocale, locales, setLocale, t, tOr } from "../lib/i18n.svelte";
+  import { followLink, hrefFor } from "../lib/router.svelte";
   import { closeSheet, setDefaultInstrument, setTheme, ui, type Theme } from "../lib/ui.svelte";
 
   let error = $state("");
@@ -24,6 +26,35 @@
 
 <Sheet open={ui.sheet === "settings"} title={t("settings.heading")} onclose={closeSheet}>
   <div class="settings-list">
+    {#if ui.me?.authenticated}
+      <section class="setting">
+        <div class="setting-label">
+          <span class="setting-icon"><Icon name="users" /></span>
+          <div>
+            <strong>{ui.me.display_name}</strong>
+            <p class="muted">{ui.me.email}{ui.me.role === "admin" ? ` · ${t("admin.roleAdmin")}` : ""}</p>
+          </div>
+        </div>
+        <div class="account-row">
+          {#if ui.me.role === "admin"}
+            <a
+              class="button"
+              href={hrefFor("/admin")}
+              onclick={(event) => {
+                closeSheet();
+                followLink(event, "/admin");
+              }}
+            >
+              <Icon name="users" size={16} />{t("account.admin")}
+            </a>
+          {/if}
+          <form method="post" action={apiUrl("/auth/logout")}>
+            <button type="submit"><Icon name="logout" size={16} />{t("account.signOut")}</button>
+          </form>
+        </div>
+      </section>
+    {/if}
+
     <section class="setting">
       <div class="setting-label">
         <span class="setting-icon"><Icon name="guitar" /></span>

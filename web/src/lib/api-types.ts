@@ -4,6 +4,67 @@
  */
 
 export interface paths {
+    "/api/admin/adopt-local": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Admin Adopt Local
+         * @description Move the songs from single-user mode into the calling admin's library.
+         */
+        post: operations["admin_adopt_local_api_admin_adopt_local_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Admin Users
+         * @description Every account, with role, song count, last sign-in and live sessions. The ``local`` row holds
+         *     songs from single-user mode.
+         */
+        get: operations["admin_users_api_admin_users_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{user_id}/sign-out": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Admin Sign Out
+         * @description End every session of a user. Their next visit signs in again and re-reads their groups.
+         */
+        post: operations["admin_sign_out_api_admin_users__user_id__sign_out_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -156,7 +217,7 @@ export interface paths {
         };
         /**
          * Meta
-         * @description Name, version, auth mode, exporters, and instrument presets. No authentication.
+         * @description Name, version, auth mode, exporters, and instrument presets.
          */
         get: operations["meta_api_meta_get"];
         put?: never;
@@ -332,6 +393,33 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AdminUser
+         * @description An account as an admin sees it. ``local`` marks the owner of songs from single-user mode.
+         */
+        AdminUser: {
+            /** Created At */
+            created_at: string;
+            /** Display Name */
+            display_name: string;
+            /** Email */
+            email: string;
+            /** Id */
+            id: string;
+            /** Last Login At */
+            last_login_at: string | null;
+            /** Local */
+            local: boolean;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "user" | "admin";
+            /** Session Count */
+            session_count: number;
+            /** Song Count */
+            song_count: number;
+        };
         /**
          * Bar
          * @description One song-level bar (alphaTab's master bar).
@@ -609,12 +697,21 @@ export interface components {
         /**
          * Me
          * @description The caller. In single-user mode this is the ``local`` user and ``authenticated`` is false.
+         *
+         *     ``role`` comes from the provider's groups at sign-in; it is always ``user`` in single-user mode.
          */
         Me: {
             /** Authenticated */
             authenticated: boolean;
             /** Display Name */
             display_name: string;
+            /** Email */
+            email: string;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "user" | "admin";
             settings: components["schemas"]["Settings"];
             /** User Id */
             user_id: string;
@@ -694,14 +791,6 @@ export interface components {
              */
             vibrato: boolean;
         };
-        /**
-         * PlainErrorBody
-         * @description An error whose ``detail`` is a plain string (OIDC is not implemented, HTTP 501).
-         */
-        PlainErrorBody: {
-            /** Detail */
-            detail: string;
-        };
         /** PreviewBody */
         PreviewBody: {
             /** Url */
@@ -725,6 +814,11 @@ export interface components {
              * @constant
              */
             version: 1;
+        };
+        /** SessionsEnded */
+        SessionsEnded: {
+            /** Ended */
+            ended: number;
         };
         /**
          * Settings
@@ -819,6 +913,11 @@ export interface components {
             format_version: 1;
             /** Title */
             title: string;
+        };
+        /** SongsMoved */
+        SongsMoved: {
+            /** Moved */
+            moved: number;
         };
         /**
          * SongsterrTrackChoice
@@ -993,6 +1092,7 @@ export interface components {
     headers: never;
     pathItems: never;
 }
+export type AdminUser = components['schemas']['AdminUser'];
 export type Bar = components['schemas']['Bar'];
 export type Beat = components['schemas']['Beat'];
 export type BodyImportFileApiImportsFilePost = components['schemas']['Body_import_file_api_imports_file_post'];
@@ -1011,13 +1111,14 @@ export type JobResult = components['schemas']['JobResult'];
 export type Me = components['schemas']['Me'];
 export type Meta = components['schemas']['Meta'];
 export type Note = components['schemas']['Note'];
-export type PlainErrorBody = components['schemas']['PlainErrorBody'];
 export type PreviewBody = components['schemas']['PreviewBody'];
 export type ScoreDocument = components['schemas']['ScoreDocument'];
+export type SessionsEnded = components['schemas']['SessionsEnded'];
 export type Settings = components['schemas']['Settings'];
 export type SettingsBody = components['schemas']['SettingsBody'];
 export type SongDetail = components['schemas']['SongDetail'];
 export type SongExport = components['schemas']['SongExport'];
+export type SongsMoved = components['schemas']['SongsMoved'];
 export type SongsterrTrackChoice = components['schemas']['SongsterrTrackChoice'];
 export type SongSummary = components['schemas']['SongSummary'];
 export type SyncBody = components['schemas']['SyncBody'];
@@ -1030,6 +1131,257 @@ export type ValidationIssue = components['schemas']['ValidationIssue'];
 export type Voice = components['schemas']['Voice'];
 export type $defs = Record<string, never>;
 export interface operations {
+    admin_adopt_local_api_admin_adopt_local_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SongsMoved"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.adminOnly`: the caller is not an admin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    admin_users_api_admin_users_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUser"][];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.adminOnly`: the caller is not an admin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    admin_sign_out_api_admin_users__user_id__sign_out_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionsEnded"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.adminOnly`: the caller is not an admin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
     health_api_health_get: {
         parameters: {
             query?: never;
@@ -1081,6 +1433,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             /** @description Keyed error. `detail` is {key, message, params}. */
             404: {
                 headers: {
@@ -1115,15 +1476,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ValidationBody"];
-                };
-            };
-            /** @description OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PlainErrorBody"];
                 };
             };
         };
@@ -1159,6 +1511,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             /** @description Keyed error. `detail` is {key, message, params}. */
             404: {
                 headers: {
@@ -1193,15 +1554,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ValidationBody"];
-                };
-            };
-            /** @description OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PlainErrorBody"];
                 };
             };
         };
@@ -1237,6 +1589,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             /** @description Keyed error. `detail` is {key, message, params}. */
             404: {
                 headers: {
@@ -1271,15 +1632,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ValidationBody"];
-                };
-            };
-            /** @description OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PlainErrorBody"];
                 };
             };
         };
@@ -1313,6 +1665,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             /** @description Keyed error. `detail` is {key, message, params}. */
             404: {
                 headers: {
@@ -1347,15 +1708,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ValidationBody"];
-                };
-            };
-            /** @description OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PlainErrorBody"];
                 };
             };
         };
@@ -1387,6 +1739,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             /** @description Keyed error. `detail` is {key, message, params}. */
             404: {
                 headers: {
@@ -1421,15 +1782,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ValidationBody"];
-                };
-            };
-            /** @description OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PlainErrorBody"];
                 };
             };
         };
@@ -1465,6 +1817,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             /** @description Keyed error. `detail` is {key, message, params}. */
             404: {
                 headers: {
@@ -1499,15 +1860,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ValidationBody"];
-                };
-            };
-            /** @description OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PlainErrorBody"];
                 };
             };
         };
@@ -1559,6 +1911,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             /** @description Keyed error. `detail` is {key, message, params}. */
             404: {
                 headers: {
@@ -1593,15 +1954,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ValidationBody"];
-                };
-            };
-            /** @description OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PlainErrorBody"];
                 };
             };
         };
@@ -1637,6 +1989,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             /** @description Keyed error. `detail` is {key, message, params}. */
             404: {
                 headers: {
@@ -1671,15 +2032,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ValidationBody"];
-                };
-            };
-            /** @description OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PlainErrorBody"];
                 };
             };
         };
@@ -1713,6 +2065,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             /** @description Keyed error. `detail` is {key, message, params}. */
             404: {
                 headers: {
@@ -1747,15 +2108,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ValidationBody"];
-                };
-            };
-            /** @description OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PlainErrorBody"];
                 };
             };
         };
@@ -1793,6 +2145,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             /** @description Keyed error. `detail` is {key, message, params}. */
             404: {
                 headers: {
@@ -1827,15 +2188,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ValidationBody"];
-                };
-            };
-            /** @description OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PlainErrorBody"];
                 };
             };
         };
@@ -1867,6 +2219,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             /** @description Keyed error. `detail` is {key, message, params}. */
             404: {
                 headers: {
@@ -1901,15 +2262,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ValidationBody"];
-                };
-            };
-            /** @description OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PlainErrorBody"];
                 };
             };
         };
@@ -1948,6 +2300,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             /** @description Keyed error. `detail` is {key, message, params}. */
             404: {
                 headers: {
@@ -1982,15 +2343,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ValidationBody"];
-                };
-            };
-            /** @description OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PlainErrorBody"];
                 };
             };
         };
@@ -2028,6 +2380,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             /** @description Keyed error. `detail` is {key, message, params}. */
             404: {
                 headers: {
@@ -2062,15 +2423,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ValidationBody"];
-                };
-            };
-            /** @description OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PlainErrorBody"];
                 };
             };
         };
@@ -2104,6 +2456,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             /** @description Keyed error. `detail` is {key, message, params}. */
             404: {
                 headers: {
@@ -2138,15 +2499,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ValidationBody"];
-                };
-            };
-            /** @description OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PlainErrorBody"];
                 };
             };
         };
@@ -2180,6 +2532,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             /** @description Keyed error. `detail` is {key, message, params}. */
             404: {
                 headers: {
@@ -2214,15 +2575,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ValidationBody"];
-                };
-            };
-            /** @description OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PlainErrorBody"];
                 };
             };
         };
@@ -2256,6 +2608,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             /** @description Keyed error. `detail` is {key, message, params}. */
             404: {
                 headers: {
@@ -2290,15 +2651,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ValidationBody"];
-                };
-            };
-            /** @description OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PlainErrorBody"];
                 };
             };
         };
@@ -2336,6 +2688,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             /** @description Keyed error. `detail` is {key, message, params}. */
             404: {
                 headers: {
@@ -2370,15 +2731,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ValidationBody"];
-                };
-            };
-            /** @description OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PlainErrorBody"];
                 };
             };
         };
@@ -2414,6 +2766,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             /** @description Keyed error. `detail` is {key, message, params}. */
             404: {
                 headers: {
@@ -2448,15 +2809,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ValidationBody"];
-                };
-            };
-            /** @description OIDC sign-in is not implemented. `detail` is a string. Unset FRETBOOK_AUTH_MODE to use single-user mode. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PlainErrorBody"];
                 };
             };
         };

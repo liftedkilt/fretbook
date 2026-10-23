@@ -1,5 +1,6 @@
 <script lang="ts">
   import AddSheet from "./components/AddSheet.svelte";
+  import AdminView from "./components/AdminView.svelte";
   import Cover from "./components/Cover.svelte";
   import EditorView from "./components/EditorView.svelte";
   import Icon from "./components/Icon.svelte";
@@ -14,6 +15,7 @@
   const edit = $derived(path.match(/^\/songs\/([^/]+)\/edit\/?$/));
   const play = $derived(path.match(/^\/songs\/([^/]+)\/?$/));
   const isLibrary = $derived(path === "/");
+  const isAdmin = $derived(ui.me?.role === "admin");
 
   const sections: { id: LibraryFilter; icon: string; key: string }[] = [
     { id: "all", icon: "library", key: "library.filterAll" },
@@ -97,6 +99,18 @@
       </nav>
     {/if}
 
+    {#if isAdmin}
+      <a
+        class="side-link side-users"
+        href={hrefFor("/admin")}
+        aria-current={path === "/admin" ? "page" : undefined}
+        onclick={(event) => followLink(event, "/admin")}
+        title={t("account.admin")}
+      >
+        <Icon name="users" size={19} /><span class="rail-hide">{t("account.admin")}</span>
+      </a>
+    {/if}
+
     <button class="side-link side-settings" onclick={() => openSheet("settings")} title={t("settings.heading")}>
       <Icon name="settings" size={19} /><span class="rail-hide">{t("settings.heading")}</span>
     </button>
@@ -121,6 +135,10 @@
     {#if ui.error}<p class="alert" role="alert"><Icon name="alert" size={18} />{ui.error}</p>{/if}
     {#if isLibrary}
       <LibraryView />
+    {:else if path === "/admin" && isAdmin && ui.me}
+      <AdminView self={ui.me.user_id} />
+    {:else if path === "/admin" && !ui.me}
+      <p class="muted">{t("app.loading")}</p>
     {:else if edit}
       <EditorView id={edit[1]} />
     {:else if play}

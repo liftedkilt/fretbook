@@ -60,9 +60,12 @@ def test_schema_documents_responses_errors_and_auth() -> None:
     assert _ref(preview["responses"]["200"]).endswith("/ImportPreview")
     assert paths["/api/me"]["get"]["tags"] == ["auth"]
     assert _ref(paths["/api/me"]["get"]["responses"]["200"]).endswith("/Me")
-    assert paths["/api/me"]["get"]["responses"]["501"]["content"]["application/json"]["schema"]["$ref"].endswith(
-        "/PlainErrorBody"
+    assert paths["/api/me"]["get"]["responses"]["401"]["content"]["application/json"]["schema"]["$ref"].endswith(
+        "/ErrorBody"
     )
+    users = paths["/api/admin/users"]["get"]
+    assert _ref(users["responses"]["200"]).endswith("/AdminUser")
+    assert "403" in users["responses"]
     listed = paths["/api/songs"]["get"]["responses"]["200"]
     assert _ref(listed).endswith("/SongSummary")
     health = paths["/api/health"]["get"]["responses"]["200"]

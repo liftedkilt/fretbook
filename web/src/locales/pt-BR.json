@@ -7,6 +7,30 @@
     "back": "Biblioteca",
     "edition": "Tablaturas · Cifras · Sincronia"
   },
+  "account": {
+    "signOut": "Sair",
+    "admin": "Usuários"
+  },
+  "admin": {
+    "heading": "Usuários",
+    "hint": "As pessoas entram pelo seu provedor de identidade. Membros do grupo de usuários têm a própria biblioteca; membros do grupo de administradores também veem esta página. Os papéis são lidos a cada entrada.",
+    "name": "Nome",
+    "email": "E-mail",
+    "role": "Papel",
+    "roleUser": "Usuário",
+    "roleAdmin": "Administrador",
+    "songs": "Músicas",
+    "lastLogin": "Última entrada",
+    "never": "Nunca",
+    "sessions": { "one": "{count} sessão", "other": "{count} sessões" },
+    "signOut": "Encerrar todas as sessões",
+    "confirmSignOut": "Desconectar {name} de todos os navegadores?",
+    "signedOut": { "one": "{count} sessão encerrada.", "other": "{count} sessões encerradas." },
+    "adoptHeading": "Biblioteca do modo de usuário único",
+    "adoptHint": { "one": "{count} música foi adicionada antes de a entrada ser ativada. Ninguém a vê até que um administrador a mova para uma biblioteca.", "other": "{count} músicas foram adicionadas antes de a entrada ser ativada. Ninguém as vê até que um administrador as mova para uma biblioteca." },
+    "adopt": "Mover para minha biblioteca",
+    "adopted": { "one": "{count} música movida para sua biblioteca.", "other": "{count} músicas movidas para sua biblioteca." }
+  },
   "language": {
     "label": "Idioma",
     "en": "English",
@@ -262,6 +286,13 @@
     "generic": "Algo deu errado."
   },
   "errors": {
+    "auth": {
+      "required": "Sua sessão terminou. Entre novamente.",
+      "adminOnly": "Só administradores podem fazer isso."
+    },
+    "user": {
+      "notFound": "Esse usuário não foi encontrado."
+    },
     "request": {
       "tooLarge": "Esse pedido é grande demais.",
       "crossOrigin": "Pedidos de outros sites não são permitidos.",

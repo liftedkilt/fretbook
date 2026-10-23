@@ -9,6 +9,7 @@ from fretbook.jobs.runner import JobRunner
 from fretbook.score.legacy import legacy_document
 from fretbook.storage.media import MediaStore
 from fretbook.storage.repository import SongRepository
+from fretbook.storage.users import UserStore
 
 TAB = (
     'const TAB = {"title": "Old Song", "artist": "Old Artist", "bpm": 100, '
@@ -35,6 +36,7 @@ def test_legacy_folder_becomes_a_song(tmp_path: Path) -> None:
         songs=repo,
         media=MediaStore(settings),
         jobs=JobRunner(settings),
+        users=UserStore(settings),
         auth=SingleUserAuth(),
     )
     assert import_legacy(ctx) == 1

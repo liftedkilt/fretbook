@@ -3,7 +3,8 @@
 ```
 browser   Svelte 5 + TypeScript (Vite)    alphaTab renders and plays tabs; pdf-lib writes the PDF; ChordSheet.svelte renders chord sheets
 server    FastAPI (fretbook/)             one process, background job thread for imports
-storage   SQLite data/fretbook.sqlite     songs, users, jobs; audio files under data/media/<owner>/<song>/
+storage   SQLite data/fretbook.sqlite     songs, users, sessions, jobs; audio files under data/media/<owner>/<song>/
+auth      fretbook/auth/                  single-user, or OIDC code flow + PKCE with roles from groups
 ```
 
 FastAPI serves the built web app, so the container needs no Node at runtime. `<base href>` is rewritten from `FRETBOOK_ROOT_PATH`.
