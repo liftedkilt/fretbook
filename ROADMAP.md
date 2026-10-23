@@ -26,7 +26,6 @@ Practice controls (metronome, count-in, mixer, pitch-preserving slowdown) are do
 - **Speed trainer**: loop a section, and raise the speed a step after each pass up to a target.
 - **Automatic sync**: estimate the bar marks from the audio (beat tracking) so tapping `T` becomes fixing marks instead of placing them all.
 - **Stem separation**: isolate or remove the bass or guitar in the recording (for example with Demucs). It needs a GPU, so it could share the worker planned for [#6](https://github.com/liftedkilt/fretbook/issues/6).
-- **Fretboard view**: show the notes being played on a fretboard diagram, which helps with reading tab.
 - **Practice log**: time spent and the highest speed reached per song or loop.
 
 ### Listening to you play
