@@ -2,6 +2,7 @@
   import AddSheet from "./components/AddSheet.svelte";
   import AdminView from "./components/AdminView.svelte";
   import CalibrationSheet from "./components/CalibrationSheet.svelte";
+  import ChordLibraryView from "./components/ChordLibraryView.svelte";
   import Cover from "./components/Cover.svelte";
   import EditorView from "./components/EditorView.svelte";
   import Icon from "./components/Icon.svelte";
@@ -38,6 +39,7 @@
   const isTools = $derived(path === "/tools" || path === "/tools/");
   const isToolsTuner = $derived(path === "/tools/tuner" || path === "/tools/tuner/");
   const isToolsMetronome = $derived(path === "/tools/metronome" || path === "/tools/metronome/");
+  const isToolsChords = $derived(path === "/tools/chords" || path === "/tools/chords/");
   const isToolsActive = $derived(path.startsWith("/tools"));
   const isLibrary = $derived(path === "/");
   const isAdmin = $derived(ui.me?.role === "admin");
@@ -264,6 +266,8 @@
       <StandaloneTunerView />
     {:else if isToolsMetronome}
       <StandaloneMetronomeView />
+    {:else if isToolsChords}
+      <ChordLibraryView />
     {:else if path === "/admin" && isAdmin && ui.me}
       <AdminView self={ui.me.user_id} />
     {:else if path === "/admin" && !ui.me}

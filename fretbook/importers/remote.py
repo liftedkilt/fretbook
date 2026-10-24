@@ -8,7 +8,10 @@ Links go through a small provider registry, tried in order:
   content: a score or chord file imports as if it had been uploaded, a web page
   is searched for a linked tab file or a ``<pre>`` block that holds a tab.
 
-Ultimate Guitar and the YouTube tab-recognition importer (#6) plug in here as further providers.
+* **Ultimate Guitar** tab pages: the page is fetched and read by
+  :mod:`fretbook.importers.ultimate_guitar` (chords as ChordPro, tabs as ASCII tab).
+
+The YouTube tab-recognition importer (#6) plugs in here as a further provider.
 """
 
 from __future__ import annotations
@@ -24,6 +27,7 @@ from fretbook.importers.base import ImportError, Progress
 from fretbook.importers.registry import refuse_by_content
 from fretbook.importers.safe_fetch import Fetched, SafeFetcher
 from fretbook.importers.songsterr import URL_RE as SONGSTERR_URL
+from fretbook.importers.ultimate_guitar import URL_RE as ULTIMATE_GUITAR_URL
 
 _YOUTUBE = re.compile(
     r"^https?://(?:(?:www|m|music)\.)?(?:youtube\.com/(?:watch\?(?:[^#]*&)?v=|shorts/|embed/|live/)|youtu\.be/)"
@@ -53,6 +57,7 @@ class Provider:
 PROVIDERS: tuple[Provider, ...] = (
     Provider("songsterr", lambda url: bool(SONGSTERR_URL.match(url))),
     Provider("youtube", lambda url: youtube_video_id(url) is not None),
+    Provider("ultimate-guitar", lambda url: bool(ULTIMATE_GUITAR_URL.match(url))),
 )
 
 
@@ -62,7 +67,7 @@ def youtube_video_id(url: str) -> str | None:
 
 
 def provider_for(url: str) -> str:
-    """``songsterr``, ``youtube`` or ``web`` (any other link)."""
+    """``songsterr``, ``youtube``, ``ultimate-guitar`` or ``web`` (any other link)."""
     for provider in PROVIDERS:
         if provider.matches(url.strip()):
             return provider.name

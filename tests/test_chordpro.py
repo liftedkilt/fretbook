@@ -58,3 +58,8 @@ def test_chord_sheet_file_import(tmp_path: Path) -> None:
     assert result.content_kind == "chords"
     assert result.title == "wonderwall"
     assert result.chordpro is not None and "[Em7]Today" in result.chordpro
+
+
+def test_define_directives_survive_import() -> None:
+    text = "{define: Am7 base-fret 1 frets x 0 2 0 1 0}\n[Am7]Hello"
+    assert normalize(text) == text + "\n"

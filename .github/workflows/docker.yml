@@ -51,6 +51,11 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=sha
 
+      # Bust the cached apt layer once a day so `apt-get upgrade` picks up new
+      # Debian security fixes instead of reusing a stale GHA-cached layer.
+      - id: apt
+        run: echo "refresh=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
       - uses: docker/build-push-action@v6
         with:
           context: .
@@ -58,7 +63,9 @@ jobs:
           push: ${{ env.PUBLISH == 'true' }}
           load: ${{ env.PUBLISH != 'true' }}
           # Releases report their version only; other builds also report the commit.
-          build-args: GIT_SHA=${{ startsWith(github.ref, 'refs/tags/v') && '' || github.sha }}
+          build-args: |
+            GIT_SHA=${{ startsWith(github.ref, 'refs/tags/v') && '' || github.sha }}
+            APT_REFRESH=${{ steps.apt.outputs.refresh }}
           tags: |
             ${{ steps.meta.outputs.tags }}
             ${{ env.PUBLISH != 'true' && 'fretbook:test' || '' }}
