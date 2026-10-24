@@ -215,6 +215,24 @@ def test_cli_imports_a_folder_lists_and_exports(
     assert "Hello" in capsys.readouterr().out
 
 
+def test_cli_imports_midi_from_a_folder_and_exports_it(
+    live: tuple[str, str], tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    url, token = live
+    inbox = tmp_path / "inbox"
+    inbox.mkdir()
+    riff = Path(__file__).parent / "fixtures" / "corpus" / "midi" / "riff.mid"
+    (inbox / "Riff.mid").write_bytes(riff.read_bytes())
+
+    assert _run(url, token, "import", str(inbox)) == 0
+    assert capsys.readouterr().out.count("imported ") == 1
+    assert _run(url, token, "list", "--json") == 0
+    song_id = json.loads(capsys.readouterr().out)[0]["id"]
+    target = tmp_path / "riff.mid"
+    assert _run(url, token, "export", song_id, "-f", "midi", "-o", str(target)) == 0
+    assert target.read_bytes().startswith(b"MThd")
+
+
 def test_cli_reports_failures_with_a_nonzero_exit(
     live: tuple[str, str], tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:

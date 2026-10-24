@@ -10,7 +10,7 @@ import type { HarmonicKind, Note, ScoreDocument, SlideKind, Track } from "./type
  * Canvas frame renderer.
  */
 
-export type GemState = "default" | "waiting" | "hit" | "missed" | "early" | "late";
+export type GemState = "default" | "waiting" | "hit" | "missed" | "early" | "late" | "wrong";
 
 export type TechniqueKind =
   "hammer" | "pull" | "slide" | "bend" | "palm_mute" | "vibrato" | "harmonic";
@@ -773,6 +773,13 @@ function stateColors(
         border: "#ff8a95",
         tail: "rgba(224, 82, 96, 0.35)",
         text: "rgba(255, 255, 255, 0.85)",
+      };
+    case "wrong":
+      return {
+        fill: "#8a4bd6",
+        border: "#d2b0ff",
+        tail: "rgba(160, 100, 235, 0.4)",
+        text: "#ffffff",
       };
     case "waiting":
       return {

@@ -237,6 +237,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/imports/midi": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Midi
+         * @description Queue the import of a MIDI file with the chosen parts, instruments and grid.
+         *
+         *     `options` is a JSON object (see `MidiImportOptions`). Frets are assigned automatically from the instrument's
+         *     tuning and the capo, keeping the hand close to where it was.
+         */
+        post: operations["import_midi_api_imports_midi_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/imports/midi/inspect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Inspect Midi
+         * @description List the parts of a MIDI file (name, channel, notes, pitch range, suggested instrument) without saving it.
+         */
+        post: operations["inspect_midi_api_imports_midi_inspect_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/imports/preview": {
         parameters: {
             query?: never;
@@ -706,6 +749,26 @@ export interface paths {
          * @description Download the song as Fretbook JSON. Returned as written, with a Content-Disposition filename.
          */
         get: operations["export_json_api_songs__song_id__export_json_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/songs/{song_id}/export.mid": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Midi
+         * @description Download a tab as a Standard MIDI File, with repeats expanded. Chord sheets cannot be exported.
+         */
+        get: operations["export_midi_api_songs__song_id__export_mid_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1206,6 +1269,21 @@ export interface components {
              */
             mode: "skip" | "copy";
         };
+        /** Body_import_midi_api_imports_midi_post */
+        Body_import_midi_api_imports_midi_post: {
+            /** File */
+            file: string;
+            /**
+             * Options
+             * @default {}
+             */
+            options: string;
+        };
+        /** Body_inspect_midi_api_imports_midi_inspect_post */
+        Body_inspect_midi_api_imports_midi_inspect_post: {
+            /** File */
+            file: string;
+        };
         /** Body_upload_audio_api_songs__song_id__audio_post */
         Body_upload_audio_api_songs__song_id__audio_post: {
             /** File */
@@ -1545,6 +1623,45 @@ export interface components {
             /** Worker Kinds */
             worker_kinds: string[];
             ytdlp: components["schemas"]["YtDlpStatus"];
+        };
+        /** MidiInspection */
+        MidiInspection: {
+            /** Bpm */
+            bpm: number;
+            /** Drum Notes */
+            drum_notes: number;
+            /** Signature */
+            signature: [
+                number,
+                number
+            ];
+            /** Title */
+            title: string;
+            /** Tracks */
+            tracks: components["schemas"]["MidiTrackInfo"][];
+        };
+        /** MidiTrackInfo */
+        MidiTrackInfo: {
+            /** Channel */
+            channel: number;
+            /** Highest */
+            highest: number;
+            /** Id */
+            id: string;
+            /** In Range */
+            in_range: boolean;
+            /** Lowest */
+            lowest: number;
+            /** Name */
+            name: string;
+            /** Notes */
+            notes: number;
+            /** Program */
+            program: number | null;
+            /** Selected */
+            selected: boolean;
+            /** Suggested Preset */
+            suggested_preset: string;
         };
         /** Note */
         Note: {
@@ -2241,6 +2358,8 @@ export type BodyImportAutoApiImportsAutoPost = components['schemas']['Body_impor
 export type BodyImportBulkApiImportsBulkPost = components['schemas']['Body_import_bulk_api_imports_bulk_post'];
 export type BodyImportFileApiImportsFilePost = components['schemas']['Body_import_file_api_imports_file_post'];
 export type BodyImportLibraryApiLibraryImportPost = components['schemas']['Body_import_library_api_library_import_post'];
+export type BodyImportMidiApiImportsMidiPost = components['schemas']['Body_import_midi_api_imports_midi_post'];
+export type BodyInspectMidiApiImportsMidiInspectPost = components['schemas']['Body_inspect_midi_api_imports_midi_inspect_post'];
 export type BodyUploadAudioApiSongsSongIdAudioPost = components['schemas']['Body_upload_audio_api_songs__song_id__audio_post'];
 export type BulkImportAccepted = components['schemas']['BulkImportAccepted'];
 export type BulkImportJobItem = components['schemas']['BulkImportJobItem'];
@@ -2262,6 +2381,8 @@ export type JobResult = components['schemas']['JobResult'];
 export type LibraryCounts = components['schemas']['LibraryCounts'];
 export type Me = components['schemas']['Me'];
 export type Meta = components['schemas']['Meta'];
+export type MidiInspection = components['schemas']['MidiInspection'];
+export type MidiTrackInfo = components['schemas']['MidiTrackInfo'];
 export type Note = components['schemas']['Note'];
 export type PracticeDay = components['schemas']['PracticeDay'];
 export type PracticeGoal = components['schemas']['PracticeGoal'];
@@ -3068,6 +3189,162 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JobAccepted"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    import_midi_api_imports_midi_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_midi_api_imports_midi_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAccepted"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    inspect_midi_api_imports_midi_inspect_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_inspect_midi_api_imports_midi_inspect_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MidiInspection"];
                 };
             };
             /** @description Keyed error. `detail` is {key, message, params}. */
@@ -5707,6 +5984,82 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SongExport"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    export_midi_api_songs__song_id__export_mid_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                song_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A Standard MIDI File for a tab, as an attachment. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "audio/midi": string;
                 };
             };
             /** @description Keyed error. `detail` is {key, message, params}. */

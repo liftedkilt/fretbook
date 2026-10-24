@@ -217,6 +217,7 @@
     "upload": "Enviar áudio",
     "exportJson": "Exportar JSON",
     "exportMusicXml": "Exportar MusicXML",
+    "exportMidi": "Exportar MIDI",
     "exportPdf": "Exportar PDF",
     "exportPdfTrack": "Exportar PDF ({name})",
     "exportingPdf": "Preparando PDF…",
@@ -467,7 +468,7 @@
       "unknownKind": "Importador desconhecido: {kind}.",
       "notUrl": "{kind} não é uma importação por link.",
       "noUrlImporter": "Nenhum importador corresponde a este link. Links do Songsterr funcionam hoje; a importação por quadros do YouTube ainda não está disponível.",
-      "noFileImporter": "Não foi possível reconhecer isto. O Fretbook lê Guitar Pro, MusicXML, ChordPro e cifras sobre a letra, tablatura ASCII, JSON do Fretbook e arquivos de áudio.",
+      "noFileImporter": "Não foi possível reconhecer isto. O Fretbook lê Guitar Pro, MusicXML, ChordPro e cifras sobre a letra, tablatura ASCII, MIDI, JSON do Fretbook e arquivos de áudio.",
       "guitarProInBrowser": "Arquivos do Guitar Pro são lidos no navegador. Use o botão de importar no Fretbook.",
       "guitarProUnavailable": "A importação de Guitar Pro não está disponível neste servidor. Importe o arquivo pelo navegador.",
       "guitarProUnreadable": "Não foi possível ler este arquivo do Guitar Pro.",
@@ -556,6 +557,20 @@
     },
     "practice": {
       "badDay": "Essa data não é válida."
+    },
+    "midi": {
+      "parse": "Não foi possível ler este arquivo MIDI.",
+      "type2": "Arquivos MIDI com sequências independentes (tipo 2) não são suportados.",
+      "tooLarge": "Este arquivo MIDI é grande demais (o limite é 8 MB).",
+      "tooLong": "Este arquivo MIDI tem mais de {limit} compassos.",
+      "noTracks": "Este arquivo MIDI não tem notas de guitarra ou baixo para importar.",
+      "noSuchTrack": "Este arquivo MIDI não tem a parte {track}.",
+      "badPreset": "Instrumento desconhecido: {preset}.",
+      "badGrid": "Escolha uma grade de semínimas, colcheias, semicolcheias ou fusas.",
+      "badCapo": "O capotraste deve estar entre 0 e 24.",
+      "badOptions": "As opções da importação MIDI não são válidas.",
+      "shifted": "{count} nota(s) em \"{track}\" estão fora da extensão do instrumento e foram movidas por oitavas.",
+      "dropped": "{count} acorde(s) em \"{track}\" não podem ser digitados em uma só posição e perderam algumas notas."
     }
   },
   "ui": {
@@ -590,7 +605,7 @@
     "browse": "Escolher um arquivo",
     "submit": "Adicionar",
     "empty": "Adicione um arquivo, um texto ou um link primeiro.",
-    "supported": "O Fretbook lê Guitar Pro, MusicXML, ChordPro, tablatura ASCII, JSON do Fretbook e arquivos de áudio, e links do Songsterr, do YouTube, de arquivos diretos ou de páginas com uma tablatura.",
+    "supported": "O Fretbook lê Guitar Pro, MusicXML, ChordPro, tablatura ASCII, MIDI, JSON do Fretbook e arquivos de áudio, e links do Songsterr, do YouTube, de arquivos diretos ou de páginas com uma tablatura.",
     "mode": "Adicionar qualquer coisa",
     "modeHint": "Solte um arquivo, cole um texto ou um link"
   },
@@ -997,6 +1012,44 @@
     "progress": "{hits} de {total} acordes",
     "noChords": "Esta cifra não tem acordes para tocar."
   },
+  "scored": {
+    "title": "Tocar junto com nota",
+    "about": "Toque junto sem parar e cada nota recebe uma nota: no tempo, adiantada, atrasada, errada ou perdida. Use fones de ouvido para que o microfone não escute a gravação.",
+    "start": "Avaliar meu toque",
+    "stop": "Parar a avaliação",
+    "armed": "Ouvindo. Toque em reproduzir e comece a tocar.",
+    "accuracy": "Precisão {percent}%",
+    "streak": "Sequência {count}",
+    "progress": "{graded} de {total} notas",
+    "noCalibration": "Nenhuma calibração de latência salva, então o tempo pode parecer adiantado ou atrasado. Calibre nos Ajustes.",
+    "bleed": "O microfone parece escutar a própria música. Use fones de ouvido, ou diminua a gravação, para uma nota justa.",
+    "results": "Sua pontuação",
+    "overall": "Precisão geral",
+    "stars": "{count} de 3 estrelas",
+    "speed": "Velocidade {percent}%",
+    "wholeSong": "Música inteira",
+    "loopBars": "Compassos {from}–{to}",
+    "grade": {
+      "hit": "No tempo",
+      "early": "Adiantada",
+      "late": "Atrasada",
+      "wrong": "Nota errada",
+      "missed": "Perdida",
+      "extra": "Notas extras"
+    },
+    "bestStreak": "Melhor sequência {count}",
+    "newBest": "Novo recorde pessoal!",
+    "personalBest": "Recorde pessoal nesta velocidade: {percent}%",
+    "sections": "Por seção",
+    "sectionBars": "Compassos {from}–{to}",
+    "heatmap": "Compassos para praticar",
+    "heatmapHint": "Quanto mais vermelho o compasso, mais notas você perdeu nele.",
+    "bar": "Compasso {bar}: {percent}%",
+    "barEmpty": "Compasso {bar}: sem notas",
+    "practise": "Praticar esta seção",
+    "playAgain": "Tocar de novo",
+    "close": "Fechar"
+  },
   "job": {
     "echo": "Repetindo o trabalho"
   },
@@ -1077,5 +1130,24 @@
     "noShape": "Sem posição para esta afinação",
     "capoNote": "Capotraste {fret}: as posições são mostradas como você as toca, e o som fica {fret} casas mais agudo.",
     "pdfCapo": "Capotraste {fret}"
+  },
+  "midi": {
+    "heading": "Escolha as partes a importar",
+    "hint": "\"{title}\" não tem cordas nem casas. Escolha as partes e o instrumento de cada uma, e o Fretbook posiciona as notas.",
+    "untitled": "Este arquivo MIDI",
+    "noParts": "Nenhuma parte com notas foi encontrada neste arquivo.",
+    "partSummary": "{notes} notas · {range} · canal {channel}",
+    "outOfRange": "em maior parte fora da extensão de uma guitarra ou baixo",
+    "instrumentFor": "Instrumento de {name}",
+    "drumsSkipped": "As partes de bateria são ignoradas.",
+    "grid": "Ajustar as notas a",
+    "grid4": "Semínimas",
+    "grid8": "Colcheias",
+    "grid16": "Semicolcheias",
+    "grid32": "Fusas",
+    "capo": "Capotraste",
+    "gridHint": "As casas são escolhidas automaticamente para manter a mão perto de onde estava. Tercinas se ajustam à posição mais próxima da grade.",
+    "import": "Importar partes selecionadas",
+    "cancel": "Cancelar"
   }
 }

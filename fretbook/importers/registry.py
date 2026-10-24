@@ -9,6 +9,7 @@ from fretbook.importers.base import Importer, ImportError, ImportRequest
 from fretbook.importers.chordpro import ChordProImporter
 from fretbook.importers.fretbook_json import FretbookJsonImporter
 from fretbook.importers.guitarpro import GuitarProImporter
+from fretbook.importers.midi import MidiImporter
 from fretbook.importers.musicxml import MusicXmlImporter
 from fretbook.importers.songsterr import SongsterrImporter
 from fretbook.importers.youtube_frames import YouTubeFrameImporter
@@ -22,6 +23,7 @@ def default_importers() -> list[Importer]:
         AsciiTabImporter(),
         ChordProImporter(),
         GuitarProImporter(),
+        MidiImporter(),
         AudioOnlyImporter(),
         YouTubeFrameImporter(),
     ]
@@ -36,10 +38,10 @@ _IMPORTER_FOR = {
     sniff.CHORDPRO: "chordpro",
     sniff.CHORDS_OVER_LYRICS: "chordpro",
     sniff.ASCII_TAB: "ascii-tab",
+    sniff.MIDI: "midi",
     sniff.AUDIO: "audio",
 }
 _NOT_YET = {
-    sniff.MIDI: "MIDI",
     sniff.PDF: "PDF",
     sniff.IMAGE: "image",
 }

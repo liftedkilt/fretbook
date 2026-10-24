@@ -104,6 +104,13 @@ describe("request wrappers", () => {
     ["previewImport", () => api.previewImport("http://x"), "POST", "api/imports/preview"],
     ["importFile", () => api.importFile(file), "POST", "api/imports/file"],
     ["importAuto", () => api.importAuto({ file, text: "t", url: "u" }), "POST", "api/imports/auto"],
+    ["inspectMidi", () => api.inspectMidi(file), "POST", "api/imports/midi/inspect"],
+    [
+      "importMidi",
+      () => api.importMidi(file, { tracks: ["1:0"], presets: {}, capo: 0, grid: 16 }),
+      "POST",
+      "api/imports/midi",
+    ],
     ["importLibrary", () => api.importLibrary(file, "skip"), "POST", "api/library/import"],
     [
       "previewAsciiTab",

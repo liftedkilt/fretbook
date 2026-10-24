@@ -34,6 +34,7 @@ function setup(steps: WaitStep[], hintSeconds = 0) {
   const session: ListenSession = {
     sampleRate: 48000,
     channelCount: 1,
+    currentTime: 0,
     setChannel: () => undefined,
     setExpectedMidi: (midi) => expected.push(midi),
     setChroma: (on) => chroma.push(on),

@@ -22,6 +22,7 @@ from fretbook.api.backup import router as backup_router
 from fretbook.api.bulk_routes import router as bulk_router
 from fretbook.api.calibration_routes import router as calibration_router
 from fretbook.api.middleware import BodyLimitMiddleware, SameOriginMiddleware
+from fretbook.api.midi_routes import router as midi_router
 from fretbook.api.practice_routes import router as practice_router
 from fretbook.api.routes import router
 from fretbook.api.setlist_routes import router as setlist_router
@@ -251,6 +252,7 @@ def create_app(
     app.include_router(router)
     app.include_router(backup_router)
     app.include_router(ascii_tab_router)
+    app.include_router(midi_router)
     app.include_router(universal_router)
     app.include_router(tag_router)
     app.include_router(bulk_router)

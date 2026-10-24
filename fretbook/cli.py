@@ -22,9 +22,25 @@ from urllib import error, parse, request
 DEFAULT_URL = "http://localhost:8137"
 # What a directory import picks up. A file named on the command line is sent whatever its extension.
 IMPORT_SUFFIXES = frozenset(
-    {".gp", ".gp3", ".gp4", ".gp5", ".gpx", ".musicxml", ".mxl", ".xml", ".cho", ".chopro", ".crd", ".json", ".tab"}
+    {
+        ".gp",
+        ".gp3",
+        ".gp4",
+        ".gp5",
+        ".gpx",
+        ".musicxml",
+        ".mxl",
+        ".xml",
+        ".cho",
+        ".chopro",
+        ".crd",
+        ".json",
+        ".tab",
+        ".mid",
+        ".midi",
+    }
 )
-EXPORT_FORMATS = {"json": "export.json", "musicxml": "export.musicxml", "chordpro": "export.cho"}
+EXPORT_FORMATS = {"json": "export.json", "musicxml": "export.musicxml", "midi": "export.mid", "chordpro": "export.cho"}
 POLL_SECONDS = 1.0
 JOB_TIMEOUT_SECONDS = 600.0
 

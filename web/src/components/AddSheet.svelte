@@ -1,6 +1,7 @@
 <script lang="ts">
   import ChordSheet from "./ChordSheet.svelte";
   import Icon from "./Icon.svelte";
+  import MidiImport from "./MidiImport.svelte";
   import Sheet from "./Sheet.svelte";
   import TabPreview from "./TabPreview.svelte";
   import UniversalAdd, { type AddInput } from "./UniversalAdd.svelte";
@@ -13,18 +14,22 @@
     importAuto,
     importDocument,
     importFile,
+    importMidi,
     importUrl,
+    inspectMidi,
     previewAsciiTab,
     previewImport,
     waitForJob,
   } from "../lib/api";
   import { asciiTabBody, debounced, DEFAULT_GRID, type Grid } from "../lib/asciiTab";
   import { documentFromGuitarPro } from "../lib/alphatab/importScore";
+  import { isMidiFile, type MidiImportOptions } from "../lib/midiImport";
   import { isGuitarProFile } from "../lib/sniff";
   import { keyed, t, tOr } from "../lib/i18n.svelte";
   import { instrumentLabel } from "../lib/instruments";
   import { navigate } from "../lib/router.svelte";
   import { tuningLabel } from "../lib/tuning";
+  import type { MidiInspection } from "../lib/api-types";
   import type { AsciiTabPreview, ImportPreview, InstrumentPreset, Job } from "../lib/types";
   import { closeSheet, defaultFamily, refreshSongs, ui } from "../lib/ui.svelte";
 
@@ -47,6 +52,7 @@
   let sheetArtist = $state("");
   let sheetText = $state("");
   let picker = $state<ImportPreview | null>(null);
+  let midi = $state<{ file: File; info: MidiInspection } | null>(null);
   let previewUrl = $state("");
   let selected = $state<number[]>([]);
   let dragging = $state(false);
@@ -315,6 +321,10 @@
       await submitFile(input.file);
       return;
     }
+    if ("file" in input && (await isMidiFile(input.file))) {
+      await openMidi(input.file);
+      return;
+    }
     // A Songsterr link may have several tracks; the link form asks which ones.
     if ("url" in input && songsterrUrl.test(input.url)) {
       mode = "link";
@@ -328,6 +338,36 @@
     try {
       const started = await importAuto(input);
       await runJob(started.job_id);
+    } catch (err) {
+      error = message(err);
+    } finally {
+      busy = "";
+    }
+  }
+
+  /** A MIDI file has no strings, so the reader picks its parts and instruments before it is imported. */
+  async function openMidi(file: File) {
+    error = "";
+    notice = "";
+    busy = t("library.importing");
+    try {
+      midi = { file, info: await inspectMidi(file) };
+    } catch (err) {
+      error = message(err);
+    } finally {
+      busy = "";
+    }
+  }
+
+  async function startMidi(options: MidiImportOptions) {
+    if (!midi) return;
+    error = "";
+    notice = "";
+    busy = t("library.importing");
+    try {
+      const started = await importMidi(midi.file, options);
+      await runJob(started.job_id);
+      midi = null;
     } catch (err) {
       error = message(err);
     } finally {
@@ -370,7 +410,17 @@
 
   <div class="sheet-section">
     {#if mode === "any"}
-      <UniversalAdd busy={Boolean(busy)} onadd={(input) => void submitAny(input)} />
+      {#if midi}
+        <MidiImport
+          info={midi.info}
+          presets={ui.presets}
+          busy={Boolean(busy)}
+          onimport={(options) => void startMidi(options)}
+          oncancel={() => (midi = null)}
+        />
+      {:else}
+        <UniversalAdd busy={Boolean(busy)} onadd={(input) => void submitAny(input)} />
+      {/if}
     {:else if mode === "link"}
       <form
         class="form-grid"
