@@ -1507,9 +1507,11 @@
     "failed": "Could not remove it. Try again.",
     "saveFailed": "Could not save it for offline use. Check your connection and try again.",
     "queued": {
-      "one": "{count} edit is waiting to sync.",
-      "other": "{count} edits are waiting to sync."
+      "one": "{count} change is waiting to sync.",
+      "other": "{count} changes are waiting to sync."
     },
+    "opFailed": "A change made offline could not be saved: {message}",
+    "dismiss": "Dismiss",
     "syncNow": "Sync now",
     "conflict": "“{title}” was changed somewhere else, so your offline edits were not saved.",
     "syncFailed": "Your offline edits to “{title}” could not be saved: {message}",

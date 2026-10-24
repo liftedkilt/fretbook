@@ -1,4 +1,12 @@
-import { getMe, getMeta, listSongs, listTags, saveSettings, setFavourite } from "./api";
+import {
+  getMe,
+  getMeta,
+  isOfflineError,
+  listSongs,
+  listTags,
+  saveSettings,
+  setFavourite,
+} from "./api";
 import { levelQuery } from "./difficulty";
 import type {
   InstrumentPreset,
@@ -216,7 +224,10 @@ export async function refreshSongs(): Promise<void> {
 /** Star or unstar a song, then refresh the library and the sidebar. */
 export async function starSong(id: string, favourite: boolean): Promise<void> {
   await setFavourite(id, favourite);
-  await refreshSongs();
+  // Offline the change is queued; the lists are refreshed when it is sent.
+  await refreshSongs().catch((error: unknown) => {
+    if (!isOfflineError(error)) throw error;
+  });
 }
 
 /** Add or remove a tag from the library filter. */

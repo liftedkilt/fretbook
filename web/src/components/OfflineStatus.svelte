@@ -1,12 +1,17 @@
 <script lang="ts">
   import Icon from "./Icon.svelte";
   import { t } from "../lib/i18n.svelte";
-  import { flushQueue, offline, queue, resolveEdit } from "../lib/offline/offline.svelte";
+  import { dropOp } from "../lib/offline/queueState.svelte";
+  import { flushQueue, offline, opsQueue, queue, resolveEdit } from "../lib/offline/offline.svelte";
 
   let error = $state("");
   let busy = $state(false);
 
-  const waiting = $derived(queue.edits.filter((edit) => edit.state === "pending").length);
+  const waiting = $derived(
+    queue.edits.filter((edit) => edit.state === "pending").length +
+      opsQueue.ops.filter((item) => item.state === "pending").length,
+  );
+  const refused = $derived(opsQueue.ops.filter((item) => item.state === "failed"));
   const stuck = $derived(queue.edits.filter((edit) => edit.state !== "pending"));
 
   async function settle(songId: string, keep: "mine" | "theirs") {
@@ -22,7 +27,7 @@
   }
 </script>
 
-{#if !offline.online || waiting > 0 || stuck.length > 0}
+{#if !offline.online || waiting > 0 || stuck.length > 0 || refused.length > 0}
   <div class="offline-status" data-testid="offline-status">
     {#if !offline.online}
       <p class="status-line" role="status" data-testid="offline-indicator">
@@ -63,6 +68,15 @@
           data-testid="offline-keep-theirs"
           disabled={busy || !offline.online}
           onclick={() => void settle(edit.songId, "theirs")}>{t("offline.keepTheirs")}</button
+        >
+      </div>
+    {/each}
+    {#each refused as item (item.id)}
+      <div class="status-line stuck" role="alert" data-testid="offline-op-failed">
+        <Icon name="alert" size={16} />
+        <span>{t("offline.opFailed", { message: item.message })}</span>
+        <button type="button" data-testid="offline-op-dismiss" onclick={() => dropOp(item.id)}
+          >{t("offline.dismiss")}</button
         >
       </div>
     {/each}

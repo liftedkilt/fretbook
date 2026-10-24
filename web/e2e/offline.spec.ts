@@ -125,3 +125,35 @@ test("the manifest makes the app installable", async ({ page }) => {
     expect.arrayContaining(["192x192", "512x512"]),
   );
 });
+
+test("a favourite and a tag set offline are queued and sent when the network returns", async ({
+  page,
+  context,
+  seed,
+}) => {
+  const song = await seed.create({ title: "Queued Marks", chordpro: SHEET("Queued Marks") });
+
+  await page.goto(`/songs/${song.id}`);
+  await controlled(page);
+  await expect(page.getByTestId("song-heading")).toHaveText("Queued Marks");
+  await page.getByTestId("offline-toggle").click();
+  await expect(page.getByTestId("offline-toggle")).toContainText("Available offline");
+
+  await context.setOffline(true);
+  await page.reload();
+  await expect(page.getByTestId("offline-indicator")).toBeVisible();
+  await page.getByTestId("song-favourite").click();
+  await page.getByTestId("song-tag-input").fill("gig");
+  await page.getByTestId("song-tag-input").press("Enter");
+  await expect(page.getByTestId("song-tag")).toContainText("gig");
+  await expect(page.getByTestId("offline-queued")).toBeVisible();
+
+  await context.setOffline(false);
+  await expect(page.getByTestId("offline-status")).toBeHidden({ timeout: 15_000 });
+  const saved = (await (await page.request.get(`/api/songs/${song.id}`)).json()) as {
+    tags: string[];
+    favourite: boolean;
+  };
+  expect(saved.tags).toEqual(["gig"]);
+  expect(saved.favourite).toBe(true);
+});

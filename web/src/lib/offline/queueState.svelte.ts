@@ -1,3 +1,4 @@
+import { newQueuedOp, readOps, withOp, writeOps, type Op, type QueuedOp } from "./ops";
 import { readQueue, withEdit, writeQueue, type QueuedEdit } from "./queue";
 
 /** The edits waiting to be sent, kept in step with browser storage. */
@@ -27,4 +28,31 @@ export function dropEdit(songId: string): void {
 
 export function reloadQueue(): void {
   queue.edits = readQueue();
+  opsQueue.ops = readOps();
+}
+
+// --- small writes made offline (sync marks, tags, favourites, practice sessions) -------------------------------
+
+export const opsQueue = $state<{ ops: QueuedOp[] }>({ ops: readOps() });
+
+function commitOps(next: QueuedOp[]): void {
+  writeOps(next);
+  opsQueue.ops = next;
+}
+
+/** Throws when the op could not be stored, so the caller can say it was not kept. */
+export function queueOp(op: Op): void {
+  commitOps(withOp($state.snapshot(opsQueue.ops), newQueuedOp(op)));
+}
+
+export function markOp(id: string, state: QueuedOp["state"], message = ""): void {
+  commitOps(
+    $state
+      .snapshot(opsQueue.ops)
+      .map((item) => (item.id === id ? { ...item, state, message } : item)),
+  );
+}
+
+export function dropOp(id: string): void {
+  commitOps($state.snapshot(opsQueue.ops).filter((item) => item.id !== id));
 }
