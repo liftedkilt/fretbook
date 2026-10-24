@@ -3,14 +3,16 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
 import uuid
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 from fretbook.audio.ytdlp import AudioDownloadError, download_audio
 from fretbook.importers import remote, ultimate_guitar
-from fretbook.importers.audio_only import blank_document
+from fretbook.importers.audio_only import blank_document, song_slug
 from fretbook.importers.base import AudioFetch, ImportError, ImportRequest, ImportResult, Notice
 from fretbook.importers.registry import resolve_importer
 from fretbook.importers.safe_fetch import SafeFetcher
@@ -115,14 +117,21 @@ def _import_link(
         if not songs.settings.download_audio:
             raise ImportError("audio downloads are turned off on this server", "import.audioDisabled")
         video_id = remote.youtube_video_id(url) or ""
+        title, artist, warnings = "YouTube video", "", []
+        try:
+            title, artist = _youtube_names(video_id, fetcher)
+        except ImportError as exc:
+            logger.info("could not read the title of YouTube video %s: %s", video_id, exc)
+            warnings.append(Notice("import.youtubeTitleUnavailable", "could not read the video's title"))
         result = ImportResult(
-            title="YouTube video",
-            artist="",
-            slug="youtube-video",
+            title=title,
+            artist=artist,
+            slug=song_slug(title),
             document=blank_document(payload.get("prefer")),
             source_kind="youtube",
             source_ref={"url": url, "video_id": video_id},
             audio=AudioFetch(video_id=video_id),
+            warnings=warnings,
         )
         return _store_result(job, result, songs, media, progress)
     if provider == "ultimate-guitar":
@@ -137,6 +146,21 @@ def _import_link(
         "payload": {**payload, "path": str(staged.path), "filename": staged.filename, "source_url": staged.url},
     }
     return _import_file(job, progress, songs, media)
+
+
+def _youtube_names(video_id: str, fetcher: SafeFetcher) -> tuple[str, str]:
+    """The video's title and channel (as the artist), from YouTube's oEmbed endpoint."""
+    watch = quote(f"https://www.youtube.com/watch?v={video_id}", safe="")
+    fetched = fetcher.fetch(f"https://www.youtube.com/oembed?format=json&url={watch}")
+    try:
+        data = json.loads(fetched.content.decode("utf-8", errors="replace"))
+    except ValueError as exc:
+        raise ImportError("YouTube answered with something unreadable", "import.fetchFailed") from exc
+    title = str(data.get("title") or "").strip() if isinstance(data, dict) else ""
+    if not title:
+        raise ImportError("YouTube did not name the video", "import.fetchFailed")
+    artist = str(data.get("author_name") or "").strip()
+    return title[:200], artist.removesuffix(" - Topic").strip()[:200]
 
 
 def _import_file(job: dict[str, Any], progress: Progress, songs: SongRepository, media: MediaStore) -> dict[str, Any]:

@@ -34,7 +34,7 @@ Links are routed by site:
   based and are not available as text, so they are refused with a message. This is for personal use of tabs you could
   already open in a browser. The site may block datacenter and VPN addresses, in which case the import fails with
   "could not be read".
-- **YouTube**: a blank tab with the video's audio, when audio downloads are on.
+- **YouTube**: a blank tab with the video's audio, when audio downloads are on. The song is named after the video (its title, and the channel as the artist); if YouTube can't be reached, it is called "YouTube video" and the import shows a warning.
 - **A direct link** to any supported file, or **any other page**, which is searched for a linked tab file and then for
   a `<pre>` block holding a tab.
 

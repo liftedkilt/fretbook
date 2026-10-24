@@ -266,6 +266,36 @@ def test_youtube_link_makes_a_blank_tab_with_audio(tmp_path: Path, monkeypatch) 
         assert song["source_ref"]["video_id"] == "dQw4w9WgXcQ"
 
 
+def _stub_audio(monkeypatch) -> None:
+    def fake_download(_video_id, dest, _progress, **_kwargs):
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(b"ID3fake")
+
+    monkeypatch.setattr("fretbook.jobs.handlers.download_audio", fake_download)
+
+
+def test_youtube_link_is_named_after_the_video(tmp_path: Path, monkeypatch) -> None:
+    _stub_audio(monkeypatch)
+    oembed = httpx.Response(200, json={"title": "Smoke Test Riff", "author_name": "Some Channel - Topic"})
+    with _client(tmp_path, _fetcher({"www.youtube.com/oembed": oembed}), download_audio=True) as client:
+        song = _done(client, _auto(client, data={"url": "https://youtu.be/dQw4w9WgXcQ"}))
+        assert song["title"] == "Smoke Test Riff"
+        assert song["artist"] == "Some Channel"
+        assert song["slug"] == "smoke-test-riff"
+        assert song["has_audio"] is True
+
+
+def test_youtube_link_keeps_the_fallback_title_when_the_lookup_fails(tmp_path: Path, monkeypatch) -> None:
+    _stub_audio(monkeypatch)
+    with _client(tmp_path, _fetcher({}), download_audio=True) as client:
+        response = _auto(client, data={"url": "https://youtu.be/dQw4w9WgXcQ"})
+        job = _wait(client, response.json()["job_id"])
+        assert job["status"] == "done"
+        song = client.get(f"/api/songs/{job['result']['song_id']}").json()
+        assert song["title"] == "YouTube video"
+        assert "import.youtubeTitleUnavailable" in [w["key"] for w in job["result"]["warnings"]]
+
+
 def test_youtube_link_without_audio_downloads_enabled(tmp_path: Path) -> None:
     with _client(tmp_path) as client:
         job = _wait(client, _auto(client, data={"url": "https://youtu.be/dQw4w9WgXcQ"}).json()["job_id"])
