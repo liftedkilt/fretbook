@@ -15,6 +15,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import NamedTuple
 
 
 def _flag(name: str, default: bool) -> bool:
@@ -36,6 +37,206 @@ def _auth_mode() -> str:
     if raw:
         return raw
     return "oidc" if os.environ.get("FRETBOOK_OIDC_ISSUER", "").strip() else "single"
+
+
+class EnvVar(NamedTuple):
+    """One documented setting: the name, the default as shown to people, and what it does."""
+
+    name: str
+    default: str
+    purpose: str
+    group: str
+
+
+# The source of the generated configuration reference (docs/reference/configuration.md; see
+# scripts/gen_config_docs.py). tests/test_config_docs.py fails when the code reads a FRETBOOK_*
+# variable that is not listed here, so the reference cannot drift from the code.
+ENV_VARS: tuple[EnvVar, ...] = (
+    EnvVar("FRETBOOK_HOST", "`127.0.0.1`", "Bind address. The Docker image sets `0.0.0.0`.", "Server"),
+    EnvVar("FRETBOOK_PORT", "`8137`", "Listen port.", "Server"),
+    EnvVar(
+        "FRETBOOK_ROOT_PATH",
+        "empty",
+        "URL prefix when a reverse proxy strips one, for example `/fretbook`.",
+        "Server",
+    ),
+    EnvVar(
+        "FRETBOOK_FORWARDED_ALLOW_IPS",
+        "`127.0.0.1`",
+        (
+            "Proxies allowed to send `X-Forwarded-*`. Set it to your proxy's address, never `*` on a port clients"
+            " can reach."
+        ),
+        "Server",
+    ),
+    EnvVar("FRETBOOK_STATIC_DIR", "built-in", "Serve the web app from another directory.", "Server"),
+    EnvVar("FRETBOOK_MAX_UPLOAD_BYTES", "80 MB", "Largest upload and request body.", "Server"),
+    EnvVar("FRETBOOK_DATA_DIR", "`data`", "SQLite database, media, backups and the upload inbox.", "Storage"),
+    EnvVar("FRETBOOK_DATABASE", "`$FRETBOOK_DATA_DIR/fretbook.sqlite`", "Database file.", "Storage"),
+    EnvVar(
+        "FRETBOOK_MIGRATION_BACKUPS_KEEP",
+        "`5`",
+        "Number of automatic pre-migration backups to keep in `$FRETBOOK_DATA_DIR/backups`.",
+        "Storage",
+    ),
+    EnvVar(
+        "FRETBOOK_FAILED_UPLOAD_RETENTION_DAYS",
+        "`7`",
+        "Days to keep uploaded files from failed imports before cleaning them up.",
+        "Storage",
+    ),
+    EnvVar(
+        "FRETBOOK_MAX_RESTORE_BYTES",
+        "4 GiB",
+        "Largest library archive accepted by Settings → Backup and restore.",
+        "Storage",
+    ),
+    EnvVar(
+        "FRETBOOK_MAX_RESTORE_UNPACKED_BYTES",
+        "16 GiB",
+        "Largest total size a library archive may unpack to.",
+        "Storage",
+    ),
+    EnvVar(
+        "FRETBOOK_LEGACY_SONGS_DIR",
+        "`songs`",
+        "bass-tab-sync `songs/<slug>/` folders to import on start. Empty disables it.",
+        "Importing",
+    ),
+    EnvVar(
+        "FRETBOOK_INBOX_DIR",
+        "empty",
+        "Watched folder: files dropped here are imported. See [Watched inbox folder](../guides/inbox.md).",
+        "Importing",
+    ),
+    EnvVar(
+        "FRETBOOK_INBOX_MODE",
+        "`move`",
+        (
+            "`move` (imported files go to `processed/`, failures to `failed/`) or `library` (the folder is read-"
+            "only; changed files are imported again)."
+        ),
+        "Importing",
+    ),
+    EnvVar("FRETBOOK_INBOX_INTERVAL", "`10`", "Seconds between looks at the inbox folder.", "Importing"),
+    EnvVar(
+        "FRETBOOK_ALLOW_PRIVATE_URLS",
+        "`false`",
+        (
+            "Let pasted links point at private, loopback and link-local addresses (for example a tab server on "
+            "your LAN). Off by default so a link cannot reach services on the server's own network."
+        ),
+        "Importing",
+    ),
+    EnvVar("FRETBOOK_FETCH_MAX_BYTES", "25 MB", "Largest download when importing from a pasted link.", "Importing"),
+    EnvVar("FRETBOOK_FETCH_TIMEOUT", "`30`", "Seconds a pasted link may take to download.", "Importing"),
+    EnvVar(
+        "FRETBOOK_GP_CONVERTER",
+        "_(auto)_",
+        (
+            "Path to `gp-to-document.mjs`, the Node script that reads Guitar Pro files on the server. The Docker "
+            "image has it; a checkout needs `npm run build:gp-cli` in `web/`. Without it, Guitar Pro still "
+            "imports from the browser."
+        ),
+        "Importing",
+    ),
+    EnvVar("FRETBOOK_NODE", "`node`", "The Node 22 binary used for Guitar Pro files.", "Importing"),
+    EnvVar(
+        "FRETBOOK_DOWNLOAD_AUDIO",
+        "`true`",
+        "Download the audio of the video a Songsterr tab is synced to, with yt-dlp.",
+        "Audio downloads",
+    ),
+    EnvVar("FRETBOOK_AUDIO_TIMEOUT", "`600`", "Seconds before a yt-dlp download is abandoned.", "Audio downloads"),
+    EnvVar(
+        "FRETBOOK_YTDLP_AUTO_UPDATE",
+        "`false`",
+        (
+            "Install the newest yt-dlp into `$FRETBOOK_DATA_DIR/ytdlp` at start and once a day, and use it. See "
+            "[Keeping yt-dlp working](../guides/ytdlp.md)."
+        ),
+        "Audio downloads",
+    ),
+    EnvVar(
+        "FRETBOOK_YTDLP_COOKIES",
+        "empty",
+        (
+            "Path to a Netscape-format cookies file for yt-dlp. See the warning in [Keeping yt-dlp "
+            "working](../guides/ytdlp.md#cookies-optional)."
+        ),
+        "Audio downloads",
+    ),
+    EnvVar(
+        "FRETBOOK_WORKER_KINDS",
+        "empty",
+        (
+            "Comma-separated job kinds the web process leaves for a separate `python -m fretbook.worker` process."
+            " Worker-only kinds are always left to the worker. See [The job worker](../self-hosting/worker.md)."
+        ),
+        "Job worker",
+    ),
+    EnvVar(
+        "FRETBOOK_AUTH_MODE",
+        "`single`, or `oidc` when `FRETBOOK_OIDC_ISSUER` is set",
+        "`single` (no login, one library) or `oidc` (sign-in, one library per user).",
+        "Sign-in (OIDC)",
+    ),
+    EnvVar(
+        "FRETBOOK_OIDC_ISSUER",
+        "empty",
+        "Provider URL, for example `https://id.example.com`. Setting it turns on sign-in.",
+        "Sign-in (OIDC)",
+    ),
+    EnvVar("FRETBOOK_OIDC_CLIENT_ID", "empty", "Client id from the provider.", "Sign-in (OIDC)"),
+    EnvVar(
+        "FRETBOOK_OIDC_CLIENT_SECRET",
+        "empty",
+        "Optional. Leave empty for a public (PKCE-only) client.",
+        "Sign-in (OIDC)",
+    ),
+    EnvVar(
+        "FRETBOOK_OIDC_REDIRECT_URI",
+        "empty",
+        "The public callback URL, `https://<your host>[/prefix]/auth/callback`.",
+        "Sign-in (OIDC)",
+    ),
+    EnvVar(
+        "FRETBOOK_SESSION_SECRET",
+        "empty",
+        "At least 32 characters, for example `openssl rand -hex 32`. Signs the short-lived sign-in cookie.",
+        "Sign-in (OIDC)",
+    ),
+    EnvVar(
+        "FRETBOOK_OIDC_USER_GROUP",
+        "`fretbook_users`",
+        "Members get their own library. Empty admits everyone the provider signs in.",
+        "Sign-in (OIDC)",
+    ),
+    EnvVar(
+        "FRETBOOK_OIDC_ADMIN_GROUP",
+        "`fretbook_admins`",
+        "Members are users who also manage the Users page.",
+        "Sign-in (OIDC)",
+    ),
+    EnvVar(
+        "FRETBOOK_OIDC_GROUPS_CLAIM",
+        "`groups`",
+        "Claim that lists the groups, read from the ID token or else from userinfo.",
+        "Sign-in (OIDC)",
+    ),
+    EnvVar("FRETBOOK_OIDC_SCOPES", "`openid profile email groups`", "Requested scopes.", "Sign-in (OIDC)"),
+    EnvVar(
+        "FRETBOOK_OIDC_POST_LOGOUT_REDIRECT_URI",
+        "empty",
+        "Where the provider sends the browser after sign-out. It must be registered with the provider.",
+        "Sign-in (OIDC)",
+    ),
+    EnvVar("FRETBOOK_SESSION_MAX_AGE", "`604800`", "Session length in seconds (7 days).", "Sign-in (OIDC)"),
+)
+
+# Read from the environment but not settings a server operator sets: the command-line client's own
+# variables, and build information the Docker build stamps into the image.
+ENV_VARS_NOT_DOCUMENTED_HERE = frozenset({"FRETBOOK_URL", "FRETBOOK_TOKEN", "FRETBOOK_GIT_SHA"})
 
 
 @dataclass(frozen=True)
