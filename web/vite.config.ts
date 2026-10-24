@@ -1,6 +1,11 @@
+import { createHash } from "node:crypto";
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import path from "node:path";
+
 import { alphaTab } from "@coderline/alphatab-vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { svelteTesting } from "@testing-library/svelte/vite";
+import { build, type Plugin } from "vite";
 import { defineConfig, type ProxyOptions } from "vitest/config";
 
 // The API refuses a write whose Origin host is not the Host header. The dev
@@ -16,8 +21,67 @@ const apiProxy: ProxyOptions = {
   },
 };
 
+// Build output the app does not need offline: other font formats alphaTab never picks, licence text, the
+// second soundfont, and the Guitar Pro converter worker that only runs while importing.
+const NOT_PRECACHED =
+  /^(index\.html|sw\.js)$|\.(map|txt|md|eot|otf|svg)$|^font\/.*\.svg$|LICENSE$|\.sf3$|gpWorker-/;
+
+function listFiles(dir: string, base = dir): string[] {
+  return readdirSync(dir).flatMap((name) => {
+    const full = path.join(dir, name);
+    return statSync(full).isDirectory()
+      ? listFiles(full, base)
+      : [path.relative(base, full).split(path.sep).join("/")];
+  });
+}
+
+/**
+ * Bundles `src/sw.ts` into `dist/sw.js` after the app build, with the list of files to precache and a version
+ * that changes whenever any of them does. The favicon stays in: the manifest and apple-touch icons point at it.
+ */
+function fretbookServiceWorker(): Plugin {
+  let root = "";
+  let outDir = "";
+  return {
+    name: "fretbook-service-worker",
+    apply: "build",
+    configResolved(config) {
+      root = config.root;
+      outDir = path.resolve(config.root, config.build.outDir);
+    },
+    async closeBundle() {
+      const files = listFiles(outDir).filter(
+        (file) => !NOT_PRECACHED.test(file) || file === "favicon.svg",
+      );
+      files.sort();
+      const hash = createHash("sha256");
+      for (const file of files) hash.update(file).update(readFileSync(path.join(outDir, file)));
+      await build({
+        configFile: false,
+        root,
+        publicDir: false,
+        logLevel: "warn",
+        define: {
+          __PRECACHE__: JSON.stringify(files),
+          __VERSION__: JSON.stringify(hash.digest("hex").slice(0, 12)),
+        },
+        build: {
+          outDir,
+          emptyOutDir: false,
+          lib: {
+            entry: path.resolve(root, "src/sw.ts"),
+            formats: ["iife"],
+            name: "fretbookSw",
+            fileName: () => "sw.js",
+          },
+        },
+      });
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [svelte(), alphaTab(), svelteTesting()],
+  plugins: [svelte(), alphaTab(), svelteTesting(), fretbookServiceWorker()],
   base: "./",
   build: {
     outDir: "dist",
@@ -75,6 +139,8 @@ export default defineConfig({
         "src/**/*.d.ts",
         // Runs in the AudioWorkletGlobalScope, which Vitest cannot host; the DSP it wraps is covered.
         "src/lib/listen/processor.ts",
+        // Glue between the service worker events and `offline/swCore.ts`, which is tested. Playwright covers it.
+        "src/sw.ts",
       ],
       reporter: ["text-summary", "html", "json-summary"],
       reportsDirectory: "coverage",

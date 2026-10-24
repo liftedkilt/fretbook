@@ -582,6 +582,9 @@
       "badPreset": "Esse instrumento não é conhecido.",
       "badTuning": "A afinação tem uma nota fora do alcance.",
       "invalid": "Essa conversão não é possível."
+    },
+    "offline": {
+      "unavailable": "Você está offline e isto não está salvo neste dispositivo."
     }
   },
   "ui": {
@@ -1203,6 +1206,26 @@
     "capoHint": "Menos pestanas com um capotraste.",
     "capoOption": "Capotraste {capo}: toque {shapes}",
     "capoNone": "Estes acordes já são fáceis de tocar sem capotraste."
+  },
+  "offline": {
+    "indicator": "Offline",
+    "indicatorHint": "Músicas e repertórios salvos neste dispositivo continuam funcionando. As edições são enviadas quando você voltar a ficar online.",
+    "make": "Disponibilizar offline",
+    "saved": "Disponível offline",
+    "working": "Salvando…",
+    "makeHint": "Mantém no dispositivo para abrir sem rede",
+    "removeHint": "Remove a cópia guardada neste dispositivo",
+    "failed": "Não foi possível remover. Tente novamente.",
+    "saveFailed": "Não foi possível salvar para uso offline. Verifique a conexão e tente novamente.",
+    "queued": {
+      "one": "{count} edição aguardando sincronização.",
+      "other": "{count} edições aguardando sincronização."
+    },
+    "syncNow": "Sincronizar agora",
+    "conflict": "“{title}” foi alterada em outro lugar, então suas edições offline não foram salvas.",
+    "syncFailed": "Não foi possível salvar suas edições offline de “{title}”: {message}",
+    "keepMine": "Manter minhas edições",
+    "keepTheirs": "Usar a outra versão"
   },
   "exercises": {
     "toolTitle": "Exercícios",

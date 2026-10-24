@@ -9,6 +9,7 @@
   import Cover from "./Cover.svelte";
   import Icon from "./Icon.svelte";
   import Menu from "./Menu.svelte";
+  import OfflineToggle from "./OfflineToggle.svelte";
   import { parse } from "../lib/chordpro";
   import { loadChoice, saveChoice } from "../lib/chords/choice";
   import { buildEntries } from "../lib/chords/entries";
@@ -113,6 +114,7 @@
         {#if song.artist}<p class="song-byline">{song.artist}</p>{/if}
       </div>
       <div class="hero-actions">
+        <OfflineToggle kind="song" id={song.id} title={song.title} compact />
         <a
           class="button"
           data-testid="song-edit-link"

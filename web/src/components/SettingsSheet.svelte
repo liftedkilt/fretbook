@@ -7,6 +7,7 @@
   import Sheet from "./Sheet.svelte";
   import { apiUrl, getCalibration, saveCalibration } from "../lib/api";
   import { currentLocale, locales, setLocale, t, tOr } from "../lib/i18n.svelte";
+  import { clearOfflineData } from "../lib/offline/offline.svelte";
   import {
     getLocalCalibration,
     isHighJitter,
@@ -114,7 +115,18 @@
               <Icon name="users" size={16} />{t("account.admin")}
             </a>
           {/if}
-          <form method="post" action={apiUrl("/auth/logout")}>
+          <!-- Wipe this device's copy of the library first; the form is sent once that is done. -->
+          <form
+            method="post"
+            action={apiUrl("/auth/logout")}
+            onsubmit={(event) => {
+              event.preventDefault();
+              const form = event.currentTarget;
+              void clearOfflineData()
+                .catch(() => undefined)
+                .then(() => form.submit());
+            }}
+          >
             <button type="submit" data-testid="sign-out"
               ><Icon name="logout" size={16} />{t("account.signOut")}</button
             >

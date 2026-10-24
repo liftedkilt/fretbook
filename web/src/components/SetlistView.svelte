@@ -2,6 +2,7 @@
   import { tick, untrack } from "svelte";
 
   import Icon from "./Icon.svelte";
+  import OfflineToggle from "./OfflineToggle.svelte";
   import {
     deleteSetlist,
     getSetlist,
@@ -256,6 +257,7 @@
       />
       <p class="muted">{t("setlists.count", { count: rows.length })}</p>
       <div class="setlist-actions">
+        <OfflineToggle kind="setlist" {id} />
         <a
           class="button primary"
           data-testid="setlist-play"

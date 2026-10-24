@@ -23,6 +23,9 @@ export default defineConfig({
     // Stable English UI whatever the machine's language is; the language test switches it itself.
     locale: "en-US",
     acceptDownloads: true,
+    // The service worker precaches the whole app on every fresh context, which is slow and can serve stale files.
+    // e2e/offline.spec.ts turns it back on.
+    serviceWorkers: "block",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
 });
