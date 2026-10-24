@@ -50,7 +50,9 @@
     const next = name.trim();
     if (!next) return;
     void run(async () => {
-      const count = await renameTag(tag, next);
+      const count = ui.libraryId
+        ? await renameTag(tag, next, ui.libraryId)
+        : await renameTag(tag, next);
       return t("manageTags.renamed", { tag, name: next, count });
     });
   }
@@ -58,7 +60,7 @@
   function remove() {
     const tag = deleting;
     void run(async () => {
-      const count = await deleteTag(tag);
+      const count = ui.libraryId ? await deleteTag(tag, ui.libraryId) : await deleteTag(tag);
       return t("manageTags.deleted", { tag, count });
     });
   }

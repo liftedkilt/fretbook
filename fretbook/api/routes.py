@@ -15,7 +15,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from fretbook import __version__
-from fretbook.api.deps import admin, context, principal, require_song
+from fretbook.api.deps import admin, context, principal, require_library, require_song
 from fretbook.api.errors import api_error
 from fretbook.api.schemas import (
     ADMIN_RESPONSES,
@@ -76,6 +76,8 @@ class CreateSongBody(_Body):
     signature: tuple[int, int] = (4, 4)
     chordpro: str | None = Field(default=None, max_length=chordpro.MAX_CHARS)
     """ChordPro or chords-over-lyrics text for a chord sheet."""
+    library: str | None = Field(default=None, max_length=64)
+    """Library to create the song in. Omit it for the caller's personal library. Editing that library is required."""
 
 
 class UpdateSongBody(_Body):
@@ -214,6 +216,7 @@ def meta(ctx: AppContext = Depends(_ctx), _user: Principal = Depends(_user)) -> 
             "worker_kinds": ctx.jobs.live_worker_kinds(),
             "demo_mode": ctx.settings.demo_mode,
             "metadata_lookup": ctx.settings.metadata_lookup,
+            "share_links": ctx.settings.share_links,
         }
     )
 
@@ -257,6 +260,9 @@ def list_songs(
     difficulty_max: int | None = Query(None, ge=1, le=10, description="Songs at or below this level (1 to 10)."),
     key: str | None = Query(None, max_length=40, description="Only songs in this key, as in `key` of a song."),
     genre: str | None = Query(None, max_length=500, description="Only songs with this genre, ignoring case."),
+    library: str | None = Query(
+        None, max_length=64, description="Library to list. Omit it for the caller's personal library."
+    ),
     limit: int = Query(50, ge=1, le=200),
     cursor: str = Query("", max_length=64),
     ctx: AppContext = Depends(_ctx),
@@ -269,7 +275,7 @@ def list_songs(
     """
     start = _decode_cursor(cursor)
     page = ctx.songs.list_songs(
-        user.user_id,
+        require_library(ctx, user.user_id, library),
         q=q,
         sort=sort,
         order=order,
@@ -324,6 +330,7 @@ def create_song(
 ) -> JSONResponse:
     title = body.title.strip() or "Untitled"
     artist = body.artist.strip()
+    owner = require_library(ctx, user.user_id, body.library, write=True)
     if body.content_kind == "chords":
         try:
             text = chordpro.normalize(body.chordpro or "", title=title, artist=artist)
@@ -332,7 +339,7 @@ def create_song(
         found = chordpro.metadata(text)
         return _json(
             ctx.songs.create_song(
-                user.user_id,
+                owner,
                 title=title if body.title.strip() else found.get("title", title),
                 artist=artist or found.get("artist", ""),
                 chordpro=text,
@@ -348,7 +355,7 @@ def create_song(
         raise api_error(400, "song.badSignature", "invalid time signature")
     return _json(
         ctx.songs.create_blank(
-            user.user_id,
+            owner,
             title=title,
             artist=artist,
             preset_id=preset,
@@ -374,7 +381,7 @@ def update_song(
     user: Principal = Depends(_user),
 ) -> JSONResponse:
     """Replace title, artist, and content. Send the revision you loaded; a stale one is 409."""
-    song = require_song(ctx, user.user_id, song_id)
+    song = require_song(ctx, user.user_id, song_id, write=True)
     chordpro_text: str | None = None
     if song["content_kind"] == "tab":
         if body.document is None:
@@ -408,7 +415,7 @@ def update_sync(
     user: Principal = Depends(_user),
 ) -> JSONResponse:
     """Set the opening tempo and tapped bar anchors on a tab."""
-    require_song(ctx, user.user_id, song_id)
+    require_song(ctx, user.user_id, song_id, write=True)
     try:
         updated = ctx.songs.update_sync(user.user_id, song_id, bpm=body.bpm, anchors=body.anchors)
     except ValidationError as exc:
@@ -426,7 +433,7 @@ def update_sync(
     responses=AUTH_RESPONSES,
 )
 def delete_song(song_id: str, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> Response:
-    require_song(ctx, user.user_id, song_id)
+    require_song(ctx, user.user_id, song_id, write=True)
     ctx.media.delete_song_files(user.user_id, song_id)
     ctx.songs.delete_song(user.user_id, song_id)
     return Response(status_code=204)
@@ -445,7 +452,7 @@ async def upload_audio(
     user: Principal = Depends(_user),
 ) -> JSONResponse:
     """Replace the song's audio. The extension picks the content type, not the client."""
-    require_song(ctx, user.user_id, song_id)
+    require_song(ctx, user.user_id, song_id, write=True)
     filename = file.filename or "audio.mp3"
     suffix = Path(filename).suffix.lower()
     if suffix not in _AUDIO_TYPES:

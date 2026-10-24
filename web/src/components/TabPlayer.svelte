@@ -113,7 +113,7 @@
   import type { SongDetail, TabSong } from "../lib/types";
   import { openTuner, setNotation, setPlayerView, ui } from "../lib/ui.svelte";
 
-  let { song: initial }: { song: TabSong } = $props();
+  let { song: initial, readOnly = false }: { song: TabSong; readOnly?: boolean } = $props();
   let pickerOpen = $state(false);
 
   // The player owns its copy: taps, BPM edits, and uploads change it in place.
@@ -142,7 +142,10 @@
   const clicker = new Clicker();
   // Time spent playing goes to the practice log, one session per stretch (see lib/practiceLog.ts).
   const practiceTimer = new PracticeTimer({
-    onSession: (session, keepalive) => void recordPracticeSession(session, keepalive),
+    onSession: (session, keepalive) => {
+      if (readOnly) return;
+      void recordPracticeSession(session, keepalive);
+    },
   });
   const scheduler = new ClickScheduler();
   // Opened from a lesson (`?lesson=<course>/<lesson>`): scored and wait-mode results go to that lesson.
@@ -283,6 +286,7 @@
   }
 
   function commitAnchors(next: Record<string, number>, bpm = song.document.bpm) {
+    if (readOnly) return;
     song.document.sync.anchors = next;
     song.document.bpm = bpm;
     const songId = song.id;
@@ -1396,9 +1400,11 @@
 >
   {#if lessonRef}<LessonRunBanner bind:this={lessonBanner} lesson={lessonRef} />{/if}
   <header class="song-header">
-    <a class="back-link" href={hrefFor("/")} onclick={(event) => followLink(event, "/")}
-      ><Icon name="back" size={18} />{t("app.back")}</a
-    >
+    {#if !readOnly}
+      <a class="back-link" href={hrefFor("/")} onclick={(event) => followLink(event, "/")}
+        ><Icon name="back" size={18} />{t("app.back")}</a
+      >
+    {/if}
     <div class="song-hero">
       <Cover
         id={song.id}
@@ -1426,14 +1432,16 @@
           {#if song.has_audio}<span class="pill pill-accent"
               ><Icon name="waveform" size={14} />{t("library.audio")}</span
             >{/if}
-          <button
-            type="button"
-            class="pill pill-button"
-            data-testid="song-retune"
-            onclick={() => (retuneOpen = true)}
-          >
-            <Icon name="sliders" size={14} />{t("retune.open")}
-          </button>
+          {#if !readOnly}
+            <button
+              type="button"
+              class="pill pill-button"
+              data-testid="song-retune"
+              onclick={() => (retuneOpen = true)}
+            >
+              <Icon name="sliders" size={14} />{t("retune.open")}
+            </button>
+          {/if}
         </div>
         {#if practice.loops.length > 0}
           <div
@@ -1474,7 +1482,9 @@
         {/if}
       </div>
       <div class="hero-actions">
-        <OfflineToggle kind="song" id={song.id} title={song.title} compact />
+        {#if !readOnly}
+          <OfflineToggle kind="song" id={song.id} title={song.title} compact />
+        {/if}
         <FullscreenToggle placement="header" />
         <div
           class="segmented"
@@ -1507,7 +1517,7 @@
             {t("highway.split")}
           </button>
         </div>
-        {#if !ui.demoMode}
+        {#if !ui.demoMode && !readOnly}
           <a
             class="button"
             data-testid="song-edit-link"
@@ -1523,62 +1533,64 @@
         >
           <Icon name="tuner" size={18} /><span>{t("tuner.open")}</span>
         </button>
-        <Menu label={t("player.export")} icon="download" testid="export-menu">
-          {#snippet children(close)}
-            {#if !ui.demoMode}
+        {#if !readOnly}
+          <Menu label={t("player.export")} icon="download" testid="export-menu">
+            {#snippet children(close)}
+              {#if !ui.demoMode}
+                <button
+                  class="menu-item"
+                  data-testid="song-add-to-setlist"
+                  role="menuitem"
+                  onclick={() => {
+                    close();
+                    pickerOpen = true;
+                  }}
+                >
+                  <Icon name="list" size={18} />
+                  {t("setlists.addToSetlist")}
+                </button>
+              {/if}
               <button
                 class="menu-item"
-                data-testid="song-add-to-setlist"
+                data-testid="export-pdf"
                 role="menuitem"
+                disabled={exporting}
                 onclick={() => {
                   close();
-                  pickerOpen = true;
+                  void exportPdf();
                 }}
               >
-                <Icon name="list" size={18} />
-                {t("setlists.addToSetlist")}
+                <Icon name="file" size={18} />
+                {exporting
+                  ? t("player.exportingPdf")
+                  : song.document.tracks.length > 1
+                    ? t("player.exportPdfTrack", { name: track.name })
+                    : t("player.exportPdf")}
               </button>
-            {/if}
-            <button
-              class="menu-item"
-              data-testid="export-pdf"
-              role="menuitem"
-              disabled={exporting}
-              onclick={() => {
-                close();
-                void exportPdf();
-              }}
-            >
-              <Icon name="file" size={18} />
-              {exporting
-                ? t("player.exportingPdf")
-                : song.document.tracks.length > 1
-                  ? t("player.exportPdfTrack", { name: track.name })
-                  : t("player.exportPdf")}
-            </button>
-            <a
-              class="menu-item"
-              data-testid="export-musicxml"
-              role="menuitem"
-              href={exportUrl("musicxml")}
-              onclick={close}><Icon name="layers" size={18} />{t("player.exportMusicXml")}</a
-            >
-            <a
-              class="menu-item"
-              data-testid="export-midi"
-              role="menuitem"
-              href={exportUrl("mid")}
-              onclick={close}><Icon name="download" size={18} />{t("player.exportMidi")}</a
-            >
-            <a
-              class="menu-item"
-              data-testid="export-json"
-              role="menuitem"
-              href={exportUrl("json")}
-              onclick={close}><Icon name="download" size={18} />{t("player.exportJson")}</a
-            >
-          {/snippet}
-        </Menu>
+              <a
+                class="menu-item"
+                data-testid="export-musicxml"
+                role="menuitem"
+                href={exportUrl("musicxml")}
+                onclick={close}><Icon name="layers" size={18} />{t("player.exportMusicXml")}</a
+              >
+              <a
+                class="menu-item"
+                data-testid="export-midi"
+                role="menuitem"
+                href={exportUrl("mid")}
+                onclick={close}><Icon name="download" size={18} />{t("player.exportMidi")}</a
+              >
+              <a
+                class="menu-item"
+                data-testid="export-json"
+                role="menuitem"
+                href={exportUrl("json")}
+                onclick={close}><Icon name="download" size={18} />{t("player.exportJson")}</a
+              >
+            {/snippet}
+          </Menu>
+        {/if}
       </div>
     </div>
     {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
@@ -1675,7 +1687,7 @@
           tracks={song.document.tracks}
           onchange={practiceChanged}
         />
-        {#if song.has_audio && !ui.demoMode}
+        {#if song.has_audio && !ui.demoMode && !readOnly}
           <StemMixer
             songId={song.id}
             {audioEl}
@@ -1720,7 +1732,7 @@
           error={scoreError}
           ontoggle={toggleScore}
         />
-        {#if song.has_audio && !ui.demoMode}
+        {#if song.has_audio && !ui.demoMode && !readOnly}
           <div class="panel-group">
             <h3>{t("player.syncMarks")}</h3>
             <div class="button-row">
@@ -1762,37 +1774,39 @@
           onchange={practiceChanged}
           onjump={activateLoop}
         />
-        <div class="panel-group panel-inline">
-          <label class="field compact-field">
-            <span>{t("player.bpm")}</span>
-            <input
-              type="number"
-              min="1"
-              max="399"
-              value={song.document.bpm}
-              onchange={(event) => {
-                const bpm = Number(event.currentTarget.value);
-                if (bpm > 0 && bpm < 400) commitAnchors({ ...song.document.sync.anchors }, bpm);
-              }}
-            />
-          </label>
-          <label class="button file-button">
-            <Icon name="upload" size={18} />{t("player.upload")}
-            <input
-              class="visually-hidden"
-              type="file"
-              accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.webm"
-              onchange={(event) => {
-                const file = event.currentTarget.files?.[0];
-                event.currentTarget.value = "";
-                if (file) void onUpload(file);
-              }}
-            />
-          </label>
-        </div>
-        <div class="panel-group panel-inline">
-          <YouTubeAudio songId={song.id} ondone={onYouTubeAudio} />
-        </div>
+        {#if !readOnly}
+          <div class="panel-group panel-inline">
+            <label class="field compact-field">
+              <span>{t("player.bpm")}</span>
+              <input
+                type="number"
+                min="1"
+                max="399"
+                value={song.document.bpm}
+                onchange={(event) => {
+                  const bpm = Number(event.currentTarget.value);
+                  if (bpm > 0 && bpm < 400) commitAnchors({ ...song.document.sync.anchors }, bpm);
+                }}
+              />
+            </label>
+            <label class="button file-button">
+              <Icon name="upload" size={18} />{t("player.upload")}
+              <input
+                class="visually-hidden"
+                type="file"
+                accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.webm"
+                onchange={(event) => {
+                  const file = event.currentTarget.files?.[0];
+                  event.currentTarget.value = "";
+                  if (file) void onUpload(file);
+                }}
+              />
+            </label>
+          </div>
+          <div class="panel-group panel-inline">
+            <YouTubeAudio songId={song.id} ondone={onYouTubeAudio} />
+          </div>
+        {/if}
       </section>
     {/if}
 

@@ -432,6 +432,25 @@
       "needsDocument": "Uma tablatura precisa da partitura para ser salva.",
       "needsChordPro": "Uma cifra precisa do texto para ser salva."
     },
+    "library": {
+      "notFound": "Essa biblioteca não foi encontrada.",
+      "readOnly": "Você pode ver isto, mas não alterá-lo.",
+      "notEmpty": "Mova ou apague as músicas desta banda antes de apagá-la.",
+      "lastEditor": "Uma banda precisa de pelo menos uma pessoa que possa editar.",
+      "personal": "Uma biblioteca pessoal não pode ser compartilhada.",
+      "same": "Escolha outra biblioteca.",
+      "memberNotFound": "Ninguém com esse e-mail tem uma conta.",
+      "ambiguousEmail": "Mais de uma conta tem esse e-mail.",
+      "alreadyMember": "Essa pessoa já está nesta banda.",
+      "badName": "O nome da biblioteca precisa ter de 1 a 80 caracteres.",
+      "badRole": "Escolha ver ou editar."
+    },
+    "share": {
+      "notFound": "Esse link não está disponível.",
+      "disabled": "Os links de compartilhamento estão desligados neste servidor.",
+      "tooMany": "Esta música já tem o máximo de links.",
+      "badExpiry": "O prazo precisa ficar entre 1 e 3650 dias."
+    },
     "sync": {
       "badAnchor": "As marcas de sincronia precisam pertencer a compassos desta música.",
       "notTab": "Só tablaturas têm marcas de sincronia."
@@ -2141,5 +2160,48 @@
       "spend": "{name} usou 80% do limite mensal de gastos."
     },
     "dismiss": "Dispensar"
+  },
+  "bands": {
+    "nav": "Bandas",
+    "heading": "Bandas",
+    "intro": "Uma banda é uma biblioteca compartilhada. Quem você adicionar pode vê-la ou editar as músicas.",
+    "personal": "Pessoal",
+    "yours": "Sua biblioteca",
+    "empty": "Você ainda não está em uma banda.",
+    "name": "Nome da banda",
+    "create": "Criar banda",
+    "created": "Banda criada.",
+    "members": "Membros",
+    "email": "E-mail",
+    "role": "Papel",
+    "view": "Pode ver",
+    "edit": "Pode editar",
+    "add": "Adicionar",
+    "remove": "Remover",
+    "rename": "Renomear",
+    "delete": "Apagar banda",
+    "deleteConfirm": "Apagar esta banda vazia?",
+    "songs": "{count} músicas",
+    "switcher": "Biblioteca"
+  },
+  "sharing": {
+    "share": "Compartilhar",
+    "heading": "Link somente leitura",
+    "hint": "Quem tiver o link pode tocar esta música. Não pode alterá-la.",
+    "expiry": "Expira em (dias, opcional)",
+    "create": "Criar link",
+    "created": "Link criado. Copie agora; ele não será mostrado de novo.",
+    "copy": "Copiar link",
+    "copied": "Copiado",
+    "revoke": "Revogar",
+    "none": "Nenhum link ativo.",
+    "disabled": "Os links de compartilhamento estão desligados neste servidor.",
+    "move": "Copiar ou mover",
+    "moveHint": "Copiar mantém o original. Mover exige direito de edição nas duas bibliotecas.",
+    "destination": "Biblioteca",
+    "copySong": "Copiar",
+    "moveSong": "Mover",
+    "unavailable": "Este link não está disponível.",
+    "back": "Fretbook"
   }
 }

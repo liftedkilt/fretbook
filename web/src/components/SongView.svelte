@@ -3,10 +3,12 @@
   import ChordSheetView from "./ChordSheetView.svelte";
   import DifficultyPanel from "./DifficultyPanel.svelte";
   import SongPractice from "./SongPractice.svelte";
+  import SongLibraryActions from "./SongLibraryActions.svelte";
   import SongMetadata from "./SongMetadata.svelte";
   import SongTags from "./SongTags.svelte";
   import TabPlayer from "./TabPlayer.svelte";
   import { getSong, markSongOpened } from "../lib/api";
+  import { canEdit } from "../lib/bands";
   import { t } from "../lib/i18n.svelte";
   import type { SongDetail, TabSong } from "../lib/types";
 
@@ -59,11 +61,14 @@
     </div>{/if}
 {:else}
   {#key song.id}
-    <SongTags {song} />
-    <SongMetadata {song} onchange={applyMetadata} />
+    <SongTags {song} readOnly={!canEdit(song.library_role)} />
+    <SongMetadata {song} readOnly={!canEdit(song.library_role)} onchange={applyMetadata} />
+    {#if canEdit(song.library_role)}
+      <SongLibraryActions songId={song.id} />
+    {/if}
   {/key}
   {#if song.content_kind === "chords"}
-    <ChordSheetView {song} initialTranspose={transpose} />
+    <ChordSheetView {song} initialTranspose={transpose} readOnly={!canEdit(song.library_role)} />
     <DifficultyPanel tracks={song.difficulty_tracks} preferredId="chords" chords />
     {#key song.id}
       <ChordPractice songId={song.id} onlogged={() => (logged += 1)} />
@@ -71,7 +76,7 @@
     <SongPractice songId={song.id} reload={logged} />
   {:else}
     {#key song.id}
-      <TabPlayer song={song as TabSong} />
+      <TabPlayer song={song as TabSong} readOnly={!canEdit(song.library_role)} />
     {/key}
     <DifficultyPanel tracks={song.difficulty_tracks} preferredId={song.preferred_track_id} />
     <SongPractice songId={song.id} />

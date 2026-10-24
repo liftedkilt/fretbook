@@ -11,7 +11,12 @@
   import { refreshSongs, ui } from "../lib/ui.svelte";
 
   // The song's key, genre, album, year, personal notes and cover art. `onchange` gets the song as saved.
-  let { song, onchange }: { song: SongDetail; onchange: (song: SongDetail) => void } = $props();
+  let {
+    song,
+    onchange,
+    readOnly = false,
+  }: { song: SongDetail; onchange: (song: SongDetail) => void; readOnly?: boolean } = $props();
+  const locked = $derived(ui.demoMode || readOnly);
 
   let open = $state(false);
   let key = $state("");
@@ -100,7 +105,7 @@
   }
 </script>
 
-{#if hasDetails || !ui.demoMode}
+{#if hasDetails || !locked}
   <section class="song-metadata" data-testid="song-metadata" aria-label={t("metadata.heading")}>
     {#if hasDetails}
       <ul class="meta-pills">
@@ -120,7 +125,7 @@
         {#if song.album}<li class="pill" data-testid="song-album">{song.album}</li>{/if}
       </ul>
     {/if}
-    {#if !ui.demoMode}
+    {#if !locked}
       <button
         type="button"
         class="pill pill-button"

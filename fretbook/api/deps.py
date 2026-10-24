@@ -52,8 +52,22 @@ def admin(request: Request) -> Principal:
     return user
 
 
-def require_song(ctx: AppContext, owner_id: str, song_id: str) -> dict:
+def require_song(ctx: AppContext, owner_id: str, song_id: str, *, write: bool = False) -> dict:
     song = ctx.songs.get_song(owner_id, song_id)
     if song is None:
         raise api_error(404, "song.notFound", "song not found")
+    if write and song.get("library_role") != "edit":
+        raise api_error(403, "library.readOnly", "you can view this song but not change it")
     return song
+
+
+def require_library(ctx: AppContext, user_id: str, library_id: str | None, *, write: bool = False) -> str:
+    """The library to list or create in. Empty means the caller's personal library.
+
+    A library the caller is not in, and one that does not exist, are both 404.
+    """
+    target = (library_id or "").strip() or user_id
+    if ctx.libraries is None:
+        raise api_error(404, "library.notFound", "that library was not found")
+    ctx.libraries.require(user_id, target, write=write)
+    return target

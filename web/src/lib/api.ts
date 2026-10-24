@@ -80,6 +80,8 @@ import type {
   Job,
   Keyed,
   LibraryFacets,
+  LibraryInfo,
+  LibraryMember,
   Me,
   Meta,
   PracticeExerciseDraft,
@@ -90,6 +92,7 @@ import type {
   Recommendations,
   ScoreDocument,
   Settings,
+  ShareLink,
   SetlistDetail,
   SetlistEntryDraft,
   SetlistSummary,
@@ -268,8 +271,14 @@ export function listSongs(query: SongQuery = {}): Promise<SongPage> {
 }
 
 /** The keys and genres in the library with their song counts, for the library filters. */
-export function getFacets(): Promise<LibraryFacets> {
-  return request<ContractLibraryFacets>("/api/library/facets");
+function withLibrary(path: string, library = ""): string {
+  if (!library) return path;
+  const join = path.includes("?") ? "&" : "?";
+  return `${path}${join}library=${encodeURIComponent(library)}`;
+}
+
+export function getFacets(library = ""): Promise<LibraryFacets> {
+  return request<ContractLibraryFacets>(withLibrary("/api/library/facets", library));
 }
 
 /** Set a song's key, genre, album, year or notes. It does not change the song's revision. */
@@ -302,8 +311,8 @@ export function markSongOpened(id: string): Promise<void> {
 }
 
 /** Every tag on the caller's songs with its song count, most used first. */
-export function listTags(): Promise<TagCount[]> {
-  return request<ContractTagCount[]>("/api/tags");
+export function listTags(library = ""): Promise<TagCount[]> {
+  return request<ContractTagCount[]>(withLibrary("/api/tags", library));
 }
 
 /** Replace the song's tags. Resolves to the tags as stored: trimmed, without repeats, sorted. */
@@ -324,19 +333,22 @@ export async function setSongTags(id: string, tags: string[]): Promise<string[]>
 }
 
 /** Rename a tag on every song, or merge it into the tag that already has the new name. Resolves to the songs changed. */
-export async function renameTag(tag: string, name: string): Promise<number> {
+export async function renameTag(tag: string, name: string, library = ""): Promise<number> {
   const body = await request<TagsChanged>(
-    `/api/tags/${encodeURIComponent(tag)}`,
+    withLibrary(`/api/tags/${encodeURIComponent(tag)}`, library),
     json("PATCH", { name }),
   );
   return body.updated;
 }
 
 /** Remove a tag from every song. Resolves to the songs changed. */
-export async function deleteTag(tag: string): Promise<number> {
-  const body = await request<TagsChanged>(`/api/tags/${encodeURIComponent(tag)}`, {
-    method: "DELETE",
-  });
+export async function deleteTag(tag: string, library = ""): Promise<number> {
+  const body = await request<TagsChanged>(
+    withLibrary(`/api/tags/${encodeURIComponent(tag)}`, library),
+    {
+      method: "DELETE",
+    },
+  );
   return body.updated;
 }
 
@@ -451,6 +463,7 @@ export function createTab(body: {
   bpm: number;
   measures: number;
   signature: [number, number];
+  library?: string;
 }): Promise<SongDetail> {
   return view(
     request<ContractSongDetail>("/api/songs", json("POST", { content_kind: "tab", ...body })),
@@ -462,6 +475,7 @@ export function createChordSheet(body: {
   title: string;
   artist: string;
   chordpro: string;
+  library?: string;
 }): Promise<SongDetail> {
   return view(
     request<ContractSongDetail>("/api/songs", json("POST", { content_kind: "chords", ...body })),
@@ -996,4 +1010,80 @@ export function importLessonPack(file: File): Promise<LessonPackResult> {
   const data = new FormData();
   data.append("file", file);
   return request<LessonPackResult>("/api/lessons/import", { method: "POST", body: data });
+}
+
+export function listLibraries(): Promise<LibraryInfo[]> {
+  return request<LibraryInfo[]>("/api/libraries");
+}
+
+export function createBand(name: string): Promise<LibraryInfo> {
+  return request<LibraryInfo>("/api/libraries", json("POST", { name }));
+}
+
+export function renameBand(id: string, name: string): Promise<LibraryInfo> {
+  return request<LibraryInfo>(`/api/libraries/${id}`, json("PATCH", { name }));
+}
+
+export function deleteBand(id: string): Promise<void> {
+  return request(`/api/libraries/${id}`, { method: "DELETE" });
+}
+
+export function listMembers(id: string): Promise<LibraryMember[]> {
+  return request<LibraryMember[]>(`/api/libraries/${id}/members`);
+}
+
+export function addMember(
+  id: string,
+  email: string,
+  role: "view" | "edit",
+): Promise<LibraryMember> {
+  return request<LibraryMember>(`/api/libraries/${id}/members`, json("POST", { email, role }));
+}
+
+export function setMemberRole(
+  id: string,
+  userId: string,
+  role: "view" | "edit",
+): Promise<LibraryMember> {
+  return request<LibraryMember>(`/api/libraries/${id}/members/${userId}`, json("PATCH", { role }));
+}
+
+export function removeMember(id: string, userId: string): Promise<void> {
+  return request(`/api/libraries/${id}/members/${userId}`, { method: "DELETE" });
+}
+
+export function copySongTo(songId: string, libraryId: string): Promise<SongDetail> {
+  return view(
+    request<SongDetail>(`/api/songs/${songId}/copy`, json("POST", { library_id: libraryId })),
+  );
+}
+
+export function moveSongTo(songId: string, libraryId: string): Promise<SongDetail> {
+  return view(
+    request<SongDetail>(`/api/songs/${songId}/move`, json("POST", { library_id: libraryId })),
+  );
+}
+
+export function listShares(songId: string): Promise<ShareLink[]> {
+  return request<ShareLink[]>(`/api/songs/${songId}/shares`);
+}
+
+export function createShare(songId: string, expiresInDays: number | null): Promise<ShareLink> {
+  return request<ShareLink>(
+    `/api/songs/${songId}/shares`,
+    json("POST", { expires_in_days: expiresInDays }),
+  );
+}
+
+export function revokeShare(songId: string, shareId: string): Promise<void> {
+  return request(`/api/songs/${songId}/shares/${shareId}`, { method: "DELETE" });
+}
+
+/** A public link. Does not send the caller to sign in: a dead link is a 404, not a session error. */
+export async function getSharedSong(token: string): Promise<SongDetail> {
+  const response = await fetch(apiUrl(`/api/share/${encodeURIComponent(token)}`));
+  if (!response.ok) {
+    throw await toError(response);
+  }
+  return (await response.json()) as SongDetail;
 }

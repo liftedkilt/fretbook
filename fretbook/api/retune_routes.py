@@ -88,7 +88,7 @@ def convert_song_track(
     user: Principal = Depends(principal),
 ) -> Any:
     """Transpose, retune or convert one track of a tab (see `ConvertBody`), optionally saving the result."""
-    song = require_song(ctx, user.user_id, song_id)
+    song = require_song(ctx, user.user_id, song_id, write=body.mode != "preview")
     if song["content_kind"] != "tab":
         raise api_error(400, "convert.notTab", "only tabs can be converted")
     if body.mode != "preview" and body.revision is None:

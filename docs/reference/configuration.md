@@ -19,6 +19,7 @@ one is optional: the defaults give a single-user server on `127.0.0.1:8137`.
 | `FRETBOOK_STATIC_DIR` | built-in | Serve the web app from another directory. |
 | `FRETBOOK_MAX_UPLOAD_BYTES` | 80 MB | Largest upload and request body. |
 | `FRETBOOK_DEMO_MODE` | `false` | Run a public, read-only demo: no uploads, imports, edits or deletes, and the library is reset to the demo songs at start and every night at 03:00 UTC. For single-user mode. See [Demo library and demo mode](../guides/demo.md). |
+| `FRETBOOK_SHARE_LINKS` | `false` | Allow read-only links to a song (`/share/…` and `/api/share/…`) without signing in. Leave this off when a reverse proxy is what keeps the server private, and allow those paths through the proxy only when it is on. See [Sharing](../guides/sharing.md). |
 
 ## Storage
 

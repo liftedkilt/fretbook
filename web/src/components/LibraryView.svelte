@@ -3,6 +3,7 @@
   import { coverSrc } from "../lib/cover";
   import FirstRun from "./FirstRun.svelte";
   import Icon from "./Icon.svelte";
+  import LibraryPicker from "./LibraryPicker.svelte";
   import ManageTagsSheet from "./ManageTagsSheet.svelte";
   import RecentImports from "./RecentImports.svelte";
   import SetlistPicker from "./SetlistPicker.svelte";
@@ -168,6 +169,7 @@
 <svelte:window onkeydown={onKeydown} />
 
 <section class="library">
+  <LibraryPicker />
   <header class="page-hero">
     <div>
       <p class="eyebrow">{t("library.heading")}</p>

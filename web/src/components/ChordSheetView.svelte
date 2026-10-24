@@ -34,7 +34,11 @@
   import type { SongDetail } from "../lib/types";
   import { ui } from "../lib/ui.svelte";
 
-  let { song, initialTranspose = 0 }: { song: SongDetail; initialTranspose?: number } = $props();
+  let {
+    song,
+    initialTranspose = 0,
+    readOnly = false,
+  }: { song: SongDetail; initialTranspose?: number; readOnly?: boolean } = $props();
 
   let pickerOpen = $state(false);
   let transpose = $state(untrack(() => initialTranspose));
@@ -189,9 +193,11 @@
 
 <div class="song-page chords-page" class:stage data-stage={stage}>
   <header class="song-header no-print">
-    <a class="back-link" href={hrefFor("/")} onclick={(event) => followLink(event, "/")}
-      ><Icon name="back" size={18} />{t("app.back")}</a
-    >
+    {#if !readOnly}
+      <a class="back-link" href={hrefFor("/")} onclick={(event) => followLink(event, "/")}
+        ><Icon name="back" size={18} />{t("app.back")}</a
+      >
+    {/if}
     <div class="song-hero">
       <Cover
         id={song.id}
@@ -206,8 +212,10 @@
         {#if song.artist}<p class="song-byline">{song.artist}</p>{/if}
       </div>
       <div class="hero-actions">
-        <OfflineToggle kind="song" id={song.id} title={song.title} compact />
-        {#if !ui.demoMode}
+        {#if !readOnly}
+          <OfflineToggle kind="song" id={song.id} title={song.title} compact />
+        {/if}
+        {#if !ui.demoMode && !readOnly}
           <a
             class="button"
             data-testid="song-edit-link"
@@ -217,58 +225,60 @@
             <Icon name="edit" size={18} /><span>{t("player.edit")}</span>
           </a>
         {/if}
-        <Menu label={t("player.export")} icon="download" testid="export-menu">
-          {#snippet children(close)}
-            {#if !ui.demoMode}
+        {#if !readOnly}
+          <Menu label={t("player.export")} icon="download" testid="export-menu">
+            {#snippet children(close)}
+              {#if !ui.demoMode}
+                <button
+                  class="menu-item"
+                  data-testid="song-add-to-setlist"
+                  role="menuitem"
+                  onclick={() => {
+                    close();
+                    pickerOpen = true;
+                  }}
+                >
+                  <Icon name="list" size={18} />
+                  {t("setlists.addToSetlist")}
+                </button>
+              {/if}
               <button
                 class="menu-item"
-                data-testid="song-add-to-setlist"
+                data-testid="export-pdf"
+                role="menuitem"
+                disabled={exporting}
+                onclick={() => {
+                  close();
+                  void exportPdf();
+                }}
+              >
+                <Icon name="file" size={18} />{exporting
+                  ? t("player.exportingPdf")
+                  : t("player.exportPdf")}
+              </button>
+              <button
+                class="menu-item"
                 role="menuitem"
                 onclick={() => {
                   close();
-                  pickerOpen = true;
+                  window.print();
                 }}
               >
-                <Icon name="list" size={18} />
-                {t("setlists.addToSetlist")}
+                <Icon name="print" size={18} />{t("chords.print")}
               </button>
-            {/if}
-            <button
-              class="menu-item"
-              data-testid="export-pdf"
-              role="menuitem"
-              disabled={exporting}
-              onclick={() => {
-                close();
-                void exportPdf();
-              }}
-            >
-              <Icon name="file" size={18} />{exporting
-                ? t("player.exportingPdf")
-                : t("player.exportPdf")}
-            </button>
-            <button
-              class="menu-item"
-              role="menuitem"
-              onclick={() => {
-                close();
-                window.print();
-              }}
-            >
-              <Icon name="print" size={18} />{t("chords.print")}
-            </button>
-            <a
-              class="menu-item"
-              data-testid="export-chordpro"
-              role="menuitem"
-              href={exportUrl("cho")}
-              onclick={close}><Icon name="chords" size={18} />{t("chords.exportChordPro")}</a
-            >
-            <a class="menu-item" role="menuitem" href={exportUrl("json")} onclick={close}
-              ><Icon name="download" size={18} />{t("player.exportJson")}</a
-            >
-          {/snippet}
-        </Menu>
+              <a
+                class="menu-item"
+                data-testid="export-chordpro"
+                role="menuitem"
+                href={exportUrl("cho")}
+                onclick={close}><Icon name="chords" size={18} />{t("chords.exportChordPro")}</a
+              >
+              <a class="menu-item" role="menuitem" href={exportUrl("json")} onclick={close}
+                ><Icon name="download" size={18} />{t("player.exportJson")}</a
+              >
+            {/snippet}
+          </Menu>
+        {/if}
       </div>
     </div>
     {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}

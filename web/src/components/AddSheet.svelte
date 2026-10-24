@@ -113,6 +113,7 @@
         bpm,
         measures,
         signature: [numerator, denominator],
+        library: ui.libraryId || undefined,
       });
       title = "";
       artist = "";
@@ -129,6 +130,7 @@
         title: sheetTitle.trim(),
         artist: sheetArtist.trim(),
         chordpro: sheetText,
+        library: ui.libraryId || undefined,
       });
       sheetTitle = "";
       sheetArtist = "";

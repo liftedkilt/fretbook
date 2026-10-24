@@ -20,6 +20,9 @@ damage instrument sound.
 4. **Allow big request bodies.** The default upload limit is 80 MB (`FRETBOOK_MAX_UPLOAD_BYTES`) and a library
    restore accepts up to 4 GiB (`FRETBOOK_MAX_RESTORE_BYTES`). Many proxies stop well short of that.
 5. **Not add its own login in front of `/api/health`** if your orchestrator probes it.
+6. **Leave share links reachable** when `FRETBOOK_SHARE_LINKS=true`. The proxy must allow unauthenticated
+   `GET` of `/share/` and `/api/share/`. Those routes answer 404 until the flag is on, and a login wall in
+   front of them defeats the link.
 
 If the proxy and Fretbook are containers on one Docker network, give the network a fixed subnet and the proxy a
 fixed address, so the value of `FRETBOOK_FORWARDED_ALLOW_IPS` does not change when containers restart:
