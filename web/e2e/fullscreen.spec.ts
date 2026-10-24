@@ -23,6 +23,7 @@ test("full screen shows only the score and the dock, and every exit restores the
   await expect(page.locator(".sidebar")).toBeHidden();
   await expect(page.locator(".song-header")).toBeHidden();
   await expect(page.getByTestId("song-tags")).toBeHidden();
+  await expect(page.getByTestId("song-metadata")).toBeHidden();
   await expect(page.getByTestId("player-play")).toBeVisible();
   await expect(exit).toBeVisible();
   await expect(exit).toHaveAttribute("aria-pressed", "true");

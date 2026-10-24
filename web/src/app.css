@@ -3630,6 +3630,7 @@ textarea {
 :root[data-fullscreen] .tabbar,
 :root[data-fullscreen] .song-header,
 :root[data-fullscreen] .content > .song-tags,
+:root[data-fullscreen] .content > .song-metadata,
 :root[data-fullscreen] .content > .difficulty,
 :root[data-fullscreen] .content > .song-practice {
   display: none !important;
