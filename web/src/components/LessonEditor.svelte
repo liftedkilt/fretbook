@@ -1,5 +1,7 @@
 <script lang="ts">
   import Icon from "./Icon.svelte";
+  import Page from "./ui/Page.svelte";
+  import PageHeader from "./ui/PageHeader.svelte";
   import LessonBlocks from "./LessonBlocks.svelte";
   import {
     ApiError,
@@ -14,7 +16,7 @@
   import { debounced } from "../lib/asciiTab";
   import { t } from "../lib/i18n.svelte";
   import { courseTemplate, coursePath, lessonPath, lessonTemplate, slugify } from "../lib/lessons";
-  import { followLink, hrefFor, navigate } from "../lib/router.svelte";
+  import { navigate } from "../lib/router.svelte";
 
   // `lesson` empty: a new lesson in `course`; `course` empty too: a new course. With `kind` "course" and a
   // `course`, the course's own course.md.
@@ -174,102 +176,101 @@
   );
 </script>
 
-<section class="lesson-editor" data-testid="lesson-editor">
-  <a
-    class="button ghost tool-back"
-    href={hrefFor(back)}
-    onclick={(event) => followLink(event, back)}
-  >
-    <Icon name="back" size={18} /><span>{t("lessons.cancel")}</span>
-  </a>
-  <h1 class="display">
-    {kind === "course"
-      ? isNew
-        ? t("lessons.newCourse")
-        : t("lessons.editCourse")
-      : isNew
-        ? t("lessons.newLesson")
-        : t("lessons.edit")}
-  </h1>
-  <p class="muted">
-    {kind === "course" ? t("lessons.courseEditorHelp") : t("lessons.editorHelp")}
-    <a
-      href="https://github.com/liftedkilt/fretbook/blob/main/docs/lessons.md"
-      target="_blank"
-      rel="noopener noreferrer">{t("lessons.formatDocs")}</a
-    >
-  </p>
+<Page width="narrow">
+  <section class="lesson-editor" data-testid="lesson-editor">
+    <PageHeader
+      title={kind === "course"
+        ? isNew
+          ? t("lessons.newCourse")
+          : t("lessons.editCourse")
+        : isNew
+          ? t("lessons.newLesson")
+          : t("lessons.edit")}
+      titleSize="title"
+      eyebrow={t("lessons.nav")}
+      backHref={back}
+      backLabel={t("lessons.heading")}
+    />
+    <p class="muted">
+      {kind === "course" ? t("lessons.courseEditorHelp") : t("lessons.editorHelp")}
+      <a
+        href="https://github.com/liftedkilt/fretbook/blob/main/docs/lessons.md"
+        target="_blank"
+        rel="noopener noreferrer">{t("lessons.formatDocs")}</a
+      >
+    </p>
 
-  {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
+    {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
 
-  {#if loaded}
-    <form class="lesson-editor-form" onsubmit={save}>
-      <label class="tool-field">
-        <span>{t("lessons.id")}</span>
-        <input
-          type="text"
-          data-testid="lesson-id"
-          bind:value={id}
-          readonly={!isNew}
-          required
-          pattern="[a-z0-9][a-z0-9\-]*"
-          maxlength="64"
-          autocomplete="off"
-          spellcheck="false"
-          oninput={() => (idEdited = true)}
-        />
-      </label>
-      {#if kind === "lesson"}
-        <div class="chip-row" role="group" aria-label={t("lessons.insert")}>
-          {#each SNIPPETS as snippet (snippet.key)}
-            <button
-              class="chip"
-              type="button"
-              data-testid="lesson-insert-{snippet.key}"
-              onclick={() => insert(snippet.text)}>{t(snippet.labelKey)}</button
-            >
-          {/each}
-        </div>
-      {/if}
-      <div class="lesson-editor-panes" class:single={kind === "course"}>
+    {#if loaded}
+      <form class="lesson-editor-form" onsubmit={save}>
         <label class="tool-field">
-          <span>{t("lessons.markdown")}</span>
-          <textarea
-            class="lesson-source"
-            data-testid="lesson-source"
-            bind:this={area}
-            bind:value={text}
-            oninput={changed}
-            rows="22"
-            spellcheck="false"></textarea>
+          <span>{t("lessons.id")}</span>
+          <input
+            type="text"
+            data-testid="lesson-id"
+            bind:value={id}
+            readonly={!isNew}
+            required
+            pattern="[a-z0-9][a-z0-9\-]*"
+            maxlength="64"
+            autocomplete="off"
+            spellcheck="false"
+            oninput={() => (idEdited = true)}
+          />
         </label>
         {#if kind === "lesson"}
-          <div class="lesson-preview" data-testid="lesson-preview" aria-live="polite">
-            <h2 class="field-label">{t("lessons.preview")}</h2>
-            {#if previewError}
-              <p class="alert" role="alert" data-testid="lesson-preview-error">
-                <Icon name="alert" size={18} />{previewError}
-              </p>
-            {:else if preview}
-              <h3>{preview.title}</h3>
-              <LessonBlocks blocks={preview.blocks} />
-            {/if}
+          <div class="chip-row" role="group" aria-label={t("lessons.insert")}>
+            {#each SNIPPETS as snippet (snippet.key)}
+              <button
+                class="chip"
+                type="button"
+                data-testid="lesson-insert-{snippet.key}"
+                onclick={() => insert(snippet.text)}>{t(snippet.labelKey)}</button
+              >
+            {/each}
           </div>
         {/if}
-      </div>
-      <div class="lesson-admin">
-        <button class="primary" type="submit" data-testid="lesson-save" disabled={saving || !id}>
-          <Icon name="save" size={18} /><span>{t("lessons.save")}</span>
-        </button>
-        {#if kind === "lesson" && !isNew && source === "user"}
-          <button class="ghost" type="button" data-testid="lesson-delete" onclick={remove}>
-            <Icon name="trash" size={18} /><span>{t("lessons.delete")}</span>
+        <div class="lesson-editor-panes" class:single={kind === "course"}>
+          <label class="tool-field">
+            <span>{t("lessons.markdown")}</span>
+            <textarea
+              class="lesson-source"
+              data-testid="lesson-source"
+              bind:this={area}
+              bind:value={text}
+              oninput={changed}
+              rows="22"
+              spellcheck="false"></textarea>
+          </label>
+          {#if kind === "lesson"}
+            <div class="lesson-preview" data-testid="lesson-preview" aria-live="polite">
+              <h2 class="field-label">{t("lessons.preview")}</h2>
+              {#if previewError}
+                <p class="alert" role="alert" data-testid="lesson-preview-error">
+                  <Icon name="alert" size={18} />{previewError}
+                </p>
+              {:else if preview}
+                <h3>{preview.title}</h3>
+                <LessonBlocks blocks={preview.blocks} />
+              {/if}
+            </div>
+          {/if}
+        </div>
+        <div class="lesson-admin">
+          <button class="primary" type="submit" data-testid="lesson-save" disabled={saving || !id}>
+            <Icon name="save" size={18} /><span>{t("lessons.save")}</span>
           </button>
+          {#if kind === "lesson" && !isNew && source === "user"}
+            <button class="ghost" type="button" data-testid="lesson-delete" onclick={remove}>
+              <Icon name="trash" size={18} /><span>{t("lessons.delete")}</span>
+            </button>
+          {/if}
+        </div>
+        {#if source === "builtin" && !isNew}
+          <p class="muted">{t("lessons.builtinNote")}</p>
         {/if}
-      </div>
-      {#if source === "builtin" && !isNew}
-        <p class="muted">{t("lessons.builtinNote")}</p>
-      {/if}
-    </form>
-  {/if}
-</section>
+      </form>
+    {/if}
+  </section>
+</Page>

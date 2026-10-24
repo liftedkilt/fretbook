@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from "./Icon.svelte";
+  import IconButton from "./ui/IconButton.svelte";
   import { setSongTags } from "../lib/api";
   import { t } from "../lib/i18n.svelte";
   import type { SongDetail } from "../lib/types";
@@ -10,9 +11,9 @@
 
   // The page keys this component by song id, so the starting values are the song's.
   // svelte-ignore state_referenced_locally
-  let tags = $state<string[]>([...song.tags]);
+  let tags = $state<string[]>([...(song.tags ?? [])]);
   // svelte-ignore state_referenced_locally
-  let favourite = $state(song.favourite);
+  let favourite = $state(Boolean(song.favourite));
   let draft = $state("");
   let error = $state("");
   let busy = $state(false);
@@ -57,17 +58,14 @@
 
 {#if !locked || tags.length}
   <div class="song-tags" data-testid="song-tags">
-    {#if !locked}<button
-        class="icon-button glass song-star"
-        class:on={favourite}
-        data-testid="song-favourite"
-        aria-pressed={favourite}
-        aria-label={favourite ? t("tags.unfavourite") : t("tags.favourite")}
-        title={favourite ? t("tags.unfavourite") : t("tags.favourite")}
+    {#if !locked}<IconButton
+        class="glass song-star {favourite ? 'on' : ''}"
+        icon={favourite ? "starFilled" : "star"}
+        label={favourite ? t("tags.unfavourite") : t("tags.favourite")}
+        testid="song-favourite"
+        pressed={favourite}
         onclick={() => void toggleStar()}
-      >
-        <Icon name={favourite ? "starFilled" : "star"} size={18} />
-      </button>{/if}
+      />{/if}
     <ul class="tag-list" aria-label={t("tags.heading")}>
       {#each tags as tag (tag)}
         <li class="tag-pill" data-testid="song-tag">

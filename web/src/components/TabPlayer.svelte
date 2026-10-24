@@ -8,6 +8,13 @@
   import FretboardPanel from "./FretboardPanel.svelte";
   import Highway from "./Highway.svelte";
   import Icon from "./Icon.svelte";
+  import SongLibraryActions from "./SongLibraryActions.svelte";
+  import SongMetadata from "./SongMetadata.svelte";
+  import SongTags from "./SongTags.svelte";
+  import Chip from "./ui/Chip.svelte";
+  import IconButton from "./ui/IconButton.svelte";
+  import PageHeader from "./ui/PageHeader.svelte";
+  import SegmentedControl from "./ui/SegmentedControl.svelte";
   import LoopPanel from "./LoopPanel.svelte";
   import Menu from "./Menu.svelte";
   import SetlistPicker from "./SetlistPicker.svelte";
@@ -1399,13 +1406,17 @@
   class:has-fretboard={practice.fretboard.on}
 >
   {#if lessonRef}<LessonRunBanner bind:this={lessonBanner} lesson={lessonRef} />{/if}
-  <header class="song-header">
-    {#if !readOnly}
-      <a class="back-link" href={hrefFor("/")} onclick={(event) => followLink(event, "/")}
-        ><Icon name="back" size={18} />{t("app.back")}</a
-      >
-    {/if}
-    <div class="song-hero">
+  <PageHeader
+    class="song-header"
+    title={song.title}
+    titleTestId="song-heading"
+    titleClass="song-heading"
+    eyebrow={instrumentLabel(track.instrument)}
+    subtitle={song.artist}
+    backHref={readOnly ? "" : "/"}
+    backLabel={readOnly ? "" : t("app.back")}
+  >
+    {#snippet leading()}
       <Cover
         id={song.id}
         title={song.title}
@@ -1413,110 +1424,93 @@
         size="lg"
         src={coverSrc(song.cover_url)}
       />
-      <div class="song-hero-text">
-        <p class="eyebrow">{instrumentLabel(track.instrument)}</p>
-        <h1 class="display song-heading" data-testid="song-heading">{song.title}</h1>
-        {#if song.artist}<p class="song-byline">{song.artist}</p>{/if}
-        <div class="pills">
-          <span class="pill">{tuningLabel(track.tuning_midi)}</span>
-          <span class="pill"
-            >{track.capo > 0 ? t("player.capo", { fret: track.capo }) : t("player.noCapo")}</span
+    {/snippet}
+    {#snippet below()}
+      <div class="pills">
+        <Chip variant="meta" label={tuningLabel(track.tuning_midi)} />
+        <Chip
+          variant="meta"
+          label={track.capo > 0 ? t("player.capo", { fret: track.capo }) : t("player.noCapo")}
+        />
+        <Chip variant="meta" label={t("library.tempo", { bpm: song.document.bpm })} />
+        <Chip variant="meta" label={t("library.measures", { count: document_.bars.length })} />
+        {#if song.source_ref.rhythm_estimated}
+          <Chip
+            variant="meta"
+            label={t("asciiTab.rhythmEstimated")}
+            testid="rhythm-estimated-pill"
+            title={t("asciiTab.rhythmEstimatedHint")}
+          />
+        {/if}
+        {#if song.has_audio}
+          <Chip variant="meta" accent icon="waveform" label={t("library.audio")} />
+        {/if}
+        {#if !readOnly}
+          <button
+            type="button"
+            class="button"
+            data-testid="song-retune"
+            onclick={() => (retuneOpen = true)}
           >
-          <span class="pill">{t("library.tempo", { bpm: song.document.bpm })}</span>
-          <span class="pill">{t("library.measures", { count: document_.bars.length })}</span>
-          {#if song.source_ref.rhythm_estimated}<span
-              class="pill"
-              data-testid="rhythm-estimated-pill"
-              title={t("asciiTab.rhythmEstimatedHint")}>{t("asciiTab.rhythmEstimated")}</span
-            >{/if}
-          {#if song.has_audio}<span class="pill pill-accent"
-              ><Icon name="waveform" size={14} />{t("library.audio")}</span
-            >{/if}
-          {#if !readOnly}
-            <button
-              type="button"
-              class="pill pill-button"
-              data-testid="song-retune"
-              onclick={() => (retuneOpen = true)}
-            >
-              <Icon name="sliders" size={14} />{t("retune.open")}
-            </button>
-          {/if}
-        </div>
-        {#if practice.loops.length > 0}
-          <div
-            class="song-saved-loops"
-            data-testid="song-saved-loops"
-            aria-label={t("speedTrainer.savedLoops")}
-          >
-            <span class="saved-loops-label"
-              ><Icon name="repeat" size={14} />{t("speedTrainer.savedLoops")}:</span
-            >
-            <div class="saved-loops-pills">
-              {#each practice.loops as loop (loop.id)}
-                <button
-                  type="button"
-                  class="pill pill-button"
-                  class:pill-accent={loopA === loop.a && loopB === loop.b}
-                  data-testid={`song-page-loop-${loop.id}`}
-                  onclick={() => activateLoop(loop)}
-                  title={t("speedTrainer.jumpToLoop", {
-                    name: loop.name,
-                    a: loop.a + 1,
-                    b: loop.b + 1,
-                  })}
-                >
-                  <span class="loop-name">{loop.name}</span>
-                  <span class="loop-range"
-                    >{t("player.loopRange", { a: loop.a + 1, b: loop.b + 1 })}</span
-                  >
-                  {#if loop.highestSpeed != null}
-                    <span class="loop-speed" data-testid={`song-page-loop-speed-${loop.id}`}>
-                      {formatSpeedPercent(loop.highestSpeed)}
-                    </span>
-                  {/if}
-                </button>
-              {/each}
-            </div>
-          </div>
+            <Icon name="sliders" size={16} />{t("retune.open")}
+          </button>
         {/if}
       </div>
+      {#if practice.loops.length > 0}
+        <div
+          class="song-saved-loops"
+          data-testid="song-saved-loops"
+          aria-label={t("speedTrainer.savedLoops")}
+        >
+          <span class="saved-loops-label"
+            ><Icon name="repeat" size={14} />{t("speedTrainer.savedLoops")}:</span
+          >
+          <div class="saved-loops-pills">
+            {#each practice.loops as loop (loop.id)}
+              <button
+                type="button"
+                class="pill pill-button"
+                class:pill-accent={loopA === loop.a && loopB === loop.b}
+                data-testid={`song-page-loop-${loop.id}`}
+                onclick={() => activateLoop(loop)}
+                title={t("speedTrainer.jumpToLoop", {
+                  name: loop.name,
+                  a: loop.a + 1,
+                  b: loop.b + 1,
+                })}
+              >
+                <span class="loop-name">{loop.name}</span>
+                <span class="loop-range"
+                  >{t("player.loopRange", { a: loop.a + 1, b: loop.b + 1 })}</span
+                >
+                {#if loop.highestSpeed != null}
+                  <span class="loop-speed" data-testid={`song-page-loop-speed-${loop.id}`}>
+                    {formatSpeedPercent(loop.highestSpeed)}
+                  </span>
+                {/if}
+              </button>
+            {/each}
+          </div>
+        </div>
+      {/if}
+    {/snippet}
+    {#snippet actions()}
       <div class="hero-actions">
         {#if !readOnly}
           <OfflineToggle kind="song" id={song.id} title={song.title} compact />
         {/if}
         <FullscreenToggle placement="header" />
-        <div
-          class="segmented"
-          role="group"
-          aria-label={t("highway.view")}
-          data-testid="player-view-switcher"
-        >
-          <button
-            type="button"
-            data-testid="player-view-tab"
-            aria-pressed={ui.playerView === "tab"}
-            onclick={() => setPlayerView("tab")}
-          >
-            {t("highway.tab")}
-          </button>
-          <button
-            type="button"
-            data-testid="player-view-highway"
-            aria-pressed={ui.playerView === "highway"}
-            onclick={() => setPlayerView("highway")}
-          >
-            {t("highway.highway")}
-          </button>
-          <button
-            type="button"
-            data-testid="player-view-split"
-            aria-pressed={ui.playerView === "split"}
-            onclick={() => setPlayerView("split")}
-          >
-            {t("highway.split")}
-          </button>
-        </div>
+        <SegmentedControl
+          label={t("highway.view")}
+          value={ui.playerView}
+          testid="player-view-switcher"
+          onchange={(next) => setPlayerView(next as typeof ui.playerView)}
+          options={[
+            { value: "tab", label: t("highway.tab"), testid: "player-view-tab" },
+            { value: "highway", label: t("highway.highway"), testid: "player-view-highway" },
+            { value: "split", label: t("highway.split"), testid: "player-view-split" },
+          ]}
+        />
         {#if !ui.demoMode && !readOnly}
           <a
             class="button"
@@ -1531,7 +1525,7 @@
           data-testid="song-tuner"
           onclick={() => openTuner({ tuning: track.tuning_midi, capo: track.capo })}
         >
-          <Icon name="tuner" size={18} /><span>{t("tuner.open")}</span>
+          <Icon name="tuningFork" size={18} /><span>{t("tuner.open")}</span>
         </button>
         {#if !readOnly}
           <Menu label={t("player.export")} icon="download" testid="export-menu">
@@ -1546,7 +1540,7 @@
                     pickerOpen = true;
                   }}
                 >
-                  <Icon name="list" size={18} />
+                  <Icon name="listMusic" size={18} />
                   {t("setlists.addToSetlist")}
                 </button>
               {/if}
@@ -1592,9 +1586,26 @@
           </Menu>
         {/if}
       </div>
-    </div>
-    {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
-  </header>
+    {/snippet}
+  </PageHeader>
+  <SongTags {song} {readOnly} />
+  {#if !readOnly}<SongLibraryActions songId={song.id} />{/if}
+  <SongMetadata
+    {song}
+    {readOnly}
+    onchange={(saved) => {
+      Object.assign(song, {
+        key: saved.key,
+        key_detected: saved.key_detected,
+        genre: saved.genre,
+        album: saved.album,
+        year: saved.year,
+        notes: saved.notes,
+        cover_url: saved.cover_url,
+      });
+    }}
+  />
+  {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
 
   {#if song.has_audio}
     <audio data-testid="player-audio" bind:this={audioEl} src={audioSrc} preload="auto"></audio>
@@ -1819,7 +1830,7 @@
         data-total={waitSteps.length}
         role="status"
       >
-        <Icon name="mic" size={16} />
+        <Icon name="hourglass" size={16} />
         <span class="wait-note">
           {#if waitState === "waiting" && waitStep}
             {#if waitStep.kind === "dead"}
@@ -1856,15 +1867,14 @@
     {/if}
     <div class="dock-bar">
       <div class="dock-transport">
-        <button
-          class="icon-button ghost"
-          data-testid="player-prev"
+        <IconButton
+          class="ghost"
+          icon="prev"
+          label={t("player.previousBar")}
+          testid="player-prev"
+          placement="above"
           onclick={() => step(-1)}
-          aria-label={t("player.previousBar")}
-          title={t("player.previousBar")}
-        >
-          <Icon name="prev" size={18} />
-        </button>
+        />
         <button
           class="play-button"
           data-testid="player-play"
@@ -1875,15 +1885,14 @@
         >
           <Icon name={playing ? "pause" : "play"} size={24} />
         </button>
-        <button
-          class="icon-button ghost"
-          data-testid="player-next"
+        <IconButton
+          class="ghost"
+          icon="next"
+          label={t("player.nextBar")}
+          testid="player-next"
+          placement="above"
           onclick={() => step(1)}
-          aria-label={t("player.nextBar")}
-          title={t("player.nextBar")}
-        >
-          <Icon name="next" size={18} />
-        </button>
+        />
       </div>
 
       <div class="dock-progress">
@@ -1939,65 +1948,59 @@
             {/each}
           </select>
         </label>
-        <button
-          class="icon-button ghost dock-more"
-          data-testid="player-more"
-          aria-expanded={moreOpen}
+        <IconButton
+          class="ghost dock-more"
+          icon="more"
+          label={t("player.more")}
+          testid="player-more"
+          placement="above"
+          expanded={moreOpen}
           onclick={() => (moreOpen = !moreOpen)}
-          aria-label={t("player.more")}
-          title={t("player.more")}
-        >
-          <Icon name="more" size={18} />
-        </button>
+        />
         <div class="dock-secondary" data-open={moreOpen || undefined}>
-          <button
-            class="icon-button ghost"
-            aria-pressed={ui.notation}
+          <IconButton
+            class="ghost"
+            icon="chords"
+            label={t("player.notation")}
+            placement="above"
+            pressed={ui.notation}
             onclick={toggleNotation}
-            aria-label={t("player.notation")}
-            title={t("player.notation")}
-          >
-            <Icon name="chords" size={18} />
-          </button>
-          <button
-            class="icon-button ghost"
-            aria-pressed={follow}
+          />
+          <IconButton
+            class="ghost"
+            placement="above"
+            icon="crosshair"
+            label={t("player.follow")}
+            pressed={follow}
             onclick={() => setFollow(!follow)}
-            aria-label={t("player.follow")}
-            title={t("player.follow")}
-          >
-            <Icon name="follow" size={18} />
-          </button>
-          <button
-            class="icon-button ghost"
-            data-testid="stage-toggle"
-            aria-pressed={handsFree.stage}
+          />
+          <IconButton
+            class="ghost"
+            placement="above"
+            icon="monitor"
+            label={t("handsFree.stage")}
+            testid="stage-toggle"
+            pressed={handsFree.stage}
             onclick={() => setStage(!handsFree.stage)}
-            aria-label={t("handsFree.stage")}
-            title={t("handsFree.stage")}
-          >
-            <Icon name="monitor" size={18} />
-          </button>
-          <button
-            class="icon-button ghost"
-            data-testid="player-shortcuts"
+          />
+          <IconButton
+            class="ghost"
+            placement="above"
+            icon="keyboard"
+            label={t("shortcuts.title")}
+            testid="player-shortcuts"
             onclick={() => (helpOpen = true)}
-            aria-label={t("shortcuts.title")}
-            title={t("shortcuts.title")}
-          >
-            <Icon name="info" size={18} />
-          </button>
+          />
         </div>
-        <button
-          class="icon-button ghost"
-          data-testid="player-panel-toggle"
-          aria-expanded={panelOpen}
+        <IconButton
+          class="ghost"
+          placement="above"
+          icon="sliders"
+          label={t("player.syncPanel")}
+          testid="player-panel-toggle"
+          expanded={panelOpen}
           onclick={() => (panelOpen = !panelOpen)}
-          aria-label={t("player.syncPanel")}
-          title={t("player.syncPanel")}
-        >
-          <Icon name="sliders" size={18} />
-        </button>
+        />
         <FullscreenToggle placement="dock" />
       </div>
     </div>

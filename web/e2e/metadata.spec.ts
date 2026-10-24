@@ -36,7 +36,7 @@ test("set a song's details and notes, upload cover art, and filter the library b
   await expect(page.getByTestId("song-album")).toHaveText("Live at Home");
   await expect(page.getByTestId("song-notes").locator("strong")).toHaveText("slowly");
   await expect(page.getByTestId("song-notes").locator("li")).toHaveText("watch the bend");
-  await expect(page.locator(".song-hero .cover-image")).toBeVisible();
+  await expect(page.locator(".song-header .cover-image")).toBeVisible();
 
   // It is kept, and the library shows it.
   await page.reload();
@@ -61,7 +61,7 @@ test("set a song's details and notes, upload cover art, and filter the library b
   await page.getByTestId("metadata-cover-remove").click();
   await expect(page.getByTestId("metadata-cover-remove")).toBeHidden();
   await page.getByTestId("metadata-save").click();
-  await expect(page.locator(".song-hero .cover-image")).toHaveCount(0);
+  await expect(page.locator(".song-header .cover-image")).toHaveCount(0);
 });
 
 test("the key of a chord sheet comes from its {key} directive, and a chosen key wins", async ({

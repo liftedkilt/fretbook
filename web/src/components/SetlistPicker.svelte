@@ -104,7 +104,7 @@
               disabled={busy}
               onclick={() => void addTo(setlist)}
             >
-              <Icon name="list" size={18} />
+              <Icon name="listMusic" size={18} />
               <span>{setlist.name}</span>
             </button>
           </li>

@@ -2,6 +2,9 @@
   import { onDestroy, untrack } from "svelte";
   import Fretboard from "./Fretboard.svelte";
   import Icon from "./Icon.svelte";
+  import Page from "./ui/Page.svelte";
+  import PageHeader from "./ui/PageHeader.svelte";
+  import SegmentedControl from "./ui/SegmentedControl.svelte";
   import ListenPanel from "./ListenPanel.svelte";
   import { recordPracticeExercise } from "../lib/api";
   import { getSavedChannel, getSavedDevice } from "../lib/listen/devicePrefs";
@@ -9,7 +12,6 @@
   import type { ChromaEvent, PitchEvent } from "../lib/listen";
   import { t } from "../lib/i18n.svelte";
   import { localDay } from "../lib/practiceLog";
-  import { followLink, hrefFor } from "../lib/router.svelte";
   import { INSTRUMENTS } from "../lib/tuner";
   import { playChord, playMelodic } from "../lib/trainer/audio";
   import { ChordAnswerMatcher } from "../lib/trainer/chordPlay";
@@ -364,250 +366,249 @@
   void CHORD_QUALITIES;
 </script>
 
-<div class="tool-view trainer" data-testid="trainer-view">
-  <header class="tool-header">
-    <a
-      class="button ghost tool-back"
-      data-testid="tool-back"
-      href={hrefFor("/tools")}
-      onclick={(event) => followLink(event, "/tools")}
-    >
-      <Icon name="back" size={18} /><span>{t("tools.heading")}</span>
-    </a>
-    <h1 class="display">{t("trainer.title")}</h1>
-  </header>
+<Page width="page">
+  <div class="tool-view trainer" data-testid="trainer-view">
+    <PageHeader
+      title={t("trainer.title")}
+      titleSize="title"
+      eyebrow={t("tools.nav")}
+      backHref="/tools"
+      backLabel={t("tools.heading")}
+      backTestId="tool-back"
+    />
 
-  <div class="segmented" role="tablist" aria-label={t("trainer.games")}>
-    {#each KINDS as option (option)}
-      <button
-        type="button"
-        role="tab"
-        data-testid={`trainer-tab-${option}`}
-        aria-selected={kind === option}
-        disabled={phase === "running"}
-        onclick={() => selectKind(option)}>{t(KIND_NAMES[option].labelKey)}</button
-      >
-    {/each}
-  </div>
+    <SegmentedControl
+      label={t("trainer.games")}
+      role="tablist"
+      value={kind}
+      onchange={(next) => selectKind(next as (typeof KINDS)[number])}
+      options={KINDS.map((option) => ({
+        value: option,
+        label: t(KIND_NAMES[option].labelKey),
+        testid: `trainer-tab-${option}`,
+        disabled: phase === "running",
+      }))}
+    />
 
-  {#if phase !== "running"}
-    <p class="muted">{t(KIND_ABOUT[kind].labelKey)}</p>
-    <div class="standalone-pickers" data-testid="trainer-setup">
-      {#if kind === "fretboard"}
+    {#if phase !== "running"}
+      <p class="muted">{t(KIND_ABOUT[kind].labelKey)}</p>
+      <div class="standalone-pickers" data-testid="trainer-setup">
+        {#if kind === "fretboard"}
+          <label class="tool-field">
+            <span>{t("tools.tuning")}</span>
+            <select data-testid="trainer-tuning" bind:value={tuningChoice}>
+              {#each tuningOptions as option (option.value)}
+                <option value={option.value}>{option.label}</option>
+              {/each}
+            </select>
+          </label>
+          <label class="tool-field">
+            <span>{t("trainer.noteNames")}</span>
+            <select data-testid="trainer-accidentals" bind:value={accidentals}>
+              <option value="sharps">{t("trainer.sharps")}</option>
+              <option value="flats">{t("trainer.flats")}</option>
+            </select>
+          </label>
+        {:else}
+          <label class="tool-field">
+            <span>{t("trainer.level")}</span>
+            <select data-testid="trainer-level" bind:value={level}>
+              <option value="easy">{t("trainer.levelEasy")}</option>
+              <option value="all">{t("trainer.levelAll")}</option>
+            </select>
+          </label>
+        {/if}
+        {#if kind === "interval"}
+          <label class="tool-field">
+            <span>{t("trainer.direction")}</span>
+            <select data-testid="trainer-direction" bind:value={direction}>
+              <option value="up">{t("trainer.up")}</option>
+              <option value="down">{t("trainer.down")}</option>
+              <option value="both">{t("trainer.both")}</option>
+            </select>
+          </label>
+        {/if}
         <label class="tool-field">
-          <span>{t("tools.tuning")}</span>
-          <select data-testid="trainer-tuning" bind:value={tuningChoice}>
-            {#each tuningOptions as option (option.value)}
-              <option value={option.value}>{option.label}</option>
+          <span>{t("trainer.time")}</span>
+          <select data-testid="trainer-time" bind:value={timeLimit}>
+            {#each TIME_LIMITS as seconds (seconds)}
+              <option value={seconds}
+                >{seconds ? t("trainer.seconds", { seconds }) : t("trainer.untimed")}</option
+              >
             {/each}
           </select>
         </label>
         <label class="tool-field">
-          <span>{t("trainer.noteNames")}</span>
-          <select data-testid="trainer-accidentals" bind:value={accidentals}>
-            <option value="sharps">{t("trainer.sharps")}</option>
-            <option value="flats">{t("trainer.flats")}</option>
-          </select>
-        </label>
-      {:else}
-        <label class="tool-field">
-          <span>{t("trainer.level")}</span>
-          <select data-testid="trainer-level" bind:value={level}>
-            <option value="easy">{t("trainer.levelEasy")}</option>
-            <option value="all">{t("trainer.levelAll")}</option>
-          </select>
-        </label>
-      {/if}
-      {#if kind === "interval"}
-        <label class="tool-field">
-          <span>{t("trainer.direction")}</span>
-          <select data-testid="trainer-direction" bind:value={direction}>
-            <option value="up">{t("trainer.up")}</option>
-            <option value="down">{t("trainer.down")}</option>
-            <option value="both">{t("trainer.both")}</option>
-          </select>
-        </label>
-      {/if}
-      <label class="tool-field">
-        <span>{t("trainer.time")}</span>
-        <select data-testid="trainer-time" bind:value={timeLimit}>
-          {#each TIME_LIMITS as seconds (seconds)}
-            <option value={seconds}
-              >{seconds ? t("trainer.seconds", { seconds }) : t("trainer.untimed")}</option
+          <span>{t("trainer.answerBy")}</span>
+          <select data-testid="trainer-answer-by" bind:value={answerBy}>
+            <option value="buttons"
+              >{kind === "fretboard" ? t("trainer.byTap") : t("trainer.byButtons")}</option
             >
-          {/each}
-        </select>
-      </label>
-      <label class="tool-field">
-        <span>{t("trainer.answerBy")}</span>
-        <select data-testid="trainer-answer-by" bind:value={answerBy}>
-          <option value="buttons"
-            >{kind === "fretboard" ? t("trainer.byTap") : t("trainer.byButtons")}</option
+            <option value="play">{t("trainer.byPlaying")}</option>
+          </select>
+        </label>
+      </div>
+      {#if problem}<p class="error" role="alert" data-testid="trainer-problem">{problem}</p>{/if}
+      {#if usesMic}<p class="muted small">{t("trainer.micHint")}</p>{/if}
+      {#if best !== undefined}
+        <p class="muted" data-testid="trainer-best">
+          {t("trainer.best", { score: Math.round(best) })}
+        </p>
+      {/if}
+      <button class="button" data-testid="trainer-start" onclick={start}>
+        <Icon name="play" size={18} />{t("trainer.start")}
+      </button>
+    {/if}
+
+    {#if usesMic && phase !== "done"}
+      <ListenPanel
+        session={micSession}
+        deviceId={micDevice}
+        channel={micChannel}
+        level={micLevel}
+        onDevice={(next) => (micDevice = next)}
+        onChannel={(next) => (micChannel = next)}
+      />
+    {/if}
+
+    {#if phase === "running"}
+      <div class="hud" data-testid="trainer-hud">
+        <span data-testid="trainer-score"
+          >{t("trainer.scoreLine", { correct: right, rounds: answered })}</span
+        >
+        <span data-testid="trainer-streak">{t("trainer.streak", { count: streak })}</span>
+        {#if remaining !== null}
+          <span data-testid="trainer-remaining"
+            >{t("trainer.left", { seconds: Math.ceil(remaining) })}</span
           >
-          <option value="play">{t("trainer.byPlaying")}</option>
-        </select>
-      </label>
-    </div>
-    {#if problem}<p class="error" role="alert" data-testid="trainer-problem">{problem}</p>{/if}
-    {#if usesMic}<p class="muted small">{t("trainer.micHint")}</p>{/if}
-    {#if best !== undefined}
-      <p class="muted" data-testid="trainer-best">
-        {t("trainer.best", { score: Math.round(best) })}
+        {/if}
+        <button class="button ghost" data-testid="trainer-stop" onclick={() => void finish()}>
+          {t("trainer.stop")}
+        </button>
+      </div>
+
+      {#if kind === "fretboard" && fretQuestion}
+        <div class="prompt" data-testid="trainer-prompt" aria-live="polite">
+          <strong class="note" data-testid="trainer-note"
+            >{noteName(fretQuestion.pitchClass, accidentals)}</strong
+          >
+          <span
+            >{t("trainer.onString", {
+              string: fretQuestion.string + 1,
+              name: noteName(tuning[fretQuestion.string], accidentals),
+            })}</span
+          >
+        </div>
+        <Fretboard
+          {tuning}
+          frets={FRETS}
+          current={lit}
+          label="names"
+          onselect={usesMic ? undefined : onTap}
+        />
+      {:else}
+        <div class="prompt" data-testid="trainer-prompt" aria-live="polite">
+          <button
+            class="button secondary"
+            data-testid="trainer-replay"
+            disabled={playing}
+            onclick={() => void playQuestion()}
+          >
+            <Icon name="play" size={18} />{t("trainer.listen")}
+          </button>
+          <span class="muted"
+            >{usesMic
+              ? kind === "chord"
+                ? t("trainer.playTheChord")
+                : t("trainer.playTheSecond")
+              : t("trainer.whichOne")}</span
+          >
+        </div>
+        {#if !usesMic}
+          <div class="choices" data-testid="trainer-choices">
+            {#each choices as choice (choice.id)}
+              <button
+                class="button secondary"
+                data-testid={`trainer-choice-${choice.id}`}
+                disabled={locked}
+                onclick={() => onChoice(choice.id)}>{choice.label}</button
+              >
+            {/each}
+          </div>
+        {/if}
+        {#if feedback === "wrong"}
+          <p class="reveal" data-testid="trainer-reveal">
+            {t("trainer.itWas", {
+              answer:
+                kind === "interval" && intervalQuestion
+                  ? t(intervalQuestion.interval.labelKey)
+                  : chordQuestion
+                    ? usesMic
+                      ? `${noteName(chordQuestion.root % 12, accidentals)} ${t(chordQuestion.quality.labelKey)}`
+                      : t(chordQuestion.quality.labelKey)
+                    : "",
+            })}
+          </p>
+        {/if}
+      {/if}
+      <p class="feedback {feedback}" data-testid="trainer-feedback" aria-live="assertive">
+        {feedback === "right" ? t("trainer.right") : feedback === "wrong" ? t("trainer.wrong") : ""}
       </p>
     {/if}
-    <button class="button" data-testid="trainer-start" onclick={start}>
-      <Icon name="play" size={18} />{t("trainer.start")}
-    </button>
-  {/if}
 
-  {#if usesMic && phase !== "done"}
-    <ListenPanel
-      session={micSession}
-      deviceId={micDevice}
-      channel={micChannel}
-      level={micLevel}
-      onDevice={(next) => (micDevice = next)}
-      onChannel={(next) => (micChannel = next)}
-    />
-  {/if}
-
-  {#if phase === "running"}
-    <div class="hud" data-testid="trainer-hud">
-      <span data-testid="trainer-score"
-        >{t("trainer.scoreLine", { correct: right, rounds: answered })}</span
-      >
-      <span data-testid="trainer-streak">{t("trainer.streak", { count: streak })}</span>
-      {#if remaining !== null}
-        <span data-testid="trainer-remaining"
-          >{t("trainer.left", { seconds: Math.ceil(remaining) })}</span
-        >
-      {/if}
-      <button class="button ghost" data-testid="trainer-stop" onclick={() => void finish()}>
-        {t("trainer.stop")}
-      </button>
-    </div>
-
-    {#if kind === "fretboard" && fretQuestion}
-      <div class="prompt" data-testid="trainer-prompt" aria-live="polite">
-        <strong class="note" data-testid="trainer-note"
-          >{noteName(fretQuestion.pitchClass, accidentals)}</strong
-        >
-        <span
-          >{t("trainer.onString", {
-            string: fretQuestion.string + 1,
-            name: noteName(tuning[fretQuestion.string], accidentals),
-          })}</span
+    {#if phase === "done" && finished}
+      <div class="card results" data-testid="trainer-results">
+        <h2>{t("trainer.results")}</h2>
+        {#if finished.summary.rounds === 0}
+          <p class="muted">{t("trainer.noRounds")}</p>
+        {:else}
+          <p class="big" data-testid="trainer-final-score">
+            {Math.round(finished.summary.score ?? 0)}%
+          </p>
+          <p>
+            {t("trainer.scoreLine", {
+              correct: finished.summary.correct,
+              rounds: finished.summary.rounds,
+            })}
+            · {t("trainer.bestStreak", { count: finished.summary.bestStreak })}
+            {#if finished.summary.meanMs !== null}
+              · {t("trainer.meanTime", { seconds: (finished.summary.meanMs / 1000).toFixed(1) })}
+            {/if}
+          </p>
+          {#if isBest}<p class="best" data-testid="trainer-new-best">{t("trainer.newBest")}</p>{/if}
+          <p class="muted small">{t("trainer.logged")}</p>
+        {/if}
+        <button class="button" data-testid="trainer-again" onclick={again}
+          >{t("trainer.again")}</button
         >
       </div>
-      <Fretboard
-        {tuning}
-        frets={FRETS}
-        current={lit}
-        label="names"
-        onselect={usesMic ? undefined : onTap}
-      />
-    {:else}
-      <div class="prompt" data-testid="trainer-prompt" aria-live="polite">
-        <button
-          class="button secondary"
-          data-testid="trainer-replay"
-          disabled={playing}
-          onclick={() => void playQuestion()}
-        >
-          <Icon name="play" size={18} />{t("trainer.listen")}
-        </button>
-        <span class="muted"
-          >{usesMic
-            ? kind === "chord"
-              ? t("trainer.playTheChord")
-              : t("trainer.playTheSecond")
-            : t("trainer.whichOne")}</span
-        >
-      </div>
-      {#if !usesMic}
-        <div class="choices" data-testid="trainer-choices">
-          {#each choices as choice (choice.id)}
-            <button
-              class="button secondary"
-              data-testid={`trainer-choice-${choice.id}`}
-              disabled={locked}
-              onclick={() => onChoice(choice.id)}>{choice.label}</button
-            >
-          {/each}
-        </div>
-      {/if}
-      {#if feedback === "wrong"}
-        <p class="reveal" data-testid="trainer-reveal">
-          {t("trainer.itWas", {
-            answer:
-              kind === "interval" && intervalQuestion
-                ? t(intervalQuestion.interval.labelKey)
-                : chordQuestion
-                  ? usesMic
-                    ? `${noteName(chordQuestion.root % 12, accidentals)} ${t(chordQuestion.quality.labelKey)}`
-                    : t(chordQuestion.quality.labelKey)
-                  : "",
-          })}
-        </p>
-      {/if}
     {/if}
-    <p class="feedback {feedback}" data-testid="trainer-feedback" aria-live="assertive">
-      {feedback === "right" ? t("trainer.right") : feedback === "wrong" ? t("trainer.wrong") : ""}
-    </p>
-  {/if}
 
-  {#if phase === "done" && finished}
-    <div class="card results" data-testid="trainer-results">
-      <h2>{t("trainer.results")}</h2>
-      {#if finished.summary.rounds === 0}
-        <p class="muted">{t("trainer.noRounds")}</p>
-      {:else}
-        <p class="big" data-testid="trainer-final-score">
-          {Math.round(finished.summary.score ?? 0)}%
-        </p>
-        <p>
-          {t("trainer.scoreLine", {
-            correct: finished.summary.correct,
-            rounds: finished.summary.rounds,
-          })}
-          · {t("trainer.bestStreak", { count: finished.summary.bestStreak })}
-          {#if finished.summary.meanMs !== null}
-            · {t("trainer.meanTime", { seconds: (finished.summary.meanMs / 1000).toFixed(1) })}
-          {/if}
-        </p>
-        {#if isBest}<p class="best" data-testid="trainer-new-best">{t("trainer.newBest")}</p>{/if}
-        <p class="muted small">{t("trainer.logged")}</p>
-      {/if}
-      <button class="button" data-testid="trainer-again" onclick={again}
-        >{t("trainer.again")}</button
-      >
-    </div>
-  {/if}
-
-  {#if kind === "fretboard" && phase !== "running"}
-    <div class="card" data-testid="trainer-strings">
-      <h2>{t("trainer.perString")}</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>{t("trainer.string")}</th>
-            <th>{t("trainer.accuracy")}</th>
-            <th>{t("trainer.speed")}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each stringRows as row (row.string)}
-            <tr data-testid={`trainer-string-${row.string}`}>
-              <td>{row.string + 1} ({row.name})</td>
-              <td>{row.accuracy === null ? "–" : `${Math.round(row.accuracy * 100)}%`}</td>
-              <td>{row.mean === null ? "–" : `${(row.mean / 1000).toFixed(1)} s`}</td>
+    {#if kind === "fretboard" && phase !== "running"}
+      <div class="card" data-testid="trainer-strings">
+        <h2>{t("trainer.perString")}</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>{t("trainer.string")}</th>
+              <th>{t("trainer.accuracy")}</th>
+              <th>{t("trainer.speed")}</th>
             </tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
-  {/if}
-</div>
+          </thead>
+          <tbody>
+            {#each stringRows as row (row.string)}
+              <tr data-testid={`trainer-string-${row.string}`}>
+                <td>{row.string + 1} ({row.name})</td>
+                <td>{row.accuracy === null ? "–" : `${Math.round(row.accuracy * 100)}%`}</td>
+                <td>{row.mean === null ? "–" : `${(row.mean / 1000).toFixed(1)} s`}</td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+    {/if}
+  </div>
+</Page>
 
 <style>
   .trainer {

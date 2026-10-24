@@ -312,7 +312,7 @@
 
       <section class="setting setting-stacked" data-testid="wizard-intro-section">
         <div class="setting-label">
-          <span class="setting-icon"><Icon name="gauge" /></span>
+          <span class="setting-icon"><Icon name="sliders" /></span>
           <div>
             <strong>{t("calibration.wizardHeading")}</strong>
             <p class="muted">{t("calibration.wizardIntro")}</p>

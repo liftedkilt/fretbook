@@ -3,6 +3,9 @@
   import AdminStorage from "./AdminStorage.svelte";
   import AdminSystem from "./AdminSystem.svelte";
   import Icon from "./Icon.svelte";
+  import Page from "./ui/Page.svelte";
+  import PageHeader from "./ui/PageHeader.svelte";
+  import SegmentedControl from "./ui/SegmentedControl.svelte";
   import { ApiError, adoptLocal, listUsers, revokeUserTokens, signOutUser } from "../lib/api";
   import { t } from "../lib/i18n.svelte";
   import { refreshSongs } from "../lib/ui.svelte";
@@ -81,91 +84,93 @@
   }
 </script>
 
-<div class="admin-page">
-  <header>
-    <h1 class="display">{t("adminDashboard.heading")}</h1>
-    {#if tab === "users"}<p class="muted">{t("admin.hint")}</p>{/if}
-  </header>
+<Page width="page">
+  <div class="admin-page">
+    <PageHeader
+      title={t("adminDashboard.heading")}
+      titleSize="title"
+      subtitle={tab === "users" ? t("admin.hint") : ""}
+    />
 
-  <div class="segmented" role="tablist" aria-label={t("adminDashboard.tabs.label")}>
-    {#each ["users", "storage", "jobs", "system"] as name (name)}
-      <button
-        role="tab"
-        aria-selected={tab === name}
-        data-testid={`admin-tab-${name}`}
-        onclick={() => (tab = name)}
-      >
-        {tabLabels[name]}
-      </button>
-    {/each}
-  </div>
+    <SegmentedControl
+      label={t("adminDashboard.tabs.label")}
+      role="tablist"
+      value={tab}
+      onchange={(next) => (tab = next)}
+      options={["users", "storage", "jobs", "system"].map((name) => ({
+        value: name,
+        label: tabLabels[name],
+        testid: `admin-tab-${name}`,
+      }))}
+    />
 
-  {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
-  {#if notice}<p class="muted" role="status">{notice}</p>{/if}
+    {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
+    {#if notice}<p class="muted" role="status">{notice}</p>{/if}
 
-  {#if tab === "storage"}
-    <AdminStorage />
-  {:else if tab === "jobs"}
-    <AdminJobs />
-  {:else if tab === "system"}
-    <AdminSystem />
-  {:else}
-    <section class="card">
-      <div class="table-scroll">
-        <table class="user-table">
-          <thead>
-            <tr>
-              <th>{t("admin.name")}</th>
-              <th>{t("admin.email")}</th>
-              <th>{t("admin.role")}</th>
-              <th>{t("admin.songs")}</th>
-              <th>{t("admin.lastLogin")}</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {#each people as user (user.id)}
-              <tr>
-                <td>{user.display_name}</td>
-                <td class="muted">{user.email}</td>
-                <td>
-                  <span class="pill" class:pill-accent={user.role === "admin"}>
-                    {user.role === "admin" ? t("admin.roleAdmin") : t("admin.roleUser")}
-                  </span>
-                </td>
-                <td>{user.song_count}</td>
-                <td>
-                  {when(user.last_login_at)}
-                  <div class="muted">{t("admin.sessions", { count: user.session_count })}</div>
-                  <div class="muted">{t("admin.tokens", { count: user.token_count })}</div>
-                </td>
-                <td>
-                  {#if user.session_count > 0 && user.id !== self}
-                    <button class="ghost" onclick={() => void endSessions(user)}>
-                      <Icon name="logout" size={16} />{t("admin.signOut")}
-                    </button>
-                  {/if}
-                  {#if user.token_count > 0}
-                    <button class="ghost" onclick={() => void revokeTokens(user)}>
-                      <Icon name="trash" size={16} />{t("admin.revokeTokens")}
-                    </button>
-                  {/if}
-                </td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    {#if localSongs > 0}
+    {#if tab === "storage"}
+      <AdminStorage />
+    {:else if tab === "jobs"}
+      <AdminJobs />
+    {:else if tab === "system"}
+      <AdminSystem />
+    {:else}
       <section class="card">
-        <h2 class="card-title">{t("admin.adoptHeading")}</h2>
-        <p class="muted">{t("admin.adoptHint", { count: localSongs })}</p>
-        <div class="button-row">
-          <button class="primary" onclick={() => void adopt()}>{t("admin.adopt")}</button>
+        <div class="table-scroll">
+          <table class="user-table">
+            <thead>
+              <tr>
+                <th>{t("admin.name")}</th>
+                <th>{t("admin.email")}</th>
+                <th>{t("admin.role")}</th>
+                <th>{t("admin.songs")}</th>
+                <th>{t("admin.lastLogin")}</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {#each people as user (user.id)}
+                <tr>
+                  <td>{user.display_name}</td>
+                  <td class="muted">{user.email}</td>
+                  <td>
+                    <span class="pill" class:pill-accent={user.role === "admin"}>
+                      {user.role === "admin" ? t("admin.roleAdmin") : t("admin.roleUser")}
+                    </span>
+                  </td>
+                  <td>{user.song_count}</td>
+                  <td>
+                    {when(user.last_login_at)}
+                    <div class="muted">{t("admin.sessions", { count: user.session_count })}</div>
+                    <div class="muted">{t("admin.tokens", { count: user.token_count })}</div>
+                  </td>
+                  <td>
+                    {#if user.session_count > 0 && user.id !== self}
+                      <button class="ghost" onclick={() => void endSessions(user)}>
+                        <Icon name="logout" size={16} />{t("admin.signOut")}
+                      </button>
+                    {/if}
+                    {#if user.token_count > 0}
+                      <button class="ghost" onclick={() => void revokeTokens(user)}>
+                        <Icon name="trash" size={16} />{t("admin.revokeTokens")}
+                      </button>
+                    {/if}
+                  </td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
         </div>
       </section>
+
+      {#if localSongs > 0}
+        <section class="card">
+          <h2 class="card-title">{t("admin.adoptHeading")}</h2>
+          <p class="muted">{t("admin.adoptHint", { count: localSongs })}</p>
+          <div class="button-row">
+            <button class="primary" onclick={() => void adopt()}>{t("admin.adopt")}</button>
+          </div>
+        </section>
+      {/if}
     {/if}
-  {/if}
-</div>
+  </div>
+</Page>

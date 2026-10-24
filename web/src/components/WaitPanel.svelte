@@ -27,7 +27,7 @@
     <p class="muted small">{t("wait.about")}</p>
     <div class="mix-row">
       <button class="button" data-testid="wait-toggle" aria-pressed={on} onclick={ontoggle}
-        ><Icon name="mic" size={16} />{on ? t("wait.stop") : t("wait.start")}</button
+        ><Icon name="hourglass" size={16} />{on ? t("wait.stop") : t("wait.start")}</button
       >
       <label class="check">
         <input

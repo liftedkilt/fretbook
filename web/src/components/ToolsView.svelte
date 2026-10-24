@@ -1,5 +1,7 @@
 <script lang="ts">
   import Icon from "./Icon.svelte";
+  import Page from "./ui/Page.svelte";
+  import PageHeader from "./ui/PageHeader.svelte";
   import { t } from "../lib/i18n.svelte";
   import { followLink, hrefFor } from "../lib/router.svelte";
 
@@ -9,7 +11,7 @@
       titleKey: "tools.tuner",
       descKey: "tools.tunerDescription",
       openKey: "tools.openTuner",
-      icon: "tuner",
+      icon: "tuningFork",
       path: "/tools/tuner",
       testId: "tool-card-tuner",
     },
@@ -18,7 +20,7 @@
       titleKey: "tools.metronome",
       descKey: "tools.metronomeDescription",
       openKey: "tools.openMetronome",
-      icon: "gauge",
+      icon: "metronome",
       path: "/tools/metronome",
       testId: "tool-card-metronome",
     },
@@ -27,7 +29,7 @@
       titleKey: "rhythm.toolTitle",
       descKey: "rhythm.toolDescription",
       openKey: "rhythm.openTool",
-      icon: "gauge",
+      icon: "drum",
       path: "/tools/rhythm",
       testId: "tool-card-rhythm",
     },
@@ -45,7 +47,7 @@
       titleKey: "trainer.title",
       descKey: "trainer.toolDescription",
       openKey: "trainer.open",
-      icon: "guitar",
+      icon: "ear",
       path: "/tools/trainer",
       testId: "tool-card-trainer",
     },
@@ -54,7 +56,7 @@
       titleKey: "exercises.toolTitle",
       descKey: "exercises.toolDescription",
       openKey: "exercises.openTool",
-      icon: "tab",
+      icon: "dumbbell",
       path: "/tools/exercises",
       testId: "tool-card-exercises",
     },
@@ -70,34 +72,33 @@
   ];
 </script>
 
-<div class="tools-page" data-testid="tools-view">
-  <header class="tools-header">
-    <h1 class="display">{t("tools.heading")}</h1>
-    <p class="muted">{t("tools.subtitle")}</p>
-  </header>
+<Page width="page">
+  <div class="tools-page" data-testid="tools-view">
+    <PageHeader title={t("tools.heading")} subtitle={t("tools.subtitle")} />
 
-  <div class="tools-grid">
-    {#each tools as tool (tool.id)}
-      <a
-        class="tool-card"
-        data-testid={tool.testId}
-        href={hrefFor(tool.path)}
-        onclick={(event) => followLink(event, tool.path)}
-      >
-        <div class="tool-card-icon">
-          <Icon name={tool.icon} size={32} />
-        </div>
-        <div class="tool-card-body">
-          <h2 class="tool-card-title">{t(tool.titleKey)}</h2>
-          <p class="tool-card-desc">{t(tool.descKey)}</p>
-        </div>
-        <div class="tool-card-action">
-          <span class="button secondary tool-card-btn">
-            {t(tool.openKey)}
-            <Icon name="forward" size={16} />
-          </span>
-        </div>
-      </a>
-    {/each}
+    <div class="tools-grid">
+      {#each tools as tool (tool.id)}
+        <a
+          class="tool-card"
+          data-testid={tool.testId}
+          href={hrefFor(tool.path)}
+          onclick={(event) => followLink(event, tool.path)}
+        >
+          <div class="tool-card-icon">
+            <Icon name={tool.icon} size={32} />
+          </div>
+          <div class="tool-card-body">
+            <h2 class="tool-card-title">{t(tool.titleKey)}</h2>
+            <p class="tool-card-desc">{t(tool.descKey)}</p>
+          </div>
+          <div class="tool-card-action">
+            <span class="button secondary tool-card-btn">
+              {t(tool.openKey)}
+              <Icon name="forward" size={16} />
+            </span>
+          </div>
+        </a>
+      {/each}
+    </div>
   </div>
-</div>
+</Page>

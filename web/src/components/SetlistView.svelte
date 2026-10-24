@@ -3,6 +3,9 @@
 
   import Icon from "./Icon.svelte";
   import OfflineToggle from "./OfflineToggle.svelte";
+  import OverflowMenu from "./ui/OverflowMenu.svelte";
+  import Page from "./ui/Page.svelte";
+  import PageHeader from "./ui/PageHeader.svelte";
   import {
     deleteSetlist,
     getSetlist,
@@ -233,237 +236,252 @@
   }
 </script>
 
-<section class="setlist-page">
-  <a
-    class="back-link"
-    href={hrefFor("/setlists")}
-    onclick={(event) => followLink(event, "/setlists")}
-    ><Icon name="back" size={18} />{t("setlists.back")}</a
-  >
+<Page width="page">
+  <section class="setlist-page">
+    {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
 
-  {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
-
-  {#if loaded}
-    <header class="setlist-head">
-      <label class="visually-hidden" for="setlist-name">{t("setlists.rename")}</label>
-      <input
-        id="setlist-name"
-        class="setlist-name display"
-        data-testid="setlist-name"
-        bind:value={name}
-        maxlength="200"
-        onchange={() => void commitName()}
-        onkeydown={(event) => event.key === "Enter" && event.currentTarget.blur()}
+    {#if !loaded}
+      <PageHeader
+        title={t("setlists.heading")}
+        titleSize="title"
+        backHref="/setlists"
+        backLabel={t("setlists.nav")}
       />
-      <p class="muted">{t("setlists.count", { count: rows.length })}</p>
-      <div class="setlist-actions">
-        <OfflineToggle kind="setlist" {id} />
-        <a
-          class="button primary"
-          data-testid="setlist-play"
-          aria-disabled={rows.length === 0}
-          class:disabled={rows.length === 0}
-          href={hrefFor(playPath(id, 0))}
-          onclick={(event) =>
-            rows.length ? followLink(event, playPath(id, 0)) : event.preventDefault()}
-        >
-          <Icon name="play" size={18} />{t("setlists.play")}
-        </a>
-        <button
-          data-testid="setlist-export-pdf"
-          disabled={exporting || rows.length === 0}
-          onclick={() => void exportPdf()}
-        >
-          <Icon name="file" size={18} />{exporting
-            ? t("setlists.exportingPdf")
-            : t("setlists.exportPdf")}
-        </button>
-        <button data-testid="setlist-delete" onclick={() => void removeSetlist()}>
-          <Icon name="trash" size={18} />{t("setlists.delete")}
-        </button>
-      </div>
-    </header>
+    {/if}
 
-    <h2 class="section-title">{t("setlists.entries")}</h2>
-    {#if rows.length === 0}
-      <p class="muted" data-testid="setlist-entries-empty">{t("setlists.entriesEmpty")}</p>
-    {:else}
-      <p class="muted hint">{t("setlists.reorderHint")}</p>
-      <ol class="entries" data-testid="setlist-entries">
-        {#each rows as row, index (row.uid)}
-          <!-- Alt+arrows bubble up from the row\'s own buttons and fields. -->
-          <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-          <li
-            class="entry"
-            class:drag-over={dragOver === index && dragFrom !== index}
-            class:dragging={dragFrom === index}
-            data-testid="setlist-entry"
-            data-uid={row.uid}
-            draggable="true"
-            ondragstart={(event) => {
-              dragFrom = index;
-              event.dataTransfer?.setData("text/plain", String(index));
-              if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
-            }}
-            ondragover={(event) => {
-              if (dragFrom === null) return;
-              event.preventDefault();
-              dragOver = index;
-            }}
-            ondrop={(event) => onDrop(event, index)}
-            ondragend={() => {
-              dragFrom = null;
-              dragOver = null;
-            }}
-            onkeydown={(event) => onRowKey(event, index)}
+    {#if loaded}
+      <PageHeader
+        title={name}
+        titleSize="title"
+        eyebrow={t("setlists.nav")}
+        subtitle={t("setlists.count", { count: rows.length })}
+        backHref="/setlists"
+        backLabel={t("setlists.nav")}
+      >
+        {#snippet titleContent()}
+          <label class="visually-hidden" for="setlist-name">{t("setlists.rename")}</label>
+          <input
+            id="setlist-name"
+            class="setlist-name"
+            data-testid="setlist-name"
+            bind:value={name}
+            maxlength="200"
+            onchange={() => void commitName()}
+            onkeydown={(event) => event.key === "Enter" && event.currentTarget.blur()}
+          />
+        {/snippet}
+        {#snippet actions()}
+          <OfflineToggle kind="setlist" {id} />
+          <a
+            class="button primary"
+            data-testid="setlist-play"
+            aria-disabled={rows.length === 0}
+            class:disabled={rows.length === 0}
+            href={hrefFor(playPath(id, 0))}
+            onclick={(event) =>
+              rows.length ? followLink(event, playPath(id, 0)) : event.preventDefault()}
           >
-            <span
-              class="grip"
-              title={t("setlists.dragHandle", { title: row.title })}
-              aria-hidden="true"><Icon name="grip" size={18} /></span
+            <Icon name="play" size={18} />{t("setlists.play")}
+          </a>
+          <button
+            data-testid="setlist-export-pdf"
+            disabled={exporting || rows.length === 0}
+            onclick={() => void exportPdf()}
+          >
+            <Icon name="file" size={18} />{exporting
+              ? t("setlists.exportingPdf")
+              : t("setlists.exportPdf")}
+          </button>
+          <OverflowMenu
+            label={t("primitives.more")}
+            testid="setlist-overflow"
+            items={[
+              {
+                id: "delete",
+                label: t("setlists.delete"),
+                icon: "trash",
+                danger: true,
+                testid: "setlist-delete",
+                onclick: () => void removeSetlist(),
+              },
+            ]}
+          />
+        {/snippet}
+      </PageHeader>
+
+      <h2 class="section-title">{t("setlists.entries")}</h2>
+      {#if rows.length === 0}
+        <p class="muted" data-testid="setlist-entries-empty">{t("setlists.entriesEmpty")}</p>
+      {:else}
+        <p class="muted hint">{t("setlists.reorderHint")}</p>
+        <ol class="entries" data-testid="setlist-entries">
+          {#each rows as row, index (row.uid)}
+            <!-- Alt+arrows bubble up from the row\'s own buttons and fields. -->
+            <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+            <li
+              class="entry"
+              class:drag-over={dragOver === index && dragFrom !== index}
+              class:dragging={dragFrom === index}
+              data-testid="setlist-entry"
+              data-uid={row.uid}
+              draggable="true"
+              ondragstart={(event) => {
+                dragFrom = index;
+                event.dataTransfer?.setData("text/plain", String(index));
+                if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+              }}
+              ondragover={(event) => {
+                if (dragFrom === null) return;
+                event.preventDefault();
+                dragOver = index;
+              }}
+              ondrop={(event) => onDrop(event, index)}
+              ondragend={() => {
+                dragFrom = null;
+                dragOver = null;
+              }}
+              onkeydown={(event) => onRowKey(event, index)}
             >
-            <span class="position">{index + 1}</span>
-            <div class="entry-main">
-              <strong class="entry-title" data-testid="setlist-entry-title">{row.title}</strong>
-              <span class="muted entry-artist">{row.artist || "—"}</span>
-              <input
-                class="entry-note"
-                data-testid="setlist-entry-note"
-                bind:value={row.note}
-                maxlength="500"
-                placeholder={t("setlists.notePlaceholder")}
-                aria-label={t("setlists.note", { title: row.title })}
-                onchange={() => void save()}
-              />
-            </div>
-            {#if row.content_kind === "chords"}
-              <div
-                class="transpose"
-                role="group"
-                aria-label={t("setlists.transposeFor", { title: row.title })}
+              <span
+                class="grip"
+                title={t("setlists.dragHandle", { title: row.title })}
+                aria-hidden="true"><Icon name="grip" size={18} /></span
               >
+              <span class="position">{index + 1}</span>
+              <div class="entry-main">
+                <strong class="entry-title" data-testid="setlist-entry-title">{row.title}</strong>
+                <span class="muted entry-artist">{row.artist || "—"}</span>
+                <input
+                  class="entry-note"
+                  data-testid="setlist-entry-note"
+                  bind:value={row.note}
+                  maxlength="500"
+                  placeholder={t("setlists.notePlaceholder")}
+                  aria-label={t("setlists.note", { title: row.title })}
+                  onchange={() => void save()}
+                />
+              </div>
+              {#if row.content_kind === "chords"}
+                <div
+                  class="transpose"
+                  role="group"
+                  aria-label={t("setlists.transposeFor", { title: row.title })}
+                >
+                  <button
+                    class="icon-button ghost"
+                    data-testid="setlist-transpose-down"
+                    disabled={row.transpose <= -11}
+                    onclick={() => setTranspose(row, row.transpose - 1)}
+                    aria-label={t("setlists.transposeDown")}
+                    title={t("setlists.transposeDown")}><Icon name="minus" size={16} /></button
+                  >
+                  <span class="transpose-value" data-testid="setlist-transpose-value"
+                    >{transposeLabel(row.transpose)}</span
+                  >
+                  <button
+                    class="icon-button ghost"
+                    data-testid="setlist-transpose-up"
+                    disabled={row.transpose >= 11}
+                    onclick={() => setTranspose(row, row.transpose + 1)}
+                    aria-label={t("setlists.transposeUp")}
+                    title={t("setlists.transposeUp")}><Icon name="plus" size={16} /></button
+                  >
+                </div>
+              {/if}
+              <div class="entry-buttons">
                 <button
                   class="icon-button ghost"
-                  data-testid="setlist-transpose-down"
-                  disabled={row.transpose <= -11}
-                  onclick={() => setTranspose(row, row.transpose - 1)}
-                  aria-label={t("setlists.transposeDown")}
-                  title={t("setlists.transposeDown")}><Icon name="minus" size={16} /></button
-                >
-                <span class="transpose-value" data-testid="setlist-transpose-value"
-                  >{transposeLabel(row.transpose)}</span
+                  data-testid="setlist-move-up"
+                  data-move="up"
+                  disabled={index === 0}
+                  onclick={() => void moveTo(index, index - 1, "up")}
+                  aria-label={t("setlists.moveUp", { title: row.title })}
+                  title={t("setlists.moveUp", { title: row.title })}
+                  ><Icon name="chevronUp" size={18} /></button
                 >
                 <button
                   class="icon-button ghost"
-                  data-testid="setlist-transpose-up"
-                  disabled={row.transpose >= 11}
-                  onclick={() => setTranspose(row, row.transpose + 1)}
-                  aria-label={t("setlists.transposeUp")}
-                  title={t("setlists.transposeUp")}><Icon name="plus" size={16} /></button
+                  data-testid="setlist-move-down"
+                  data-move="down"
+                  disabled={index === rows.length - 1}
+                  onclick={() => void moveTo(index, index + 1, "down")}
+                  aria-label={t("setlists.moveDown", { title: row.title })}
+                  title={t("setlists.moveDown", { title: row.title })}
+                  ><Icon name="chevronDown" size={18} /></button
+                >
+                <button
+                  class="icon-button ghost"
+                  data-testid="setlist-remove"
+                  onclick={() => remove(index)}
+                  aria-label={t("setlists.remove", { title: row.title })}
+                  title={t("setlists.remove", { title: row.title })}
+                  ><Icon name="close" size={18} /></button
                 >
               </div>
-            {/if}
-            <div class="entry-buttons">
-              <button
-                class="icon-button ghost"
-                data-testid="setlist-move-up"
-                data-move="up"
-                disabled={index === 0}
-                onclick={() => void moveTo(index, index - 1, "up")}
-                aria-label={t("setlists.moveUp", { title: row.title })}
-                title={t("setlists.moveUp", { title: row.title })}
-                ><Icon name="chevronUp" size={18} /></button
-              >
-              <button
-                class="icon-button ghost"
-                data-testid="setlist-move-down"
-                data-move="down"
-                disabled={index === rows.length - 1}
-                onclick={() => void moveTo(index, index + 1, "down")}
-                aria-label={t("setlists.moveDown", { title: row.title })}
-                title={t("setlists.moveDown", { title: row.title })}
-                ><Icon name="chevronDown" size={18} /></button
-              >
-              <button
-                class="icon-button ghost"
-                data-testid="setlist-remove"
-                onclick={() => remove(index)}
-                aria-label={t("setlists.remove", { title: row.title })}
-                title={t("setlists.remove", { title: row.title })}
-                ><Icon name="close" size={18} /></button
-              >
-            </div>
-          </li>
-        {/each}
-      </ol>
-    {/if}
-    <p class="visually-hidden" role="status" aria-live="polite" data-testid="setlist-announce">
-      {announcement}
-    </p>
+            </li>
+          {/each}
+        </ol>
+      {/if}
+      <p class="visually-hidden" role="status" aria-live="polite" data-testid="setlist-announce">
+        {announcement}
+      </p>
 
-    <h2 class="section-title">{t("setlists.addHeading")}</h2>
-    <label class="search">
-      <Icon name="search" size={18} />
-      <input
-        type="search"
-        data-testid="setlist-add-search"
-        bind:value={query}
-        placeholder={t("setlists.addSearch")}
-        aria-label={t("setlists.addSearch")}
-      />
-    </label>
-    {#if searched && results.length === 0}
-      <p class="muted">{t("setlists.addEmpty")}</p>
-    {:else}
-      <ul class="results">
-        {#each results as song (song.id)}
-          <li class="result" data-testid="setlist-result">
-            <span class="result-text">
-              <strong>{song.title}</strong>
-              <span class="muted">{song.artist || "—"}</span>
-            </span>
-            <button
-              data-testid="setlist-add"
-              onclick={() => addSong(song)}
-              aria-label={t("setlists.addButton", { title: song.title })}
-            >
-              <Icon name="plus" size={16} />
-            </button>
-          </li>
-        {/each}
-      </ul>
+      <h2 class="section-title">{t("setlists.addHeading")}</h2>
+      <label class="search">
+        <Icon name="search" size={18} />
+        <input
+          type="search"
+          data-testid="setlist-add-search"
+          bind:value={query}
+          placeholder={t("setlists.addSearch")}
+          aria-label={t("setlists.addSearch")}
+        />
+      </label>
+      {#if searched && results.length === 0}
+        <p class="muted">{t("setlists.addEmpty")}</p>
+      {:else}
+        <ul class="results">
+          {#each results as song (song.id)}
+            <li class="result" data-testid="setlist-result">
+              <span class="result-text">
+                <strong>{song.title}</strong>
+                <span class="muted">{song.artist || "—"}</span>
+              </span>
+              <button
+                data-testid="setlist-add"
+                onclick={() => addSong(song)}
+                aria-label={t("setlists.addButton", { title: song.title })}
+              >
+                <Icon name="plus" size={16} />
+              </button>
+            </li>
+          {/each}
+        </ul>
+      {/if}
+    {:else if !error}
+      <p class="muted" role="status">{t("app.loading")}</p>
     {/if}
-  {:else if !error}
-    <p class="muted" role="status">{t("app.loading")}</p>
-  {/if}
-</section>
+  </section>
+</Page>
 
 <style>
-  .setlist-head {
-    margin: 0.75rem 0 1.25rem;
-  }
   .setlist-name {
     width: 100%;
-    font-size: 2rem;
+    max-width: 40rem;
+    font-family: var(--font-display);
+    font-size: var(--fs-title);
+    font-weight: 400;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
     background: transparent;
     border: 1px solid transparent;
     border-radius: var(--r-sm);
-    padding: 0.2rem 0.4rem;
-    margin-left: -0.4rem;
+    padding: var(--sp-1) var(--sp-2);
+    margin-left: calc(-1 * var(--sp-2));
   }
   .setlist-name:hover,
   .setlist-name:focus {
     border-color: var(--line-strong);
-  }
-  .setlist-actions {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    margin-top: 0.75rem;
-  }
-  .setlist-actions .disabled {
-    opacity: 0.5;
-    pointer-events: none;
   }
   .section-title {
     font-size: 1rem;

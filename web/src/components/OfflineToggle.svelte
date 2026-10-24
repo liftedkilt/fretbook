@@ -51,7 +51,7 @@
       title={saved ? t("offline.removeHint") : t("offline.makeHint")}
       onclick={() => void toggle()}
     >
-      <Icon name={saved ? "check" : "download"} size={18} />
+      <Icon name={saved ? "cloudCheck" : "cloudDownload"} size={18} />
       <span class:visually-hidden={compact}>
         {#if busy}{t("offline.working")}{:else if saved}{t("offline.saved")}{:else}{t(
             "offline.make",

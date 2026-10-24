@@ -129,7 +129,9 @@
     <p class="muted small">{t("chordWait.about")}</p>
     <div class="mix-row">
       <button class="button" data-testid="chord-wait-toggle" aria-pressed={on} onclick={toggle}
-        ><Icon name="mic" size={16} />{on ? t("chordWait.stop") : t("chordWait.start")}</button
+        ><Icon name="hourglass" size={16} />{on
+          ? t("chordWait.stop")
+          : t("chordWait.start")}</button
       >
     </div>
     <ListenPanel
@@ -152,7 +154,7 @@
         data-total={built.steps.length}
         role="status"
       >
-        <Icon name="mic" size={16} />
+        <Icon name="hourglass" size={16} />
         <span class="wait-note">
           {#if phase === "waiting"}
             {t("chordWait.playNow", { chord })}

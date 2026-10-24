@@ -26,7 +26,7 @@
   <p class="muted small">{t("scored.about")}</p>
   <div class="mix-row">
     <button class="button" data-testid="score-toggle" aria-pressed={on} onclick={ontoggle}
-      ><Icon name="mic" size={16} />{on ? t("scored.stop") : t("scored.start")}</button
+      ><Icon name="star" size={16} />{on ? t("scored.stop") : t("scored.start")}</button
     >
   </div>
   {#if on && summary}

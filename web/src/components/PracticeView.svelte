@@ -1,6 +1,8 @@
 <script lang="ts">
   import Icon from "./Icon.svelte";
   import Recommendations from "./Recommendations.svelte";
+  import Page from "./ui/Page.svelte";
+  import PageHeader from "./ui/PageHeader.svelte";
   import { getPracticeStats, savePracticeGoal } from "../lib/api";
   import { t } from "../lib/i18n.svelte";
   import {
@@ -121,229 +123,224 @@
   }
 </script>
 
-<section class="practice-page" data-testid="practice-view">
-  <header class="page-hero">
-    <div>
-      <p class="eyebrow">{t("library.heading")}</p>
-      <h1 class="display hero-title">{t("practiceLog.heading")}</h1>
-    </div>
-  </header>
+<Page width="page">
+  <section class="practice-page" data-testid="practice-view">
+    <PageHeader title={t("practiceLog.heading")} eyebrow={t("practiceLog.nav")} />
 
-  {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
+    {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
 
-  {#if !stats}
-    {#if !error}<p class="muted" role="status">{t("app.loading")}</p>{/if}
-  {:else}
-    <div class="top">
-      <div class="card ring-card" data-testid="practice-goal-card">
-        <div class="ring" data-testid="practice-ring" data-progress={progress.toFixed(2)}>
-          <svg viewBox="0 0 120 120" width="132" height="132" aria-hidden="true">
-            <circle class="track" cx="60" cy="60" r={RADIUS} />
-            <circle
-              class="arc"
-              class:done={progress >= 1}
-              cx="60"
-              cy="60"
-              r={RADIUS}
-              stroke-dasharray={2 * Math.PI * RADIUS}
-              stroke-dashoffset={ringOffset(progress, RADIUS)}
-              transform="rotate(-90 60 60)"
-            />
-          </svg>
-          <div class="ring-text">
-            <strong data-testid="practice-today">{minutesOf(stats.today_seconds)}</strong>
+    {#if !stats}
+      {#if !error}<p class="muted" role="status">{t("app.loading")}</p>{/if}
+    {:else}
+      <div class="top">
+        <div class="card ring-card" data-testid="practice-goal-card">
+          <div class="ring" data-testid="practice-ring" data-progress={progress.toFixed(2)}>
+            <svg viewBox="0 0 120 120" width="132" height="132" aria-hidden="true">
+              <circle class="track" cx="60" cy="60" r={RADIUS} />
+              <circle
+                class="arc"
+                class:done={progress >= 1}
+                cx="60"
+                cy="60"
+                r={RADIUS}
+                stroke-dasharray={2 * Math.PI * RADIUS}
+                stroke-dashoffset={ringOffset(progress, RADIUS)}
+                transform="rotate(-90 60 60)"
+              />
+            </svg>
+            <div class="ring-text">
+              <strong data-testid="practice-today">{minutesOf(stats.today_seconds)}</strong>
+              <span class="muted">
+                {stats.goal.daily_minutes > 0
+                  ? t("practiceLog.ofGoal", { minutes: stats.goal.daily_minutes })
+                  : t("practiceLog.minutesToday")}
+              </span>
+            </div>
+          </div>
+          <form class="goal-form" onsubmit={saveGoal}>
+            <label for="practice-goal">{t("practiceLog.dailyGoal")}</label>
+            <div class="goal-row">
+              <input
+                id="practice-goal"
+                data-testid="practice-goal-input"
+                type="number"
+                min="0"
+                max="720"
+                bind:value={goalDraft}
+              />
+              <span class="muted">{t("practiceLog.minutes")}</span>
+            </div>
+            <label class="check">
+              <input type="checkbox" data-testid="practice-weekly-toggle" bind:checked={weekly} />
+              {t("practiceLog.weeklySummary")}
+            </label>
+            <button class="button" type="submit" data-testid="practice-goal-save" disabled={saving}>
+              {t("practiceLog.saveGoal")}
+            </button>
+          </form>
+        </div>
+
+        <div class="card stats-card">
+          <div class="stat" data-testid="practice-streak">
+            <span class="stat-value">{stats.current_streak}</span>
+            <span class="muted">{t("practiceLog.dayStreak", { count: stats.current_streak })}</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value" data-testid="practice-longest">{stats.longest_streak}</span>
+            <span class="muted">{t("practiceLog.longestStreak")}</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value" data-testid="practice-songs">{stats.songs_practised}</span>
+            <span class="muted">{t("practiceLog.songsPractised")}</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value">{formatDuration(stats.total_seconds)}</span>
+            <span class="muted">{t("practiceLog.totalTime")}</span>
+          </div>
+        </div>
+      </div>
+
+      {#if stats.goal.weekly_summary}
+        <div class="card week" data-testid="practice-week">
+          <h2>{t("practiceLog.thisWeek")}</h2>
+          <p>
+            <strong>{formatDuration(stats.week.seconds)}</strong>
             <span class="muted">
-              {stats.goal.daily_minutes > 0
-                ? t("practiceLog.ofGoal", { minutes: stats.goal.daily_minutes })
-                : t("practiceLog.minutesToday")}
+              {t("practiceLog.weekDays", { count: stats.week.days_practised })}
+              {#if stats.goal.daily_minutes > 0}
+                · {t("practiceLog.weekGoalDays", { count: stats.week.goal_days })}
+              {/if}
+              {#if change(stats.week.seconds, stats.week.previous_seconds)}
+                · {change(stats.week.seconds, stats.week.previous_seconds)}
+              {/if}
             </span>
-          </div>
+          </p>
         </div>
-        <form class="goal-form" onsubmit={saveGoal}>
-          <label for="practice-goal">{t("practiceLog.dailyGoal")}</label>
-          <div class="goal-row">
-            <input
-              id="practice-goal"
-              data-testid="practice-goal-input"
-              type="number"
-              min="0"
-              max="720"
-              bind:value={goalDraft}
-            />
-            <span class="muted">{t("practiceLog.minutes")}</span>
-          </div>
-          <label class="check">
-            <input type="checkbox" data-testid="practice-weekly-toggle" bind:checked={weekly} />
-            {t("practiceLog.weeklySummary")}
-          </label>
-          <button class="button" type="submit" data-testid="practice-goal-save" disabled={saving}>
-            {t("practiceLog.saveGoal")}
-          </button>
-        </form>
+      {/if}
+
+      {#if empty}
+        <div class="empty-state compact" data-testid="practice-empty">
+          <span class="empty-art"><Icon name="target" size={30} /></span>
+          <p class="muted">{t("practiceLog.empty")}</p>
+        </div>
+      {/if}
+
+      <div class="card">
+        <h2>{t("practiceLog.heatmap")}</h2>
+        <div
+          class="heatmap"
+          role="img"
+          aria-label={t("practiceLog.heatmapLabel")}
+          data-testid="practice-heatmap"
+          use:showLatest
+        >
+          {#each weeks as week, index (index)}
+            <div class="week-col">
+              {#each week as cell (cell.day)}
+                <span
+                  class="cell level-{cell.level}"
+                  class:future={cell.future}
+                  data-testid={cell.level > 0 ? "practice-heat-day" : undefined}
+                  data-day={cell.day}
+                  title={cell.future ? undefined : `${cell.day}: ${formatDuration(cell.seconds)}`}
+                ></span>
+              {/each}
+            </div>
+          {/each}
+        </div>
       </div>
 
-      <div class="card stats-card">
-        <div class="stat" data-testid="practice-streak">
-          <span class="stat-value">{stats.current_streak}</span>
-          <span class="muted">{t("practiceLog.dayStreak", { count: stats.current_streak })}</span>
-        </div>
-        <div class="stat">
-          <span class="stat-value" data-testid="practice-longest">{stats.longest_streak}</span>
-          <span class="muted">{t("practiceLog.longestStreak")}</span>
-        </div>
-        <div class="stat">
-          <span class="stat-value" data-testid="practice-songs">{stats.songs_practised}</span>
-          <span class="muted">{t("practiceLog.songsPractised")}</span>
-        </div>
-        <div class="stat">
-          <span class="stat-value">{formatDuration(stats.total_seconds)}</span>
-          <span class="muted">{t("practiceLog.totalTime")}</span>
-        </div>
-      </div>
-    </div>
+      <Recommendations />
 
-    {#if stats.goal.weekly_summary}
-      <div class="card week" data-testid="practice-week">
-        <h2>{t("practiceLog.thisWeek")}</h2>
-        <p>
-          <strong>{formatDuration(stats.week.seconds)}</strong>
-          <span class="muted">
-            {t("practiceLog.weekDays", { count: stats.week.days_practised })}
-            {#if stats.goal.daily_minutes > 0}
-              · {t("practiceLog.weekGoalDays", { count: stats.week.goal_days })}
-            {/if}
-            {#if change(stats.week.seconds, stats.week.previous_seconds)}
-              · {change(stats.week.seconds, stats.week.previous_seconds)}
-            {/if}
-          </span>
-        </p>
-      </div>
-    {/if}
-
-    {#if empty}
-      <div class="empty-state compact" data-testid="practice-empty">
-        <span class="empty-art"><Icon name="clock" size={30} /></span>
-        <p class="muted">{t("practiceLog.empty")}</p>
-      </div>
-    {/if}
-
-    <div class="card">
-      <h2>{t("practiceLog.heatmap")}</h2>
-      <div
-        class="heatmap"
-        role="img"
-        aria-label={t("practiceLog.heatmapLabel")}
-        data-testid="practice-heatmap"
-        use:showLatest
-      >
-        {#each weeks as week, index (index)}
-          <div class="week-col">
-            {#each week as cell (cell.day)}
-              <span
-                class="cell level-{cell.level}"
-                class:future={cell.future}
-                data-testid={cell.level > 0 ? "practice-heat-day" : undefined}
-                data-day={cell.day}
-                title={cell.future ? undefined : `${cell.day}: ${formatDuration(cell.seconds)}`}
-              ></span>
-            {/each}
-          </div>
+      <div class="lists">
+        {#each [{ id: "recent", labelKey: "practiceLog.recent", rows: stats.recent }, { id: "scores", labelKey: "practiceLog.bestScores", rows: stats.best_scores }, { id: "stale", labelKey: "practiceLog.stale", rows: stats.stale }] as list (list.id)}
+          {#if list.rows.length}
+            <div class="card" data-testid={`practice-list-${list.id}`}>
+              <h2>{t(list.labelKey)}</h2>
+              <ul class="song-list">
+                {#each list.rows as song (song.song_id)}
+                  <li>
+                    <a
+                      href={hrefFor(songPath(song.song_id))}
+                      onclick={(event) => followLink(event, songPath(song.song_id))}
+                    >
+                      <strong>{song.title}</strong>
+                      {#if song.artist}<span class="muted">{song.artist}</span>{/if}
+                    </a>
+                    <span class="muted meta">
+                      {#if list.id === "scores" && song.best_score !== null}
+                        {Math.round(song.best_score)}%
+                      {:else if list.id === "recent"}
+                        {formatDuration(song.total_seconds)} · {ago(song)}
+                      {:else}
+                        {ago(song)}
+                      {/if}
+                    </span>
+                  </li>
+                {/each}
+              </ul>
+            </div>
+          {/if}
         {/each}
-      </div>
-    </div>
-
-    <Recommendations />
-
-    <div class="lists">
-      {#each [{ id: "recent", labelKey: "practiceLog.recent", rows: stats.recent }, { id: "scores", labelKey: "practiceLog.bestScores", rows: stats.best_scores }, { id: "stale", labelKey: "practiceLog.stale", rows: stats.stale }] as list (list.id)}
-        {#if list.rows.length}
-          <div class="card" data-testid={`practice-list-${list.id}`}>
-            <h2>{t(list.labelKey)}</h2>
+        {#if stats.exercises.length}
+          <div class="card" data-testid="practice-list-exercises">
+            <h2>{t("practiceLog.exercises")}</h2>
             <ul class="song-list">
-              {#each list.rows as song (song.song_id)}
+              {#each stats.exercises as exercise (exercise.kind)}
                 <li>
                   <a
-                    href={hrefFor(songPath(song.song_id))}
-                    onclick={(event) => followLink(event, songPath(song.song_id))}
+                    href={hrefFor(exercise.kind === "rhythm" ? "/tools/rhythm" : "/tools/trainer")}
+                    onclick={(event) =>
+                      followLink(
+                        event,
+                        exercise.kind === "rhythm" ? "/tools/rhythm" : "/tools/trainer",
+                      )}
                   >
-                    <strong>{song.title}</strong>
-                    {#if song.artist}<span class="muted">{song.artist}</span>{/if}
+                    <strong
+                      >{exercise.kind === "rhythm"
+                        ? t("rhythm.toolTitle")
+                        : t(KIND_NAMES[exercise.kind].labelKey)}</strong
+                    >
                   </a>
                   <span class="muted meta">
-                    {#if list.id === "scores" && song.best_score !== null}
-                      {Math.round(song.best_score)}%
-                    {:else if list.id === "recent"}
-                      {formatDuration(song.total_seconds)} · {ago(song)}
-                    {:else}
-                      {ago(song)}
-                    {/if}
+                    {formatDuration(exercise.total_seconds)}
+                    {#if exercise.best_score !== null}· {Math.round(exercise.best_score)}%{/if}
                   </span>
                 </li>
               {/each}
             </ul>
           </div>
         {/if}
-      {/each}
-      {#if stats.exercises.length}
-        <div class="card" data-testid="practice-list-exercises">
-          <h2>{t("practiceLog.exercises")}</h2>
-          <ul class="song-list">
-            {#each stats.exercises as exercise (exercise.kind)}
-              <li>
-                <a
-                  href={hrefFor(exercise.kind === "rhythm" ? "/tools/rhythm" : "/tools/trainer")}
-                  onclick={(event) =>
-                    followLink(
-                      event,
-                      exercise.kind === "rhythm" ? "/tools/rhythm" : "/tools/trainer",
-                    )}
-                >
-                  <strong
-                    >{exercise.kind === "rhythm"
-                      ? t("rhythm.toolTitle")
-                      : t(KIND_NAMES[exercise.kind].labelKey)}</strong
-                  >
-                </a>
-                <span class="muted meta">
-                  {formatDuration(exercise.total_seconds)}
-                  {#if exercise.best_score !== null}· {Math.round(exercise.best_score)}%{/if}
-                </span>
-              </li>
-            {/each}
-          </ul>
-        </div>
-      {/if}
-      {#if stats.rhythm_runs?.length}
-        <div class="card" data-testid="practice-list-rhythm-runs">
-          <h2>{t("practiceLog.rhythmRuns.heading")}</h2>
-          <ul class="song-list">
-            {#each stats.rhythm_runs as run, index (index)}
-              <li>
-                {#if run.song_id}
-                  <a
-                    href={hrefFor(songPath(run.song_id))}
-                    onclick={(e) => followLink(e, songPath(run.song_id!))}
-                    ><strong>{runName(run)}</strong></a
-                  >
-                {:else}
-                  <strong>{runName(run)}</strong>
-                {/if}
-                <span class="muted meta">{runDetail(run)}</span>
-              </li>
-            {/each}
-          </ul>
-        </div>
-      {/if}
-    </div>
-  {/if}
-</section>
+        {#if stats.rhythm_runs?.length}
+          <div class="card" data-testid="practice-list-rhythm-runs">
+            <h2>{t("practiceLog.rhythmRuns.heading")}</h2>
+            <ul class="song-list">
+              {#each stats.rhythm_runs as run, index (index)}
+                <li>
+                  {#if run.song_id}
+                    <a
+                      href={hrefFor(songPath(run.song_id))}
+                      onclick={(e) => followLink(e, songPath(run.song_id!))}
+                      ><strong>{runName(run)}</strong></a
+                    >
+                  {:else}
+                    <strong>{runName(run)}</strong>
+                  {/if}
+                  <span class="muted meta">{runDetail(run)}</span>
+                </li>
+              {/each}
+            </ul>
+          </div>
+        {/if}
+      </div>
+    {/if}
+  </section>
+</Page>
 
 <style>
   .practice-page {
     display: grid;
     gap: 1rem;
-    max-width: 960px;
-    margin: 0 auto;
     min-width: 0;
   }
   .practice-page > * {

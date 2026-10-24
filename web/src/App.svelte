@@ -8,6 +8,7 @@
   import EditorView from "./components/EditorView.svelte";
   import ExercisesView from "./components/ExercisesView.svelte";
   import Icon from "./components/Icon.svelte";
+  import IconButton from "./components/ui/IconButton.svelte";
   import LessonsRoute from "./components/LessonsRoute.svelte";
   import LibraryView from "./components/LibraryView.svelte";
   import OfflineStatus from "./components/OfflineStatus.svelte";
@@ -147,7 +148,7 @@
         onclick={(event) => followLink(event, "/setlists")}
         title={t("setlists.nav")}
       >
-        <Icon name="list" size={19} /><span class="rail-hide">{t("setlists.nav")}</span>
+        <Icon name="listMusic" size={19} /><span class="rail-hide">{t("setlists.nav")}</span>
       </a>
 
       <a
@@ -169,7 +170,7 @@
         onclick={(event) => followLink(event, "/practice")}
         title={t("practiceLog.nav")}
       >
-        <Icon name="clock" size={19} /><span class="rail-hide">{t("practiceLog.nav")}</span>
+        <Icon name="target" size={19} /><span class="rail-hide">{t("practiceLog.nav")}</span>
       </a>
 
       <a
@@ -278,31 +279,28 @@
         <span class="wordmark" aria-hidden="true">Fret<em>book</em></span>
       </a>
       <div class="topbar-actions">
-        <button
-          class="icon-button ghost"
-          data-testid="open-tuner-topbar"
+        <IconButton
+          class="ghost"
+          icon="tuningFork"
+          label={t("tuner.heading")}
+          testid="open-tuner-topbar"
           onclick={() => openTuner()}
-          aria-label={t("tuner.heading")}
-        >
-          <Icon name="tuner" />
-        </button>
-        <button
-          class="icon-button ghost"
-          data-testid="open-settings-topbar"
+        />
+        <IconButton
+          class="ghost"
+          icon="settings"
+          label={t("settings.heading")}
+          testid="open-settings-topbar"
           onclick={() => openSheet("settings")}
-          aria-label={t("settings.heading")}
-        >
-          <Icon name="settings" />
-        </button>
+        />
         {#if !ui.demoMode && !hasTabbar}
-          <button
-            class="icon-button primary"
-            data-testid="add-song-topbar"
+          <IconButton
+            class="primary"
+            icon="plus"
+            label={t("add.button")}
+            testid="add-song-topbar"
             onclick={() => openSheet("add")}
-            aria-label={t("add.button")}
-          >
-            <Icon name="plus" />
-          </button>
+          />
         {/if}
       </div>
     </header>
@@ -378,7 +376,7 @@
           aria-current={path.startsWith("/setlists") ? "page" : undefined}
           onclick={(event) => followLink(event, "/setlists")}
         >
-          <Icon name="list" /><span>{t("setlists.nav")}</span>
+          <Icon name="listMusic" /><span>{t("setlists.nav")}</span>
         </a>
         {#if !ui.demoMode}
           <button
@@ -396,7 +394,7 @@
           aria-current={isPractice ? "page" : undefined}
           onclick={(event) => followLink(event, "/practice")}
         >
-          <Icon name="clock" /><span>{t("practiceLog.nav")}</span>
+          <Icon name="target" /><span>{t("practiceLog.nav")}</span>
         </a>
         <a
           class="tab-item"
