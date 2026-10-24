@@ -462,6 +462,7 @@
       "setlistEntriesDropped": "{count} músicas de {name} não puderam voltar ao repertório.",
       "setlistFailed": "Não foi possível restaurar o repertório {name}.",
       "practiceDropped": "Não foi possível restaurar {count} sessões de prática.",
+      "exercisesDropped": "Não foi possível restaurar {count} jogos do treinador.",
       "practiceGoalFailed": "Não foi possível restaurar a meta diária de prática."
     },
     "import": {

@@ -26,7 +26,13 @@ from fretbook.importers.base import Notice
 from fretbook.jobs.runner import JobRunner, Progress
 from fretbook.score.model import ScoreDocument
 from fretbook.storage.media import AUDIO_TYPES, MediaStore
-from fretbook.storage.practice import MAX_DAILY_MINUTES, MAX_SECONDS, PracticeRepository, SessionInput
+from fretbook.storage.practice import (
+    MAX_DAILY_MINUTES,
+    MAX_SECONDS,
+    ExerciseInput,
+    PracticeRepository,
+    SessionInput,
+)
 from fretbook.storage.repository import SongRepository
 from fretbook.storage.setlists import (
     MAX_ENTRIES as MAX_SETLIST_ENTRIES,
@@ -119,6 +125,19 @@ class _PracticeSession(BaseModel):
     score: float | None = Field(default=None, ge=0, le=100, allow_inf_nan=False)
 
 
+class _PracticeExercise(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,64}$")
+    kind: Literal["fretboard", "interval", "chord"]
+    day: str = Field(min_length=10, max_length=10)
+    duration_seconds: int = Field(ge=1, le=MAX_SECONDS)
+    rounds: int = Field(default=0, ge=0, le=1_000_000)
+    correct: int = Field(default=0, ge=0, le=1_000_000)
+    score: float | None = Field(default=None, ge=0, le=100, allow_inf_nan=False)
+    started_at: str | None = Field(default=None, max_length=40)
+
+
 class _PracticeGoal(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
@@ -131,6 +150,8 @@ class _Practice(BaseModel):
 
     sessions: list[Any] = Field(default_factory=list, max_length=1_000_000)
     """Validated one by one on restore, so one bad session does not refuse the whole archive."""
+    exercises: list[Any] = Field(default_factory=list, max_length=1_000_000)
+    """Trainer games, validated one by one like sessions. Archives from before they were saved have none."""
     goal: _PracticeGoal | None = None
 
 
@@ -258,12 +279,15 @@ def restore_archive(
                 outcome = "failed"
             counts[outcome] += 1
     setlists = _restore_setlists(SetlistRepository(settings), owner_id, manifest.setlists, song_ids, mode, warnings)
-    sessions = _restore_practice(PracticeRepository(settings), owner_id, manifest.practice, song_ids, warnings)
+    sessions, exercises = _restore_practice(
+        PracticeRepository(settings), owner_id, manifest.practice, song_ids, warnings
+    )
     progress("Ready", "import.ready")
     return {
         **counts,
         "setlists": setlists,
         "practice_sessions": sessions,
+        "practice_exercises": exercises,
         "warnings": [warning.as_dict() for warning in warnings],
     }
 
@@ -274,12 +298,13 @@ def _restore_practice(
     practice: _Practice,
     song_ids: dict[str, str],
     warnings: list[Notice],
-) -> int:
-    """Put back the practice log, pointing sessions at the songs as they now are. Returns how many were added.
+) -> tuple[int, int]:
+    """Put back the practice log, pointing sessions at the songs as they now are.
 
-    A session whose id is already in the library is left alone, so restoring the same archive twice adds nothing.
+    Returns how many sessions and trainer games were added. One whose id is already in the library is left alone,
+    so restoring the same archive twice adds nothing.
     """
-    added = dropped = 0
+    added = dropped = exercises = lost = 0
     for raw in practice.sessions:
         try:
             item = _PracticeSession.model_validate(raw)
@@ -292,6 +317,12 @@ def _restore_practice(
             added += repo.restore_session(owner_id, SessionInput(**fields))
         except (ValueError, ValidationError, TypeError, sqlite3.Error):
             dropped += 1
+    for raw in practice.exercises:
+        try:
+            game = _PracticeExercise.model_validate(raw)
+            exercises += repo.restore_exercise(owner_id, ExerciseInput(**game.model_dump()))
+        except (ValueError, ValidationError, TypeError, sqlite3.Error):
+            lost += 1
     if practice.goal:
         try:
             repo.restore_goal(owner_id, practice.goal.daily_minutes, practice.goal.weekly_summary)
@@ -305,7 +336,15 @@ def _restore_practice(
                 {"count": dropped},
             )
         )
-    return added
+    if lost:
+        warnings.append(
+            Notice(
+                "backup.exercisesDropped",
+                f"{lost} trainer games could not be put back",
+                {"count": lost},
+            )
+        )
+    return added, exercises
 
 
 def _restore_setlists(
