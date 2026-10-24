@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { addClientJob, dismissAllClientJobs } from "../lib/importQueue.svelte";
+import { addClientJob, dismissAllClientJobs, importQueue } from "../lib/importQueue.svelte";
 import type { Job } from "../lib/types";
 import RecentImports from "./RecentImports.svelte";
 
@@ -113,13 +113,12 @@ describe("RecentImports", () => {
     });
     mockListJobs.mockResolvedValue([runningJob]);
 
-    const { rerender } = render(RecentImports);
+    render(RecentImports);
 
     await vi.waitFor(() => {
       expect(screen.getByTestId("recent-imports-panel")).toBeInTheDocument();
     });
 
-    // Now transition to done
     const doneJob = makeJob({
       id: "run-done-1",
       label: "my-riff.gp5",
@@ -127,10 +126,11 @@ describe("RecentImports", () => {
       result: { song_id: "song-123" },
     });
     mockListJobs.mockResolvedValue([doneJob]);
-    rerender({});
+    // The panel refetches when the queue reports new server jobs. A prop-less
+    // rerender does not, and the 1s poll loses the race against waitFor in CI.
+    importQueue.notifyServerJobs();
 
     await vi.waitFor(() => {
-      expect(screen.getByTestId("job-link")).toBeInTheDocument();
       expect(screen.getByTestId("job-link")).toHaveAttribute("href", "/songs/song-123");
     });
   });
