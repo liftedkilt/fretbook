@@ -250,6 +250,7 @@
 
   .highway-stage {
     position: relative;
+    z-index: 0;
     width: 100%;
     height: clamp(220px, 34dvh, 320px);
     border-radius: var(--r-lg);

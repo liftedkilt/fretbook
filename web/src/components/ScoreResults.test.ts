@@ -46,6 +46,8 @@ describe("ScoreResults", () => {
     expect(heatmap.children).toHaveLength(3);
     expect(heatmap.children[1].getAttribute("aria-label")).toBe("Bar 2: 25%");
     expect(heatmap.children[2].getAttribute("aria-label")).toBe("Bar 3: no notes");
+    // jsdom serialises the hsl() paint as rgb. 30% lightness at hue 120 is this green.
+    expect((heatmap.children[0] as HTMLElement).style.background).toBe("rgb(29, 124, 29)");
   });
 
   it("loops the weakest bars, a chosen section, or plays again", async () => {
