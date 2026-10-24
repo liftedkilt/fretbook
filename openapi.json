@@ -419,7 +419,7 @@
         "type": "object"
       },
       "AutoImportAccepted": {
-        "description": "Queued import.\n\n``detected`` is what the server took the input for: an importer kind,\nor ``songsterr``, ``youtube`` or ``web`` for a link.",
+        "description": "Queued import.\n\n``detected`` is what the server took the input for: an importer kind,\nor ``songsterr``, ``youtube``, ``ultimate-guitar`` or ``web`` for a link.",
         "properties": {
           "detected": {
             "title": "Detected",
