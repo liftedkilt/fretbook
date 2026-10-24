@@ -1,0 +1,30 @@
+# The Fretbook job worker (python -m fretbook.worker) on an NVIDIA CUDA base, for GPU-bound jobs
+# such as stem separation or transcription. It runs no web server and no UI.
+#   docker build -f Dockerfile.worker -t fretbook-worker .
+# Run it with the same data volume as the web container (see docker-compose.yml, profile "worker").
+FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3 python3-pip python3-venv ffmpeg ca-certificates tesseract-ocr \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY requirements.txt requirements-vision.txt ./
+RUN python3 -m venv /opt/venv \
+    && /opt/venv/bin/pip install --no-cache-dir -r requirements.txt -r requirements-vision.txt
+COPY fretbook ./fretbook
+
+RUN groupadd --gid 1000 fretbook \
+    && useradd --uid 1000 --gid fretbook --shell /bin/sh --home-dir /app fretbook \
+    && mkdir -p /data /songs \
+    && chown -R fretbook:fretbook /data /songs /app
+
+ENV PATH=/opt/venv/bin:$PATH \
+    FRETBOOK_DATA_DIR=/data \
+    FRETBOOK_LEGACY_SONGS_DIR=/songs \
+    PYTHONUNBUFFERED=1
+
+USER fretbook
+VOLUME /data
+
+# Claims every worker-only job kind. Pass --kinds a,b to claim a subset.
+CMD ["python", "-m", "fretbook.worker"]

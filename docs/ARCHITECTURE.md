@@ -48,7 +48,13 @@ Links go through the provider registry in `fretbook/importers/remote.py`: Songst
 
 ## Background jobs
 
-Imports run on a single job thread in the web process, reading the `jobs` table. Slow, GPU-bound work (such as recognising tabs in video frames, `fretbook/importers/youtube_frames.py`) should run as a separate worker that claims only its own job kind from the same table, and land its result as a draft for review in the editor. The design is in [design/youtube-tab-import.md](design/youtube-tab-import.md).
+Imports run on a job thread in the web process, reading the `jobs` table. Slow or GPU-bound work (stem separation, transcription, OCR, recognising tabs in video frames) runs in a separate worker, `python -m fretbook.worker [--kinds a,b]`, that claims only its own kinds from the same table and lands its result as a draft for review in the editor. The design is in [design/youtube-tab-import.md](design/youtube-tab-import.md).
+
+- **Claiming.** `JobRunner._claim` is one `UPDATE jobs ... WHERE id = (SELECT ... LIMIT 1) RETURNING *` inside `BEGIN IMMEDIATE`, so two processes never claim the same row. The database is in WAL mode with a busy timeout, which is what lets both processes share the file. `jobs.worker_id` records who claimed it.
+- **Registry.** A feature adds its handler once with `@job_kind("name", worker_only=True)` (`fretbook/jobs/registry.py`; the built-in `echo` kind is in `jobs/worker_kinds.py`). The web process registers only kinds that are not worker-only, so it leaves the rest queued. `FRETBOOK_WORKER_KINDS=a,b` moves other kinds, such as `import.youtube_frames`, to the worker too; start the worker with a matching `--kinds`.
+- **Recovery.** A process requeues only the interrupted jobs of the kinds it claims, so restarting the web process never steals a job a worker is running. Restart a crashed worker to requeue its jobs.
+- **Presence.** A worker heartbeats every 5 s into the `workers` table (migration 004). `GET /api/meta` returns `worker_kinds`, the kinds with a heartbeat in the last 30 s, so the UI can hide features that no worker serves. Until then a job of that kind simply stays `queued`.
+- **Deployment.** The worker needs the same SQLite file and data directory as the web process, so it runs on the same host or on one that mounts the same volume (SQLite over a network filesystem is not supported). `Dockerfile.worker` builds it on an NVIDIA CUDA image and `docker compose --profile worker up` starts it. Start the web process first: it owns schema migrations.
 
 ## Listening to the microphone
 

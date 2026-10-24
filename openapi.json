@@ -1550,6 +1550,13 @@
             "title": "Version",
             "type": "string"
           },
+          "worker_kinds": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Worker Kinds",
+            "type": "array"
+          },
           "ytdlp": {
             "$ref": "#/components/schemas/YtDlpStatus"
           }
@@ -1562,7 +1569,8 @@
           "auth_mode",
           "exporters",
           "instruments",
-          "ytdlp"
+          "ytdlp",
+          "worker_kinds"
         ],
         "title": "Meta",
         "type": "object"
@@ -4056,7 +4064,7 @@
         ]
       },
       "get": {
-        "description": "Job status. `owner_id`, `payload`, and `attempts` are not returned.",
+        "description": "Job status. `owner_id`, `payload`, `attempts`, and `worker_id` are not returned.",
         "operationId": "get_job_api_jobs__job_id__get",
         "parameters": [
           {
