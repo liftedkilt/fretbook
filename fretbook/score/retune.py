@@ -29,6 +29,9 @@ Keep = Literal["pitch", "shape"]
 Reduce = Literal["all", "lowest"]
 
 _MAX_LISTED_BARS = 20
+_SAME_STRING_REACH = 5
+"""A string keeps its notes only if its open pitch moved by at most this many semitones (Drop D, Eb, a capo).
+A bigger move, such as guitar to bass, would leave every note high up the neck, so the beat is refingered."""
 
 
 @dataclass
@@ -78,12 +81,18 @@ def _spread(frets: Sequence[int]) -> int:
     return max(fretted) - min(fretted) if fretted else 0
 
 
-def _same_string(refs: list[_Ref], tuning: Sequence[int], capo: int) -> list[tuple[int, int]] | None:
-    """The beat's notes kept on their strings, or ``None`` when one falls off the neck or the chord no longer fits."""
+def _same_string(
+    refs: list[_Ref], tuning: Sequence[int], capo: int, before: Sequence[int], capo_before: int
+) -> list[tuple[int, int]] | None:
+    """The beat's notes kept on their strings, or ``None`` when one falls off the neck, the chord no longer fits
+    the hand, or a string's open pitch moved too far for its position to mean the same thing."""
     found: list[tuple[int, int]] = []
     for ref in refs:
         assert ref.pitch is not None
-        if ref.note.string >= len(tuning):
+        string = ref.note.string
+        if string >= len(tuning) or string >= len(before):
+            return None
+        if abs(tuning[string] + capo - before[string] - capo_before) > _SAME_STRING_REACH:
             return None
         fret = ref.pitch - tuning[ref.note.string] - capo
         if not 0 <= fret <= MAX_FRET:
@@ -196,7 +205,7 @@ def _convert_voice(
                 continue
             free.append(_Ref(bar_index, note, old_pitch + shift))
         if free:
-            fixed = _same_string(free, tuning, capo)
+            fixed = _same_string(free, tuning, capo, track.tuning_midi, track.capo)
             if fixed is not None:
                 for ref, fitted in zip(free, fixed, strict=True):
                     placed[index][id(ref.note)] = fitted

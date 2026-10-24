@@ -197,3 +197,15 @@ def test_a_track_with_no_change_is_identical() -> None:
     result = convert_track(track)
     assert result.track.model_dump() == track.model_dump()
     assert result.report.refretted == 0
+
+
+def test_guitar_to_bass_lands_low_on_the_neck() -> None:
+    # Open position riff on the D and A strings of a guitar: D3 (fret 2 on D is E3), then A2, then the open low E.
+    track = make_track(
+        [[beat(0, Note(string=3, fret=2)), beat(960, Note(string=4, fret=0)), beat(1920, Note(string=5, fret=0))]]
+    )
+    result = convert_track(track, tuning=BASS4, semitones=-12)
+    assert pitches(result.track) == [[40], [33], [28]]
+    # Not the same strings an octave up the neck: E2 is the D string at fret 2, A1 the open A string.
+    assert spots(result.track) == [[(1, 2)], [(2, 0)], [(3, 0)]]
+    assert all(fret <= 5 for ((_, fret),) in spots(result.track))

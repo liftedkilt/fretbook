@@ -17,6 +17,10 @@ test("transpose a tab, preview it, and save it as a new track", async ({ page, s
   const saved = await (await page.request.get(`/api/songs/${song.id}`)).json();
   expect(saved.document.tracks).toHaveLength(2);
   expect(saved.document.tracks[1].name).toMatch(/\(converted\)$/);
+  // The player switches to the new track in place.
+  await expect(page.getByRole("combobox", { name: "Track" })).toHaveValue(
+    saved.document.tracks[1].id,
+  );
   // The same bar, two frets higher on the same string.
   const first = (track: { bars: { voices: { beats: { notes: { fret: number }[] }[] }[] }[] }) =>
     track.bars[0].voices[0].beats.flatMap((beat) => beat.notes)[0].fret;
