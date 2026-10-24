@@ -1237,11 +1237,20 @@
         >
           <Icon name="tuner" size={18} /><span>{t("tuner.open")}</span>
         </button>
-        <button data-testid="song-add-to-setlist" onclick={() => (pickerOpen = true)}>
-          <Icon name="list" size={18} /><span>{t("setlists.addToSetlist")}</span>
-        </button>
         <Menu label={t("player.export")} icon="download" testid="export-menu">
           {#snippet children(close)}
+            <button
+              class="menu-item"
+              data-testid="song-add-to-setlist"
+              role="menuitem"
+              onclick={() => {
+                close();
+                pickerOpen = true;
+              }}
+            >
+              <Icon name="list" size={18} />
+              {t("setlists.addToSetlist")}
+            </button>
             <button
               class="menu-item"
               data-testid="export-pdf"
