@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import time
 import zipfile
 from pathlib import Path
 
@@ -66,6 +67,25 @@ def _client(tmp_path: Path) -> TestClient:
     return TestClient(app)
 
 
+def _drain(client: TestClient, timeout: float = 30.0) -> None:
+    """Run queued jobs and wait for any the app's background worker claimed first.
+
+    ``run_once`` returns ``False`` as soon as the queue is empty, even while the background worker is still
+    running a job it claimed, so loop until no job is queued or running.
+    """
+    jobs = client.app.state.ctx.jobs
+    deadline = time.monotonic() + timeout
+    while True:
+        while jobs.run_once():
+            pass
+        with jobs._session() as conn:
+            busy = conn.execute("SELECT count(*) FROM jobs WHERE status IN ('queued', 'running')").fetchone()[0]
+        if not busy:
+            return
+        assert time.monotonic() < deadline, "jobs did not finish"
+        time.sleep(0.02)
+
+
 def test_bulk_import_multiple_files(tmp_path: Path) -> None:
     with _client(tmp_path) as client:
         response = client.post(
@@ -82,8 +102,7 @@ def test_bulk_import_multiple_files(tmp_path: Path) -> None:
         assert len(body["jobs"]) == 2
 
         # Process queued jobs
-        while client.app.state.ctx.jobs.run_once():
-            pass
+        _drain(client)
 
         songs = client.get("/api/songs").json()
         assert songs["total"] == 2
@@ -112,8 +131,7 @@ def test_bulk_import_zip_archive_with_default_tags(tmp_path: Path) -> None:
         body = response.json()
         assert body["total_files"] == 2
 
-        while client.app.state.ctx.jobs.run_once():
-            pass
+        _drain(client)
 
         songs = client.get("/api/songs").json()
         assert songs["total"] == 2
@@ -133,8 +151,7 @@ def test_duplicate_skip_option(tmp_path: Path) -> None:
             data={"duplicates": "skip"},
         )
         assert resp1.status_code == 202
-        while client.app.state.ctx.jobs.run_once():
-            pass
+        _drain(client)
 
         assert client.get("/api/songs").json()["total"] == 1
 
@@ -147,8 +164,7 @@ def test_duplicate_skip_option(tmp_path: Path) -> None:
         assert resp2.status_code == 202
         job_id = resp2.json()["jobs"][0]["job_id"]
 
-        while client.app.state.ctx.jobs.run_once():
-            pass
+        _drain(client)
 
         # Job should finish with skipped status
         job = client.get(f"/api/jobs/{job_id}").json()
@@ -166,8 +182,7 @@ def test_duplicate_keep_both_option(tmp_path: Path) -> None:
             files=[("files", ("song.xml", XML.encode(), "application/xml"))],
         )
         assert resp1.status_code == 202
-        while client.app.state.ctx.jobs.run_once():
-            pass
+        _drain(client)
         assert client.get("/api/songs").json()["total"] == 1
 
         # Import identical file with duplicates=keep_both
@@ -177,8 +192,7 @@ def test_duplicate_keep_both_option(tmp_path: Path) -> None:
             data={"duplicates": "keep_both"},
         )
         assert resp2.status_code == 202
-        while client.app.state.ctx.jobs.run_once():
-            pass
+        _drain(client)
 
         # Total songs is now 2
         assert client.get("/api/songs").json()["total"] == 2
@@ -191,8 +205,7 @@ def test_duplicate_replace_option(tmp_path: Path) -> None:
             files=[("files", ("song.xml", XML.encode(), "application/xml"))],
         )
         assert resp1.status_code == 202
-        while client.app.state.ctx.jobs.run_once():
-            pass
+        _drain(client)
 
         original_song = client.get("/api/songs").json()["items"][0]
         original_id = original_song["id"]
@@ -205,8 +218,7 @@ def test_duplicate_replace_option(tmp_path: Path) -> None:
             data={"duplicates": "replace"},
         )
         assert resp2.status_code == 202
-        while client.app.state.ctx.jobs.run_once():
-            pass
+        _drain(client)
 
         songs = client.get("/api/songs").json()
         assert songs["total"] == 1
