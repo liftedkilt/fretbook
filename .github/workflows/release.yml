@@ -37,3 +37,11 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.release.outputs.tag_name }}
         run: gh workflow run docker.yml --repo "$GITHUB_REPOSITORY" --ref "$TAG"
+
+      # Same reason: publish the documentation site for the new tag.
+      - name: Publish the documentation for the new tag
+        if: steps.release.outputs.release_created == 'true' && env.HAS_RELEASE_TOKEN != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.release.outputs.tag_name }}
+        run: gh workflow run docs.yml --repo "$GITHUB_REPOSITORY" --ref "$TAG"

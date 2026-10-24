@@ -127,6 +127,22 @@ jobs:
         run: python3 scripts/check_migrations.py
       - name: Locale files are valid and consistently formatted
         run: python3 scripts/check_locales.py
+      - name: Configuration reference matches fretbook/config.py
+        run: python3 scripts/gen_config_docs.py --check
+
+  docs:
+    # The documentation site must build without warnings (broken links, missing pages or images).
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-docs.txt
+      - run: pip install -r requirements-docs.txt
+      - run: mkdocs build --strict
 
   pr-title:
     # Release notes are built from squash-merged PR titles. Passes on pushes.
