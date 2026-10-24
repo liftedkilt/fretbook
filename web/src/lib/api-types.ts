@@ -2650,6 +2650,8 @@ export interface components {
         };
         /** PracticeSession */
         PracticeSession: {
+            /** Completed */
+            completed: boolean;
             /** Day */
             day: string;
             /** Duration Seconds */
@@ -2680,6 +2682,11 @@ export interface components {
         };
         /** PracticeSessionBody */
         PracticeSessionBody: {
+            /**
+             * Completed
+             * @default false
+             */
+            completed: boolean;
             /** Day */
             day: string;
             /** Duration Seconds */

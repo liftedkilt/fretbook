@@ -712,6 +712,44 @@ def verify_v15(conn: sqlite3.Connection) -> None:
     assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
 
 
+def seed_v16(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        INSERT INTO users (id, external_subject, display_name, created_at)
+        VALUES ('user-v16', 'sub-v16', 'User V16', '2026-01-16T00:00:00Z')
+        """
+    )
+    conn.execute(
+        """
+        INSERT INTO songs (
+            id, owner_id, slug, title, artist, content_kind, source_kind, source_ref,
+            revision, bpm, measure_count, track_count, string_count, preferred_instrument,
+            preferred_track_id, has_sync, duration, document, chordpro, created_at, updated_at
+        ) VALUES (
+            'song-v16', 'user-v16', 'song-v16', 'Warm Up', '', 'chords', 'manual', '{}',
+            1, 0, 0, 0, 0, '', '', 0, NULL, NULL, '[G]Hi', '2026-01-16T00:00:00Z', '2026-01-16T00:00:00Z'
+        )
+        """
+    )
+    conn.execute(
+        "INSERT INTO practice_sessions (id, owner_id, song_id, started_at, day, duration_seconds, mode, completed) "
+        "VALUES ('done', 'user-v16', 'song-v16', '2026-01-16T10:00:00+00:00', '2026-01-16', 300, 'wait', 1)"
+    )
+    conn.commit()
+
+
+def verify_v16(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        "INSERT INTO practice_sessions (id, owner_id, song_id, started_at, day, duration_seconds) "
+        "VALUES ('plain', 'user-v16', 'song-v16', '2026-01-16T11:00:00+00:00', '2026-01-16', 60)"
+    )
+    flags = dict(conn.execute("SELECT id, completed FROM practice_sessions").fetchall())
+    # A session is not finished unless the player said so; one that was keeps its flag.
+    assert flags == {"done": 1, "plain": 0}
+    conn.rollback()
+    assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+
+
 SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.Connection], None]]] = {
     1: (seed_v1, verify_v1),
     2: (seed_v2, verify_v2),
@@ -728,6 +766,7 @@ SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.C
     13: (seed_v13, verify_v13),
     14: (seed_v14, verify_v14),
     15: (seed_v15, verify_v15),
+    16: (seed_v16, verify_v16),
 }
 
 

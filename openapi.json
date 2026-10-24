@@ -3189,6 +3189,10 @@
       },
       "PracticeSession": {
         "properties": {
+          "completed": {
+            "title": "Completed",
+            "type": "boolean"
+          },
           "day": {
             "title": "Day",
             "type": "string"
@@ -3276,13 +3280,19 @@
           "duration_seconds",
           "speed",
           "mode",
-          "score"
+          "score",
+          "completed"
         ],
         "title": "PracticeSession",
         "type": "object"
       },
       "PracticeSessionBody": {
         "properties": {
+          "completed": {
+            "default": false,
+            "title": "Completed",
+            "type": "boolean"
+          },
           "day": {
             "maxLength": 10,
             "minLength": 10,

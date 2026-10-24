@@ -53,6 +53,8 @@ class PracticeSessionBody(BaseModel):
     mode: PracticeMode = "free"
     score: float | None = Field(default=None, ge=0, le=100)
     """Percent of notes hit, for ``scored`` sessions."""
+    completed: bool = False
+    """A ``wait`` session that played the whole song through (every step, from the first bar, no loop)."""
 
 
 class PracticeExerciseBody(BaseModel):
@@ -102,6 +104,7 @@ class PracticeSession(BaseModel):
     speed: float
     mode: PracticeMode
     score: float | None
+    completed: bool
 
 
 class PracticeGoalBody(BaseModel):
@@ -249,6 +252,7 @@ def record_session(body: PracticeSessionBody, ctx: AppContext = Depends(context)
                 speed=body.speed,
                 mode=body.mode,
                 score=body.score if body.mode == "scored" else None,
+                completed=body.completed,
             ),
         )
     except UnknownSong as exc:
