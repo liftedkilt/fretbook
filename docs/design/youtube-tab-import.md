@@ -39,7 +39,7 @@ Same tool Songsterr audio already uses (`fretbook/audio/ytdlp.py`), but it keeps
 
 `ffmpeg` is already in the runtime image. Sample at 2 fps to start (`extract_video_frames`). A tab that holds still for a bar does not need more, and a scroll is still visible at 2 fps. Later, raise the rate only while the average-hash distance between neighbors says the picture is moving.
 
-Frames are PPM so the recognizer can read them without Pillow. Pillow is a dev dependency used to *draw* the synthetic corpus, not to decode user frames.
+Frames are PPM so the recognizer can read them without Pillow. Pillow is a dev dependency used to _draw_ the synthetic corpus, not to decode user frames.
 
 ### 3. Tab region
 
@@ -87,7 +87,12 @@ The audio file is the same download, or the mp3 path Songsterr already uses. Eac
 `import_score` returns a normal `ImportResult`. The job handler stores it with `_store_result`, the same function as Songsterr and file imports. `source_ref` is:
 
 ```json
-{"needs_review": true, "pipeline": "classical-cv-spike", "frame_count": 12, "video_id": null}
+{
+  "needs_review": true,
+  "pipeline": "classical-cv-spike",
+  "frame_count": 12,
+  "video_id": null
+}
 ```
 
 There is no draft column yet. The full feature should open a review screen on that flag before the import counts as finished: the recognized tab on a staff (alphaTab, the editor we already have), low-confidence cells highlighted, and a confirm action that clears `needs_review`. Until that screen exists, a local-file spike save is how the result is inspected, and a YouTube URL does not save anything.
@@ -98,11 +103,11 @@ Wrong frets are ordinary note edits. The screen does not need its own score mode
 
 ### Classical CV and OCR
 
-| Piece | Role | Where it runs |
-| --- | --- | --- |
-| OpenCV (`opencv-python-headless`) | Faster projections, morphology, connected components. Same algorithm as the spike. | Optional extra |
-| Tesseract 5 (LSTM) | Digits on a cropped cell. One character, whitelist `0123456789x`. | Optional extra, CPU |
-| PaddleOCR (PP-OCRv4 / v5) | Stronger on messy type and on dark themes. Heavier than Tesseract. | Optional extra, CPU or GPU |
+| Piece                             | Role                                                                               | Where it runs              |
+| --------------------------------- | ---------------------------------------------------------------------------------- | -------------------------- |
+| OpenCV (`opencv-python-headless`) | Faster projections, morphology, connected components. Same algorithm as the spike. | Optional extra             |
+| Tesseract 5 (LSTM)                | Digits on a cropped cell. One character, whitelist `0123456789x`.                  | Optional extra, CPU        |
+| PaddleOCR (PP-OCRv4 / v5)         | Stronger on messy type and on dark themes. Heavier than Tesseract.                 | Optional extra, CPU or GPU |
 
 The spike does not import OpenCV or Tesseract. `requirements.txt`, `requirements-dev.txt`, and the Dockerfile do not install them. `requirements-vision.txt` and the `vision` extra in `pyproject.toml` name the packages for a later phase. `optional_backends()` reports whether they import.
 
@@ -112,30 +117,30 @@ This path is deterministic, debuggable, and cheap. It will not read a bend arrow
 
 The card is an RTX 5070 Ti with 16 GB. Sizes below are weight files, before KV cache. A 1080p frame is on the order of 2,000 visual tokens for Qwen3-VL (about 0.3 GB of cache per image); four frames at once is over a gigabyte before the model writes. Leave that headroom.
 
-| Model | Quantization | Weights | Fit |
-| --- | --- | --- | --- |
-| **Qwen3-VL-8B-Instruct** | **Q6_K + mmproj F16** | **6.8 GB + 1.3 GB** | **Preferred.** Room for a 1080p cache. |
-| Qwen3-VL-8B-Instruct | Q8_0 + mmproj F16 | 8.8 + 1.3 GB | Best quality that still fits one image comfortably. |
-| Qwen3-VL-8B-Instruct | Q4_K_M + mmproj F16 | 5.1 + 1.3 GB | Use if several crops are in one prompt. |
-| Qwen3-VL-8B-Instruct | F16 | 16.5 GB | Does not fit once the projector and cache are counted. |
-| Qwen3-VL-4B-Instruct | Q8_0 (Ollama `qwen3-vl:4b` is ~3.1 GB at the default quant) | ~3–7 GB | Faster fallback if 8B is latency-bound. |
-| Qwen2.5-VL-7B-Instruct | Q8_0, or the ~5.6 GB Ollama default | 5.6–11 GB | Previous generation. Use if Qwen3-VL weights are awkward to serve. |
-| Gemma 3 12B | Q4 (`gemma3:12b`, ~7.6 GB) | ~7.6 GB | Fits, but every image is crushed to a 896 px crop and 256 tokens. Fine fret digits will not survive that without pan-and-scan, and pan-and-scan multiplies the cost. Not the OCR model. |
-| Llama 3.2 Vision 11B | default Ollama tag ~7.3 GB | ~7.3 GB | Fits. Weaker document OCR than Qwen-VL in published comparisons. |
-| MiniCPM-V 8B | ~4.1 GB + ~1 GB projector | ~5 GB | Fits easily. A reasonable small fallback. |
-| Mistral Small 3.2 24B | Q4 ~14.1 GB | ~14 GB | Weights fit and leave under 2 GB. One or two 1080p frames consume that. Do not use it here. |
-| Qwen3-VL 32B | Q4 ~22 GB | ~22 GB | Does not fit. |
+| Model                    | Quantization                                                | Weights             | Fit                                                                                                                                                                                     |
+| ------------------------ | ----------------------------------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Qwen3-VL-8B-Instruct** | **Q6_K + mmproj F16**                                       | **6.8 GB + 1.3 GB** | **Preferred.** Room for a 1080p cache.                                                                                                                                                  |
+| Qwen3-VL-8B-Instruct     | Q8_0 + mmproj F16                                           | 8.8 + 1.3 GB        | Best quality that still fits one image comfortably.                                                                                                                                     |
+| Qwen3-VL-8B-Instruct     | Q4_K_M + mmproj F16                                         | 5.1 + 1.3 GB        | Use if several crops are in one prompt.                                                                                                                                                 |
+| Qwen3-VL-8B-Instruct     | F16                                                         | 16.5 GB             | Does not fit once the projector and cache are counted.                                                                                                                                  |
+| Qwen3-VL-4B-Instruct     | Q8_0 (Ollama `qwen3-vl:4b` is ~3.1 GB at the default quant) | ~3–7 GB             | Faster fallback if 8B is latency-bound.                                                                                                                                                 |
+| Qwen2.5-VL-7B-Instruct   | Q8_0, or the ~5.6 GB Ollama default                         | 5.6–11 GB           | Previous generation. Use if Qwen3-VL weights are awkward to serve.                                                                                                                      |
+| Gemma 3 12B              | Q4 (`gemma3:12b`, ~7.6 GB)                                  | ~7.6 GB             | Fits, but every image is crushed to a 896 px crop and 256 tokens. Fine fret digits will not survive that without pan-and-scan, and pan-and-scan multiplies the cost. Not the OCR model. |
+| Llama 3.2 Vision 11B     | default Ollama tag ~7.3 GB                                  | ~7.3 GB             | Fits. Weaker document OCR than Qwen-VL in published comparisons.                                                                                                                        |
+| MiniCPM-V 8B             | ~4.1 GB + ~1 GB projector                                   | ~5 GB               | Fits easily. A reasonable small fallback.                                                                                                                                               |
+| Mistral Small 3.2 24B    | Q4 ~14.1 GB                                                 | ~14 GB              | Weights fit and leave under 2 GB. One or two 1080p frames consume that. Do not use it here.                                                                                             |
+| Qwen3-VL 32B             | Q4 ~22 GB                                                   | ~22 GB              | Does not fit.                                                                                                                                                                           |
 
 Serve Qwen3-VL-8B with an OpenAI-compatible local server (llama.cpp `llama-mtmd-cli` / `llama-server`, or vLLM with an AWQ build if one is published for that card). The prompt is the crop plus "read the fret numbers on each string, top string first, as JSON". Temperature 0. Validate the JSON against the score model and reject frets outside 0–24 or string counts that disagree with the line detector. A model that returns prose is a failed read, not a tab.
 
 ### Hybrid
 
-| Stage | Who |
-| --- | --- |
-| Download, sample, de-dupe, scroll, staff lines, bar lines, cell crops | Classical CV (the spike) |
-| Digit in a crop, known or printed font | Tesseract or PaddleOCR |
-| Crop the OCR rejects, or a symbol that is not a digit | Qwen3-VL-8B Q6_K, one crop at a time |
-| Chord vs. two-digit, bar identity, 4/4 grid | Rules in the spike, then the review screen |
+| Stage                                                                 | Who                                        |
+| --------------------------------------------------------------------- | ------------------------------------------ |
+| Download, sample, de-dupe, scroll, staff lines, bar lines, cell crops | Classical CV (the spike)                   |
+| Digit in a crop, known or printed font                                | Tesseract or PaddleOCR                     |
+| Crop the OCR rejects, or a symbol that is not a digit                 | Qwen3-VL-8B Q6_K, one crop at a time       |
+| Chord vs. two-digit, bar identity, 4/4 grid                           | Rules in the spike, then the review screen |
 
 Rules stay in charge of time and of which pixels are a string. The model is not asked to invent bar lines. That split is why a wrong model guess cannot move a whole system by a beat without failing a check the geometry already made.
 
@@ -143,11 +148,11 @@ Rules stay in charge of time and of which pixels are a string. The model is not 
 
 Corpus: 4 pieces × 2 layouts (ASCII text, rendered staff) × 6 conditions = 48 frames, 264 notes. Pieces are a 4-string walk, a 6-string bar with a chord, fret 12, and a dead note, a two-bar system, and a bar with a rest. Conditions are clean, 1.2% salt-and-pepper, 0.7 px box blur, inverted colors, lowered contrast, and an 18×14 px shift. Drawing is Pillow and DejaVu Sans Mono 32 px. Templates are the same font, drawn once per glyph. The recognizer never sees the note list.
 
-| | Notes | Precision | Recall | F1 | Mean region IoU |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Full corpus | 263 / 264 | 1.000 | 0.996 | 0.998 | 0.987 |
-| Every clean frame | exact | 1 | 1 | 1 | (included above) |
-| Liberation Mono, DejaVu templates, one clean bass walk | 3 / 4 | 1 | 0.75 | 0.857 | 0.972 |
+|                                                        |     Notes | Precision | Recall |    F1 |  Mean region IoU |
+| ------------------------------------------------------ | --------: | --------: | -----: | ----: | ---------------: |
+| Full corpus                                            | 263 / 264 |     1.000 |  0.996 | 0.998 |            0.987 |
+| Every clean frame                                      |     exact |         1 |      1 |     1 | (included above) |
+| Liberation Mono, DejaVu templates, one clean bass walk |     3 / 4 |         1 |   0.75 | 0.857 |            0.972 |
 
 The single miss is the fret `8` on a rendered staff after salt: the staff line already cuts an `8` at the waist, and the noise finished the cut. It was dropped, not replaced. The Liberation probe dropped the fret `3` the same way. ASCII was exact in every condition, including salt, blur, dark, low contrast, and shift.
 
