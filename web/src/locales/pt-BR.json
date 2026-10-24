@@ -468,7 +468,8 @@
       "setlistFailed": "Não foi possível restaurar o repertório {name}.",
       "practiceDropped": "Não foi possível restaurar {count} sessões de prática.",
       "exercisesDropped": "Não foi possível restaurar {count} jogos do treinador.",
-      "practiceGoalFailed": "Não foi possível restaurar a meta diária de prática."
+      "practiceGoalFailed": "Não foi possível restaurar a meta diária de prática.",
+      "lessonProgressDropped": "Não foi possível restaurar {count} resultados de lições."
     },
     "import": {
       "failed": "A importação falhou.",
@@ -607,6 +608,24 @@
       "badModel": "Esse modelo de stems não está disponível.",
       "unavailable": "O Demucs não está instalado no worker, então ele não pode separar stems.",
       "decodeFailed": "Não foi possível ler o arquivo de áudio para a separação."
+    },
+    "course": {
+      "notFound": "Esse curso não foi encontrado."
+    },
+    "lesson": {
+      "notFound": "Essa lição não foi encontrada.",
+      "locked": "Conclua as lições anteriores para abrir esta.",
+      "invalid": "Não foi possível ler a lição: {reason} (linha {line}).",
+      "useCheck": "Esta lição é verificada com o seu registro de prática.",
+      "noSong": "Esta lição não tem música para verificar.",
+      "builtin": "As lições incluídas não podem ser apagadas."
+    },
+    "lessons": {
+      "packTooLarge": "Esse pacote é grande demais (o limite é {limit} MB, ou {limit} lições).",
+      "packInvalid": "Não foi possível importar o pacote: {file}: {reason}",
+      "packEmpty": "O pacote não tem arquivos curso/lição.md.",
+      "packNoCourse": "O curso {course} não tem course.md.",
+      "badPack": "Não foi possível importar esse pacote."
     }
   },
   "ui": {

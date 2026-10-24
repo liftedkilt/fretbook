@@ -652,6 +652,42 @@
         "title": "Beat",
         "type": "object"
       },
+      "BlockModel": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "markdown",
+              "chord",
+              "fretboard",
+              "song",
+              "tab",
+              "exercise",
+              "media",
+              "pass"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "params": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Params",
+            "type": "object"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "text",
+          "params"
+        ],
+        "title": "BlockModel",
+        "type": "object"
+      },
       "Body_import_auto_api_imports_auto_post": {
         "properties": {
           "file": {
@@ -798,6 +834,20 @@
           "file"
         ],
         "title": "Body_import_midi_api_imports_midi_post",
+        "type": "object"
+      },
+      "Body_import_pack_api_lessons_import_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_import_pack_api_lessons_import_post",
         "type": "object"
       },
       "Body_inspect_midi_api_imports_midi_inspect_post": {
@@ -1069,6 +1119,206 @@
           "report"
         ],
         "title": "ConvertResult",
+        "type": "object"
+      },
+      "CourseDetail": {
+        "properties": {
+          "completed_count": {
+            "title": "Completed Count",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "lesson_count": {
+            "title": "Lesson Count",
+            "type": "integer"
+          },
+          "levels": {
+            "items": {
+              "$ref": "#/components/schemas/LevelModel"
+            },
+            "title": "Levels",
+            "type": "array"
+          },
+          "locked": {
+            "title": "Locked",
+            "type": "boolean"
+          },
+          "next_lesson_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Lesson Id"
+          },
+          "requires": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Requires",
+            "type": "array"
+          },
+          "source": {
+            "enum": [
+              "builtin",
+              "user"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "track": {
+            "enum": [
+              "guitar",
+              "bass"
+            ],
+            "title": "Track",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "track",
+          "summary",
+          "source",
+          "lesson_count",
+          "completed_count",
+          "locked",
+          "requires",
+          "next_lesson_id",
+          "levels"
+        ],
+        "title": "CourseDetail",
+        "type": "object"
+      },
+      "CourseList": {
+        "properties": {
+          "can_edit": {
+            "title": "Can Edit",
+            "type": "boolean"
+          },
+          "courses": {
+            "items": {
+              "$ref": "#/components/schemas/CourseSummary"
+            },
+            "title": "Courses",
+            "type": "array"
+          },
+          "problems": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Problems",
+            "type": "array"
+          },
+          "resume": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Resume"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "courses",
+          "resume",
+          "can_edit",
+          "problems"
+        ],
+        "title": "CourseList",
+        "type": "object"
+      },
+      "CourseSummary": {
+        "properties": {
+          "completed_count": {
+            "title": "Completed Count",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "lesson_count": {
+            "title": "Lesson Count",
+            "type": "integer"
+          },
+          "locked": {
+            "title": "Locked",
+            "type": "boolean"
+          },
+          "next_lesson_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Lesson Id"
+          },
+          "requires": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Requires",
+            "type": "array"
+          },
+          "source": {
+            "enum": [
+              "builtin",
+              "user"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "track": {
+            "enum": [
+              "guitar",
+              "bass"
+            ],
+            "title": "Track",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "track",
+          "summary",
+          "source",
+          "lesson_count",
+          "completed_count",
+          "locked",
+          "requires",
+          "next_lesson_id"
+        ],
+        "title": "CourseSummary",
         "type": "object"
       },
       "CreateSetlistBody": {
@@ -1758,6 +2008,216 @@
         "title": "JobResult",
         "type": "object"
       },
+      "LessonDetail": {
+        "properties": {
+          "blocks": {
+            "items": {
+              "$ref": "#/components/schemas/BlockModel"
+            },
+            "title": "Blocks",
+            "type": "array"
+          },
+          "can_edit": {
+            "title": "Can Edit",
+            "type": "boolean"
+          },
+          "course_id": {
+            "title": "Course Id",
+            "type": "string"
+          },
+          "course_title": {
+            "title": "Course Title",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "next_lesson_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Lesson Id"
+          },
+          "pass_condition": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PassConditionModel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "progress": {
+            "$ref": "#/components/schemas/ProgressModel"
+          },
+          "source": {
+            "enum": [
+              "builtin",
+              "user"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "locked",
+              "available",
+              "completed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "course_id",
+          "course_title",
+          "id",
+          "title",
+          "summary",
+          "status",
+          "source",
+          "blocks",
+          "pass_condition",
+          "progress",
+          "next_lesson_id",
+          "can_edit"
+        ],
+        "title": "LessonDetail",
+        "type": "object"
+      },
+      "LessonPreview": {
+        "properties": {
+          "blocks": {
+            "items": {
+              "$ref": "#/components/schemas/BlockModel"
+            },
+            "title": "Blocks",
+            "type": "array"
+          },
+          "pass_condition": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PassConditionModel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "summary",
+          "blocks",
+          "pass_condition"
+        ],
+        "title": "LessonPreview",
+        "type": "object"
+      },
+      "LessonSummary": {
+        "properties": {
+          "has_pass_condition": {
+            "title": "Has Pass Condition",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "requires": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Requires",
+            "type": "array"
+          },
+          "source": {
+            "enum": [
+              "builtin",
+              "user"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "locked",
+              "available",
+              "completed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "summary",
+          "status",
+          "source",
+          "has_pass_condition",
+          "requires"
+        ],
+        "title": "LessonSummary",
+        "type": "object"
+      },
+      "LevelModel": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "lessons": {
+            "items": {
+              "$ref": "#/components/schemas/LessonSummary"
+            },
+            "title": "Lessons",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "lessons"
+        ],
+        "title": "LevelModel",
+        "type": "object"
+      },
       "LibraryCounts": {
         "description": "Songs in the whole library per filter, unaffected by the search text.",
         "properties": {
@@ -2133,6 +2593,70 @@
           "fret"
         ],
         "title": "Note",
+        "type": "object"
+      },
+      "PackResult": {
+        "properties": {
+          "courses": {
+            "title": "Courses",
+            "type": "integer"
+          },
+          "lessons": {
+            "title": "Lessons",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "courses",
+          "lessons"
+        ],
+        "title": "PackResult",
+        "type": "object"
+      },
+      "PassConditionModel": {
+        "properties": {
+          "min_bpm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Bpm"
+          },
+          "min_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Score"
+          },
+          "song": {
+            "title": "Song",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "score",
+              "wait"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "min_score",
+          "min_bpm",
+          "song"
+        ],
+        "title": "PassConditionModel",
         "type": "object"
       },
       "PracticeDay": {
@@ -2771,6 +3295,131 @@
         "title": "PreviewBody",
         "type": "object"
       },
+      "ProgressBody": {
+        "properties": {
+          "bpm": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 400.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bpm"
+          },
+          "completed": {
+            "default": false,
+            "title": "Completed",
+            "type": "boolean"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "wait_completed": {
+            "default": false,
+            "title": "Wait Completed",
+            "type": "boolean"
+          }
+        },
+        "title": "ProgressBody",
+        "type": "object"
+      },
+      "ProgressModel": {
+        "properties": {
+          "attempts": {
+            "title": "Attempts",
+            "type": "integer"
+          },
+          "best_bpm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Bpm"
+          },
+          "best_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Score"
+          },
+          "completed": {
+            "title": "Completed",
+            "type": "boolean"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          }
+        },
+        "required": [
+          "completed",
+          "completed_at",
+          "attempts",
+          "best_score",
+          "best_bpm"
+        ],
+        "title": "ProgressModel",
+        "type": "object"
+      },
+      "ProgressResult": {
+        "properties": {
+          "next_lesson_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Lesson Id"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "boolean"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/ProgressModel"
+          }
+        },
+        "required": [
+          "passed",
+          "progress",
+          "next_lesson_id"
+        ],
+        "title": "ProgressResult",
+        "type": "object"
+      },
       "Recommendations": {
         "properties": {
           "level": {
@@ -2869,6 +3518,34 @@
           "entries"
         ],
         "title": "ReplaceEntriesBody",
+        "type": "object"
+      },
+      "Resume": {
+        "properties": {
+          "course_id": {
+            "title": "Course Id",
+            "type": "string"
+          },
+          "course_title": {
+            "title": "Course Title",
+            "type": "string"
+          },
+          "lesson_id": {
+            "title": "Lesson Id",
+            "type": "string"
+          },
+          "lesson_title": {
+            "title": "Lesson Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "course_id",
+          "course_title",
+          "lesson_id",
+          "lesson_title"
+        ],
+        "title": "Resume",
         "type": "object"
       },
       "ReviewSong": {
@@ -3810,6 +4487,28 @@
         "title": "SongsterrTrackChoice",
         "type": "object"
       },
+      "SourceModel": {
+        "properties": {
+          "source": {
+            "enum": [
+              "builtin",
+              "user"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "source"
+        ],
+        "title": "SourceModel",
+        "type": "object"
+      },
       "Stem": {
         "description": "One separated part of a song's recording.",
         "properties": {
@@ -4035,6 +4734,20 @@
           "updated"
         ],
         "title": "TagsChanged",
+        "type": "object"
+      },
+      "TextBody": {
+        "properties": {
+          "text": {
+            "maxLength": 200000,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "TextBody",
         "type": "object"
       },
       "Track": {
@@ -4726,6 +5439,1170 @@
         "summary": "Admin Sign Out",
         "tags": [
           "admin"
+        ]
+      }
+    },
+    "/api/courses": {
+      "get": {
+        "operationId": "list_courses_api_courses_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourseList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "List Courses",
+        "tags": [
+          "lessons"
+        ]
+      }
+    },
+    "/api/courses/{course_id}": {
+      "delete": {
+        "description": "Delete a course from the lessons folder (every lesson in it); a built-in course it overrode comes back.",
+        "operationId": "delete_course_api_courses__course_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Delete Course",
+        "tags": [
+          "lessons"
+        ]
+      },
+      "get": {
+        "operationId": "get_course_api_courses__course_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourseDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Get Course",
+        "tags": [
+          "lessons"
+        ]
+      }
+    },
+    "/api/courses/{course_id}/lessons/{lesson_id}": {
+      "delete": {
+        "description": "Delete the lesson's file in the lessons folder; a built-in lesson it overrode comes back.",
+        "operationId": "delete_lesson_api_courses__course_id__lessons__lesson_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "lesson_id",
+            "required": true,
+            "schema": {
+              "title": "Lesson Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Delete Lesson",
+        "tags": [
+          "lessons"
+        ]
+      },
+      "get": {
+        "operationId": "get_lesson_api_courses__course_id__lessons__lesson_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "lesson_id",
+            "required": true,
+            "schema": {
+              "title": "Lesson Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Get Lesson",
+        "tags": [
+          "lessons"
+        ]
+      }
+    },
+    "/api/courses/{course_id}/lessons/{lesson_id}/check": {
+      "post": {
+        "description": "Look in the practice log for a run of the lesson's song that meets its pass condition.",
+        "operationId": "check_lesson_api_courses__course_id__lessons__lesson_id__check_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "lesson_id",
+            "required": true,
+            "schema": {
+              "title": "Lesson Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgressResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Check Lesson",
+        "tags": [
+          "lessons"
+        ]
+      }
+    },
+    "/api/courses/{course_id}/lessons/{lesson_id}/open": {
+      "post": {
+        "description": "Remember that the caller opened the lesson, so \"continue where you left off\" can return to it.",
+        "operationId": "open_lesson_api_courses__course_id__lessons__lesson_id__open_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "lesson_id",
+            "required": true,
+            "schema": {
+              "title": "Lesson Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Open Lesson",
+        "tags": [
+          "lessons"
+        ]
+      }
+    },
+    "/api/courses/{course_id}/lessons/{lesson_id}/progress": {
+      "post": {
+        "description": "Report a result the player measured. It completes the lesson when it meets the pass condition.\n\nA lesson with no pass condition is completed by sending ``completed: true``. A pass condition that names a\nlibrary song is read from the practice log instead (``/check``), so this refuses to take a result for it.",
+        "operationId": "report_progress_api_courses__course_id__lessons__lesson_id__progress_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "lesson_id",
+            "required": true,
+            "schema": {
+              "title": "Lesson Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgressBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgressResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Report Progress",
+        "tags": [
+          "lessons"
+        ]
+      }
+    },
+    "/api/courses/{course_id}/lessons/{lesson_id}/source": {
+      "get": {
+        "operationId": "get_lesson_source_api_courses__course_id__lessons__lesson_id__source_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "lesson_id",
+            "required": true,
+            "schema": {
+              "title": "Lesson Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceModel"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Get Lesson Source",
+        "tags": [
+          "lessons"
+        ]
+      },
+      "put": {
+        "description": "Create or replace a lesson. A built-in lesson is overridden by a copy in the lessons folder.",
+        "operationId": "put_lesson_source_api_courses__course_id__lessons__lesson_id__source_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "lesson_id",
+            "required": true,
+            "schema": {
+              "title": "Lesson Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TextBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceModel"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Put Lesson Source",
+        "tags": [
+          "lessons"
+        ]
+      }
+    },
+    "/api/courses/{course_id}/source": {
+      "get": {
+        "operationId": "get_course_source_api_courses__course_id__source_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceModel"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Get Course Source",
+        "tags": [
+          "lessons"
+        ]
+      },
+      "put": {
+        "description": "Create or replace a course's ``course.md`` in the lessons folder.",
+        "operationId": "put_course_source_api_courses__course_id__source_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "title": "Course Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TextBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceModel"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Put Course Source",
+        "tags": [
+          "lessons"
         ]
       }
     },
@@ -6041,6 +7918,190 @@
         "summary": "Retry Job",
         "tags": [
           "jobs"
+        ]
+      }
+    },
+    "/api/lessons/import": {
+      "post": {
+        "description": "Add the courses and lessons of a zip pack (``<course>/course.md`` and ``<course>/<lesson>.md``).",
+        "operationId": "import_pack_api_lessons_import_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_pack_api_lessons_import_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Import Pack",
+        "tags": [
+          "lessons"
+        ]
+      }
+    },
+    "/api/lessons/preview": {
+      "post": {
+        "description": "Parse lesson text exactly as saving would, without saving, for the editor's preview.",
+        "operationId": "preview_api_lessons_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TextBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonPreview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Preview",
+        "tags": [
+          "lessons"
         ]
       }
     },
@@ -11129,6 +13190,10 @@
     {
       "description": "Practice log: sessions, the daily goal, the dashboard, and a song's history.",
       "name": "practice"
+    },
+    {
+      "description": "Courses and lessons, per-user progress, and (for admins) writing lessons and importing packs.",
+      "name": "lessons"
     },
     {
       "description": "Start a background import. Poll GET /api/jobs/{job_id}.",

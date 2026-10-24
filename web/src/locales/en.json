@@ -468,7 +468,8 @@
       "setlistFailed": "Could not restore the setlist {name}.",
       "practiceDropped": "{count} practice sessions could not be put back.",
       "exercisesDropped": "{count} trainer games could not be put back.",
-      "practiceGoalFailed": "Could not restore the daily practice goal."
+      "practiceGoalFailed": "Could not restore the daily practice goal.",
+      "lessonProgressDropped": "{count} lesson results could not be put back."
     },
     "import": {
       "failed": "The import failed.",
@@ -607,6 +608,24 @@
       "badModel": "That stem model is not available.",
       "unavailable": "Demucs is not installed in the worker, so it cannot separate stems.",
       "decodeFailed": "The audio file could not be read for separation."
+    },
+    "course": {
+      "notFound": "That course was not found."
+    },
+    "lesson": {
+      "notFound": "That lesson was not found.",
+      "locked": "Finish the lessons before this one to open it.",
+      "invalid": "The lesson could not be read: {reason} (line {line}).",
+      "useCheck": "This lesson is checked against your practice log.",
+      "noSong": "This lesson has no song to check.",
+      "builtin": "Built-in lessons cannot be deleted."
+    },
+    "lessons": {
+      "packTooLarge": "That pack is too large (the limit is {limit} MB, or {limit} lessons).",
+      "packInvalid": "The pack could not be imported: {file}: {reason}",
+      "packEmpty": "The pack has no course/lesson.md files.",
+      "packNoCourse": "The course {course} has no course.md.",
+      "badPack": "That pack could not be imported."
     }
   },
   "ui": {
