@@ -1047,5 +1047,30 @@
     "durationSeconds": "{count}s",
     "durationMinutes": "{count}m",
     "durationHours": "{hours}h {minutes}m"
+  },
+  "chordDiagrams": {
+    "heading": "Chord diagrams",
+    "toolTitle": "Chord library",
+    "toolDescription": "Look up any chord, see several voicings for guitar, bass or ukulele, and hear it strummed.",
+    "openTool": "Open chord library",
+    "libraryHeading": "Chord library",
+    "librarySubtitle": "Search a chord name to see its voicings and hear them.",
+    "search": "Chord",
+    "searchPlaceholder": "Am7, F#m, D/F#, Csus4…",
+    "searchHint": "Type a chord name or pick a root and a quality.",
+    "root": "Root",
+    "quality": "Quality",
+    "major": "major",
+    "unknownChord": "“{chord}” is not a chord that can be drawn.",
+    "noShapes": "No playable shape for {chord} in this tuning.",
+    "diagramLabel": "{chord}, frets from the lowest string: {frets}",
+    "voicingOf": "{n} of {total}",
+    "previousVoicing": "Previous voicing of {chord}",
+    "nextVoicing": "Next voicing of {chord}",
+    "play": "Strum {chord}",
+    "fromSong": "From this song",
+    "noShape": "No shape for this tuning",
+    "capoNote": "Capo {fret}: shapes are shown as you finger them, and the strum sounds {fret} frets higher.",
+    "pdfCapo": "Capo {fret}"
   }
 }

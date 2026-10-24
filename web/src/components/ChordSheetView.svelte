@@ -1,11 +1,19 @@
 <script lang="ts">
   import { untrack } from "svelte";
 
+  import ChordSetupPicker from "./ChordSetupPicker.svelte";
   import ChordSheet from "./ChordSheet.svelte";
+  import ChordStrip from "./ChordStrip.svelte";
   import ChordWait from "./ChordWait.svelte";
   import Cover from "./Cover.svelte";
   import Icon from "./Icon.svelte";
   import Menu from "./Menu.svelte";
+  import { parse } from "../lib/chordpro";
+  import { loadChoice, saveChoice } from "../lib/chords/choice";
+  import { buildEntries } from "../lib/chords/entries";
+  import { resolveSetup } from "../lib/chords/instruments";
+  import { playStrum, strumNotes } from "../lib/chords/strum";
+  import { capoOf, chordsUsed } from "../lib/chords/used";
   import { t } from "../lib/i18n.svelte";
   import { followLink, hrefFor } from "../lib/router.svelte";
   import type { SongDetail } from "../lib/types";
@@ -17,6 +25,38 @@
   let size = $state(1);
   let exporting = $state(false);
   let error = $state("");
+  let choice = $state(untrack(() => loadChoice(song.id)));
+
+  const sheet = $derived(parse(song.chordpro ?? ""));
+  const capo = $derived(capoOf(sheet));
+  const setup = $derived(resolveSetup(choice.instrument, choice.tuning));
+  const entries = $derived(
+    buildEntries(
+      chordsUsed(sheet, transpose, flats),
+      setup.tuning.strings,
+      setup.instrument.rootInBass,
+      sheet.defines,
+      choice.voicings,
+    ),
+  );
+
+  function changeSetup(instrument: string, tuning: string) {
+    const next = resolveSetup(instrument, tuning);
+    choice = { ...choice, instrument: next.instrument.id, tuning: next.tuning.id };
+    saveChoice(song.id, choice);
+  }
+
+  function pickVoicing(name: string, index: number) {
+    const entry = entries.find((item) => item.name === name);
+    const voicing = entry?.voicings[index];
+    if (!voicing) return;
+    choice = {
+      ...choice,
+      voicings: { ...choice.voicings, [name]: voicing.frets.map((fret) => fret ?? "x").join(".") },
+    };
+    saveChoice(song.id, choice);
+  }
+
   let activeChord = $state<string | null>(null);
 
   // Keep the chord to play in view as the sheet moves on.
@@ -42,6 +82,13 @@
         artist: song.artist,
         transpose,
         flats,
+        diagrams: {
+          strings: setup.tuning.strings.length,
+          capoLabel: capo ? t("chordDiagrams.pdfCapo", { fret: capo }) : "",
+          chords: entries.flatMap((entry) =>
+            entry.voicing ? [{ name: entry.name, voicing: entry.voicing }] : [],
+          ),
+        },
       });
     } catch {
       error = t("player.exportPdfFailed");
@@ -114,6 +161,33 @@
     </div>
     {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
   </header>
+
+  {#if entries.length}
+    <section
+      class="chord-diagrams"
+      data-testid="chord-diagrams"
+      aria-label={t("chordDiagrams.heading")}
+    >
+      <div class="chord-diagrams-head no-print">
+        <h2 class="chord-diagrams-title">{t("chordDiagrams.heading")}</h2>
+        <ChordSetupPicker
+          instrument={setup.instrument.id}
+          tuning={setup.tuning.id}
+          onchange={changeSetup}
+        />
+      </div>
+      {#if capo}
+        <p class="hint" data-testid="chord-capo">{t("chordDiagrams.capoNote", { fret: capo })}</p>
+      {/if}
+      <ChordStrip
+        {entries}
+        strings={setup.tuning.strings.length}
+        onpick={pickVoicing}
+        onplay={(entry) =>
+          entry.voicing && playStrum(strumNotes(entry.voicing, setup.tuning.strings, capo))}
+      />
+    </section>
+  {/if}
 
   <ChordWait
     text={song.chordpro ?? ""}

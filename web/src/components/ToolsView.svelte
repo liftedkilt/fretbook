@@ -22,6 +22,15 @@
       path: "/tools/metronome",
       testId: "tool-card-metronome",
     },
+    {
+      id: "chords",
+      titleKey: "chordDiagrams.toolTitle",
+      descKey: "chordDiagrams.toolDescription",
+      openKey: "chordDiagrams.openTool",
+      icon: "chords",
+      path: "/tools/chords",
+      testId: "tool-card-chords",
+    },
   ];
 </script>
 

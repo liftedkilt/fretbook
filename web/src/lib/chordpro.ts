@@ -25,9 +25,20 @@ export interface Block {
   lines: Line[];
 }
 
+/** A fingering from a `{define:}` directive. `frets` run from the lowest string to the highest. */
+export interface ChordDefine {
+  name: string;
+  /** The fret the first position row sits on (1 means the nut), as written in the directive. */
+  baseFret: number;
+  /** Absolute fret per string, lowest string first. `null` is a muted string. */
+  frets: (number | null)[];
+}
+
 export interface Sheet {
   meta: Record<string, string>;
   blocks: Block[];
+  /** `{define:}` fingerings by chord name, the first definition of a name winning. */
+  defines: Record<string, ChordDefine>;
 }
 
 const DIRECTIVE = /^\s*\{\s*([A-Za-z_]+)\s*(?::\s*(.*?))?\s*\}\s*$/;
@@ -76,7 +87,43 @@ export function parseLyrics(line: string): Segment[] {
   return segments;
 }
 
+/**
+ * Read the value of `{define: Am base-fret 1 frets x 0 2 2 1 0 fingers …}`, and the older
+ * `{define: Am 1 x 0 2 2 1 0}`. Fret numbers count from `base-fret`; 0 is an open string and
+ * `x`, `X` or `-` a muted one. `copy`, `display` and `diagram` forms are not fingerings.
+ */
+export function parseDefine(value: string): ChordDefine | null {
+  const tokens = value.trim().split(/\s+/).filter(Boolean);
+  const name = tokens.shift();
+  if (!name || !CHORD.test(name)) return null;
+  let baseFret = 1;
+  let rest: string[];
+  const framesAt = tokens.findIndex((token) => token.toLowerCase() === "frets");
+  if (framesAt >= 0) {
+    const baseAt = tokens.findIndex((token) => token.toLowerCase() === "base-fret");
+    if (baseAt >= 0 && baseAt < framesAt) baseFret = Number(tokens[baseAt + 1]);
+    rest = tokens.slice(framesAt + 1);
+    const stop = rest.findIndex((token) => /^[A-Za-z]{2,}/.test(token) && !/^x+$/i.test(token));
+    if (stop >= 0) rest = rest.slice(0, stop);
+  } else {
+    baseFret = Number(tokens.shift());
+    rest = tokens;
+  }
+  if (!Number.isInteger(baseFret) || baseFret < 1 || baseFret > 24) return null;
+  if (rest.length < 3 || rest.length > 12) return null;
+  const frets: (number | null)[] = [];
+  for (const token of rest) {
+    if (/^[xX-]$/.test(token)) frets.push(null);
+    else if (/^\d{1,2}$/.test(token)) {
+      const fret = Number(token);
+      frets.push(fret === 0 ? 0 : baseFret + fret - 1);
+    } else return null;
+  }
+  return { name, baseFret, frets };
+}
+
 export function parse(text: string): Sheet {
+  const defines: Record<string, ChordDefine> = {};
   const meta: Record<string, string> = {};
   const blocks: Block[] = [{ kind: "", label: "", lines: [] }];
   let current = blocks[0];
@@ -93,7 +140,10 @@ export function parse(text: string): Sheet {
     if (directive) {
       const name = ALIASES[directive[1].toLowerCase()] ?? directive[1].toLowerCase();
       const value = (directive[2] ?? "").trim();
-      if (META.has(name)) {
+      if (name === "define") {
+        const define = parseDefine(value);
+        if (define && !(define.name in defines)) defines[define.name] = define;
+      } else if (META.has(name)) {
         if (!(name in meta)) meta[name] = value;
       } else if (name === "comment") {
         current.lines.push({ kind: "comment", text: value });
@@ -121,12 +171,12 @@ export function parse(text: string): Sheet {
   const kept = blocks.filter(
     (block) => block.label || block.lines.some((line) => line.kind !== "empty"),
   );
-  return { meta, blocks: kept };
+  return { meta, blocks: kept, defines };
 }
 
 const SHARPS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const FLATS = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
-const PITCH: Record<string, number> = Object.fromEntries([
+export const PITCH: Record<string, number> = Object.fromEntries([
   ...SHARPS.map((name, index) => [name, index]),
   ...FLATS.map((name, index) => [name, index]),
   ["Cb", 11],
@@ -134,7 +184,7 @@ const PITCH: Record<string, number> = Object.fromEntries([
   ["E#", 5],
   ["B#", 0],
 ]);
-const CHORD = /^([A-G][#b]?)([^/]*)(?:\/([A-G][#b]?))?$/;
+export const CHORD = /^([A-G][#b]?)([^/]*)(?:\/([A-G][#b]?))?$/;
 
 function shift(note: string, semitones: number, flats: boolean): string {
   const pitch = PITCH[note];
