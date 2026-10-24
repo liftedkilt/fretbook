@@ -40,6 +40,15 @@
       path: "/tools/trainer",
       testId: "tool-card-trainer",
     },
+    {
+      id: "exercises",
+      titleKey: "exercises.toolTitle",
+      descKey: "exercises.toolDescription",
+      openKey: "exercises.openTool",
+      icon: "tab",
+      path: "/tools/exercises",
+      testId: "tool-card-exercises",
+    },
   ];
 </script>
 

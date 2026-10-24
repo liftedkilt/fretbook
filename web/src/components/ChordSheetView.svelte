@@ -22,6 +22,7 @@
   let { song, initialTranspose = 0 }: { song: SongDetail; initialTranspose?: number } = $props();
 
   let transpose = $state(untrack(() => initialTranspose));
+  const transposeLabel = $derived(transpose > 0 ? `+${transpose}` : String(transpose));
   let flats = $state(false);
   let size = $state(1);
   let exporting = $state(false);
@@ -217,10 +218,10 @@
         data-testid="transpose-value"
         onclick={() => (transpose = 0)}
         disabled={transpose === 0}
-        aria-label={t("chords.reset")}
+        aria-label={`${transposeLabel}: ${t("chords.reset")}`}
         title={t("chords.reset")}
       >
-        {transpose > 0 ? `+${transpose}` : transpose}
+        {transposeLabel}
       </button>
       <button
         class="icon-button ghost"

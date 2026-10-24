@@ -241,7 +241,10 @@
     "previousBar": "Compasso anterior",
     "nextBar": "Próximo compasso",
     "position": "Posição",
-    "notation": "Partitura"
+    "notation": "Partitura",
+    "countingIn": "Contagem inicial",
+    "playing": "Tocando",
+    "paused": "Pausado"
   },
   "practice": {
     "metronome": "Metrônomo",
@@ -721,7 +724,7 @@
     "listening": "Toque uma corda…",
     "idle": "Toque em Iniciar e depois toque uma corda solta.",
     "inTune": "Corda afinada",
-    "playString": "Tocar o tom de referência de {note}",
+    "playString": "{string} {note}: tocar tom de referência",
     "toneHint": "Toque em uma corda para ouvir a nota de referência.",
     "start": "Iniciar",
     "starting": "Iniciando…",
@@ -1282,6 +1285,151 @@
       "dom7": "Sétima dominante",
       "maj7": "Sétima maior",
       "min7": "Sétima menor"
+    }
+  },
+  "exercises": {
+    "toolTitle": "Exercícios",
+    "toolDescription": "Gere escalas, arpejos, exercícios de dedos, trocas de acordes e padrões de baixo para tocar junto.",
+    "openTool": "Abrir exercícios",
+    "heading": "Exercícios",
+    "subtitle": "Monte um exercício a partir da teoria, veja a tablatura e salve na biblioteca para tocá-lo como qualquer música.",
+    "presetsHeading": "Exercícios prontos",
+    "kind": "Tipo de exercício",
+    "kinds": {
+      "scale": "Escala ou modo",
+      "arpeggio": "Arpejo",
+      "spider": "Exercício de dedos",
+      "changes": "Troca de acordes",
+      "bass": "Padrão de baixo"
+    },
+    "key": "Tom",
+    "scale": "Escala",
+    "chord": "Acorde",
+    "chords": "Acordes",
+    "chordsHelp": "De dois a quatro acordes, como G C D Em.",
+    "bassChordsHelp": "Até oito acordes, um compasso cada, como E7 A7 E7 B7.",
+    "position": "Posição",
+    "positionAuto": "Posição mais grave",
+    "positionFret": "A partir de uma casa",
+    "positionCaged": "Forma CAGED",
+    "startFret": "Casa inicial",
+    "shape": "Forma",
+    "shapeName": "Forma de {shape}",
+    "range": "Extensão",
+    "ranges": {
+      "position": "Posição inteira",
+      "octave": "Uma oitava",
+      "twoOctaves": "Duas oitavas"
+    },
+    "direction": "Direção",
+    "directions": {
+      "up": "Ascendente",
+      "down": "Descendente",
+      "both": "Subindo e descendo"
+    },
+    "rhythm": "Ritmo",
+    "rhythms": {
+      "quarter": "Semínimas",
+      "eighth": "Colcheias",
+      "triplet": "Tercinas",
+      "sixteenth": "Semicolcheias"
+    },
+    "fingers": "Ordem dos dedos",
+    "stringsDirection": "Pelas cordas",
+    "lowToHigh": "Da grave à aguda",
+    "highToLow": "Da aguda à grave",
+    "shifts": "Subidas de uma casa",
+    "beatsEach": "Tempos por acorde",
+    "strum": "Padrão de levada",
+    "strums": {
+      "quarters": "Palhetadas para baixo em semínimas",
+      "eighths": "Colcheias contínuas",
+      "folk": "Levada folk",
+      "ballad": "Balada",
+      "pop": "Pop"
+    },
+    "bassPattern": "Padrão",
+    "bassPatterns": {
+      "rootFifthOctave": "Tônica, quinta, oitava",
+      "walking": "Walking bass"
+    },
+    "cycles": "Repetições",
+    "save": "Salvar na biblioteca",
+    "tag": "exercício",
+    "scales": {
+      "major": "maior",
+      "dorian": "dórico",
+      "phrygian": "frígio",
+      "lydian": "lídio",
+      "mixolydian": "mixolídio",
+      "minor": "menor natural",
+      "locrian": "lócrio",
+      "harmonicMinor": "menor harmônica",
+      "melodicMinor": "menor melódica",
+      "majorPentatonic": "pentatônica maior",
+      "minorPentatonic": "pentatônica menor",
+      "blues": "blues",
+      "wholeTone": "tons inteiros"
+    },
+    "title": {
+      "scale": "{key} {scale}, a partir da casa {fret}",
+      "arpeggio": "Arpejo de {chord}, a partir da casa {fret}",
+      "spider": "Exercício de dedos {pattern} a partir da casa {fret}",
+      "changes": "Troca de acordes: {chords}",
+      "rootFifthOctave": "Tônica-quinta-oitava: {chords}",
+      "walking": "Walking bass: {chords}"
+    },
+    "presets": {
+      "pentatonicBox": {
+        "title": "Caixa pentatônica de Lá menor",
+        "description": "A primeira caixa da escala pentatônica menor, subindo e descendo em colcheias."
+      },
+      "majorOctave": {
+        "title": "Oitava de Dó maior",
+        "description": "Uma oitava de Dó maior na forma de C."
+      },
+      "dorianTriplets": {
+        "title": "Ré dórico em tercinas",
+        "description": "Duas oitavas de Ré dórico em tercinas."
+      },
+      "minorSeventhArpeggio": {
+        "title": "Arpejo de Am7",
+        "description": "Um arpejo de Lá menor com sétima em duas oitavas."
+      },
+      "spiderWarmUp": {
+        "title": "Aquecimento aranha",
+        "description": "1-2-3-4 em todas as cordas a partir da quinta casa."
+      },
+      "spiderCrawl": {
+        "title": "Aranha em progressão",
+        "description": "1-3-2-4, subindo uma casa a cada passada."
+      },
+      "openChordChanges": {
+        "title": "Troca de acordes abertos",
+        "description": "G, C, D e Em, quatro tempos cada."
+      },
+      "folkStrum": {
+        "title": "Levada folk",
+        "description": "Am, F, C e G com uma levada folk."
+      },
+      "rootFifthOctave": {
+        "title": "Tônica-quinta-oitava",
+        "description": "Uma linha de baixo sobre C, G, Am e F."
+      },
+      "walkingBlues": {
+        "title": "Walking bass de blues",
+        "description": "Uma linha caminhando sobre E7, A7, E7 e B7."
+      }
+    },
+    "errors": {
+      "noNotes": "Essa posição tem poucas notas dessa escala ou acorde. Tente outra posição ou uma extensão maior.",
+      "unknownScale": "Escala desconhecida.",
+      "badChord": "\"{chord}\" não é um acorde que o Fretbook conhece.",
+      "noVoicing": "Não há forma tocável para {chord} neste instrumento.",
+      "badPattern": "Esse padrão não é válido.",
+      "tooHigh": "O exercício passa do fim do braço. Comece mais abaixo ou use menos subidas.",
+      "chordCount": "Informe de {min} a {max} acordes.",
+      "outOfRange": "Uma nota fica fora da extensão deste instrumento."
     }
   }
 }
