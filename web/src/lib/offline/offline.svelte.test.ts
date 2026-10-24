@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const api = vi.hoisted(() => ({
   putSong: vi.fn(),
+  noteRebase: vi.fn(),
   getSong: vi.fn(),
 }));
 vi.mock("../api", () => {
@@ -19,6 +20,7 @@ vi.mock("../api", () => {
     ApiError,
     getSong: api.getSong,
     putSong: api.putSong,
+    noteRebase: api.noteRebase,
     isOfflineError: (error: unknown) =>
       error instanceof TypeError ||
       (error instanceof ApiError && error.key === "offline.unavailable"),

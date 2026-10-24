@@ -33,7 +33,7 @@ import type {
   TagsAdded,
 } from "./api-types";
 import { keyed } from "./i18n.svelte";
-import { queueEdit } from "./offline/queueState.svelte";
+import { dropEdit, queue, queueEdit } from "./offline/queueState.svelte";
 import { refreshSavedSong } from "./offline/store";
 import type { MidiImportOptions } from "./midiImport";
 import { currentPath } from "./router.svelte";
@@ -321,11 +321,33 @@ type SongEdit = {
   chordpro?: string;
 };
 
+/**
+ * Revisions an open editor may still hold for a song, and the one they became when a queued edit was sent. Without
+ * this the editor's next save would be refused as a conflict with the edit it made itself.
+ */
+const rebased = new Map<string, Map<number, number>>();
+
+export function noteRebase(id: string, from: number, to: number): void {
+  if (from === to) return;
+  const known = rebased.get(id) ?? new Map<number, number>();
+  known.set(from, to);
+  rebased.set(id, known);
+}
+
+function currentRevision(id: string, revision: number): number {
+  const known = rebased.get(id);
+  let next = revision;
+  for (let hops = 0; known?.has(next) && hops < 100; hops += 1) next = known.get(next)!;
+  return next;
+}
+
 /** Send an edit now, with no offline fallback. Rejected with a 409 `song.conflict` when the song changed since `revision`. */
 export async function putSong(id: string, body: SongEdit): Promise<SongDetail> {
   const saved = await view<SongDetail>(
     request<ContractSongDetail>(`/api/songs/${id}`, json("PUT", body)),
   );
+  // Every save carries the whole song, so it replaces an edit still waiting to be sent.
+  if (queue.edits.some((edit) => edit.songId === id)) dropEdit(id);
   lastSeen.set(id, saved);
   await refreshSavedSong(saved).catch(() => undefined);
   return saved;
@@ -336,7 +358,8 @@ export async function putSong(id: string, body: SongEdit): Promise<SongDetail> {
  * (same revision); `flushQueue` in `offline/offline.svelte.ts` sends it later under the usual revision rules.
  * Rejected with a 409 `song.conflict` when the song changed since `revision`.
  */
-export async function updateSong(id: string, body: SongEdit): Promise<SongDetail> {
+export async function updateSong(id: string, edit: SongEdit): Promise<SongDetail> {
+  const body = { ...edit, revision: currentRevision(id, edit.revision) };
   try {
     return await putSong(id, body);
   } catch (error) {

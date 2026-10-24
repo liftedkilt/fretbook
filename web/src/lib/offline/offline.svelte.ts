@@ -1,4 +1,4 @@
-import { ApiError, getSong, isOfflineError, putSong } from "../api";
+import { ApiError, getSong, isOfflineError, noteRebase, putSong } from "../api";
 import { dropEdit, markEdit, queue, reloadQueue } from "./queueState.svelte";
 import {
   emptyRegistry,
@@ -111,7 +111,8 @@ export async function flushQueue(): Promise<void> {
     for (const edit of [...queue.edits]) {
       if (edit.state !== "pending") continue;
       try {
-        await putSong(edit.songId, edit.body);
+        const saved = await putSong(edit.songId, edit.body);
+        noteRebase(edit.songId, edit.body.revision, saved.revision);
         dropEdit(edit.songId);
       } catch (error) {
         if (isOfflineError(error)) break;
@@ -134,7 +135,8 @@ export async function resolveEdit(songId: string, keep: "mine" | "theirs"): Prom
   const latest = await getSong(songId);
   if (keep === "mine") {
     try {
-      await putSong(songId, { ...edit.body, revision: latest.revision });
+      const saved = await putSong(songId, { ...edit.body, revision: latest.revision });
+      noteRebase(songId, edit.body.revision, saved.revision);
     } catch (error) {
       if (error instanceof ApiError && error.status === 409)
         markEdit(songId, "conflict", error.message);
