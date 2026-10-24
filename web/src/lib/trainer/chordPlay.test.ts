@@ -90,34 +90,28 @@ describe("identifyChord", () => {
 });
 
 describe("ChordAnswerMatcher on strummed audio", () => {
-  it("accepts every quality played on a few roots", () => {
-    for (const quality of CHORD_QUALITIES) {
-      for (const root of [48, 55]) {
-        const asked = question(quality.id, root);
-        const { verdict, at } = judge(asked, voicing(asked));
-        expect(verdict, `${quality.id} on ${root}`).toBe("right");
-        expect(at!).toBeGreaterThan(0.5);
-      }
+  it.each(CHORD_QUALITIES.map((quality) => quality.id))("accepts %s played on two roots", (id) => {
+    for (const root of [48, 55]) {
+      const asked = question(id, root);
+      const { verdict, at } = judge(asked, voicing(asked));
+      expect(verdict, `${id} on ${root}`).toBe("right");
+      expect(at!).toBeGreaterThan(0.5);
     }
   });
 
-  it("calls a different quality on the same root wrong", () => {
-    const pairs: [string, string][] = [
-      ["major", "minor"],
-      ["minor", "major"],
-      ["major", "dom7"],
-      ["dom7", "major"],
-      ["dom7", "maj7"],
-      ["maj7", "major"],
-      ["min7", "minor"],
-      ["sus4", "major"],
-      ["dim", "minor"],
-    ];
-    for (const [asked, played] of pairs) {
-      const q = question(asked, 50);
-      const { verdict } = judge(q, voicing(question(played, 50)));
-      expect(verdict, `asked ${asked}, played ${played}`).toBe("wrong");
-    }
+  it.each([
+    ["major", "minor"],
+    ["minor", "major"],
+    ["major", "dom7"],
+    ["dom7", "major"],
+    ["dom7", "maj7"],
+    ["maj7", "major"],
+    ["min7", "minor"],
+    ["sus4", "major"],
+    ["dim", "minor"],
+  ])("calls %s wrong when %s is played on the same root", (asked, played) => {
+    const { verdict } = judge(question(asked, 50), voicing(question(played, 50)));
+    expect(verdict).toBe("wrong");
   });
 
   it("calls the right quality on the wrong root wrong", () => {
