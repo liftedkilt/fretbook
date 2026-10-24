@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { untrack } from "svelte";
+  import { onMount, untrack } from "svelte";
 
   import CapoSuggestions from "./CapoSuggestions.svelte";
   import ChordSetupPicker from "./ChordSetupPicker.svelte";
@@ -17,6 +17,16 @@
   import { resolveSetup } from "../lib/chords/instruments";
   import { playStrum, strumNotes } from "../lib/chords/strum";
   import { capoOf, chordsUsed } from "../lib/chords/used";
+  import {
+    autoScrollSpeed,
+    handsFree,
+    isTyping,
+    pageDelta,
+    parseDuration,
+    pedalAction,
+    setStage,
+    stepScrollFactor,
+  } from "../lib/handsFree.svelte";
   import { t } from "../lib/i18n.svelte";
   import { followLink, hrefFor } from "../lib/router.svelte";
   import type { SongDetail } from "../lib/types";
@@ -69,6 +79,72 @@
 
   let activeChord = $state<string | null>(null);
 
+  // Hands-free: a pedal key turns the page or starts the auto-scroll, which reaches the end of the
+  // sheet as the song ends (from `{duration:}`, else the tempo and line count, else a typical song).
+  let scrolling = $state(false);
+  const stage = $derived(handsFree.stage);
+  const scrollSpeed = $derived(
+    autoScrollSpeed({
+      distance: 1,
+      duration: parseDuration(sheet.meta.duration),
+      bpm: Number.parseFloat(sheet.meta.tempo ?? "") || null,
+      lines: sheet.blocks.reduce((total, block) => total + block.lines.length, 0),
+      factor: handsFree.scrollFactor,
+    }),
+  );
+
+  function scrollRoom(): number {
+    const root = document.documentElement;
+    return Math.max(0, root.scrollHeight - window.innerHeight - window.scrollY);
+  }
+
+  function pageBy(direction: 1 | -1) {
+    const calm = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    window.scrollBy({
+      top: pageDelta(window.innerHeight, direction),
+      behavior: calm ? "auto" : "smooth",
+    });
+  }
+
+  $effect(() => {
+    if (!scrolling) return;
+    // The speed is per pixel of the whole page, so it is taken at the start and on a speed change.
+    const total = document.documentElement.scrollHeight - window.innerHeight;
+    const pixelsPerSecond = scrollSpeed * Math.max(0, total);
+    let frame = 0;
+    let last = performance.now();
+    let carry = 0;
+    const run = (now: number) => {
+      carry += ((now - last) / 1000) * pixelsPerSecond;
+      last = now;
+      const whole = Math.floor(carry);
+      if (whole > 0) {
+        carry -= whole;
+        window.scrollBy(0, whole);
+      }
+      if (scrollRoom() <= 0) scrolling = false;
+      else frame = requestAnimationFrame(run);
+    };
+    frame = requestAnimationFrame(run);
+    return () => cancelAnimationFrame(frame);
+  });
+
+  onMount(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (isTyping(event.target)) return;
+      const action = pedalAction(event);
+      if (action === "nextPage" || action === "previousPage") {
+        event.preventDefault();
+        pageBy(action === "nextPage" ? 1 : -1);
+      } else if (action === "toggle") {
+        event.preventDefault();
+        scrolling = !scrolling;
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  });
+
   // Keep the chord to play in view as the sheet moves on.
   $effect(() => {
     if (!activeChord) return;
@@ -108,7 +184,7 @@
   }
 </script>
 
-<div class="song-page chords-page">
+<div class="song-page chords-page" class:stage data-stage={stage}>
   <header class="song-header no-print">
     <a class="back-link" href={hrefFor("/")} onclick={(event) => followLink(event, "/")}
       ><Icon name="back" size={18} />{t("app.back")}</a
@@ -229,7 +305,7 @@
     onactive={(key) => (activeChord = key)}
   />
 
-  <div class="paper chord-paper" style="font-size:{size}rem">
+  <div class="paper chord-paper" style="font-size:{stage ? Math.max(size, 1.8) : size}rem">
     <ChordSheet text={song.chordpro ?? ""} transpose={shapeShift} {flats} active={activeChord} />
   </div>
 
@@ -270,6 +346,43 @@
       <span aria-hidden="true">{flats ? "♭" : "♯"}</span><span class="float-label"
         >{t("chords.flats")}</span
       >
+    </button>
+    <span class="float-divider" aria-hidden="true"></span>
+    <div class="float-group">
+      <button
+        class="toggle"
+        data-testid="autoscroll"
+        aria-pressed={scrolling}
+        onclick={() => (scrolling = !scrolling)}
+        title={t("handsFree.autoScroll")}
+      >
+        <Icon name={scrolling ? "pause" : "play"} size={16} /><span class="float-label"
+          >{t("handsFree.autoScroll")}</span
+        >
+      </button>
+      <button
+        class="icon-button ghost"
+        data-testid="autoscroll-slower"
+        onclick={() => stepScrollFactor(-1)}
+        aria-label={t("handsFree.scrollSlower")}><Icon name="minus" size={18} /></button
+      >
+      <span class="float-value" data-testid="autoscroll-speed">{handsFree.scrollFactor}×</span>
+      <button
+        class="icon-button ghost"
+        data-testid="autoscroll-faster"
+        onclick={() => stepScrollFactor(1)}
+        aria-label={t("handsFree.scrollFaster")}><Icon name="plus" size={18} /></button
+      >
+    </div>
+    <span class="float-divider" aria-hidden="true"></span>
+    <button
+      class="toggle"
+      data-testid="stage-toggle"
+      aria-pressed={stage}
+      onclick={() => setStage(!stage)}
+      title={t("handsFree.stage")}
+    >
+      <Icon name="monitor" size={16} /><span class="float-label">{t("handsFree.stage")}</span>
     </button>
     <span class="float-divider" aria-hidden="true"></span>
     <div class="float-group">

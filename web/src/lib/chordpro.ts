@@ -66,6 +66,7 @@ const META = new Set([
   "key",
   "capo",
   "tempo",
+  "duration",
   "composer",
   "album",
   "year",

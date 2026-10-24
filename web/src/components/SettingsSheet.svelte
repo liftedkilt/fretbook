@@ -4,6 +4,7 @@
 
   import BackupSettings from "./BackupSettings.svelte";
   import Icon from "./Icon.svelte";
+  import PedalSettings from "./PedalSettings.svelte";
   import Sheet from "./Sheet.svelte";
   import { apiUrl, getCalibration, saveCalibration } from "../lib/api";
   import { currentLocale, locales, setLocale, t, tOr } from "../lib/i18n.svelte";
@@ -188,6 +189,7 @@
         {/each}
       </div>
     </section>
+    <PedalSettings />
     <ApiTokens />
 
     <section class="setting setting-stacked" data-testid="calibration-setting">

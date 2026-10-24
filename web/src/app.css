@@ -4865,3 +4865,14 @@ kbd {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Stage mode: only the music and the transport, large, for a dim stage. */
+.chords-page.stage > :not(.chord-paper):not(.float-dock),
+.player-page.stage .song-header,
+.player-page.stage .dock-panel {
+  display: none;
+}
+
+.chords-page.stage .chord-paper {
+  line-height: 1.6;
+}

@@ -1772,5 +1772,31 @@
     "importPack": "Import a lesson pack",
     "imported": "Imported {courses} courses and {lessons} lessons.",
     "problems": "{count} lesson files have problems"
+  },
+  "handsFree": {
+    "autoScroll": "Auto-scroll",
+    "scrollSlower": "Scroll slower",
+    "scrollFaster": "Scroll faster",
+    "stage": "Stage mode",
+    "pedalTitle": "Page-turner pedal",
+    "pedalHint": "A Bluetooth pedal sends ordinary keys. Choose what each one does in the player and on chord sheets. “Keep” leaves a key to its normal job.",
+    "reset": "Restore defaults",
+    "keys": {
+      "PageDown": "Page Down",
+      "PageUp": "Page Up",
+      "ArrowDown": "Arrow Down",
+      "ArrowUp": "Arrow Up",
+      "ArrowRight": "Arrow Right",
+      "ArrowLeft": "Arrow Left"
+    },
+    "actions": {
+      "default": "Keep",
+      "nextPage": "Next page",
+      "previousPage": "Previous page",
+      "toggle": "Play / pause (auto-scroll on chord sheets)",
+      "loop": "Loop on / off",
+      "nextSong": "Next song in the setlist",
+      "previousSong": "Previous song in the setlist"
+    }
   }
 }
