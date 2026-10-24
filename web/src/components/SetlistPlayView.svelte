@@ -124,7 +124,11 @@
 {/if}
 
 <style>
+  /* Stays under the phone top bar (z 30) and clear of the dock (z 40, bottom). */
   .play-bar {
+    position: sticky;
+    top: 12px;
+    z-index: 25;
     display: grid;
     gap: 0.5rem;
     padding: 0.75rem 1rem;
@@ -150,5 +154,17 @@
   .hint {
     margin: 0;
     font-size: 0.8rem;
+  }
+  @media (max-width: 767px) {
+    .play-bar {
+      top: calc(58px + env(safe-area-inset-top, 0px) + 6px);
+      padding: 0.5rem 0.75rem;
+      margin-bottom: 0.75rem;
+      background: var(--glass-solid, var(--surface));
+    }
+    /* The keyboard shortcuts hint is useless on a phone and eats sticky height. */
+    .hint {
+      display: none;
+    }
   }
 </style>

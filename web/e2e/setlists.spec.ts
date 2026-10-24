@@ -136,3 +136,40 @@ test("a song can be in several setlists, and setlists can be renamed and deleted
     .click();
   await expect(page.getByTestId("setlist-row")).toHaveCount(1);
 });
+
+test("the play bar stays on screen while the score scrolls, clear of the dock", async ({
+  page,
+  seed,
+}) => {
+  const tab = await seed.musicXmlTab();
+  await seed.create({ title: "Zulu", chordpro: SHEET("Zulu") });
+  await page.setViewportSize({ width: 375, height: 812 });
+
+  await page.goto("/setlists");
+  await page.getByTestId("setlist-new-name").fill("Scroll test");
+  await page.getByTestId("setlist-create").click();
+  await page.getByRole("button", { name: `Add ${tab.title}` }).click();
+  await page.getByRole("button", { name: "Add Zulu" }).click();
+  await page.getByTestId("setlist-play").click();
+  await expect(page.getByTestId("player-play")).toBeVisible();
+
+  await page.evaluate(() => {
+    document.body.style.minHeight = "4000px";
+    document
+      .querySelector(".content")!
+      .insertAdjacentHTML("beforeend", '<div style="height:3000px" aria-hidden="true"></div>');
+  });
+  await page.mouse.wheel(0, 800);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(400);
+
+  const bar = page.getByTestId("setlist-play-bar");
+  await expect(bar).toBeInViewport({ ratio: 1 });
+  await expect(page.getByTestId("setlist-next")).toBeInViewport({ ratio: 1 });
+  await expect(page.getByTestId("setlist-prev")).toBeInViewport({ ratio: 1 });
+
+  const rects = await page.evaluate(() => {
+    const r = (sel: string) => document.querySelector(sel)!.getBoundingClientRect();
+    return { bar: r("[data-testid=setlist-play-bar]"), dock: r(".dock") };
+  });
+  expect(rects.bar.bottom).toBeLessThanOrEqual(rects.dock.top);
+});
