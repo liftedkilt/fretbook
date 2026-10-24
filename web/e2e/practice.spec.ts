@@ -135,6 +135,42 @@ test("the recording's volume and the metronome work alongside the audio", async 
   await page.getByTestId("player-play").click();
 });
 
+test("the synth plays beside the recording, balanced by the mixer", async ({ page, seed }) => {
+  const song = await seed.syncedSongWithAudio();
+  await page.goto(`/songs/${song.id}`);
+  await expect(page.getByTestId("player-score").locator("svg").first()).toBeVisible();
+  const audio = page.getByTestId("player-audio");
+  const stage = page.getByTestId("player-stage");
+  await page.getByTestId("player-panel-toggle").click();
+
+  // Only the recording to begin with: no second player is built.
+  await expect(stage).toHaveAttribute("data-synth", "off");
+  await expect(page.getByTestId("mix-balance")).toBeVisible();
+
+  // Half way, both sound at full volume, and the tracks can be muted and soloed.
+  await page.getByTestId("mix-balance").fill("0.5");
+  await expect(stage).toHaveAttribute("data-synth", "ready", { timeout: 30_000 });
+  await expect
+    .poll(() => audio.evaluate((element: HTMLAudioElement) => element.volume))
+    .toBeCloseTo(1, 2);
+  const mute = page.locator('[data-testid^="mute-"]').first();
+  await mute.click();
+  await expect(mute).toHaveAttribute("aria-pressed", "true");
+
+  // The synth starts and stops with the recording.
+  await page.getByTestId("player-play").click();
+  await expect(stage).toHaveAttribute("data-synth", "playing", { timeout: 15_000 });
+  await page.getByTestId("player-play").click();
+  await expect(stage).toHaveAttribute("data-synth", "ready");
+
+  // All the way to the synth silences the recording.
+  await page.getByTestId("mix-balance").fill("1");
+  await expect.poll(() => audio.evaluate((element: HTMLAudioElement) => element.volume)).toBe(0);
+  // All the way back removes the synth again.
+  await page.getByTestId("mix-balance").fill("0");
+  await expect(stage).toHaveAttribute("data-synth", "off");
+});
+
 test("saves named practice loops, jumps to them from the song page, and remembers speed trainer settings", async ({
   page,
   seed,

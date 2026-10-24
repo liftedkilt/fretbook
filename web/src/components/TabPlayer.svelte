@@ -124,6 +124,8 @@
   let scroller = $state<HTMLDivElement | null>(null);
   let audioEl = $state<HTMLAudioElement | null>(null);
   let stemsActive = false;
+  // For tests: whether the synth beside the recording is off, loading, ready or sounding.
+  let synthState = $state<"off" | "loading" | "ready" | "playing">("off");
   let trackId = $state(untrack(() => song.preferred_track_id || preferredTrack(song.document).id));
   let scoreReady = $state(0);
   let retuneOpen = $state(false);
@@ -342,17 +344,18 @@
       currentPosition,
       playedBarTicks(song.document, bar),
     );
-    follower.apply(
-      planFollow({
-        target,
-        synthAt: follower.position,
-        // Before the first bar (an intro, a count-in) the synth waits.
-        playing: !audioEl.paused && !countingIn && seconds >= (starts[0] ?? 0),
-        rate: audioEl.playbackRate,
-        synthBar: (written[bar + 1] ?? 0) - (written[bar] ?? 0),
-        recordingBar: (starts[bar + 1] ?? 0) - (starts[bar] ?? 0),
-      }),
-    );
+    const plan = planFollow({
+      target,
+      synthAt: follower.position,
+      // Before the first bar (an intro, a count-in) the synth waits.
+      playing: !audioEl.paused && !countingIn && seconds >= (starts[0] ?? 0),
+      rate: audioEl.playbackRate,
+      synthBar: (written[bar + 1] ?? 0) - (written[bar] ?? 0),
+      recordingBar: (starts[bar + 1] ?? 0) - (starts[bar] ?? 0),
+    });
+    follower.apply(plan);
+    const next = plan.play ? "playing" : "ready";
+    if (synthState !== next) synthState = next;
   }
 
   $effect(() => {
@@ -377,12 +380,14 @@
     const instance = new alphaTab.AlphaTabApi(hidden, settings);
     companion.api = instance;
     companion.ready = false;
+    synthState = "loading";
     let scoreLoaded = false;
     let playerReady = false;
     const check = () => {
       if (!scoreLoaded || !playerReady || companion.api !== instance) return;
       companion.follower = new SynthFollower(instance);
       companion.ready = true;
+      synthState = "ready";
       applyPractice();
     };
     instance.scoreLoaded.on(() => {
@@ -398,6 +403,7 @@
       companion.api = null;
       companion.follower = null;
       companion.ready = false;
+      synthState = "off";
       instance.destroy();
       hidden.remove();
     };
@@ -1581,7 +1587,12 @@
   {#if song.has_audio}
     <audio data-testid="player-audio" bind:this={audioEl} src={audioSrc} preload="auto"></audio>
   {/if}
-  <div class="player-stage" data-testid="player-stage" data-view={ui.playerView}>
+  <div
+    class="player-stage"
+    data-testid="player-stage"
+    data-view={ui.playerView}
+    data-synth={synthState}
+  >
     {#if ui.playerView === "highway" || ui.playerView === "split"}
       <div class="highway-wrap" data-testid="player-highway">
         <Highway
