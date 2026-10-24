@@ -30,6 +30,11 @@
         settings.core.logLevel = alphaTab.LogLevel.Warning;
         settings.player.playerMode = alphaTab.PlayerMode.Disabled;
         settings.display.staveProfile = alphaTab.StaveProfile.Tab;
+        if (settings.notation?.elements && alphaTab.NotationElement) {
+          settings.notation.elements.set(alphaTab.NotationElement.ScoreTitle, false);
+          settings.notation.elements.set(alphaTab.NotationElement.ScoreSubTitle, false);
+          settings.notation.elements.set(alphaTab.NotationElement.ScoreArtist, false);
+        }
         separateEffectBands(settings);
         const api = new alphaTab.AlphaTabApi(element, settings);
         instance = api;
@@ -58,5 +63,5 @@
 {#if failed}
   <p class="alert" role="alert">{t("asciiTab.previewFailed")}</p>
 {:else}
-  <div class="tab-preview" data-testid="tab-preview" bind:this={host}></div>
+  <div class="tab-preview paper" data-testid="tab-preview" bind:this={host}></div>
 {/if}

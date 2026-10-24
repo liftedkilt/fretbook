@@ -48,6 +48,52 @@ describe("RhythmTrainerView", () => {
   });
   afterEach(() => vi.useRealTimers());
 
+  it("draws connected beams for eighth notes, sixteenths, and triplets", async () => {
+    render(RhythmTrainerView);
+
+    // Default is eighths: 8 cells, 4 beamed pairs of span 1
+    const eighthBeams = screen.getAllByTestId("rhythm-beam");
+    expect(eighthBeams).toHaveLength(4);
+    eighthBeams.forEach((beam) => {
+      expect(beam.getAttribute("data-span")).toBe("1");
+      expect(beam.getAttribute("style")).toContain("calc(1 * (100% + var(--rhythm-gap)) + 2px)");
+    });
+    expect(screen.queryAllByTestId("rhythm-beam-secondary")).toHaveLength(0);
+
+    // Switch to sixteenths: 16 cells, 4 groups of 4 with primary and secondary beams of span 3
+    await fireEvent.change(screen.getByTestId("rhythm-pattern"), {
+      target: { value: "sixteenths" },
+    });
+    const sixteenthPrimary = screen.getAllByTestId("rhythm-beam");
+    const sixteenthSecondary = screen.getAllByTestId("rhythm-beam-secondary");
+    expect(sixteenthPrimary).toHaveLength(4);
+    expect(sixteenthSecondary).toHaveLength(4);
+    sixteenthPrimary.forEach((beam) => {
+      expect(beam.getAttribute("data-span")).toBe("3");
+      expect(beam.getAttribute("style")).toContain("calc(3 * (100% + var(--rhythm-gap)) + 2px)");
+    });
+    sixteenthSecondary.forEach((beam) => {
+      expect(beam.getAttribute("data-span")).toBe("3");
+    });
+
+    // Switch to triplets: 12 cells, 4 groups of 3 with beam of span 2
+    await fireEvent.change(screen.getByTestId("rhythm-pattern"), {
+      target: { value: "triplets" },
+    });
+    const tripletBeams = screen.getAllByTestId("rhythm-beam");
+    expect(tripletBeams).toHaveLength(4);
+    tripletBeams.forEach((beam) => {
+      expect(beam.getAttribute("data-span")).toBe("2");
+      expect(beam.getAttribute("style")).toContain("calc(2 * (100% + var(--rhythm-gap)) + 2px)");
+    });
+
+    // Switch to quarters: 4 quarter notes, no beams
+    await fireEvent.change(screen.getByTestId("rhythm-pattern"), {
+      target: { value: "quarters" },
+    });
+    expect(screen.queryAllByTestId("rhythm-beam")).toHaveLength(0);
+  });
+
   it("draws the chosen pattern with rests and strum arrows", async () => {
     render(RhythmTrainerView);
     await fireEvent.change(screen.getByTestId("rhythm-pattern"), {

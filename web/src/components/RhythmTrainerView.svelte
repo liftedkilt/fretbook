@@ -11,6 +11,7 @@
   import { clampBpm, MAX_BPM, MIN_BPM } from "../lib/metronome";
   import { localDay } from "../lib/practiceLog";
   import { barBreakdown, errorTone, songRhythms, type SongRhythm } from "../lib/rhythm/bars";
+  import { beamAt, hasFlag } from "../lib/rhythm/beaming";
   import {
     PATTERNS,
     cellCount,
@@ -453,15 +454,46 @@
         <span class="rhythm-count" aria-hidden="true"
           >{cell % pattern.grid === 0 ? cell / pattern.grid + 1 : "·"}</span
         >
-        {#if cellState(cell) === "hit"}
-          <svg viewBox="0 0 24 40" class="rhythm-note" aria-hidden="true">
-            <ellipse cx="9" cy="32" rx="6" ry="4.2" transform="rotate(-20 9 32)" />
-            <rect x="14" y="4" width="2" height="28" />
-            {#if pattern.grid >= 2 && cell % pattern.grid !== pattern.grid - 1 && cellState(cell + 1) === "hit"}
-              <rect x="14" y="4" width="24" height="4" />
-              {#if pattern.grid === 4}<rect x="14" y="11" width="24" height="3" />{/if}
+        <div class="rhythm-note-area">
+          <div class="rhythm-note-glyph">
+            {#if cellState(cell) === "hit"}
+              <svg viewBox="0 0 24 40" class="rhythm-note" aria-hidden="true">
+                <ellipse cx="9" cy="32" rx="6" ry="4.2" transform="rotate(-20 9 32)" />
+                <rect x="14" y="4" width="2" height="28" />
+                {#if hasFlag(pattern, cell, (i) => cellState(i) === "hit")}
+                  <path d="M14 4 c5 2 7 7 6 12 c-2 -3 -4 -5 -6 -6" />
+                  {#if pattern.grid === 4}
+                    <path d="M14 11 c5 2 7 7 6 12 c-2 -3 -4 -5 -6 -6" />
+                  {/if}
+                {/if}
+              </svg>
+            {:else}
+              <svg viewBox="0 0 24 40" class="rhythm-rest" aria-hidden="true">
+                <rect x="5" y="24" width="14" height="4" />
+              </svg>
             {/if}
-          </svg>
+          </div>
+          {#if cellState(cell) === "hit"}
+            {@const beam = beamAt(pattern, cell, (i) => cellState(i) === "hit")}
+            {#if beam}
+              <div
+                class="rhythm-beam"
+                data-testid="rhythm-beam"
+                data-span={beam.span}
+                style="width: calc({beam.span} * (100% + var(--rhythm-gap)) + 2px);"
+              ></div>
+              {#if beam.secondary}
+                <div
+                  class="rhythm-beam secondary"
+                  data-testid="rhythm-beam-secondary"
+                  data-span={beam.span}
+                  style="width: calc({beam.span} * (100% + var(--rhythm-gap)) + 2px);"
+                ></div>
+              {/if}
+            {/if}
+          {/if}
+        </div>
+        {#if cellState(cell) === "hit"}
           <svg
             viewBox="0 0 24 28"
             class="rhythm-strum"
@@ -473,10 +505,6 @@
             {:else}
               <path d="M12 25V5M5 12l7-8 7 8" />
             {/if}
-          </svg>
-        {:else}
-          <svg viewBox="0 0 24 40" class="rhythm-rest" aria-hidden="true">
-            <rect x="5" y="24" width="14" height="4" />
           </svg>
         {/if}
       </div>
@@ -599,10 +627,11 @@
     min-height: 44px;
   }
   .rhythm-bar {
+    --rhythm-gap: 2px;
     display: grid;
     grid-auto-flow: column;
     grid-auto-columns: minmax(0, 1fr);
-    gap: 2px;
+    gap: var(--rhythm-gap);
     background: var(--surface);
     border: 1px solid var(--line-strong);
     border-radius: var(--r-md);
@@ -610,6 +639,7 @@
     overflow-x: auto;
   }
   .rhythm-cell {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -628,16 +658,47 @@
     font-size: 0.8rem;
     color: var(--text-2);
   }
+  .rhythm-note-area {
+    position: relative;
+    width: 100%;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .rhythm-note-glyph {
+    position: relative;
+    width: 24px;
+    height: 40px;
+    flex: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
   .rhythm-note,
-  .rhythm-strum,
   .rhythm-rest {
+    width: 24px;
+    height: 40px;
+    fill: var(--text);
+  }
+  .rhythm-beam {
+    position: absolute;
+    left: calc(50% + 2px);
+    top: 4px;
+    height: 4px;
+    background: var(--text);
+    z-index: 1;
+    pointer-events: none;
+    border-radius: 1px;
+  }
+  .rhythm-beam.secondary {
+    top: 11px;
+    height: 3px;
+  }
+  .rhythm-strum {
     width: 100%;
     max-width: 28px;
     height: auto;
-    fill: var(--text);
-    overflow: visible;
-  }
-  .rhythm-strum {
     fill: none;
     stroke: var(--text-2);
     stroke-width: 2.5;

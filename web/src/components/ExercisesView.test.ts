@@ -55,6 +55,7 @@ describe("ExercisesView", () => {
 
     await fireEvent.change(screen.getByTestId("exercise-scale"), { target: { value: "major" } });
     expect(screen.getByTestId("exercise-title")).toHaveTextContent("A major, from fret 5");
+    expect(screen.getByTestId("exercise-save")).toHaveClass("primary");
 
     await fireEvent.click(screen.getByTestId("exercise-save"));
     await waitFor(() => expect(router.navigate).toHaveBeenCalledWith("/songs/song-1"));
