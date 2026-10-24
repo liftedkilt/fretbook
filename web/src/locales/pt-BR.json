@@ -972,6 +972,21 @@
     "reset": "Reiniciar",
     "selectLoop": "Repetições salvas…"
   },
+  "chordWait": {
+    "option": "Verificar acordes pelas notas em conjunto",
+    "playChord": "Toque o acorde: {notes}",
+    "title": "Esperar pelo acorde",
+    "about": "Toque o acorde destacado e a cifra avança para o próximo. O app escuta as notas em conjunto, então uma corda um pouco errada ainda conta.",
+    "start": "Esperar por mim",
+    "stop": "Parar de esperar",
+    "listening": "Ouvindo. Toque {chord}.",
+    "playNow": "Toque {chord}",
+    "hit": "Acorde certo",
+    "done": "Concluído: {hits} de {total} acordes tocados.",
+    "skip": "Pular este acorde",
+    "progress": "{hits} de {total} acordes",
+    "noChords": "Esta cifra não tem acordes para tocar."
+  },
   "job": {
     "echo": "Repetindo o trabalho"
   },

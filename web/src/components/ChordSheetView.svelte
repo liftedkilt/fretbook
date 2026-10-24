@@ -4,6 +4,7 @@
   import ChordSetupPicker from "./ChordSetupPicker.svelte";
   import ChordSheet from "./ChordSheet.svelte";
   import ChordStrip from "./ChordStrip.svelte";
+  import ChordWait from "./ChordWait.svelte";
   import Cover from "./Cover.svelte";
   import Icon from "./Icon.svelte";
   import Menu from "./Menu.svelte";
@@ -55,6 +56,16 @@
     };
     saveChoice(song.id, choice);
   }
+
+  let activeChord = $state<string | null>(null);
+
+  // Keep the chord to play in view as the sheet moves on.
+  $effect(() => {
+    if (!activeChord) return;
+    document
+      .querySelector<HTMLElement>(".chord-active")
+      ?.scrollIntoView?.({ block: "center", behavior: "smooth" });
+  });
 
   function exportUrl(kind: string): string {
     return new URL(`api/songs/${song.id}/export.${kind}`, document.baseURI).toString();
@@ -178,8 +189,15 @@
     </section>
   {/if}
 
+  <ChordWait
+    text={song.chordpro ?? ""}
+    {transpose}
+    {flats}
+    onactive={(key) => (activeChord = key)}
+  />
+
   <div class="paper chord-paper" style="font-size:{size}rem">
-    <ChordSheet text={song.chordpro ?? ""} {transpose} {flats} />
+    <ChordSheet text={song.chordpro ?? ""} {transpose} {flats} active={activeChord} />
   </div>
 
   <div class="float-dock no-print" role="toolbar" aria-label={t("chords.controls")}>

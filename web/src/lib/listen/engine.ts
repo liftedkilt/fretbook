@@ -1,3 +1,4 @@
+import { ChromaAnalyzer, type ChromaEvent } from "./chroma";
 import { MpmDetector, windowSizeFor } from "./mpm";
 import { DEFAULT_A4, describePitch, midiToFrequency } from "./notes";
 import { OnsetDetector } from "./onset";
@@ -55,6 +56,12 @@ export class PitchEngine {
   private blockPeak = 0;
   private blockSumSquares = 0;
   private blockCount = 0;
+  private readonly chroma: ChromaAnalyzer;
+  private readonly chromaHop: number;
+  private readonly chromaWindow: Float32Array;
+  private chromaOn = false;
+  private chromaPendingOnset: number | null = null;
+  private chromaEvents: ChromaEvent[] = [];
 
   constructor(options: EngineOptions) {
     this.sampleRate = options.sampleRate;
@@ -74,7 +81,12 @@ export class PitchEngine {
     );
     this.silenceRms = options.silenceRms ?? 0.003;
     this.minClarity = options.minClarity ?? 0.7;
-    this.ring = new Float32Array(Math.max(this.windowSize, this.onsets.frameSize));
+    this.chroma = new ChromaAnalyzer({ sampleRate: this.sampleRate });
+    this.chromaHop = Math.max(hop, Math.round((0.05 * this.sampleRate) / hop) * hop);
+    this.chromaWindow = new Float32Array(this.chroma.size);
+    this.ring = new Float32Array(
+      Math.max(this.windowSize, this.onsets.frameSize, this.chroma.size),
+    );
     this.window = new Float32Array(this.windowSize);
     this.frame = new Float32Array(this.onsets.frameSize);
   }
@@ -82,6 +94,25 @@ export class PitchEngine {
   /** Tell the detector which note is expected next so octave errors resolve towards it. */
   setExpectedMidi(midi: number | null): void {
     this.expectedFrequency = midi === null ? null : midiToFrequency(midi, this.a4);
+  }
+
+  /**
+   * Turn chroma readings on or off. They cost an FFT every 50 ms, so only wait mode on a chord
+   * asks for them. Read them with `takeChroma`.
+   */
+  setChroma(on: boolean): void {
+    this.chromaOn = on;
+    if (!on) {
+      this.chromaPendingOnset = null;
+      this.chromaEvents = [];
+    }
+  }
+
+  /** The chroma readings made since the last call. */
+  takeChroma(): ChromaEvent[] {
+    const events = this.chromaEvents;
+    this.chromaEvents = [];
+    return events;
   }
 
   /** RMS and peak (0..1) of the audio since the last call; resets the meter. */
@@ -116,6 +147,15 @@ export class PitchEngine {
         this.pendingOnset =
           now - (onset.hopsAgo * hop + this.onsets.frameSize * 0.25) / this.sampleRate;
         this.lastOnsetFrame = this.written;
+        if (this.chromaOn && this.chromaPendingOnset === null)
+          this.chromaPendingOnset = this.pendingOnset;
+      }
+      if (
+        this.chromaOn &&
+        this.written % this.chromaHop === 0 &&
+        this.written >= this.chroma.size
+      ) {
+        this.chromaEvents.push(this.analyseChroma(now));
       }
       if (this.written % this.pitchHop === 0 && this.written >= this.windowSize) {
         events.push(this.analyse(now));
@@ -128,6 +168,22 @@ export class PitchEngine {
     const size = this.ring.length;
     const start = this.written - into.length;
     for (let j = 0; j < into.length; j++) into[j] = this.ring[(start + j) % size];
+  }
+
+  private analyseChroma(now: number): ChromaEvent {
+    this.copyTail(this.chromaWindow);
+    let energy = 0;
+    for (let i = 0; i < this.chromaWindow.length; i++) energy += this.chromaWindow[i] ** 2;
+    const loud = Math.sqrt(energy / this.chromaWindow.length) >= this.silenceRms;
+    const onsetTime = this.chromaPendingOnset;
+    this.chromaPendingOnset = null;
+    return {
+      time: now,
+      bins: loud ? this.chroma.analyse(this.chromaWindow) : new Array<number>(12).fill(0),
+      span: this.chroma.size / this.sampleRate,
+      onset: onsetTime !== null,
+      onsetTime,
+    };
   }
 
   private analyse(now: number): PitchEvent {

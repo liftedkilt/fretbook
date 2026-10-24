@@ -71,10 +71,16 @@ describe("settings", () => {
   });
 
   it("remembers the wait mode options and repairs bad ones", () => {
-    expect(defaultPractice().wait).toEqual({ anyOctave: true, silent: false, hintSeconds: 5 });
+    expect(defaultPractice().wait).toEqual({
+      anyOctave: true,
+      silent: false,
+      hintSeconds: 5,
+      chords: true,
+    });
     expect(
       parsePractice({ wait: { anyOctave: false, silent: true, hintSeconds: 99 } }).wait,
-    ).toEqual({ anyOctave: false, silent: true, hintSeconds: 30 });
+    ).toEqual({ anyOctave: false, silent: true, hintSeconds: 30, chords: true });
+    expect(parsePractice({ wait: { chords: false } }).wait.chords).toBe(false);
     expect(parsePractice({ wait: { hintSeconds: "soon" } }).wait.hintSeconds).toBe(5);
     expect(parsePractice({ metronome: { on: true } }).wait.anyOctave).toBe(true);
     expect(parsePractice("nonsense")).toEqual(defaultPractice());
