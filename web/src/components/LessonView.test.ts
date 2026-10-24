@@ -1,6 +1,8 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "../lib/api";
+import { recallLessonSong } from "../lib/lessonRun";
+import { ui } from "../lib/ui.svelte";
 import LessonView from "./LessonView.svelte";
 
 const mockGet = vi.fn();
@@ -58,6 +60,9 @@ describe("LessonView", () => {
     mockOpen.mockResolvedValue(undefined);
     mockGet.mockResolvedValue(lesson());
     mockSongs.mockResolvedValue({ items: [] });
+    localStorage.clear();
+    ui.sheet = "";
+    ui.addForLesson = null;
   });
 
   it("shows the lesson, notes the visit, and marks a lesson with no condition as done", async () => {
@@ -170,6 +175,49 @@ describe("LessonView", () => {
       "href",
       "/songs/s1?lesson=g1/l1",
     );
+  });
+
+  const waitLesson = () =>
+    lesson({ pass_condition: { type: "wait", min_score: null, min_bpm: null, song: "" } });
+  const songItems = {
+    items: [
+      { id: "s1", title: "Riff", artist: "", content_kind: "tab" },
+      { id: "s2", title: "Lick", artist: "", content_kind: "tab" },
+    ],
+  };
+
+  it("lets a learner with an empty library import a song for the lesson", async () => {
+    mockGet.mockResolvedValue(waitLesson());
+    render(LessonView, { course: "g1", lesson: "l1" });
+    expect(screen.queryByTestId("lesson-song-pick")).toBeNull();
+    await fireEvent.click(await screen.findByTestId("lesson-import"));
+    expect(ui.sheet).toBe("add");
+    expect(ui.addForLesson).toEqual({ course: "g1", lesson: "l1" });
+  });
+
+  it("remembers the picked song and starts on it next time", async () => {
+    mockGet.mockResolvedValue(waitLesson());
+    mockSongs.mockResolvedValue(songItems);
+    const first = render(LessonView, { course: "g1", lesson: "l1" });
+    const pick = await screen.findByTestId("lesson-song-pick");
+    await fireEvent.change(pick, { target: { value: "s2" } });
+    expect(recallLessonSong(ui.me?.user_id, { course: "g1", lesson: "l1" })).toBe("s2");
+    first.unmount();
+
+    render(LessonView, { course: "g1", lesson: "l1" });
+    expect(await screen.findByTestId("lesson-play-link")).toHaveAttribute(
+      "href",
+      "/songs/s2?lesson=g1/l1",
+    );
+  });
+
+  it("ignores a remembered song that is no longer in the library", async () => {
+    localStorage.setItem("fretbook.lessonSong.local.g1/l1", "gone");
+    mockGet.mockResolvedValue(waitLesson());
+    mockSongs.mockResolvedValue(songItems);
+    render(LessonView, { course: "g1", lesson: "l1" });
+    await screen.findByTestId("lesson-song-pick");
+    expect(screen.queryByTestId("lesson-play-link")).toBeNull();
   });
 
   it("offers no song picker when the lesson names a song or has no pass condition", async () => {

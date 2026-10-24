@@ -35,6 +35,41 @@ export function lessonSongPath(songId: string, ref: LessonRef): string {
   return `/songs/${encodeURIComponent(songId)}${lessonQuery(ref)}`;
 }
 
+/** A freshly imported song's page, reporting to the lesson; any other path is returned unchanged. */
+export function withLesson(path: string, ref: LessonRef): string {
+  const match = /^\/songs\/([^/?]+)$/.exec(path);
+  return match ? lessonSongPath(decodeURIComponent(match[1]), ref) : path;
+}
+
+const PICK_PREFIX = "fretbook.lessonSong";
+
+function pickKey(userId: string | null | undefined, ref: LessonRef): string {
+  return `${PICK_PREFIX}.${userId || "local"}.${ref.course}/${ref.lesson}`;
+}
+
+/** The song this learner last picked for the lesson, or "" (storage can be missing or blocked). */
+export function recallLessonSong(userId: string | null | undefined, ref: LessonRef): string {
+  try {
+    return localStorage.getItem(pickKey(userId, ref)) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+/** Remember the song picked for the lesson, per user on this device; an empty id forgets it. */
+export function rememberLessonSong(
+  userId: string | null | undefined,
+  ref: LessonRef,
+  songId: string,
+): void {
+  try {
+    if (songId) localStorage.setItem(pickKey(userId, ref), songId);
+    else localStorage.removeItem(pickKey(userId, ref));
+  } catch {
+    // Not being able to remember a pick must not get in the way of playing.
+  }
+}
+
 export type LessonRun =
   | {
       kind: "scored";

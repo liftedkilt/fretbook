@@ -1,5 +1,13 @@
-import { describe, expect, it } from "vitest";
-import { lessonResult, lessonSongPath, MAX_PASS_BPM, parseLessonParam } from "./lessonRun";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  lessonResult,
+  lessonSongPath,
+  MAX_PASS_BPM,
+  parseLessonParam,
+  recallLessonSong,
+  rememberLessonSong,
+  withLesson,
+} from "./lessonRun";
 
 describe("parseLessonParam", () => {
   it("reads a course and lesson id pair", () => {
@@ -85,5 +93,52 @@ describe("lessonResult", () => {
     expect(lessonResult(null, scored)).toBeNull();
     expect(lessonResult({ type: "score", song: "abc" }, scored)).toBeNull();
     expect(lessonResult({ type: "wait", song: "abc" }, { kind: "wait" })).toBeNull();
+  });
+});
+
+describe("withLesson", () => {
+  const ref = { course: "a", lesson: "b" };
+
+  it("attaches the lesson to a song page and leaves other paths alone", () => {
+    expect(withLesson("/songs/abc", ref)).toBe("/songs/abc?lesson=a/b");
+    expect(withLesson("/songs/abc/edit", ref)).toBe("/songs/abc/edit");
+    expect(withLesson("/lessons/a/b", ref)).toBe("/lessons/a/b");
+  });
+});
+
+describe("the remembered song", () => {
+  const ref = { course: "a", lesson: "b" };
+
+  beforeEach(() => {
+    const store = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => void store.set(key, value),
+      removeItem: (key: string) => void store.delete(key),
+    });
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("is kept per user and per lesson", () => {
+    rememberLessonSong("u1", ref, "s1");
+    expect(recallLessonSong("u1", ref)).toBe("s1");
+    expect(recallLessonSong("u2", ref)).toBe("");
+    expect(recallLessonSong("u1", { course: "a", lesson: "c" })).toBe("");
+    expect(recallLessonSong(null, ref)).toBe("");
+  });
+
+  it("is forgotten when the pick is cleared", () => {
+    rememberLessonSong("u1", ref, "s1");
+    rememberLessonSong("u1", ref, "");
+    expect(recallLessonSong("u1", ref)).toBe("");
+  });
+
+  it("copes with storage that throws", () => {
+    const fail = () => {
+      throw new Error("blocked");
+    };
+    vi.stubGlobal("localStorage", { getItem: fail, setItem: fail, removeItem: fail });
+    expect(recallLessonSong("u1", ref)).toBe("");
+    expect(() => rememberLessonSong("u1", ref, "s1")).not.toThrow();
   });
 });

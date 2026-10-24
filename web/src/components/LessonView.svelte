@@ -11,11 +11,16 @@
   } from "../lib/api";
   import type { LessonDetail, LessonProgressResult } from "../lib/api-types";
   import { t } from "../lib/i18n.svelte";
-  import { lessonQuery, lessonSongPath } from "../lib/lessonRun";
+  import {
+    lessonQuery,
+    lessonSongPath,
+    recallLessonSong,
+    rememberLessonSong,
+  } from "../lib/lessonRun";
   import { coursePath, lessonPath } from "../lib/lessons";
   import { followLink, hrefFor } from "../lib/router.svelte";
   import type { SongSummary } from "../lib/types";
-  import { ui } from "../lib/ui.svelte";
+  import { openAddForLesson, ui } from "../lib/ui.svelte";
 
   let { course, lesson }: { course: string; lesson: string } = $props();
 
@@ -35,6 +40,7 @@
     locked = false;
     outcome = null;
     score = bpm = null;
+    picked = "";
     getLesson(wantedCourse, wantedLesson)
       .then((found) => {
         detail = found;
@@ -82,13 +88,25 @@
     let current = true;
     listSongs({ sort: "opened", order: "desc", limit: 100 })
       .then((page) => {
-        if (current) songs = page.items.filter((item) => item.content_kind !== "chords");
+        if (!current) return;
+        songs = page.items.filter((item) => item.content_kind !== "chords");
+        // Start on the song picked last time, if it is still in the library.
+        const last = recallLessonSong(ui.me?.user_id, { course, lesson });
+        if (!picked && songs.some((item) => item.id === last)) picked = last;
       })
       .catch(() => undefined);
     return () => {
       current = false;
     };
   });
+
+  function pick(event: Event) {
+    rememberLessonSong(
+      ui.me?.user_id,
+      { course, lesson },
+      (event.currentTarget as HTMLSelectElement).value,
+    );
+  }
 
   function report(event: SubmitEvent) {
     event.preventDefault();
@@ -226,19 +244,28 @@
         </form>
       {/if}
 
-      {#if playable && songs.length}
+      {#if playable}
         <div class="lesson-report" data-testid="lesson-play">
-          <label class="tool-field">
-            <span>{t("lessonRun.pick")}</span>
-            <select bind:value={picked} data-testid="lesson-song-pick">
-              <option value="">{t("lessonRun.pickPlaceholder")}</option>
-              {#each songs as item (item.id)}
-                <option value={item.id}
-                  >{item.artist ? `${item.title} · ${item.artist}` : item.title}</option
-                >
-              {/each}
-            </select>
-          </label>
+          {#if songs.length}
+            <label class="tool-field">
+              <span>{t("lessonRun.pick")}</span>
+              <select bind:value={picked} onchange={pick} data-testid="lesson-song-pick">
+                <option value="">{t("lessonRun.pickPlaceholder")}</option>
+                {#each songs as item (item.id)}
+                  <option value={item.id}
+                    >{item.artist ? `${item.title} · ${item.artist}` : item.title}</option
+                  >
+                {/each}
+              </select>
+            </label>
+          {/if}
+          <button
+            type="button"
+            data-testid="lesson-import"
+            onclick={() => openAddForLesson({ course, lesson })}
+          >
+            <Icon name="upload" size={18} /><span>{t("lessonRun.import")}</span>
+          </button>
           {#if picked}
             <a
               class="button"

@@ -1900,7 +1900,8 @@
     "error": "The result could not be saved to the lesson. Check your connection and play it again.",
     "pick": "Practise it on a song",
     "pickPlaceholder": "Choose a song…",
-    "play": "Open in the player"
+    "play": "Open in the player",
+    "import": "Import a song to practise on"
   },
   "metadata": {
     "heading": "Details",

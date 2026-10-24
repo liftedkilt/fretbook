@@ -27,6 +27,7 @@
   import { isGuitarProFile } from "../lib/sniff";
   import { keyed, t, tOr } from "../lib/i18n.svelte";
   import { instrumentLabel } from "../lib/instruments";
+  import { rememberLessonSong, withLesson } from "../lib/lessonRun";
   import { navigate } from "../lib/router.svelte";
   import { tuningLabel } from "../lib/tuning";
   import type { MidiInspection } from "../lib/api-types";
@@ -92,9 +93,14 @@
   }
 
   function finish(path: string) {
+    const lesson = ui.addForLesson;
     void refreshSongs();
     closeSheet();
-    navigate(path);
+    const target = lesson ? withLesson(path, lesson) : path;
+    if (lesson && target !== path) {
+      rememberLessonSong(ui.me?.user_id, lesson, path.slice("/songs/".length));
+    }
+    navigate(target);
   }
 
   async function create() {
@@ -127,6 +133,7 @@
       sheetTitle = "";
       sheetArtist = "";
       sheetText = "";
+      ui.addForLesson = null;
       finish(`/songs/${song.id}`);
     } catch (err) {
       error = message(err);
