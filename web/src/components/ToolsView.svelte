@@ -23,6 +23,15 @@
       testId: "tool-card-metronome",
     },
     {
+      id: "rhythm",
+      titleKey: "rhythm.toolTitle",
+      descKey: "rhythm.toolDescription",
+      openKey: "rhythm.openTool",
+      icon: "gauge",
+      path: "/tools/rhythm",
+      testId: "tool-card-rhythm",
+    },
+    {
       id: "chords",
       titleKey: "chordDiagrams.toolTitle",
       descKey: "chordDiagrams.toolDescription",

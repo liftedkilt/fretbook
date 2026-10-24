@@ -15,6 +15,7 @@
   import SetlistView from "./components/SetlistView.svelte";
   import SettingsSheet from "./components/SettingsSheet.svelte";
   import SongView from "./components/SongView.svelte";
+  import RhythmTrainerView from "./components/RhythmTrainerView.svelte";
   import StandaloneMetronomeView from "./components/StandaloneMetronomeView.svelte";
   import StandaloneTunerView from "./components/StandaloneTunerView.svelte";
   import ToolsView from "./components/ToolsView.svelte";
@@ -43,6 +44,7 @@
   const isTools = $derived(path === "/tools" || path === "/tools/");
   const isToolsTuner = $derived(path === "/tools/tuner" || path === "/tools/tuner/");
   const isToolsMetronome = $derived(path === "/tools/metronome" || path === "/tools/metronome/");
+  const isToolsRhythm = $derived(path === "/tools/rhythm" || path === "/tools/rhythm/");
   const isToolsChords = $derived(path === "/tools/chords" || path === "/tools/chords/");
   const isToolsTrainer = $derived(path === "/tools/trainer" || path === "/tools/trainer/");
   const isToolsExercises = $derived(path === "/tools/exercises" || path === "/tools/exercises/");
@@ -276,6 +278,8 @@
       <StandaloneMetronomeView />
     {:else if isToolsTrainer}
       <TrainerView />
+    {:else if isToolsRhythm}
+      <RhythmTrainerView />
     {:else if isToolsChords}
       <ChordLibraryView />
     {:else if isToolsExercises}

@@ -65,6 +65,21 @@ pair per user, with a manual offset.
 Wait for the sound to finish before you play. The best score for each game is kept in this browser; the time and score of
 each game also go into the practice log below.
 
+## Rhythm trainer
+
+**Tools → Rhythm trainer** drills rhythm without a song. Pick a pattern (quarters to sixteenths, rests, off-beats,
+syncopation, a gallop, triplets), a tempo and a number of bars. It shows the pattern as notation with strum arrows
+(down on the beat, up in between), counts you in with one bar of clicks, and then clicks only the beats: the
+subdivisions are yours to feel.
+
+Play along by pressing **Space**, tapping the pad, or strumming a muted string with **Listen with the microphone** on.
+Each hit is matched to the nearest expected one, and the result shows how many you hit, the average error and spread
+in milliseconds, a histogram of early and late hits, and whether you tend to **rush** or **drag**.
+
+Microphone hits are corrected by the round-trip latency from the [calibration](#scored-play-along) in Settings; taps and
+key presses are corrected by half of it (the output half). Without a calibration nothing is subtracted, so a laggy
+Bluetooth setup will look like dragging.
+
 ## Practice log
 
 The time you spend playing a tab is logged automatically, per song, track and loop, with the speed and the mode (free
