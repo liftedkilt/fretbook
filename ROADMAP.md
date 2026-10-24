@@ -21,10 +21,6 @@ Practice controls (metronome, count-in, mixer, pitch-preserving slowdown) are do
 
 ## Nice to have
 
-### Practice
-
-- **Stem separation**: isolate or remove the bass or guitar in the recording (for example with Demucs). It needs a GPU, so it can run as a kind in the job worker (`python -m fretbook.worker`, `Dockerfile.worker`).
-
 ### Listening to you play
 
 Features that use the microphone to hear the instrument, in the order to build them. They all run in the browser and share one piece of pitch detection, which is built (`web/src/lib/listen/`) and now drives the tuner and wait mode. Browsers only allow the microphone on HTTPS pages (or `localhost`), so the README has to tell self-hosters to put Fretbook behind HTTPS to use them.

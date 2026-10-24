@@ -132,6 +132,26 @@ class MediaStore:
             ).fetchone()
         return dict(row) if row else None
 
+    def stems_for(self, owner_id: str, song_id: str) -> list[dict[str, str]]:
+        """The newest file of each stem kind (``stem-bass``, ...), oldest kind first."""
+        with self._session() as conn:
+            rows = conn.execute(
+                """
+                SELECT * FROM media
+                WHERE owner_id = ? AND song_id = ? AND kind LIKE 'stem-%'
+                ORDER BY created_at DESC, id
+                """,
+                (owner_id, song_id),
+            ).fetchall()
+        newest: dict[str, dict[str, str]] = {}
+        for row in rows:
+            newest.setdefault(row["kind"], dict(row))
+        return sorted(newest.values(), key=lambda item: item["kind"])
+
+    def delete_stems(self, owner_id: str, song_id: str) -> None:
+        for row in self.stems_for(owner_id, song_id):
+            self.delete_kind(owner_id, song_id, row["kind"])
+
     def path_for(self, row: dict[str, str] | sqlite3.Row) -> Path:
         path = (self.root / str(row["storage_relpath"])).resolve()
         if not path.is_relative_to(self.root.resolve()):

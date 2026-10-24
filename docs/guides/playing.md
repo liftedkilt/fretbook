@@ -54,6 +54,14 @@ and count-in follow the marks.
 If the song changed elsewhere since you opened it (for example sync marks tapped in another tab), saving merges your
 edits on top. Real conflicts ask you to reload.
 
+### Stems: play along without the bass
+
+If your server runs the [job worker](../self-hosting/worker.md), a song with a recording shows **Stems** in the
+practice panel. **Separate stems** splits the recording into bass, guitar, drums, piano, vocals and the rest (it
+takes a few minutes). Then tick **Play with stems**: each part gets **Mute**, **Solo** and a volume, remembered per
+song in this browser. Mute the bass to play it yourself, or solo the guitar to hear exactly what it plays. Sync
+marks, loops, the metronome and slow-down work as before.
+
 ## Editing
 
 The editor changes bars, which every track shares, so time signatures, tempo changes, sections, and inserting or

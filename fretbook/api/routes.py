@@ -434,6 +434,8 @@ async def upload_audio(
         )
     finally:
         staging.unlink(missing_ok=True)
+    # Stems were cut from the old recording; they would not line up with the new one.
+    ctx.media.delete_stems(user.user_id, song_id)
     return _json(require_song(ctx, user.user_id, song_id))
 
 

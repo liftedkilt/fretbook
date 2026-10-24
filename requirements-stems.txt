@@ -1,0 +1,5 @@
+# Stem separation (audio.stems job), for the job worker only: `pip install -r requirements-stems.txt`.
+# Install a CUDA build of torch first for a GPU (the worker image does); the default wheel runs on a CPU, slowly.
+torch>=2.2,<3
+torchaudio>=2.2,<3
+demucs==4.0.1

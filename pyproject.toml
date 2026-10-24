@@ -34,8 +34,8 @@ no_implicit_optional = true
 check_untyped_defs = true
 
 [[tool.mypy.overrides]]
-# Optional dependencies (requirements-vision.txt) and mido ship without type stubs.
-module = ["cv2.*", "pytesseract.*", "PIL.*", "mido.*"]
+# Optional dependencies (requirements-vision.txt, requirements-stems.txt) and mido ship without type stubs.
+module = ["cv2.*", "pytesseract.*", "PIL.*", "mido.*", "torch.*", "demucs.*"]
 ignore_missing_imports = true
 
 [tool.ruff]

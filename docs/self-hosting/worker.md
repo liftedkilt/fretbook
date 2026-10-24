@@ -5,12 +5,11 @@ most kinds itself. Slow or GPU-bound kinds are meant to run in a separate **work
 table and writes results the same way. The design is in the
 [architecture notes](https://github.com/liftedkilt/fretbook/blob/main/docs/ARCHITECTURE.md).
 
-!!! info "What ships today"
-    The worker framework is in place, but the only job kind that runs on it is a built-in test kind, `echo`.
-    Stem separation, transcription and recognising tabs in video frames are on the
-    [roadmap](https://github.com/liftedkilt/fretbook/blob/main/ROADMAP.md) and will use this worker. You do not need
-    a worker for any feature that exists now. This page is for when you want to be ready, or want to move a kind off
-    the web process.
+!!! info "What runs on it today"
+    The worker runs **stem separation** (`audio.stems`, see below) and a built-in test kind, `echo`. Transcription
+    and recognising tabs in video frames are on the
+    [roadmap](https://github.com/liftedkilt/fretbook/blob/main/ROADMAP.md) and will use it too. You do not need a
+    worker for any other feature.
 
 ## Running it with Docker Compose
 
@@ -31,6 +30,23 @@ Requirements:
 The worker runs `python -m fretbook.worker`, which claims every worker-only kind. Pass `--kinds a,b` to claim a
 subset, and `--id` to name it. It records a heartbeat in the database, so `GET /api/meta` can report which kinds have
 a live worker.
+
+## Stem separation
+
+With a worker running, **Stems** appears in the practice panel of a song that has a recording. **Separate stems**
+runs [Demucs](https://github.com/adefossez/demucs) (`htdemucs_6s`) on the recording and stores the bass, drums,
+guitar, piano, vocals and the rest as separate files. Tick **Play with stems** to get a mixer with mute, solo and a
+volume for each, for example to play along without the bass or to solo the guitar. **Remove stems** frees the space
+(about 5 MB a minute per stem); replacing the song's audio removes them too, and library backups leave them out.
+
+- `Dockerfile.worker` installs Demucs (`requirements-stems.txt`). The first run downloads the model (about 100 MB
+  to the worker's torch cache, `~/.cache/torch`; mount a volume there to keep it).
+- It needs about 4 GB of memory. A GPU makes a four-minute song take under a minute.
+- **Without a GPU** it still works, on the CPU, but expect several minutes per song. If you run
+  `python -m fretbook.worker` yourself on a machine without a GPU, `pip install -r requirements-stems.txt` and
+  ffmpeg are all it needs.
+- A worker where Demucs is not installed does not claim the kind, so the feature stays hidden. With no worker at all
+  nothing is shown and the rest of Fretbook is unaffected.
 
 ## Moving a kind off the web process
 

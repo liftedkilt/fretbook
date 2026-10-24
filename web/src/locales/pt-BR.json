@@ -593,6 +593,13 @@
       "tooShort": "O áudio é curto demais para encontrar uma pulsação.",
       "noBeat": "Nenhuma pulsação regular foi encontrada neste áudio.",
       "noMatch": "As batidas encontradas no áudio não combinam com esta tablatura."
+    },
+    "stems": {
+      "noWorker": "Nenhum worker capaz de separar stems está em execução.",
+      "none": "Esta música não tem esse stem.",
+      "badModel": "Esse modelo de stems não está disponível.",
+      "unavailable": "O Demucs não está instalado no worker, então ele não pode separar stems.",
+      "decodeFailed": "Não foi possível ler o arquivo de áudio para a separação."
     }
   },
   "ui": {
@@ -1571,5 +1578,38 @@
     "accept": "Aceitar marcas",
     "discard": "Descartar",
     "acceptHint": "Depois de aceitar, corrija as marcas fora do lugar com os botões de marcar, ajustar e limpar, como antes."
+  },
+  "stems": {
+    "title": "Stems",
+    "hint": "Separe a gravação em partes para silenciar o baixo ou isolar a guitarra.",
+    "separate": "Separar stems",
+    "separateHint": "Leva alguns minutos em uma GPU e bem mais em uma CPU. A primeira execução baixa o modelo.",
+    "rerun": "Separar de novo",
+    "remove": "Remover stems",
+    "use": "Tocar com stems",
+    "usingHint": "A gravação toca em partes separadas.",
+    "loading": "Carregando o modelo",
+    "separating": "Separando os stems (lento sem GPU)",
+    "saving": "Salvando os stems",
+    "queued": "Aguardando o worker…",
+    "working": "Separando os stems…",
+    "noResult": "A separação terminou sem stems.",
+    "timeout": "A separação demorou demais. Tente de novo.",
+    "retry": "Tentar de novo",
+    "failed": "Não foi possível criar os stems.",
+    "mute": "Silenciar",
+    "solo": "Solo",
+    "muteStem": "Silenciar {name}",
+    "soloStem": "Isolar {name}",
+    "stemVolume": "Volume de {name}",
+    "names": {
+      "bass": "Baixo",
+      "drums": "Bateria",
+      "guitar": "Guitarra",
+      "piano": "Piano",
+      "vocals": "Voz",
+      "other": "Outros"
+    },
+    "noWorker": "A separação de stems precisa do worker de tarefas com o Demucs instalado. Veja o guia de hospedagem."
   }
 }

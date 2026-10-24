@@ -28,6 +28,7 @@ from fretbook.api.practice_routes import router as practice_router
 from fretbook.api.retune_routes import router as retune_router
 from fretbook.api.routes import router
 from fretbook.api.setlist_routes import router as setlist_router
+from fretbook.api.stem_routes import router as stem_router
 from fretbook.api.tag_routes import router as tag_router
 from fretbook.api.token_routes import router as token_router
 from fretbook.api.universal_routes import router as universal_router
@@ -259,6 +260,7 @@ def create_app(
     app.include_router(ascii_tab_router)
     app.include_router(midi_router)
     app.include_router(autosync_router)
+    app.include_router(stem_router)
     app.include_router(retune_router)
     app.include_router(universal_router)
     app.include_router(tag_router)
