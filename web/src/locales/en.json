@@ -871,6 +871,9 @@
     "done": "Done: {hits} of {total} notes played.",
     "hit": "Right note"
   },
+  "waitMode": {
+    "fretboard": "Where to play the expected note"
+  },
   "bulk": {
     "title": "Bulk import",
     "dropHint": "Drop a folder, multiple files, or a .zip archive",

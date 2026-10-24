@@ -79,3 +79,12 @@ describe("Fretboard", () => {
     expect(screen.queryByTestId("fret-tap-0-0")).toBeNull();
   });
 });
+
+describe("Fretboard tone", () => {
+  it("tags the lit note with the tone wait mode gives it", () => {
+    render(Fretboard, {
+      props: { tuning: BASS, current: [{ string: 3, fret: 0 }], tone: "hit" },
+    });
+    expect(screen.getByTestId("fretboard-now").getAttribute("data-tone")).toBe("hit");
+  });
+});

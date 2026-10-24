@@ -22,6 +22,7 @@
     label = "none",
     root = 0,
     leftHanded = false,
+    tone = "now",
     onselect,
   }: {
     /** Open-string pitches, highest string first. 4 to 8 strings read best. */
@@ -34,6 +35,8 @@
     /** Pitch class (0 to 11) that the interval labels count from. */
     root?: number;
     leftHanded?: boolean;
+    /** How the lit notes are coloured: wait mode shows a hint, then green on a hit. */
+    tone?: "now" | "wait" | "hint" | "hit";
     /** When given, every fret of every string is a button that reports the tapped note. */
     onselect?: (note: FretNote) => void;
   } = $props();
@@ -141,7 +144,7 @@
       </g>
     {/each}
     {#each current as note (`${note.string}:${note.fret}`)}
-      <g class="dot now" data-testid="fretboard-now">
+      <g class="dot now" data-testid="fretboard-now" data-tone={tone}>
         <circle cx={x(dotPosition(note.fret, frets))} cy={y(note.string)} r="12" />
         {#if text(note)}
           <text x={x(dotPosition(note.fret, frets))} y={y(note.string)}>{text(note)}</text>
@@ -212,6 +215,13 @@
   }
   .dot.next circle {
     fill: var(--accent);
+  }
+  .dot.now[data-tone="hint"] circle {
+    stroke-dasharray: 4 3;
+    r: 15;
+  }
+  .dot.now[data-tone="hit"] circle {
+    fill: var(--success, #2e9e5b);
   }
   .dot.now circle {
     stroke: var(--text);
