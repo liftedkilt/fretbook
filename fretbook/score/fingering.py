@@ -11,7 +11,11 @@ Frets count from the capo, as everywhere else in the score model: a note sounds 
 
 Pitches the instrument cannot reach are moved by octaves into range and the group is reported in
 :attr:`Fingering.shifted`; a chord with no playable fingering loses its outermost notes until one exists, reported
-in :attr:`Fingering.dropped`. Callers turn those lists into warnings. The module has no format dependencies, so
+in :attr:`Fingering.dropped`. Callers turn those lists into warnings.
+
+A note that keeps ringing while the next group starts (a held bass under a melody) is passed again in that group, and
+``holds`` links the two entries. The group is then fingered as one chord, so the strings are not reused, and a held
+note is steered to stay where it was put. The module has no format dependencies, so
 transcription and transpose/retune can reuse it.
 """
 
@@ -29,6 +33,8 @@ _MOVE_WEIGHT = 1.0
 _STRING_WEIGHT = 0.15
 _HEIGHT_WEIGHT = 0.04
 _MAX_CHORD = 8
+_HOLD_WEIGHT = 25.0
+"""Cost of a held note moving to another string or fret. Large, but finite so a path always exists."""
 
 
 @dataclass(frozen=True)
@@ -37,6 +43,8 @@ class Placement:
     """The pitch that sounds, which differs from the requested one only when the group is in ``shifted``."""
     string: int
     fret: int
+    source: int = field(default=-1, compare=False)
+    """The index of the pitch within its input group."""
 
 
 @dataclass
@@ -138,6 +146,18 @@ def _pad(candidate: _Candidate, kept: list[int], total: int) -> _Candidate:
     return tuple(padded)
 
 
+def _links(
+    prepared: list[tuple[int, list[int], list[int], list[_Candidate]]],
+    step: int,
+    holds: Sequence[Sequence[tuple[int, int]]] | None,
+) -> list[tuple[int, int]]:
+    """``(slot in the previous prepared group, slot in this one)`` for each held note both groups kept."""
+    if not holds or step == 0 or prepared[step - 1][0] != prepared[step][0] - 1:
+        return []
+    before, now = prepared[step - 1][2], prepared[step][2]
+    return [(before.index(a), now.index(b)) for a, b in holds[prepared[step][0]] if a in before and b in now]
+
+
 def assign_frets(
     groups: Sequence[Sequence[int]],
     tuning: Sequence[int],
@@ -145,24 +165,28 @@ def assign_frets(
     capo: int = 0,
     max_fret: int = MAX_FRET,
     max_stretch: int = MAX_STRETCH,
+    holds: Sequence[Sequence[tuple[int, int]]] | None = None,
 ) -> Fingering:
     """Choose a string and fret for each pitch in each group (see the module docstring).
 
-    ``tuning`` lists the open-string pitches, highest string first. ``capo`` raises every open string.
+    ``tuning`` lists the open-string pitches, highest string first. ``capo`` raises every open string. ``holds[i]``
+    lists ``(index in group i - 1, index in group i)`` for each note that rings on from one group into the next.
     """
     if not tuning:
         raise ValueError("tuning is empty")
     result = Fingering(groups=[[] for _ in groups])
-    prepared: list[tuple[int, list[int], list[_Candidate]]] = []
+    prepared: list[tuple[int, list[int], list[int], list[_Candidate]]] = []
     for index, group in enumerate(groups):
         pitches: list[int] = []
+        origin: list[int] = []
         moved = False
-        for pitch in list(group)[:_MAX_CHORD]:
+        for slot, pitch in enumerate(list(group)[:_MAX_CHORD]):
             fitted = _fit_octave(pitch, tuning, capo, max_fret)
             if fitted is None:
                 continue
             moved = moved or fitted != pitch
             pitches.append(fitted)
+            origin.append(slot)
         if not pitches:
             if group:
                 result.dropped.append(index)
@@ -176,14 +200,15 @@ def assign_frets(
         if not found:
             continue
         found.sort(key=lambda candidate: (_spread(candidate), _local_cost(candidate)))
-        prepared.append((index, pitches, found[:_MAX_CANDIDATES]))
+        prepared.append((index, pitches, origin, found[:_MAX_CANDIDATES]))
 
     # Per state: (total cost, hand position carried out of the state, previous state). A state with only open
     # strings keeps the hand where it was, so the carried position depends on the best predecessor.
     previous: list[tuple[float, float | None, int]] | None = None
     before_strings: list[float] = []
     trail: list[list[int]] = []
-    for _, _, found in prepared:
+    for step, (_, _, _, found) in enumerate(prepared):
+        links = _links(prepared, step, holds)
         positions = [_position(candidate) for candidate in found]
         locals_ = [_local_cost(candidate) for candidate in found]
         strings = [_mean_string(candidate) for candidate in found]
@@ -201,6 +226,8 @@ def assign_frets(
                     + locals_[candidate_index]
                     + _MOVE_WEIGHT * move
                     + _STRING_WEIGHT * abs(strings[candidate_index] - before_strings[before])
+                    + _HOLD_WEIGHT
+                    * sum(prepared[step - 1][3][before][a] != found[candidate_index][b] for a, b in links)
                 )
                 if best is None or total < best[0]:
                     best = (total, position if position is not None else carried, before)
@@ -214,11 +241,11 @@ def assign_frets(
         return result
     state = min(range(len(previous)), key=lambda item: previous[item][0])
     for step in range(len(prepared) - 1, -1, -1):
-        index, pitches, found = prepared[step]
+        index, pitches, origin, found = prepared[step]
         candidate = found[state]
         placements = [
-            Placement(pitch, string, fret)
-            for pitch, (string, fret) in zip(pitches, candidate, strict=True)
+            Placement(pitch, string, fret, position)
+            for pitch, position, (string, fret) in zip(pitches, origin, candidate, strict=True)
             if string >= 0
         ]
         result.groups[index] = placements

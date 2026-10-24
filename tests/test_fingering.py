@@ -108,3 +108,16 @@ def test_empty_groups_and_no_input():
 def test_empty_tuning_is_refused():
     with pytest.raises(ValueError):
         assign_frets([[40]], ())
+
+
+def test_held_notes_stay_put_and_other_notes_avoid_their_strings() -> None:
+    from fretbook.score.fingering import assign_frets
+
+    tuning = [64, 59, 55, 50, 45, 40]
+    groups = [[64, 45], [67, 45], [69, 45]]
+    result = assign_frets(groups, tuning, holds=[[], [(1, 1)], [(1, 1)]])
+    held = [(p.string, p.fret) for group in result.groups for p in group if p.pitch == 45]
+    assert len(set(held)) == 1
+    for group in result.groups:
+        assert len({p.string for p in group}) == len(group)
+    assert [[p.source for p in group] for group in result.groups] == [[0, 1]] * 3
