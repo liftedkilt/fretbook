@@ -986,5 +986,8 @@
     "skip": "Skip this chord",
     "progress": "{hits} of {total} chords",
     "noChords": "This sheet has no chords to play."
+  },
+  "job": {
+    "echo": "Echoing the job"
   }
 }

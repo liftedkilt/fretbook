@@ -986,5 +986,8 @@
     "skip": "Pular este acorde",
     "progress": "{hits} de {total} acordes",
     "noChords": "Esta cifra não tem acordes para tocar."
+  },
+  "job": {
+    "echo": "Repetindo o trabalho"
   }
 }

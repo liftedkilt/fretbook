@@ -35,6 +35,7 @@ from fretbook.context import AppContext
 from fretbook.db.migrate import migrate
 from fretbook.importers.safe_fetch import SafeFetcher
 from fretbook.jobs.handlers import register_handlers
+from fretbook.jobs.registry import register_kinds
 from fretbook.jobs.runner import JobRunner
 from fretbook.score.legacy import legacy_document, load_legacy_dir
 from fretbook.storage.media import MediaStore
@@ -138,6 +139,7 @@ def create_app(
     jobs = JobRunner(settings)
     register_handlers(jobs, songs, media, fetcher)
     register_restore_handler(jobs, songs, media)
+    register_kinds(jobs)
     updater = AutoUpdater(settings)
     ctx = AppContext(
         settings=settings,

@@ -72,6 +72,8 @@ class Settings:
     fetch_max_bytes: int = 25 * 1024 * 1024
     fetch_timeout_seconds: int = 30
     failed_upload_retention_days: int = 7
+    # Job kinds the web process leaves for a separate worker (python -m fretbook.worker).
+    worker_kinds: tuple[str, ...] = ()
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -120,6 +122,7 @@ class Settings:
             fetch_max_bytes=_int("FRETBOOK_FETCH_MAX_BYTES", 25 * 1024 * 1024),
             fetch_timeout_seconds=_int("FRETBOOK_FETCH_TIMEOUT", 30),
             failed_upload_retention_days=_int("FRETBOOK_FAILED_UPLOAD_RETENTION_DAYS", 7),
+            worker_kinds=tuple(k.strip() for k in os.environ.get("FRETBOOK_WORKER_KINDS", "").split(",") if k.strip()),
         )
 
     @classmethod

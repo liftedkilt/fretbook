@@ -1,12 +1,14 @@
 """In-process background jobs.
 
 One worker thread pulls queued rows from SQLite. That is enough for a single
-self-hosted process. Handlers are registered by kind. Claiming a row is a
-``BEGIN IMMEDIATE`` transaction, so a separate worker process (for example a
-GPU container for issue #6) can share the table by claiming only its kinds.
+self-hosted process. Handlers are registered by kind. Claiming a row is one
+``UPDATE ... RETURNING`` in a ``BEGIN IMMEDIATE`` transaction, so a separate
+worker process (``python -m fretbook.worker``, for example a GPU container)
+can share the table by claiming only its kinds. The web process never claims
+a kind that is ``worker_only`` or listed in ``FRETBOOK_WORKER_KINDS``.
 
 A job left ``running`` by a restart is queued again once; if it is interrupted
-twice it is marked as an error.
+twice it is marked as an error. A process only recovers the kinds it claims.
 """
 
 from __future__ import annotations
@@ -31,20 +33,29 @@ logger = logging.getLogger(__name__)
 Handler = Callable[[dict[str, Any], Callable[[str, str], None]], dict[str, Any]]
 Progress = Callable[[str, str], None]
 MAX_ATTEMPTS = 2
+WORKER_TTL_SECONDS = 30
 
 
 class JobRunner:
-    def __init__(self, settings: Settings) -> None:
+    def __init__(self, settings: Settings, *, worker_id: str = "web") -> None:
         self.settings = settings
+        self.worker_id = worker_id
         self._handlers: dict[str, Handler] = {}
+        self._worker_only: set[str] = set(settings.worker_kinds)
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
 
     def _session(self, *, immediate: bool = False):
         return session(self.settings.database_path, immediate=immediate)
 
-    def register(self, kind: str, handler: Handler) -> None:
+    def register(self, kind: str, handler: Handler, *, worker_only: bool = False) -> None:
         self._handlers[kind] = handler
+        if worker_only:
+            self._worker_only.add(kind)
+
+    def local_kinds(self) -> list[str]:
+        """Kinds this process claims by default: registered, and not reserved for a worker."""
+        return sorted(kind for kind in self._handlers if kind not in self._worker_only)
 
     def enqueue(self, owner_id: str, kind: str, payload: dict[str, Any]) -> str:
         job_id = uuid.uuid4().hex
@@ -145,22 +156,60 @@ class JobRunner:
                     logger.exception("failed to clean up upload for job %s", row["id"])
         return cleaned
 
-    def recover(self) -> int:
-        """Requeue jobs a restart interrupted; give up on ones interrupted twice."""
+    def recover(self, kinds: Iterable[str] | None = None) -> int:
+        """Requeue jobs a restart interrupted; give up on ones interrupted twice.
+
+        Only the given kinds (default: everything except worker-only kinds) are touched,
+        so a web restart never steals a job a worker is running.
+        """
         self.cleanup_failed_uploads()
+        if kinds is not None:
+            wanted = list(kinds)
+            scope = f"kind IN ({', '.join('?' for _ in wanted)})"
+        else:
+            wanted = sorted(self._worker_only)
+            scope = f"kind NOT IN ({', '.join('?' for _ in wanted)})" if wanted else "1"
+        if kinds is not None and not wanted:
+            return 0
+        with self._session(immediate=True) as conn:
+            conn.execute(
+                f"""
+                UPDATE jobs SET status = 'error', error = ?, error_key = 'job.interrupted', updated_at = ?
+                WHERE status = 'running' AND attempts >= ? AND {scope}
+                """,
+                ("the server restarted during this job; start the import again", utcnow(), MAX_ATTEMPTS, *wanted),
+            )
+            cursor = conn.execute(
+                f"UPDATE jobs SET status = 'queued', worker_id = '', updated_at = ? "
+                f"WHERE status = 'running' AND {scope}",
+                (utcnow(), *wanted),
+            )
+            return cursor.rowcount
+
+    def heartbeat(self, kinds: Iterable[str], *, host: str = "", pid: int = 0) -> None:
+        """Record that this worker is alive and which kinds it claims."""
+        now = utcnow()
         with self._session(immediate=True) as conn:
             conn.execute(
                 """
-                UPDATE jobs SET status = 'error', error = ?, error_key = 'job.interrupted', updated_at = ?
-                WHERE status = 'running' AND attempts >= ?
+                INSERT INTO workers (id, kinds, host, pid, started_at, heartbeat_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET kinds = excluded.kinds, host = excluded.host,
+                    pid = excluded.pid, heartbeat_at = excluded.heartbeat_at
                 """,
-                ("the server restarted during this job; start the import again", utcnow(), MAX_ATTEMPTS),
+                (self.worker_id, json.dumps(sorted(kinds)), host, pid, now, now),
             )
-            cursor = conn.execute(
-                "UPDATE jobs SET status = 'queued', updated_at = ? WHERE status = 'running'",
-                (utcnow(),),
-            )
-            return cursor.rowcount
+
+    def forget_worker(self) -> None:
+        with self._session(immediate=True) as conn:
+            conn.execute("DELETE FROM workers WHERE id = ?", (self.worker_id,))
+
+    def live_worker_kinds(self, ttl: int = WORKER_TTL_SECONDS) -> list[str]:
+        """Job kinds that a worker with a recent heartbeat claims."""
+        cutoff = (datetime.now(UTC) - timedelta(seconds=ttl)).replace(microsecond=0).isoformat()
+        with self._session() as conn:
+            rows = conn.execute("SELECT kinds FROM workers WHERE heartbeat_at >= ?", (cutoff,)).fetchall()
+        return sorted({kind for row in rows for kind in json.loads(row["kinds"])})
 
     def start(self) -> None:
         if self._thread and self._thread.is_alive():
@@ -190,7 +239,7 @@ class JobRunner:
                 logger.exception("job worker failed")
 
     def run_once(self, kinds: Iterable[str] | None = None) -> bool:
-        job = self._claim(list(kinds) if kinds is not None else list(self._handlers))
+        job = self._claim(list(kinds) if kinds is not None else self.local_kinds())
         if job is None:
             return False
         handler = self._handlers.get(job["kind"])
@@ -223,17 +272,18 @@ class JobRunner:
         try:
             with self._session(immediate=True) as conn:
                 row = conn.execute(
-                    f"SELECT * FROM jobs WHERE status = 'queued' AND kind IN ({placeholders}) "
-                    "ORDER BY created_at LIMIT 1",
-                    kinds,
+                    f"""
+                    UPDATE jobs
+                    SET status = 'running', attempts = attempts + 1, worker_id = ?, updated_at = ?
+                    WHERE id = (
+                        SELECT id FROM jobs WHERE status = 'queued' AND kind IN ({placeholders})
+                        ORDER BY created_at LIMIT 1
+                    )
+                    RETURNING *
+                    """,
+                    (self.worker_id, utcnow(), *kinds),
                 ).fetchone()
-                if row is None:
-                    return None
-                conn.execute(
-                    "UPDATE jobs SET status = 'running', attempts = attempts + 1, updated_at = ? WHERE id = ?",
-                    (utcnow(), row["id"]),
-                )
-                return _job(row)
+                return _job(row) if row else None
         except sqlite3.OperationalError:
             logger.warning("could not claim a job; will retry", exc_info=True)
             return None
@@ -288,6 +338,7 @@ def _job(row: sqlite3.Row) -> dict[str, Any]:
         "progress": row["progress"],
         "progress_key": row["progress_key"],
         "attempts": row["attempts"],
+        "worker_id": row["worker_id"],
         "created_at": row["created_at"],
         "updated_at": row["updated_at"],
     }
