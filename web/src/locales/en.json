@@ -462,7 +462,9 @@
       "timeout": "The import is taking too long.",
       "notFailed": "Only failed imports can be retried.",
       "uploadExpired": "The uploaded file is no longer available. Please upload it again.",
-      "cannotRetry": "This import cannot be retried."
+      "cannotRetry": "This import cannot be retried.",
+      "cancelled": "This job was cancelled by an administrator.",
+      "notQueued": "Only jobs still in the queue can be cancelled."
     },
     "backup": {
       "notArchive": "That file is not a Fretbook backup.",
@@ -659,6 +661,9 @@
       "notImage": "Upload a PNG, JPEG or WebP image.",
       "none": "This song has no cover art.",
       "missing": "The cover file is missing."
+    },
+    "storage": {
+      "quotaExceeded": "Your storage quota is full. Delete something or ask an administrator."
     }
   },
   "ui": {
@@ -1923,5 +1928,89 @@
     "filterKey": "Key",
     "filterGenre": "Genre",
     "filterAny": "Any"
+  },
+  "adminDashboard": {
+    "heading": "Administration",
+    "tabs": {
+      "label": "Administration sections",
+      "users": "Users",
+      "storage": "Storage",
+      "jobs": "Jobs",
+      "system": "System"
+    },
+    "storage": {
+      "heading": "Storage per user",
+      "hint": "Database rows are a user's songs, setlists, practice log, lesson progress, calibrations and inbox files. Media is audio, stems, covers and kept uploads.",
+      "user": "User",
+      "songs": "Songs",
+      "rows": "Database rows",
+      "files": "Media files",
+      "size": "Media size",
+      "quota": "Quota",
+      "noQuota": "No limit",
+      "total": "Total",
+      "orphansHeading": "Orphaned media",
+      "orphansNone": "Every file in the media folder belongs to a song.",
+      "orphansFound": {
+        "one": "{count} file ({size}) in the media folder belongs to no song.",
+        "other": "{count} files ({size}) in the media folder belong to no song."
+      },
+      "emptyDirs": {
+        "one": "{count} empty folder.",
+        "other": "{count} empty folders."
+      },
+      "orphansHint": "Files saved in the last hour are left alone.",
+      "cleanup": "Delete orphaned files",
+      "confirmCleanup": "Delete the orphaned media files? This cannot be undone.",
+      "cleaned": {
+        "one": "Deleted {count} file and freed {size}.",
+        "other": "Deleted {count} files and freed {size}."
+      }
+    },
+    "jobs": {
+      "heading": "Job queue",
+      "hint": "Imports and other background work of every user. Only jobs still waiting in the queue can be cancelled.",
+      "kind": "Kind",
+      "job": "Job",
+      "owner": "Owner",
+      "status": "Status",
+      "worker": "Worker",
+      "updated": "Updated",
+      "actions": "Actions",
+      "filter": "Show",
+      "all": "All statuses",
+      "empty": "No jobs.",
+      "status_queued": "Queued",
+      "status_running": "Running",
+      "status_done": "Done",
+      "status_error": "Failed",
+      "cancel": "Cancel",
+      "retry": "Retry",
+      "confirmCancel": "Cancel “{name}”?",
+      "cancelled": "Job cancelled.",
+      "retried": "Job queued again.",
+      "workersHeading": "Workers",
+      "workersHint": "Separate worker processes report in every few seconds. The web server runs the other kinds itself.",
+      "workersNone": "No worker is running.",
+      "alive": "Online",
+      "stale": "No heartbeat",
+      "kinds": "Kinds",
+      "heartbeat": "Last heartbeat",
+      "host": "Host",
+      "localKinds": "Run by the web server: {kinds}"
+    },
+    "system": {
+      "heading": "System",
+      "version": "Fretbook",
+      "commit": "Build commit",
+      "schema": "Database schema",
+      "ytdlp": "yt-dlp",
+      "python": "Python",
+      "node": "Node (web build)",
+      "diskFree": "Disk free",
+      "database": "Database file",
+      "quota": "Quota per user",
+      "unknown": "Unknown"
+    }
   }
 }

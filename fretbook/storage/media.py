@@ -32,6 +32,16 @@ def _check_id(value: str, what: str) -> str:
     return value
 
 
+class QuotaExceeded(Exception):
+    """A save would take a user over ``FRETBOOK_USER_QUOTA_MB``. ``key`` and ``params`` make it translatable."""
+
+    key = "storage.quotaExceeded"
+
+    def __init__(self, quota_bytes: int, used_bytes: int) -> None:
+        super().__init__("your storage quota is full")
+        self.params = {"quota_bytes": quota_bytes, "used_bytes": used_bytes}
+
+
 class MediaStore:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
@@ -55,6 +65,7 @@ class MediaStore:
         _check_id(owner_id, "owner id")
         _check_id(song_id, "song id")
         _check_id(kind, "media kind")
+        self._check_quota(owner_id, source.stat().st_size, song_id=song_id if replace_kind else None, kind=kind)
         media_id = uuid.uuid4().hex
         suffix = Path(filename).suffix.lower()[:12]
         if not re.fullmatch(r"\.[a-z0-9]+", suffix or ""):
@@ -92,6 +103,28 @@ class MediaStore:
         if replace_kind:
             self.delete_kind(owner_id, song_id, kind, keep=media_id)
         return {"id": media_id, "kind": kind, "filename": Path(filename).name}
+
+    def usage(self, owner_id: str) -> int:
+        """Bytes of media the user stores."""
+        with self._session() as conn:
+            row = conn.execute("SELECT COALESCE(SUM(byte_size), 0) FROM media WHERE owner_id = ?", (owner_id,))
+            return int(row.fetchone()[0])
+
+    def _check_quota(self, owner_id: str, incoming: int, *, song_id: str | None, kind: str) -> None:
+        quota = self.settings.user_quota_mb * 1024 * 1024
+        if quota <= 0:
+            return
+        used = self.usage(owner_id)
+        replaced = 0
+        if song_id is not None:
+            with self._session() as conn:
+                row = conn.execute(
+                    "SELECT COALESCE(SUM(byte_size), 0) FROM media WHERE owner_id = ? AND song_id = ? AND kind = ?",
+                    (owner_id, song_id, kind),
+                )
+                replaced = int(row.fetchone()[0])
+        if used - replaced + incoming > quota:
+            raise QuotaExceeded(quota, used)
 
     def save(
         self,

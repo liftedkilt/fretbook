@@ -462,7 +462,9 @@
       "timeout": "A importação está demorando demais.",
       "notFailed": "Apenas importações com falha podem ser repetidas.",
       "uploadExpired": "O arquivo enviado não está mais disponível. Por favor, envie-o novamente.",
-      "cannotRetry": "Esta importação não pode ser repetida."
+      "cannotRetry": "Esta importação não pode ser repetida.",
+      "cancelled": "Esta tarefa foi cancelada por um administrador.",
+      "notQueued": "Só tarefas ainda na fila podem ser canceladas."
     },
     "backup": {
       "notArchive": "Esse arquivo não é um backup do Fretbook.",
@@ -659,6 +661,9 @@
       "notImage": "Envie uma imagem PNG, JPEG ou WebP.",
       "none": "Esta música não tem capa.",
       "missing": "O arquivo da capa está ausente."
+    },
+    "storage": {
+      "quotaExceeded": "Sua cota de armazenamento está cheia. Exclua algo ou fale com um administrador."
     }
   },
   "ui": {
@@ -1923,5 +1928,89 @@
     "filterKey": "Tom",
     "filterGenre": "Gênero",
     "filterAny": "Qualquer"
+  },
+  "adminDashboard": {
+    "heading": "Administração",
+    "tabs": {
+      "label": "Seções da administração",
+      "users": "Usuários",
+      "storage": "Armazenamento",
+      "jobs": "Tarefas",
+      "system": "Sistema"
+    },
+    "storage": {
+      "heading": "Armazenamento por usuário",
+      "hint": "Linhas do banco são as músicas, setlists, registro de prática, progresso das lições, calibrações e arquivos da caixa de entrada de um usuário. Mídia é áudio, stems, capas e envios guardados.",
+      "user": "Usuário",
+      "songs": "Músicas",
+      "rows": "Linhas do banco",
+      "files": "Arquivos de mídia",
+      "size": "Tamanho da mídia",
+      "quota": "Cota",
+      "noQuota": "Sem limite",
+      "total": "Total",
+      "orphansHeading": "Mídia órfã",
+      "orphansNone": "Todo arquivo da pasta de mídia pertence a uma música.",
+      "orphansFound": {
+        "one": "{count} arquivo ({size}) da pasta de mídia não pertence a nenhuma música.",
+        "other": "{count} arquivos ({size}) da pasta de mídia não pertencem a nenhuma música."
+      },
+      "emptyDirs": {
+        "one": "{count} pasta vazia.",
+        "other": "{count} pastas vazias."
+      },
+      "orphansHint": "Arquivos salvos na última hora são mantidos.",
+      "cleanup": "Excluir arquivos órfãos",
+      "confirmCleanup": "Excluir os arquivos de mídia órfãos? Isso não pode ser desfeito.",
+      "cleaned": {
+        "one": "{count} arquivo excluído, {size} liberados.",
+        "other": "{count} arquivos excluídos, {size} liberados."
+      }
+    },
+    "jobs": {
+      "heading": "Fila de tarefas",
+      "hint": "Importações e outras tarefas em segundo plano de todos os usuários. Só tarefas que ainda aguardam na fila podem ser canceladas.",
+      "kind": "Tipo",
+      "job": "Tarefa",
+      "owner": "Dono",
+      "status": "Situação",
+      "worker": "Worker",
+      "updated": "Atualizada",
+      "actions": "Ações",
+      "filter": "Mostrar",
+      "all": "Todas as situações",
+      "empty": "Nenhuma tarefa.",
+      "status_queued": "Na fila",
+      "status_running": "Em execução",
+      "status_done": "Concluída",
+      "status_error": "Com falha",
+      "cancel": "Cancelar",
+      "retry": "Tentar de novo",
+      "confirmCancel": "Cancelar “{name}”?",
+      "cancelled": "Tarefa cancelada.",
+      "retried": "Tarefa colocada na fila de novo.",
+      "workersHeading": "Workers",
+      "workersHint": "Processos worker separados avisam que estão ativos a cada poucos segundos. O servidor web executa os demais tipos.",
+      "workersNone": "Nenhum worker em execução.",
+      "alive": "Online",
+      "stale": "Sem sinal",
+      "kinds": "Tipos",
+      "heartbeat": "Último sinal",
+      "host": "Host",
+      "localKinds": "Executados pelo servidor web: {kinds}"
+    },
+    "system": {
+      "heading": "Sistema",
+      "version": "Fretbook",
+      "commit": "Commit da versão",
+      "schema": "Esquema do banco",
+      "ytdlp": "yt-dlp",
+      "python": "Python",
+      "node": "Node (build web)",
+      "diskFree": "Disco livre",
+      "database": "Arquivo do banco",
+      "quota": "Cota por usuário",
+      "unknown": "Desconhecido"
+    }
   }
 }

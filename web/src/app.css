@@ -5248,3 +5248,19 @@ kbd {
 .facet select {
   min-width: 9rem;
 }
+
+.system-info {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.4rem 1.5rem;
+  margin: 0;
+}
+
+.system-info dt {
+  color: var(--text-2);
+}
+
+.system-info dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}

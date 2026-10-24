@@ -1,8 +1,8 @@
 # Sign-in with OIDC
 
 Without sign-in, Fretbook is a single-user server with one shared library. Setting `FRETBOOK_OIDC_ISSUER` turns on
-sign-in through any OpenID Connect provider: each person gets a private library, and admins also get a **Users**
-page.
+sign-in through any OpenID Connect provider: each person gets a private library, and admins also get an **Administration**
+page (see [The admin dashboard](#the-admin-dashboard)).
 
 !!! note "Tested provider"
     Pocket ID is the provider Fretbook is developed against. The Authelia, Authentik and Keycloak sections below
@@ -24,6 +24,21 @@ page.
   person's sessions on the Users page to apply it now.
 - The callback URL always comes from `FRETBOOK_OIDC_REDIRECT_URI`, never from request headers. It must be
   `https://<your host>[/prefix]/auth/callback`, and registered with the provider exactly.
+
+## The admin dashboard
+
+Admins see an **Administration** page with four tabs. It exists only with sign-in; single-user mode has no admins.
+
+- **Users**: accounts, sessions and API tokens.
+- **Storage**: database rows and media size per user, and **orphaned media**, files in the media folder that no
+  song refers to. *Delete orphaned files* removes them and any empty folders. Files saved in the last hour are
+  never touched, so a save in progress is safe. Set `FRETBOOK_USER_QUOTA_MB` to cap each user's media; an upload
+  or import that would go over it is refused with a message, and the usage bar shows how full each user is.
+- **Jobs**: the queue of every user, with counts per kind and status, retry for failed jobs, and cancel for jobs
+  still waiting (a job a worker already runs cannot be stopped). Below it, each separate worker
+  (`python -m fretbook.worker`) with its kinds and last heartbeat, and the kinds the web server runs itself.
+- **System**: Fretbook version and build, database schema version, yt-dlp and Python versions, free disk space,
+  database size. The Node version shown is the one that built the web app; the container has no Node at runtime.
 
 ## Settings
 
