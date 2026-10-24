@@ -9,6 +9,8 @@ set of options:
 * **Retune keeping shapes** (``keep="shape"``): frets stay where they are and the tuning or capo changes, so the part
   sounds higher or lower but is played with the same hand shapes (capo-style).
 * **Reduce** (``reduce="lowest"``): keep only the lowest note of every beat, a starting point for a bass line.
+  ``reduce="root"`` keeps the root of the chord the beat sounds instead (see :func:`chord_root_note`), which is the
+  better bass note for inversions, slash chords and open-string drones.
 
 Frets count from the capo, as everywhere in the score model: a note sounds at ``tuning[string] + capo + fret``.
 
@@ -26,7 +28,29 @@ from fretbook.score.fingering import MAX_FRET, MAX_STRETCH, assign_frets
 from fretbook.score.model import Beat, Note, Track, TrackBar, Voice
 
 Keep = Literal["pitch", "shape"]
-Reduce = Literal["all", "lowest"]
+Reduce = Literal["all", "lowest", "root"]
+
+_CHORD_SHAPES: tuple[frozenset[int], ...] = tuple(
+    frozenset(shape)
+    for shape in (
+        (0, 4, 7),  # major
+        (0, 3, 7),  # minor
+        (0, 3, 6),  # diminished
+        (0, 4, 8),  # augmented
+        (0, 2, 7),  # sus2
+        (0, 5, 7),  # sus4
+        (0, 7),  # power chord
+        (0, 4, 7, 10),  # dominant seventh
+        (0, 4, 7, 11),  # major seventh
+        (0, 3, 7, 10),  # minor seventh
+        (0, 3, 6, 10),  # half-diminished
+        (0, 3, 6, 9),  # diminished seventh
+        (0, 4, 7, 9),  # sixth
+        (0, 3, 7, 9),  # minor sixth
+    )
+)
+"""Intervals above the root, in semitones, of the chords the root detection knows. Extensions (a ninth, an added
+note) are allowed on top of any of these, so Cadd9 still reads as C."""
 
 _MAX_LISTED_BARS = 20
 _SAME_STRING_REACH = 5
@@ -70,6 +94,36 @@ class _Ref:
 
 def _sounding(tuning: Sequence[int], capo: int, note: Note) -> int:
     return tuning[note.string] + capo + note.fret
+
+
+def chord_root_note(pitches: Sequence[int]) -> int | None:
+    """The index into ``pitches`` of the note that is the root of the chord they spell, or ``None`` when no known
+    chord fits (a single note, a plain third, a cluster) or the root itself is not played (a rootless voicing).
+
+    Every pitch class that is sounding is tried as a root; the chord must contain all of a shape's tones, and the
+    shape with the most tones wins. A tie, such as C6 against Am7, goes to the root that is the lowest note, so a
+    bass player's own choice of bottom note settles the ambiguity. Of several notes on the root's pitch class the
+    lowest is returned.
+    """
+    if len(pitches) < 2:
+        return None
+    classes = {pitch % 12 for pitch in pitches}
+    lowest_class = min(pitches) % 12
+    best: tuple[int, bool, int] | None = None
+    best_root = 0
+    for root in classes:
+        tones = frozenset((cls - root) % 12 for cls in classes)
+        size = max((len(shape) for shape in _CHORD_SHAPES if shape <= tones), default=0)
+        if not size:
+            continue
+        # Most tones first, then a root that is the bass, then the lower root for a stable answer.
+        score = (size, root == lowest_class, -root)
+        if best is None or score > best:
+            best, best_root = score, root
+    if best is None:
+        return None
+    candidates = [index for index, pitch in enumerate(pitches) if pitch % 12 == best_root]
+    return min(candidates, key=lambda index: pitches[index])
 
 
 def _clone(note: Note, **changes: object) -> Note:
@@ -180,6 +234,15 @@ def _convert_voice(
                 lowest = min(pitched, key=lambda note: _sounding(track.tuning_midi, track.capo, note))
                 report.reduced += len(notes) - 1
                 notes = [lowest]
+        elif reduce == "root" and len(notes) > 1:
+            pitched = [note for note in notes if not note.dead]
+            if pitched:
+                sounding = [_sounding(track.tuning_midi, track.capo, note) for note in pitched]
+                root = chord_root_note(sounding)
+                if root is None:
+                    root = min(range(len(pitched)), key=lambda i: sounding[i])
+                report.reduced += len(notes) - 1
+                notes = [pitched[root]]
         kept.append(notes)
 
     # Placement of every surviving note: index of beat -> {id(source note): (string, fret)}.

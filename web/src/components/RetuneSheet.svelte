@@ -56,6 +56,7 @@
     shapes: t("retune.goalShapes"),
     convert: t("retune.goalConvert"),
     bassLine: t("retune.goalBassLine"),
+    bassRoots: t("retune.goalBassRoots"),
   });
   const choosable = $derived(presetsFor(choices.goal, track, presets));
   const tuningProblem = $derived.by(() => {

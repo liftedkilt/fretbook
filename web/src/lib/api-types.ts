@@ -1485,7 +1485,7 @@ export interface components {
              * @default all
              * @enum {string}
              */
-            reduce: "all" | "lowest";
+            reduce: "all" | "lowest" | "root";
             /** Revision */
             revision?: number | null;
             /**
