@@ -41,8 +41,9 @@ class ConvertBody(BaseModel):
     tuning_midi: list[int] | None = Field(default=None, min_length=1, max_length=16)
     """New open-string pitches, highest string first."""
     capo: int | None = Field(default=None, ge=0, le=24)
-    reduce: Literal["all", "lowest"] = "all"
-    """``lowest`` keeps only the lowest note of each beat, a starting point for a bass line from a guitar part."""
+    reduce: Literal["all", "lowest", "root"] = "all"
+    """``lowest`` keeps only the lowest note of each beat, a starting point for a bass line from a guitar part.
+    ``root`` keeps the root of the chord the beat sounds (the lowest note when no chord is recognised)."""
     name: str | None = Field(default=None, max_length=80)
     instrument: str | None = Field(default=None, max_length=64)
 

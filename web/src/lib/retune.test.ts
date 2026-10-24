@@ -141,6 +141,15 @@ describe("buildConvertBody", () => {
     expect(body?.tuning_midi).toEqual([43, 38, 33, 28]);
   });
 
+  it("asks for the chord roots for the chord-root bass line", () => {
+    const body = buildConvertBody(track, defaultChoices("bassRoots", track, presets));
+    expect(body?.reduce).toBe("root");
+    expect(body?.preset).toBe("bass-4");
+    expect(body?.semitones).toBe(-12);
+    expect(body?.tuning_midi).toEqual([43, 38, 33, 28]);
+    expect(isNoChange(body!)).toBe(false);
+  });
+
   it("is null while the tuning cannot be read", () => {
     expect(buildConvertBody(track, choose({ goal: "retune", tuning: "H9 ??" }))).toBeNull();
     expect(buildConvertBody(track, choose({ goal: "retune", tuning: "" }))).toBeNull();
