@@ -131,7 +131,7 @@
     gap: 0.75rem 1rem;
     align-items: flex-end;
     border: 1px solid var(--line, #8884);
-    border-radius: 8px;
+    border-radius: var(--r-sm);
     padding: 0.5rem 0.75rem;
     margin: 0;
   }

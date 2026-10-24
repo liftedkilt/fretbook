@@ -97,7 +97,7 @@
     gap: 0.5rem;
     margin: 0;
     padding: 0.5rem 0.75rem;
-    border-radius: 10px;
+    border-radius: var(--r-sm);
     background: var(--warn-soft);
     color: var(--text);
     font-size: 0.9rem;

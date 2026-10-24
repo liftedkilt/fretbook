@@ -283,7 +283,7 @@
 
   <div class="metronome-action-row">
     <button
-      class="primary metronome-toggle-btn"
+      class="primary hero metronome-toggle-btn"
       data-testid="metronome-toggle"
       onclick={togglePlay}
     >

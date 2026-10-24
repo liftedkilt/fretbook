@@ -202,7 +202,7 @@
     text-align: center;
     font-size: 0.75rem;
     padding: 6px 0;
-    border-radius: 4px;
+    border-radius: var(--r-xs);
     color: #fff;
   }
   .score-heatmap li.empty {

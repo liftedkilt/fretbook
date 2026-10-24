@@ -604,8 +604,8 @@
     grid-auto-columns: minmax(0, 1fr);
     gap: 2px;
     background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius, 12px);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-md);
     padding: 0.75rem 0.5rem;
     overflow-x: auto;
   }
@@ -615,14 +615,14 @@
     align-items: center;
     gap: 0.25rem;
     padding: 0.25rem 0;
-    border-radius: 6px;
+    border-radius: var(--r-xs);
     min-width: 0;
   }
   .rhythm-cell.beat {
-    border-left: 2px solid var(--border);
+    border-left: 2px solid var(--line-strong);
   }
   .rhythm-cell.now {
-    background: color-mix(in srgb, var(--accent, #4f8cff) 22%, transparent);
+    background: color-mix(in srgb, var(--accent) 22%, transparent);
   }
   .rhythm-count {
     font-size: 0.8rem;
@@ -660,22 +660,22 @@
     justify-content: center;
     gap: 0.6rem;
     font-size: 1.1rem;
-    border-radius: var(--radius, 12px);
-    border: 2px dashed var(--border);
+    border-radius: var(--r-md);
+    border: 2px dashed var(--line-strong);
     background: var(--surface);
     color: var(--text);
     touch-action: manipulation;
   }
   .rhythm-pad:not(:disabled):active {
-    background: color-mix(in srgb, var(--accent, #4f8cff) 22%, var(--surface));
+    background: color-mix(in srgb, var(--accent) 22%, var(--surface));
   }
   .rhythm-pad:disabled {
     opacity: 0.6;
   }
   .rhythm-results {
     background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius, 12px);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-md);
     padding: 1rem;
     display: flex;
     flex-direction: column;
@@ -718,14 +718,14 @@
   }
   .rhythm-bin-bar {
     background: var(--text-2);
-    border-radius: 3px 3px 0 0;
+    border-radius: var(--r-xs) var(--r-xs) 0 0;
     min-height: 0;
   }
   .rhythm-bin-bar.early {
-    background: #3b82c4;
+    background: var(--grade-early);
   }
   .rhythm-bin-bar.late {
-    background: #d9822b;
+    background: var(--grade-late);
   }
   .rhythm-per-bar {
     list-style: none;
@@ -748,24 +748,24 @@
   }
   .rhythm-bar-cell {
     height: 14px;
-    border-radius: 3px;
-    background: var(--border);
+    border-radius: var(--r-xs);
+    background: var(--line-strong);
   }
   .rhythm-bar-cell.rest {
     background: transparent;
-    border: 1px dashed var(--border);
+    border: 1px dashed var(--line-strong);
   }
   .rhythm-bar-cell.good {
-    background: #2e9e5b;
+    background: var(--grade-hit);
   }
   .rhythm-bar-cell.early {
-    background: #3b82c4;
+    background: var(--grade-early);
   }
   .rhythm-bar-cell.late {
-    background: #d9822b;
+    background: var(--grade-late);
   }
   .rhythm-bar-cell.missed {
-    background: #d04a4a;
+    background: var(--grade-miss);
   }
   .rhythm-bar-stat {
     font-size: 0.85rem;
