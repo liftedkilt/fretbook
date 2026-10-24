@@ -100,6 +100,10 @@ MAX_MXL_BYTES = 50 * 1024 * 1024
 """Largest score a compressed ``.mxl`` may unpack to. Guards against zip bombs."""
 
 
+MAX_CONTAINER_BYTES = 1024 * 1024
+"""Largest ``META-INF/container.xml`` read; a longer one is cut off and fails to parse."""
+
+
 def _open_score(path: Path) -> Path | io.BytesIO:
     """The score XML of ``path``: the file itself, or the root file inside a compressed ``.mxl``."""
     with path.open("rb") as handle:
@@ -107,7 +111,8 @@ def _open_score(path: Path) -> Path | io.BytesIO:
             return path
     try:
         with zipfile.ZipFile(path) as archive:
-            container = ET.fromstring(archive.read("META-INF/container.xml"))
+            with archive.open("META-INF/container.xml") as handle:
+                container = ET.fromstring(handle.read(MAX_CONTAINER_BYTES + 1)[:MAX_CONTAINER_BYTES])
             roots = [
                 element.get("full-path")
                 for element in container.iter()
@@ -121,6 +126,24 @@ def _open_score(path: Path) -> Path | io.BytesIO:
             return io.BytesIO(archive.read(info))
     except (zipfile.BadZipFile, KeyError, ET.ParseError) as exc:
         raise ImportError("MusicXML file could not be parsed", "musicxml.parse") from exc
+
+
+def _timewise_to_partwise(root: ET.Element) -> ET.Element:
+    """Regroup a ``score-timewise`` document (measures holding parts) as ``score-partwise``."""
+    partwise = ET.Element(root.tag.replace("score-timewise", "score-partwise"), root.attrib)
+    parts: dict[str, ET.Element] = {}
+    for child in root:
+        if _local(child.tag) != "measure":
+            partwise.append(child)
+            continue
+        for part in _children(child, "part"):
+            part_id = part.attrib.get("id", "")
+            if part_id not in parts:
+                parts[part_id] = ET.Element(part.tag, {"id": part_id})
+            measure = ET.SubElement(parts[part_id], child.tag, child.attrib)
+            measure.extend(list(part))
+    partwise.extend(parts.values())
+    return partwise
 
 
 class MusicXmlImporter:
@@ -139,7 +162,7 @@ class MusicXmlImporter:
         except ET.ParseError as exc:
             raise ImportError("MusicXML file could not be parsed", "musicxml.parse") from exc
         if _local(root.tag) == "score-timewise":
-            raise ImportError("score-timewise MusicXML is not imported; save as score-partwise", "musicxml.timewise")
+            root = _timewise_to_partwise(root)
         if _local(root.tag) != "score-partwise":
             raise ImportError("expected a MusicXML score-partwise document", "musicxml.notMusicXml")
         title, artist = _credits(root)

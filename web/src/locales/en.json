@@ -551,7 +551,6 @@
     },
     "musicxml": {
       "parse": "The MusicXML file could not be read.",
-      "timewise": "Timewise MusicXML is not supported. Save it as partwise.",
       "notMusicXml": "This is not a MusicXML score.",
       "noTab": "This MusicXML file has no tablature (string and fret) data.",
       "tooLarge": "This MusicXML file is too large once unpacked."
