@@ -25,6 +25,7 @@
   import { ApiError, getSong, patchSync, recordPracticeSession, uploadAudio } from "../lib/api";
   import YouTubeAudio from "./YouTubeAudio.svelte";
   import { AudioMedia } from "../lib/alphatab/audioHandler";
+  import { separateEffectBands } from "../lib/alphatab/display";
   import { preferredTrack, scoreToAlphaTex } from "../lib/alphatex";
   import { Clicker } from "../lib/clicker";
   import { barTicks } from "../lib/durations";
@@ -316,6 +317,7 @@
     settings.core.logLevel = alphaTab.LogLevel.Warning;
     settings.core.enableLazyLoading = false;
     settings.display.staveProfile = staveProfile(untrack(() => ui.notation));
+    separateEffectBands(settings);
     settings.display.scale = untrack(() => (handsFree.stage ? STAGE_SCALE : 1));
     settings.player.playerMode = useAudio
       ? alphaTab.PlayerMode.EnabledExternalMedia
