@@ -1,0 +1,287 @@
+"""Practice log: recording, validation, ownership, the dashboard numbers, and the backup round trip."""
+
+import io
+import json
+import sqlite3
+import time
+import zipfile
+from dataclasses import replace
+from datetime import UTC, date, datetime, timedelta
+from pathlib import Path
+
+import pytest
+from fastapi.testclient import TestClient
+
+from fretbook.app import create_app
+from fretbook.config import Settings
+from fretbook.storage.practice import PracticeRepository, SessionInput, UnknownSong, streaks
+
+SHEET = "{title: Hello}\n[G]Hello [C]friend\n"
+
+
+@pytest.fixture
+def client(tmp_path: Path):
+    with TestClient(create_app(replace(Settings.for_tests(tmp_path / "a")))) as started:
+        yield started
+
+
+def _song(client: TestClient, title: str) -> str:
+    return client.post("/api/songs", json={"content_kind": "chords", "title": title, "chordpro": SHEET}).json()["id"]
+
+
+def _day(offset: int = 0) -> str:
+    return (datetime.now(UTC).date() + timedelta(days=offset)).isoformat()
+
+
+def _log(client: TestClient, song_id: str, seconds: int = 600, offset: int = 0, **extra):
+    day = _day(offset)
+    body = {"song_id": song_id, "day": day, "duration_seconds": seconds, "started_at": f"{day}T12:00:00+00:00", **extra}
+    return client.post("/api/practice/sessions", json=body)
+
+
+def test_record_and_read_back_a_session(client: TestClient) -> None:
+    song = _song(client, "Alpha")
+    created = _log(client, song, 125, speed=0.8, mode="wait", loop_name="Riff", loop_start=2, loop_end=5, track_id="t1")
+    assert created.status_code == 201
+    session = created.json()
+    assert (session["song_id"], session["duration_seconds"], session["speed"], session["mode"]) == (
+        song,
+        125,
+        0.8,
+        "wait",
+    )
+    assert (session["loop_name"], session["loop_start"], session["loop_end"], session["score"]) == ("Riff", 2, 5, None)
+
+    history = client.get(f"/api/songs/{song}/practice").json()
+    assert (history["session_count"], history["total_seconds"], history["best_speed"]) == (1, 125, 0.8)
+    assert [item["id"] for item in history["sessions"]] == [session["id"]]
+
+
+def test_a_score_only_counts_for_scored_sessions(client: TestClient) -> None:
+    song = _song(client, "Alpha")
+    assert _log(client, song, mode="free", score=90).json()["score"] is None
+    assert _log(client, song, mode="scored", score=87.5).json()["score"] == 87.5
+    assert client.get(f"/api/songs/{song}/practice").json()["best_score"] == 87.5
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [
+        {"duration_seconds": 0},
+        {"duration_seconds": 7 * 3600},
+        {"speed": 0},
+        {"speed": 9},
+        {"mode": "nope"},
+        {"score": 101, "mode": "scored"},
+        {"loop_start": -1},
+        {"day": "yesterday"},
+        {"day": "2026-13-45"},
+        {"day": "2001-01-01"},
+        {"day": _day(30)},
+    ],
+)
+def test_bad_sessions_are_refused(client: TestClient, extra: dict) -> None:
+    song = _song(client, "Alpha")
+    body = {"song_id": song, "day": _day(), "duration_seconds": 60, **extra}
+    assert client.post("/api/practice/sessions", json=body).status_code in {400, 422}
+
+
+def test_a_day_the_player_is_in_but_the_server_is_not_is_accepted(client: TestClient) -> None:
+    song = _song(client, "Alpha")
+    assert _log(client, song, offset=1).status_code == 201
+    assert _log(client, song, offset=-1).status_code == 201
+
+
+def test_sessions_need_a_song_the_caller_has(client: TestClient) -> None:
+    assert _log(client, "nope").json()["detail"]["key"] == "song.notFound"
+    assert client.get("/api/songs/nope/practice").status_code == 404
+
+
+def test_sessions_are_private_to_their_owner(tmp_path: Path) -> None:
+    settings = Settings.for_tests(tmp_path / "multi")
+    with TestClient(create_app(settings)) as first:
+        song = _song(first, "Mine")
+        _log(first, song)
+        assert first.get("/api/practice/stats").json()["songs_practised"] == 1
+    # Another principal has none of it and cannot log against the song.
+    repo = PracticeRepository(settings)
+    with pytest.raises(UnknownSong):
+        repo.record("someone-else", SessionInput(song_id=song, day=_day(), duration_seconds=60))
+    assert repo.song_history("someone-else", song) is None
+    assert repo.stats("someone-else", date.fromisoformat(_day()))["songs_practised"] == 0
+
+
+def test_deleting_a_song_removes_its_sessions(client: TestClient) -> None:
+    song = _song(client, "Gone")
+    _log(client, song)
+    assert client.delete(f"/api/songs/{song}").status_code == 204
+    stats = client.get("/api/practice/stats").json()
+    assert (stats["songs_practised"], stats["total_seconds"], stats["heatmap"]) == (0, 0, [])
+
+
+def test_goal_defaults_updates_and_clamps(client: TestClient) -> None:
+    assert client.get("/api/practice/goal").json() == {"daily_minutes": 15, "weekly_summary": True}
+    updated = client.put("/api/practice/goal", json={"daily_minutes": 30, "weekly_summary": False})
+    assert updated.json() == {"daily_minutes": 30, "weekly_summary": False}
+    assert client.get("/api/practice/goal").json()["daily_minutes"] == 30
+    assert client.put("/api/practice/goal", json={"daily_minutes": 100000}).status_code == 422
+    assert client.put("/api/practice/goal", json={"daily_minutes": 0}).json()["daily_minutes"] == 0
+
+
+def test_dashboard_numbers(client: TestClient) -> None:
+    alpha, bravo, old = _song(client, "Alpha"), _song(client, "Bravo"), _song(client, "Old")
+    client.put("/api/practice/goal", json={"daily_minutes": 10})
+    _log(client, alpha, 600, offset=0, mode="scored", score=70)
+    _log(client, alpha, 300, offset=0, mode="scored", score=95)
+    _log(client, bravo, 1200, offset=-1)
+    # The API only takes the player's current day; older sessions come from the log itself (a restored backup).
+    repo, owner = PracticeRepository(client.app.state.ctx.settings), _owner(client)
+    repo.record(
+        owner, SessionInput(song_id=alpha, day=_day(-2), duration_seconds=60, started_at=f"{_day(-2)}T12:00:00+00:00")
+    )
+    repo.record(
+        owner, SessionInput(song_id=old, day=_day(-5), duration_seconds=60, started_at=f"{_day(-5)}T12:00:00+00:00")
+    )  # a gap before the run
+    stats = client.get("/api/practice/stats", params={"today": _day()}).json()
+
+    assert stats["today"] == _day()
+    assert stats["today_seconds"] == 900
+    assert stats["total_seconds"] == 900 + 1200 + 60 + 60
+    assert stats["current_streak"] == 3 and stats["longest_streak"] == 3
+    assert stats["songs_practised"] == 3
+    assert [(row["day"], row["seconds"], row["sessions"]) for row in stats["heatmap"]] == [
+        (_day(-5), 60, 1),
+        (_day(-2), 60, 1),
+        (_day(-1), 1200, 1),
+        (_day(0), 900, 2),
+    ]
+    assert stats["week"]["seconds"] == 2220 and stats["week"]["days_practised"] == 4
+    assert stats["week"]["goal_days"] == 2  # yesterday (20 min) and today (15 min) reached 10 minutes
+    assert [row["title"] for row in stats["recent"]][0] == "Alpha"
+    assert [(row["title"], row["best_score"]) for row in stats["best_scores"]] == [("Alpha", 95)]
+    assert stats["stale"] == []
+
+
+def test_stale_songs_are_the_ones_not_played_for_two_weeks(client: TestClient) -> None:
+    song = _song(client, "Dusty")
+    _log(client, song, offset=0)
+    # Judge from a month on: the song was last practised well over two weeks before.
+    later = (datetime.now(UTC).date() + timedelta(days=30)).isoformat()
+    repo = PracticeRepository(client.app.state.ctx.settings)
+    stats = repo.stats(_owner(client), date.fromisoformat(later))
+    assert [row["title"] for row in stats["stale"]] == ["Dusty"]
+    assert stats["current_streak"] == 0 and stats["longest_streak"] == 1
+
+
+def _owner(client: TestClient) -> str:
+    conn = sqlite3.connect(client.app.state.ctx.settings.database_path)
+    try:
+        return conn.execute("SELECT owner_id FROM songs LIMIT 1").fetchone()[0]
+    finally:
+        conn.close()
+
+
+def test_streak_rules() -> None:
+    today = date(2026, 3, 10)
+    days = lambda *offsets: {(today + timedelta(days=n)).isoformat() for n in offsets}  # noqa: E731
+    assert streaks(set(), today) == (0, 0)
+    assert streaks(days(0), today) == (1, 1)
+    # Not practised yet today: the run still counts until the day is over.
+    assert streaks(days(-1, -2, -3), today) == (3, 3)
+    # A missed whole day breaks it.
+    assert streaks(days(-2, -3), today) == (0, 2)
+    assert streaks(days(0, -1, -3, -4, -5, -6), today) == (2, 4)
+
+
+def test_stats_refuse_a_bad_today(client: TestClient) -> None:
+    assert client.get("/api/practice/stats", params={"today": "tomorrow"}).status_code == 400
+
+
+def _restore(client: TestClient, archive: bytes, mode: str = "skip") -> dict:
+    response = client.post(
+        "/api/library/import", files={"file": ("lib.zip", archive, "application/zip")}, data={"mode": mode}
+    )
+    assert response.status_code == 202, response.text
+    job_id = response.json()["job_id"]
+    client.app.state.ctx.jobs.run_once()
+    for _ in range(50):
+        job = client.get(f"/api/jobs/{job_id}").json()
+        if job["status"] in {"done", "error"}:
+            return job
+        time.sleep(0.1)
+    raise AssertionError("restore did not finish")
+
+
+def test_backup_round_trip_keeps_the_practice_log(tmp_path: Path) -> None:
+    with TestClient(create_app(Settings.for_tests(tmp_path / "src"))) as source:
+        alpha = _song(source, "Alpha")
+        _log(source, alpha, 300, mode="scored", score=80, speed=0.9, loop_name="Riff")
+        _log(source, alpha, 120, offset=-1)
+        source.put("/api/practice/goal", json={"daily_minutes": 25, "weekly_summary": False})
+        archive = source.get("/api/library/export").content
+        with zipfile.ZipFile(io.BytesIO(archive)) as zf:
+            manifest = json.loads(zf.read("manifest.json"))
+        assert manifest["format_version"] == 1
+        assert len(manifest["practice"]["sessions"]) == 2
+        assert manifest["practice"]["goal"] == {"daily_minutes": 25, "weekly_summary": False}
+        expected = source.get(f"/api/songs/{alpha}/practice").json()
+
+        with TestClient(create_app(Settings.for_tests(tmp_path / "dst"))) as target:
+            job = _restore(target, archive)
+            assert job["status"] == "done", job
+            assert job["result"]["practice_sessions"] == 2
+            assert target.get("/api/practice/goal").json() == {"daily_minutes": 25, "weekly_summary": False}
+            restored = target.get(f"/api/songs/{alpha}/practice").json()
+            assert restored == expected
+
+            # The same archive again adds nothing.
+            again = _restore(target, archive)
+            assert again["result"]["practice_sessions"] == 0
+            assert target.get(f"/api/songs/{alpha}/practice").json()["session_count"] == 2
+
+
+def test_restore_drops_sessions_for_songs_that_did_not_come_back_and_bad_ones(tmp_path: Path) -> None:
+    with TestClient(create_app(Settings.for_tests(tmp_path / "src"))) as source:
+        alpha = _song(source, "Alpha")
+        _log(source, alpha, 60)
+        archive = source.get("/api/library/export").content
+    with zipfile.ZipFile(io.BytesIO(archive)) as zf:
+        members = {name: zf.read(name) for name in zf.namelist()}
+    manifest = json.loads(members["manifest.json"])
+    good = manifest["practice"]["sessions"][0]
+    manifest["practice"]["sessions"] = [
+        good,
+        {**good, "id": "ghost", "song_id": "zzzzzzzz"},
+        {**good, "id": "baddur", "duration_seconds": -4},
+        {**good, "id": "badday", "day": "soon"},
+        "not even an object",
+    ]
+    members["manifest.json"] = json.dumps(manifest).encode()
+    out = io.BytesIO()
+    with zipfile.ZipFile(out, "w") as zf:
+        for name, data in members.items():
+            zf.writestr(name, data)
+    with TestClient(create_app(Settings.for_tests(tmp_path / "dst"))) as target:
+        job = _restore(target, out.getvalue())
+        assert job["status"] == "done", job
+        assert job["result"]["practice_sessions"] == 1
+        assert [w["key"] for w in job["result"]["warnings"]] == ["backup.practiceDropped"]
+        assert job["result"]["warnings"][0]["params"] == {"count": 4}
+
+
+def test_an_archive_from_before_the_practice_log_still_restores(tmp_path: Path) -> None:
+    with TestClient(create_app(Settings.for_tests(tmp_path / "src"))) as source:
+        _song(source, "Alpha")
+        archive = source.get("/api/library/export").content
+    with zipfile.ZipFile(io.BytesIO(archive)) as zf:
+        members = {name: zf.read(name) for name in zf.namelist()}
+    manifest = json.loads(members["manifest.json"])
+    del manifest["practice"]
+    members["manifest.json"] = json.dumps(manifest).encode()
+    out = io.BytesIO()
+    with zipfile.ZipFile(out, "w") as zf:
+        for name, data in members.items():
+            zf.writestr(name, data)
+    with TestClient(create_app(Settings.for_tests(tmp_path / "dst"))) as target:
+        job = _restore(target, out.getvalue())
+        assert job["status"] == "done" and job["result"]["practice_sessions"] == 0

@@ -1,5 +1,6 @@
 <script lang="ts">
   import ChordSheetView from "./ChordSheetView.svelte";
+  import SongPractice from "./SongPractice.svelte";
   import SongTags from "./SongTags.svelte";
   import TabPlayer from "./TabPlayer.svelte";
   import { getSong, markSongOpened } from "../lib/api";
@@ -47,5 +48,6 @@
     {#key song.id}
       <TabPlayer song={song as TabSong} />
     {/key}
+    <SongPractice songId={song.id} />
   {/if}
 {/if}

@@ -12,7 +12,7 @@
   import PracticePanel from "./PracticePanel.svelte";
   import ShortcutHelp from "./ShortcutHelp.svelte";
   import WaitPanel from "./WaitPanel.svelte";
-  import { ApiError, patchSync, uploadAudio } from "../lib/api";
+  import { ApiError, patchSync, recordPracticeSession, uploadAudio } from "../lib/api";
   import { AudioMedia } from "../lib/alphatab/audioHandler";
   import { preferredTrack, scoreToAlphaTex } from "../lib/alphatex";
   import { Clicker } from "../lib/clicker";
@@ -32,6 +32,7 @@
   import { buildWaitSteps, stepIndexAt, type WaitStep } from "../lib/listen/wait";
   import { WaitRun } from "../lib/listen/waitRun";
   import { followPlayed, playedBars } from "../lib/playback";
+  import { PracticeTimer } from "../lib/practiceLog";
   import {
     ClickScheduler,
     calcNextSpeed,
@@ -41,7 +42,6 @@
     loadPractice,
     nextCountIn,
     preservePitch,
-    recordLoopPracticeLog,
     savePractice,
     trackMix,
     updateLoopHighestSpeed,
@@ -74,6 +74,10 @@
   let shiftMs = 0;
   const player: { api: alphaTab.AlphaTabApi | null } = { api: null };
   const clicker = new Clicker();
+  // Time spent playing goes to the practice log, one session per stretch (see lib/practiceLog.ts).
+  const practiceTimer = new PracticeTimer({
+    onSession: (session, keepalive) => void recordPracticeSession(session, keepalive),
+  });
   const scheduler = new ClickScheduler();
 
   let tapIndex = $state(0);
@@ -360,6 +364,38 @@
     });
   });
 
+  // In wait mode the synth stops on each note, so waiting for the player to play it still counts.
+  $effect(() => {
+    const loop = loopA != null && loopB != null;
+    const named = loop
+      ? practice.loops.find((l) => l.id === activeLoopId || (l.a === loopA && l.b === loopB))
+      : undefined;
+    practiceTimer.update(playing || (waitOn && (waitState === "waiting" || waitState === "hit")), {
+      songId: song.id,
+      trackId,
+      loopName: named?.name ?? "",
+      loopStart: loop ? loopA : null,
+      loopEnd: loop ? loopB : null,
+      mode: waitOn ? "wait" : "free",
+      speed: rate,
+    });
+  });
+
+  onMount(() => {
+    const leaving = () => practiceTimer.flush(true);
+    const hidden = () => {
+      if (document.visibilityState === "hidden") leaving();
+    };
+    window.addEventListener("pagehide", leaving);
+    document.addEventListener("visibilitychange", hidden);
+    return () => {
+      window.removeEventListener("pagehide", leaving);
+      document.removeEventListener("visibilitychange", hidden);
+      practiceTimer.flush();
+      practiceTimer.dispose();
+    };
+  });
+
   onMount(() => {
     if (typeof location !== "undefined") {
       const params = new URLSearchParams(location.search);
@@ -637,7 +673,6 @@
         practice.loops = res.loops;
         savePractice(song.id, practice);
       }
-      recordLoopPracticeLog(song.id, matching, speedRatio);
     }
   }
 

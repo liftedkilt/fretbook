@@ -22,6 +22,7 @@ from fretbook.api.backup import router as backup_router
 from fretbook.api.bulk_routes import router as bulk_router
 from fretbook.api.calibration_routes import router as calibration_router
 from fretbook.api.middleware import BodyLimitMiddleware, SameOriginMiddleware
+from fretbook.api.practice_routes import router as practice_router
 from fretbook.api.routes import router
 from fretbook.api.setlist_routes import router as setlist_router
 from fretbook.api.tag_routes import router as tag_router
@@ -200,6 +201,10 @@ def create_app(
                 "description": "Ordered lists of songs with a note and a chord-sheet transpose per entry.",
             },
             {
+                "name": "practice",
+                "description": "Practice log: sessions, the daily goal, the dashboard, and a song's history.",
+            },
+            {
                 "name": "imports",
                 "description": "Start a background import. Poll GET /api/jobs/{job_id}.",
             },
@@ -244,6 +249,7 @@ def create_app(
     app.include_router(token_router)
     app.include_router(calibration_router)
     app.include_router(setlist_router)
+    app.include_router(practice_router)
     auth_routes = ctx.auth.routes()
     if auth_routes is not None:
         app.include_router(auth_routes)

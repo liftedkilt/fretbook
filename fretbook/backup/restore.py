@@ -26,6 +26,7 @@ from fretbook.importers.base import Notice
 from fretbook.jobs.runner import JobRunner, Progress
 from fretbook.score.model import ScoreDocument
 from fretbook.storage.media import AUDIO_TYPES, MediaStore
+from fretbook.storage.practice import MAX_DAILY_MINUTES, MAX_SECONDS, PracticeRepository, SessionInput
 from fretbook.storage.repository import SongRepository
 from fretbook.storage.setlists import (
     MAX_ENTRIES as MAX_SETLIST_ENTRIES,
@@ -101,6 +102,38 @@ class _Setlist(BaseModel):
     entries: list[_SetlistEntry] = Field(default_factory=list, max_length=100_000)
 
 
+class _PracticeSession(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,64}$")
+    song_id: str = Field(max_length=64)
+    day: str = Field(min_length=10, max_length=10)
+    duration_seconds: int = Field(ge=1, le=MAX_SECONDS)
+    track_id: str = Field(default="", max_length=64)
+    loop_name: str = Field(default="", max_length=200)
+    loop_start: int | None = Field(default=None, ge=0, le=100_000)
+    loop_end: int | None = Field(default=None, ge=0, le=100_000)
+    started_at: str | None = Field(default=None, max_length=40)
+    speed: float = Field(default=1.0, gt=0, le=4, allow_inf_nan=False)
+    mode: Literal["free", "wait", "scored"] = "free"
+    score: float | None = Field(default=None, ge=0, le=100, allow_inf_nan=False)
+
+
+class _PracticeGoal(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    daily_minutes: int = Field(ge=0, le=MAX_DAILY_MINUTES)
+    weekly_summary: bool = True
+
+
+class _Practice(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    sessions: list[Any] = Field(default_factory=list, max_length=1_000_000)
+    """Validated one by one on restore, so one bad session does not refuse the whole archive."""
+    goal: _PracticeGoal | None = None
+
+
 class Manifest(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
@@ -108,6 +141,7 @@ class Manifest(BaseModel):
     format_version: int
     songs: list[_Song]
     setlists: list[_Setlist] = Field(default_factory=list, max_length=100_000)
+    practice: _Practice = Field(default_factory=_Practice)
 
 
 def _unsafe(name: str) -> bool:
@@ -224,8 +258,54 @@ def restore_archive(
                 outcome = "failed"
             counts[outcome] += 1
     setlists = _restore_setlists(SetlistRepository(settings), owner_id, manifest.setlists, song_ids, mode, warnings)
+    sessions = _restore_practice(PracticeRepository(settings), owner_id, manifest.practice, song_ids, warnings)
     progress("Ready", "import.ready")
-    return {**counts, "setlists": setlists, "warnings": [warning.as_dict() for warning in warnings]}
+    return {
+        **counts,
+        "setlists": setlists,
+        "practice_sessions": sessions,
+        "warnings": [warning.as_dict() for warning in warnings],
+    }
+
+
+def _restore_practice(
+    repo: PracticeRepository,
+    owner_id: str,
+    practice: _Practice,
+    song_ids: dict[str, str],
+    warnings: list[Notice],
+) -> int:
+    """Put back the practice log, pointing sessions at the songs as they now are. Returns how many were added.
+
+    A session whose id is already in the library is left alone, so restoring the same archive twice adds nothing.
+    """
+    added = dropped = 0
+    for raw in practice.sessions:
+        try:
+            item = _PracticeSession.model_validate(raw)
+            song_id = song_ids.get(item.song_id)
+            if song_id is None:
+                dropped += 1
+                continue
+            fields = item.model_dump()
+            fields["song_id"] = song_id
+            added += repo.restore_session(owner_id, SessionInput(**fields))
+        except (ValueError, ValidationError, TypeError, sqlite3.Error):
+            dropped += 1
+    if practice.goal:
+        try:
+            repo.restore_goal(owner_id, practice.goal.daily_minutes, practice.goal.weekly_summary)
+        except sqlite3.Error:
+            warnings.append(Notice("backup.practiceGoalFailed", "could not restore the daily practice goal"))
+    if dropped:
+        warnings.append(
+            Notice(
+                "backup.practiceDropped",
+                f"{dropped} practice sessions could not be put back",
+                {"count": dropped},
+            )
+        )
+    return added
 
 
 def _restore_setlists(

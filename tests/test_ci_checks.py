@@ -44,6 +44,16 @@ def test_skipped_migration_number_fails(tmp_path):
     assert "missing migration number 002" in result.stderr
 
 
+def test_reserved_migration_number_may_be_missing(tmp_path):
+    names = [f"{n:03d}_m.sql" for n in range(1, 9)] + ["010_next.sql"]
+    assert run("check_migrations.py", make_migrations(tmp_path, *names)).returncode == 0
+    # Only the reserved number is exempt: another gap still fails.
+    (tmp_path / "gap").mkdir()
+    result = run("check_migrations.py", make_migrations(tmp_path / "gap", *names[:-1], "011_next.sql"))
+    assert result.returncode == 1
+    assert "missing migration number 010" in result.stderr
+
+
 def test_malformed_migration_name_fails(tmp_path):
     result = run("check_migrations.py", make_migrations(tmp_path, "001_a.sql", "2_b.sql"))
     assert result.returncode == 1

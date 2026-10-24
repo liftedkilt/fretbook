@@ -14,11 +14,16 @@ import type {
   JobAccepted,
   Me as ContractMe,
   Meta as ContractMeta,
+  PracticeGoal as ContractPracticeGoal,
+  PracticeSession as ContractPracticeSession,
+  PracticeSessionBody as ContractPracticeSessionBody,
+  PracticeStats as ContractPracticeStats,
   SessionsEnded,
   SetlistDetail as ContractSetlistDetail,
   SetlistSummary as ContractSetlistSummary,
   Settings as ContractSettings,
   SongDetail as ContractSongDetail,
+  SongPractice as ContractSongPractice,
   SongPage as ContractSongPage,
   SongSummary as ContractSongSummary,
   SongsMoved,
@@ -41,6 +46,10 @@ import type {
   Keyed,
   Me,
   Meta,
+  PracticeGoal,
+  PracticeSession,
+  PracticeSessionDraft,
+  PracticeStats,
   ScoreDocument,
   Settings,
   SetlistDetail,
@@ -49,6 +58,7 @@ import type {
   SongDetail,
   SongPage,
   SongQuery,
+  SongPractice,
   SongSummary,
   TagCount,
 } from "./types";
@@ -69,6 +79,12 @@ type _matchesContract = [
   AssertAssignable<ContractAudioCalibrationBody, AudioCalibrationBody>,
   AssertAssignable<ContractSetlistSummary, SetlistSummary>,
   AssertAssignable<ContractSetlistDetail, SetlistDetail>,
+  AssertAssignable<ContractPracticeSession, PracticeSession>,
+  AssertAssignable<ContractPracticeStats, PracticeStats>,
+  AssertAssignable<ContractPracticeGoal, PracticeGoal>,
+  AssertAssignable<ContractSongPractice, SongPractice>,
+  // The draft is what the browser sends, so it must fit the request body.
+  AssertAssignable<PracticeSessionDraft, ContractPracticeSessionBody>,
 ];
 
 // Score documents and jobs are parsed as the contract types, then viewed through
@@ -332,6 +348,36 @@ export function saveSetlistEntries(
 
 export function deleteSetlist(id: string): Promise<void> {
   return request(`/api/setlists/${id}`, { method: "DELETE" });
+}
+
+/**
+ * Add a session to the practice log. Best effort: a failure is swallowed, because losing a
+ * minute of log must never get in the way of playing. `keepalive` lets the request outlive the page.
+ */
+export async function recordPracticeSession(
+  session: PracticeSessionDraft,
+  keepalive = false,
+): Promise<void> {
+  try {
+    await request<ContractPracticeSession>("/api/practice/sessions", {
+      ...json("POST", session),
+      keepalive,
+    });
+  } catch {
+    /* the log is a convenience */
+  }
+}
+
+export function getPracticeStats(today: string): Promise<PracticeStats> {
+  return request<ContractPracticeStats>(`/api/practice/stats?today=${encodeURIComponent(today)}`);
+}
+
+export function savePracticeGoal(goal: PracticeGoal): Promise<PracticeGoal> {
+  return request<ContractPracticeGoal>("/api/practice/goal", json("PUT", goal));
+}
+
+export function getSongPractice(id: string): Promise<SongPractice> {
+  return request<ContractSongPractice>(`/api/songs/${id}/practice`);
 }
 
 export function uploadAudio(id: string, file: File): Promise<SongDetail> {

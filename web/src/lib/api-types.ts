@@ -495,6 +495,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/practice/goal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Goal */
+        get: operations["get_goal_api_practice_goal_get"];
+        /** Set Goal */
+        put: operations["set_goal_api_practice_goal_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/practice/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record Session */
+        post: operations["record_session_api_practice_sessions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/practice/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Practice Stats */
+        get: operations["practice_stats_api_practice_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/setlists": {
         parameters: {
             query?: never;
@@ -713,6 +765,23 @@ export interface paths {
          * @description Record that the caller opened the song, for the "last opened" sort.
          */
         post: operations["mark_song_opened_api_songs__song_id__opened_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/songs/{song_id}/practice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Song Practice */
+        get: operations["song_practice_api_songs__song_id__practice_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1532,6 +1601,162 @@ export interface components {
              */
             vibrato: boolean;
         };
+        /** PracticeDay */
+        PracticeDay: {
+            /** Day */
+            day: string;
+            /** Seconds */
+            seconds: number;
+            /** Sessions */
+            sessions: number;
+        };
+        /** PracticeGoal */
+        PracticeGoal: {
+            /** Daily Minutes */
+            daily_minutes: number;
+            /** Weekly Summary */
+            weekly_summary: boolean;
+        };
+        /** PracticeGoalBody */
+        PracticeGoalBody: {
+            /** Daily Minutes */
+            daily_minutes: number;
+            /**
+             * Weekly Summary
+             * @default true
+             */
+            weekly_summary: boolean;
+        };
+        /** PracticeSession */
+        PracticeSession: {
+            /** Day */
+            day: string;
+            /** Duration Seconds */
+            duration_seconds: number;
+            /** Id */
+            id: string;
+            /** Loop End */
+            loop_end: number | null;
+            /** Loop Name */
+            loop_name: string;
+            /** Loop Start */
+            loop_start: number | null;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "free" | "wait" | "scored";
+            /** Score */
+            score: number | null;
+            /** Song Id */
+            song_id: string;
+            /** Speed */
+            speed: number;
+            /** Started At */
+            started_at: string;
+            /** Track Id */
+            track_id: string;
+        };
+        /** PracticeSessionBody */
+        PracticeSessionBody: {
+            /** Day */
+            day: string;
+            /** Duration Seconds */
+            duration_seconds: number;
+            /** Loop End */
+            loop_end?: number | null;
+            /**
+             * Loop Name
+             * @default
+             */
+            loop_name: string;
+            /** Loop Start */
+            loop_start?: number | null;
+            /**
+             * Mode
+             * @default free
+             * @enum {string}
+             */
+            mode: "free" | "wait" | "scored";
+            /** Score */
+            score?: number | null;
+            /** Song Id */
+            song_id: string;
+            /**
+             * Speed
+             * @default 1
+             */
+            speed: number;
+            /** Started At */
+            started_at?: string | null;
+            /**
+             * Track Id
+             * @default
+             */
+            track_id: string;
+        };
+        /** PracticeSongStats */
+        PracticeSongStats: {
+            /** Artist */
+            artist: string;
+            /** Best Score */
+            best_score: number | null;
+            /** Best Speed */
+            best_speed: number;
+            /**
+             * Content Kind
+             * @enum {string}
+             */
+            content_kind: "tab" | "chords";
+            /** Last Day */
+            last_day: string;
+            /** Last Practised */
+            last_practised: string;
+            /** Session Count */
+            session_count: number;
+            /** Song Id */
+            song_id: string;
+            /** Title */
+            title: string;
+            /** Total Seconds */
+            total_seconds: number;
+        };
+        /** PracticeStats */
+        PracticeStats: {
+            /** Best Scores */
+            best_scores: components["schemas"]["PracticeSongStats"][];
+            /** Current Streak */
+            current_streak: number;
+            goal: components["schemas"]["PracticeGoal"];
+            /** Heatmap */
+            heatmap: components["schemas"]["PracticeDay"][];
+            /** Longest Streak */
+            longest_streak: number;
+            /** Recent */
+            recent: components["schemas"]["PracticeSongStats"][];
+            /** Songs Practised */
+            songs_practised: number;
+            /** Stale */
+            stale: components["schemas"]["PracticeSongStats"][];
+            /** Today */
+            today: string;
+            /** Today Seconds */
+            today_seconds: number;
+            /** Total Seconds */
+            total_seconds: number;
+            week: components["schemas"]["PracticeWeek"];
+        };
+        /** PracticeWeek */
+        PracticeWeek: {
+            /** Days Practised */
+            days_practised: number;
+            /** Goal Days */
+            goal_days: number;
+            /** Previous Seconds */
+            previous_seconds: number;
+            /** Seconds */
+            seconds: number;
+        };
         /** PreviewBody */
         PreviewBody: {
             /** Url */
@@ -1753,6 +1978,21 @@ export interface components {
             next_cursor: string | null;
             /** Total */
             total: number;
+        };
+        /** SongPractice */
+        SongPractice: {
+            /** Best Score */
+            best_score: number | null;
+            /** Best Speed */
+            best_speed: number | null;
+            /** Last Practised */
+            last_practised: string | null;
+            /** Session Count */
+            session_count: number;
+            /** Sessions */
+            sessions: components["schemas"]["PracticeSession"][];
+            /** Total Seconds */
+            total_seconds: number;
         };
         /** SongsMoved */
         SongsMoved: {
@@ -2021,6 +2261,14 @@ export type LibraryCounts = components['schemas']['LibraryCounts'];
 export type Me = components['schemas']['Me'];
 export type Meta = components['schemas']['Meta'];
 export type Note = components['schemas']['Note'];
+export type PracticeDay = components['schemas']['PracticeDay'];
+export type PracticeGoal = components['schemas']['PracticeGoal'];
+export type PracticeGoalBody = components['schemas']['PracticeGoalBody'];
+export type PracticeSession = components['schemas']['PracticeSession'];
+export type PracticeSessionBody = components['schemas']['PracticeSessionBody'];
+export type PracticeSongStats = components['schemas']['PracticeSongStats'];
+export type PracticeStats = components['schemas']['PracticeStats'];
+export type PracticeWeek = components['schemas']['PracticeWeek'];
 export type PreviewBody = components['schemas']['PreviewBody'];
 export type RenameSetlistBody = components['schemas']['RenameSetlistBody'];
 export type ReplaceEntriesBody = components['schemas']['ReplaceEntriesBody'];
@@ -2036,6 +2284,7 @@ export type SettingsBody = components['schemas']['SettingsBody'];
 export type SongDetail = components['schemas']['SongDetail'];
 export type SongExport = components['schemas']['SongExport'];
 export type SongPage = components['schemas']['SongPage'];
+export type SongPractice = components['schemas']['SongPractice'];
 export type SongsMoved = components['schemas']['SongsMoved'];
 export type SongsterrTrackChoice = components['schemas']['SongsterrTrackChoice'];
 export type SongSummary = components['schemas']['SongSummary'];
@@ -3957,6 +4206,313 @@ export interface operations {
             };
         };
     };
+    get_goal_api_practice_goal_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PracticeGoal"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    set_goal_api_practice_goal_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PracticeGoalBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PracticeGoal"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    record_session_api_practice_sessions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PracticeSessionBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PracticeSession"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    practice_stats_api_practice_stats_get: {
+        parameters: {
+            query?: {
+                /** @description The player's local date, YYYY-MM-DD. */
+                today?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PracticeStats"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
     list_setlists_api_setlists_get: {
         parameters: {
             query?: never;
@@ -5380,6 +5936,82 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    song_practice_api_songs__song_id__practice_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                song_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SongPractice"];
+                };
             };
             /** @description Keyed error. `detail` is {key, message, params}. */
             400: {
