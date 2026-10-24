@@ -10,6 +10,7 @@ import uuid
 from dataclasses import asdict
 from typing import Any
 
+from fretbook.chords import chordpro as chordpro_text
 from fretbook.config import Settings
 from fretbook.db.connection import session
 from fretbook.db.migrate import utcnow
@@ -300,11 +301,11 @@ class SongRepository:
     ) -> dict[str, Any]:
         """One page of the owner's songs plus the total match count and per-filter counts.
 
-        ``q`` is matched as word prefixes against title and artist. ``tags`` keeps songs that have every
-        one of them, and ``favourite`` only starred songs. ``difficulty_min`` and ``difficulty_max`` keep tabs
-        whose level, rounded to 1..10, is in range; chord sheets have none and are left out. Summaries come from
-        explicit columns so the score and ChordPro text are never read. The counts ignore the search, tags and
-        favourites.
+        ``q`` is matched as word prefixes against title, artist, chord-sheet lyrics and tags. ``tags`` keeps songs
+        that have every one of them, and ``favourite`` only starred songs. ``difficulty_min`` and
+        ``difficulty_max`` keep tabs whose level, rounded to 1..10, is in range; chord sheets have none and are
+        left out. Summaries come from explicit columns so the score and ChordPro text are never read. The counts
+        ignore the search, tags and favourites.
         """
         sort_sql, default_order = _SORTS[sort]
         direction = "DESC" if (order or default_order) == "desc" else "ASC"
@@ -515,6 +516,7 @@ class SongRepository:
                             fields["difficulty_version"],
                         ),
                     )
+                    _index_lyrics(conn, song_id, fields["chordpro"])
                 break
             except sqlite3.IntegrityError:
                 # Another writer took the slug between the check and the insert.
@@ -646,6 +648,7 @@ class SongRepository:
                 f"UPDATE songs SET {', '.join(assignments)} WHERE owner_id = ? AND id = ?",
                 (*values, owner_id, song_id),
             )
+            _index_lyrics(conn, song_id, fields["chordpro"])
         return self.get_song(owner_id, song_id)
 
     def update_sync(
@@ -726,6 +729,23 @@ class SongRepository:
                         "UPDATE songs SET difficulty = ?, difficulty_detail = ?, difficulty_version = ? WHERE id = ?",
                         (fields["difficulty"], fields["difficulty_detail"], fields["difficulty_version"], row["id"]),
                     )
+            done += len(rows)
+
+    def refresh_lyrics(self) -> int:
+        """Index the lyrics of every chord sheet that is not in the search index yet. Returns the count.
+
+        Sheets saved before lyrics were searchable are filled in here at start-up, without touching
+        ``updated_at`` or ``revision``.
+        """
+        done = 0
+        while True:
+            with self._session() as conn:
+                rows = conn.execute("SELECT id, chordpro FROM songs WHERE lyrics_indexed = 0 LIMIT 100").fetchall()
+            if not rows:
+                return done
+            with self._session(immediate=True) as conn:
+                for row in rows:
+                    _index_lyrics(conn, row["id"], row["chordpro"])
             done += len(rows)
 
     # --- tags and favourites -----------------------------------------------
@@ -830,6 +850,15 @@ class SongRepository:
 
 def _owns(conn: sqlite3.Connection, owner_id: str, song_id: str) -> bool:
     return conn.execute("SELECT 1 FROM songs WHERE owner_id = ? AND id = ?", (owner_id, song_id)).fetchone() is not None
+
+
+def _index_lyrics(conn: sqlite3.Connection, song_id: str, chordpro: str | None) -> None:
+    """Put a chord sheet's words in the search index (a tab has none, so its entry is emptied)."""
+    conn.execute(
+        "UPDATE songs_fts SET lyrics = ? WHERE song_id = ?",
+        (chordpro_text.lyrics(chordpro) if chordpro else "", song_id),
+    )
+    conn.execute("UPDATE songs SET lyrics_indexed = 1 WHERE id = ?", (song_id,))
 
 
 def _insert_tags(conn: sqlite3.Connection, song_id: str, tags: list[str]) -> None:

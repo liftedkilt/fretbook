@@ -170,6 +170,9 @@ def create_app(
         filled = songs.refresh_difficulty()
         if filled:
             logger.info("estimated the difficulty of %s song(s)", filled)
+        indexed = songs.refresh_lyrics()
+        if indexed:
+            logger.info("indexed the lyrics of %s chord sheet(s)", indexed)
         count = import_legacy(app.state.ctx)
         if count:
             logger.info("imported %s legacy song(s)", count)

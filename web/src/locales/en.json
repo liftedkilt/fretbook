@@ -145,7 +145,7 @@
       "one": "{count} song",
       "other": "{count} songs"
     },
-    "search": "Search songs and artists",
+    "search": "Search titles, artists, lyrics and tags",
     "sort": "Sort",
     "sortRecent": "Recently updated",
     "sortTitle": "Title",

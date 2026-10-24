@@ -220,7 +220,9 @@ def update_settings(
 
 @router.get("/api/songs", response_model=SongPage, tags=["songs"], responses=AUTH_RESPONSES)
 def list_songs(
-    q: str = Query("", max_length=200, description="Words matched as prefixes against title and artist."),
+    q: str = Query(
+        "", max_length=200, description="Words matched as prefixes against title, artist, chord-sheet lyrics and tags."
+    ),
     sort: Literal["title", "artist", "added", "updated", "opened", "difficulty"] = "updated",
     order: Literal["asc", "desc"] | None = Query(None, description="Defaults to the natural order of `sort`."),
     instrument: Literal["all", "bass", "electric", "acoustic", "chords"] = "all",

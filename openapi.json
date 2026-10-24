@@ -10079,13 +10079,13 @@
         "operationId": "list_songs_api_songs_get",
         "parameters": [
           {
-            "description": "Words matched as prefixes against title and artist.",
+            "description": "Words matched as prefixes against title, artist, chord-sheet lyrics and tags.",
             "in": "query",
             "name": "q",
             "required": false,
             "schema": {
               "default": "",
-              "description": "Words matched as prefixes against title and artist.",
+              "description": "Words matched as prefixes against title, artist, chord-sheet lyrics and tags.",
               "maxLength": 200,
               "title": "Q",
               "type": "string"
