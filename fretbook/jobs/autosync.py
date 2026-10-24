@@ -32,7 +32,13 @@ def register_autosync(runner: JobRunner, songs: SongRepository, media: MediaStor
         progress("Reading the audio", "autoSync.decoding")
         samples = decode(path)
         progress("Finding the beats and matching them to the bars", "autoSync.tracking")
-        proposal = propose(document, samples)
+        start_seconds = job["payload"].get("start_seconds")
+        proposal = propose(
+            document,
+            samples,
+            start_bar=int(job["payload"].get("start_bar") or 0),
+            start_seconds=None if start_seconds is None else float(start_seconds),
+        )
         return {"song_id": song_id, "autosync": asdict(proposal)}
 
     runner.register(KIND, autosync)

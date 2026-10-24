@@ -50,6 +50,15 @@ class Case:
     speed: float = 1.0
     """Performance speed relative to the score: 0.88 is 12 % slower."""
     noise: float = 0.01
+    sway: float = 0.0
+    ritardando: float = 0.0
+    jitter: float = 0.0
+    count_in: int = 0
+    intro: float = 0.0
+    stated: bool = False
+    """Tell ``propose`` where the music starts (the true start, 80 ms off, as a listener would say it)."""
+    cut_bar: int = 0
+    """The recording starts at this played bar, not the first."""
 
 
 def cases(quick: bool) -> list[Case]:
@@ -66,25 +75,63 @@ def cases(quick: bool) -> list[Case]:
         Case("played 10 % faster than the score", corpus_riff(32, 100), speed=1.1),
         Case("noisy (noise floor x10)", corpus_riff(32, 120), noise=0.1),
     ]
+    out += performed_cases()
     return out[:3] if quick else out
 
 
-def evaluate(case: Case) -> dict[str, float | str]:
+def performed_cases() -> list[Case]:
+    """Rows that stand in for a human take: timing jitter, rubato, a ritardando, and music the tab lacks."""
+    riff = corpus_riff(32, 100)
+    plain = Case("human feel: 15 ms jitter, 100 BPM", riff, jitter=0.015)
+    return [
+        plain,
+        Case("rubato +-15 %, 4 swells", riff, sway=0.15, jitter=0.01),
+        Case("rubato +-25 %, 4 swells", riff, sway=0.25, jitter=0.01),
+        Case("ritardando over the last bars", riff, ritardando=0.5, jitter=0.01),
+        Case("count-in of 4 clicks", riff, lead_in=3.0, count_in=4),
+        Case("count-in, start stated", riff, lead_in=3.0, count_in=4, stated=True),
+        Case("6 s unmetered intro, start stated", riff, lead_in=6.0, intro=5.0, stated=True),
+        Case("6 s unmetered intro, not stated", riff, lead_in=6.0, intro=5.0),
+        Case("recording cut at bar 9, bar given", riff, cut_bar=8, lead_in=0.4),
+    ]
+
+
+def evaluate(case: Case, tracker: str = "auto") -> dict[str, float | str]:
     performed = case.document.model_copy(deep=True)
     performed.bpm = case.document.bpm * case.speed
     for bar in performed.bars:
         if bar.tempo is not None:
             bar.tempo *= case.speed
-    starts = bar_starts_for(performed, lead_in=case.lead_in, drift=case.drift)
-    audio = render(case.document, starts, noise=case.noise)
+    starts = bar_starts_for(
+        performed,
+        lead_in=case.lead_in,
+        drift=case.drift,
+        sway=case.sway,
+        ritardando=case.ritardando,
+        jitter=case.jitter,
+    )
+    audio = render(case.document, starts, noise=case.noise, count_in=case.count_in, intro=case.intro)
+    if case.cut_bar:
+        audio = audio[int((starts[case.cut_bar] - case.lead_in) * 22050) :]
+        starts = [start - starts[case.cut_bar] + case.lead_in for start in starts[case.cut_bar :]]
     began = time.perf_counter()
     try:
-        proposal = propose(case.document, audio)
+        proposal = propose(
+            case.document,
+            audio,
+            start_bar=case.cut_bar,
+            start_seconds=starts[0] + 0.08 if case.stated else None,
+            tracker=tracker,
+        )
     except Exception as error:  # a failed row is a result too
         return {"name": case.name, "error": f"{type(error).__name__}: {error}"}
     seconds = time.perf_counter() - began
     errors = np.array(
-        [abs(proposal.anchors[str(i)] - t) * 1000 for i, t in enumerate(starts) if str(i) in proposal.anchors]
+        [
+            abs(proposal.anchors[str(case.cut_bar + i)] - t) * 1000
+            for i, t in enumerate(starts)
+            if str(case.cut_bar + i) in proposal.anchors
+        ]
     )
     return {
         "name": case.name,
@@ -101,10 +148,11 @@ def evaluate(case: Case) -> dict[str, float | str]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--quick", action="store_true")
+    parser.add_argument("--tracker", choices=("steady", "flexible", "auto"), default="auto")
     args = parser.parse_args(argv)
     print("| Case | Bars marked | Median error | 95th percentile | Max | Within 50 ms | Confidence | Time |")
     print("| --- | --- | --- | --- | --- | --- | --- | --- |")
-    results = [evaluate(case) for case in cases(args.quick)]
+    results = [evaluate(case, args.tracker) for case in cases(args.quick)]
     for row in results:
         if "error" in row:
             print(f"| {row['name']} | failed: {row['error']} | | | | | | |")

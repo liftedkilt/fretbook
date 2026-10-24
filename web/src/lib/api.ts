@@ -500,8 +500,11 @@ export function convertTrack(id: string, body: ConvertBody): Promise<ConvertOutc
 }
 
 /** Queue an estimate of the bar marks from the song's audio; wait for the job and read `result.autosync`. */
-export function startAutoSync(id: string): Promise<JobAccepted> {
-  return request<JobAccepted>(`/api/songs/${id}/autosync`, { method: "POST" });
+export function startAutoSync(
+  id: string,
+  start: { start_bar?: number; start_seconds?: number | null } = {},
+): Promise<JobAccepted> {
+  return request<JobAccepted>(`/api/songs/${id}/autosync`, json("POST", start));
 }
 
 /** The stems stored for a song, and whether a worker that can make them is running. */

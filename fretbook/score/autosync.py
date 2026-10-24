@@ -25,6 +25,10 @@ UNITS = (0.5, 1.0, 2.0)
 LOW_CONFIDENCE = 0.5
 OPENING = 3.0
 """Bonus, in the same units, for bar 0 starting on the first attack in the audio."""
+FLEXIBLE_MARGIN = 0.15
+"""How much better, in standard deviations of onset strength, the flexible tracker's bar starts must sit on onsets."""
+STATED_SLACK = 0.3
+"""Seconds either side of a stated start time in which bar 0 counts as starting on it."""
 SLIP = 4.0
 """Cost, in standard deviations of onset strength, of a bar starting a beat early or late of its length."""
 
@@ -109,12 +113,17 @@ def _first_attack(grid: BeatGrid) -> float:
     return first * grid.envelope.frame_seconds + beat_tracking.FRAME_OFFSET
 
 
-def _align(grid: BeatGrid, bar_quarters: Floats, unit: float, *, upto: int | None = None) -> tuple[Floats, Floats]:
+def _align(
+    grid: BeatGrid, bar_quarters: Floats, unit: float, *, upto: int | None = None, start: float | None = None
+) -> tuple[Floats, Floats]:
     """Beat positions and times of the bar starts (and the end), by Viterbi over which beat each bar starts on.
 
     A bar's start sits on a beat (or a fixed fraction of one) and is rewarded by the low-band onset there. The
     next bar starts one bar-length of beats later, give or take a beat: a slip costs ``SLIP``, so a beat the
     tracker dropped or added is absorbed there rather than shifting every later bar.
+
+    ``start`` is the time the music is said to begin at (see :func:`propose`); without it bar 0 is pulled toward
+    the first attack in the audio.
     """
     count = grid.beats.size
     if upto is not None:
@@ -129,12 +138,13 @@ def _align(grid: BeatGrid, bar_quarters: Floats, unit: float, *, upto: int | Non
     reward = strength - float(np.mean(grid.strengths))
     # A bar that would start before the first attack in the audio counts against the path: the score starts
     # with the music, and without this a bar-long shift of a repeating pattern would be a tie.
-    attack = _first_attack(grid)
-    reward = np.where(times[:bars] < attack - 0.15, -1.0, reward)
+    # A time given by hand is only as exact as a person's ear, so it gets more room than a detected attack.
+    attack, slack = (_first_attack(grid), 0.12) if start is None else (start, STATED_SLACK)
+    reward = np.where(times[:bars] < attack - slack - 0.03, -1.0, reward)
     reward = np.where(times[:bars] >= audio_end - 0.1, 0.0, reward)
     # Whole bars of a repeating pattern look alike, so a song that opens on its first bar is given the edge: bar 0
     # on the first attack in the audio, or else as early as it can be.
-    reward[0] += OPENING * (np.abs(times[0] - attack) < 0.12)
+    reward[0] += OPENING * (np.abs(times[0] - attack) < slack)
     score = reward[0] - 0.01 * np.arange(shifts.size)
     back = np.zeros((bars, shifts.size), dtype=np.int64)
     floor = np.full(1, -np.inf)
@@ -155,33 +165,52 @@ def _align(grid: BeatGrid, bar_quarters: Floats, unit: float, *, upto: int | Non
     return positions[rows, path], times[rows, path]
 
 
-def propose(document: ScoreDocument, samples: Floats, sample_rate: int = beat_tracking.SAMPLE_RATE) -> Proposal:
-    """Estimate sync anchors for ``document`` from mono ``samples``."""
+def propose(
+    document: ScoreDocument,
+    samples: Floats,
+    sample_rate: int = beat_tracking.SAMPLE_RATE,
+    *,
+    start_bar: int = 0,
+    start_seconds: float | None = None,
+    tracker: str = "auto",
+) -> Proposal:
+    """Estimate sync anchors for ``document`` from mono ``samples``.
+
+    By default the score's first bar is taken to start with the first attack in the audio. When the recording
+    has an intro or count-in the tab lacks, or is cut from the middle of the song, say where the music starts:
+    ``start_bar`` is the played bar (0-based) that begins it, and ``start_seconds`` the time in the audio it
+    begins at (given alone, that is where bar 0 starts). Bars before ``start_bar`` get no anchor.
+    ``tracker`` is ``"steady"``, ``"flexible"`` (a tempo that moves a lot) or ``"auto"``.
+    """
     envelope = beat_tracking.onset_envelope(samples, sample_rate)
-    audio_seconds = samples.size / sample_rate
     bar_quarters, tempos = _bar_timeline(document)
-    quarter_period = 60 / float(np.median(tempos))
+    first_bar = start_bar
+    if not 0 <= first_bar < bar_quarters.size - 1:
+        raise AudioDecodeError("that bar is not in this score", "autosync.badStart")
+    bar_quarters, tempos = bar_quarters[first_bar:] - bar_quarters[first_bar], tempos[first_bar:]
     pulse = _pulse(bar_quarters)
-    grid = beat_tracking.beat_grid(envelope, hint_bpm=float(np.median(tempos)) / pulse)
-    unit = _nearest_unit(grid.period, quarter_period, pulse)
-    changes = np.flatnonzero(np.abs(tempos - tempos[0]) > 0.5)
-    if changes.size:
-        # The first pass tracks one tempo, so only the bars before the first change say where the song starts.
-        _, first = _align(grid, bar_quarters, unit, upto=max(4, int(changes[0])))
-        profile = _score_profile(bar_quarters, tempos, float(first[0]), grid.period / unit)
-        refined = _retrack(envelope, bar_quarters, profile, unit)
-        if refined is not None:
-            grid = refined
-        positions, times = _align(grid, bar_quarters, unit)
-        # Once the bars are placed, the tempo can be read off them instead of taken from the score.
-        again = _retrack(envelope, bar_quarters, times, unit)
-        if again is not None:
-            positions2, times2 = _align(again, bar_quarters, unit)
-            if _plausible(times2, times):
-                grid, positions, times = again, positions2, times2
-    else:
-        positions, times = _align(grid, bar_quarters, unit)
+    if tracker not in {"steady", "flexible", "auto"}:
+        raise ValueError(f"unknown tracker {tracker!r}")
+    options = {"steady": [False], "flexible": [True], "auto": [False, True]}[tracker]
+    if np.any(np.abs(tempos - tempos[0]) > 0.5):
+        options = [False]  # the score's own tempo changes lead the tracking (see _solve)
+    attempts = []
+    for flexible in options:
+        try:
+            attempts.append(_solve(envelope, bar_quarters, tempos, pulse, start_seconds, flexible))
+        except AudioDecodeError:
+            if len(options) == 1:
+                raise
+    if not attempts:
+        raise AudioDecodeError("no steady beat was found in this audio", "autosync.noBeat")
+    # The steady tracker is the more exact on a steady take, so the flexible one has to beat it clearly.
+    best = attempts[0]
+    for attempt in attempts[1:]:
+        if _fit(attempt[0], attempt[2]) > _fit(best[0], best[2]) + FLEXIBLE_MARGIN:
+            best = attempt
+    grid, positions, times, unit = best
     bars = bar_quarters.size - 1
+    audio_seconds = samples.size / sample_rate
     covered = (times >= -0.05) & (times <= audio_seconds + 0.05)
     covered[bars] = covered[bars] and covered[bars - 1]
     strength = _strength_at(grid, times)
@@ -194,8 +223,9 @@ def propose(document: ScoreDocument, samples: Floats, sample_rate: int = beat_tr
     deviation = np.abs(intervals[beat_index] - local) / local
     steady = np.clip(1 - deviation / 0.2, 0, 1)
     confidence = np.clip(0.6 * downbeat + 0.4 * steady, 0, 1)
-    anchors = {str(index): round(max(0.0, float(times[index])), 4) for index in range(bars + 1) if covered[index]}
-    scores = {key: round(float(confidence[int(key)]), 3) for key in anchors}
+    kept = [index for index in range(bars + 1) if covered[index]]
+    anchors = {str(first_bar + index): round(max(0.0, float(times[index])), 4) for index in kept}
+    scores = {str(first_bar + index): round(float(confidence[index]), 3) for index in kept}
     if len(anchors) < 2:
         raise AudioDecodeError("the beats found do not line up with this score", "autosync.noMatch")
     return Proposal(
@@ -205,8 +235,45 @@ def propose(document: ScoreDocument, samples: Floats, sample_rate: int = beat_tr
         tempo_bpm=round(60 / (grid.period / unit), 2),
         beat_count=int(grid.beats.size),
         audio_seconds=round(audio_seconds, 3),
-        low_confidence=[int(key) for key, value in scores.items() if value < LOW_CONFIDENCE and int(key) < bars],
+        low_confidence=[
+            int(key) for key, value in scores.items() if value < LOW_CONFIDENCE and int(key) < first_bar + bars
+        ],
     )
+
+
+def _solve(
+    envelope: Envelope, bar_quarters: Floats, tempos: Floats, pulse: float, start: float | None, flexible: bool
+) -> tuple[BeatGrid, Floats, Floats, float]:
+    """Track the beats and place the bars on them: the grid, the bars' beat positions and times, and the beat unit."""
+    quarter_period = 60 / float(np.median(tempos))
+    changes = np.flatnonzero(np.abs(tempos - tempos[0]) > 0.5)
+    # Where the score changes tempo itself, the score says how the tempo moves: a tracker that finds its own
+    # would only fight it.
+    flexible = flexible and not changes.size
+    grid = beat_tracking.beat_grid(envelope, hint_bpm=float(np.median(tempos)) / pulse, flexible=flexible)
+    unit = _nearest_unit(grid.period, quarter_period, pulse)
+    if not changes.size:
+        positions, times = _align(grid, bar_quarters, unit, start=start)
+        return grid, positions, times, unit
+    # The first pass tracks one tempo, so only the bars before the first change say where the song starts.
+    _, first = _align(grid, bar_quarters, unit, upto=max(4, int(changes[0])), start=start)
+    profile = _score_profile(bar_quarters, tempos, float(first[0]), grid.period / unit)
+    refined = _retrack(envelope, bar_quarters, profile, unit)
+    if refined is not None:
+        grid = refined
+    positions, times = _align(grid, bar_quarters, unit, start=start)
+    # Once the bars are placed, the tempo can be read off them instead of taken from the score.
+    again = _retrack(envelope, bar_quarters, times, unit)
+    if again is not None:
+        positions2, times2 = _align(again, bar_quarters, unit, start=start)
+        if _plausible(times2, times):
+            grid, positions, times = again, positions2, times2
+    return grid, positions, times, unit
+
+
+def _fit(grid: BeatGrid, times: Floats) -> float:
+    """How well the bar starts sit on onsets: the mean low-band strength at them, in standard deviations."""
+    return float(np.mean(_strength_at(grid, times)))
 
 
 def _retrack(envelope: Envelope, bar_quarters: Floats, bar_starts: Floats, unit: float) -> BeatGrid | None:

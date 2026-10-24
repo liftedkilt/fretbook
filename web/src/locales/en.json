@@ -617,7 +617,8 @@
       "decodeFailed": "The audio file could not be read.",
       "tooShort": "The audio is too short to find a beat.",
       "noBeat": "No steady beat was found in this audio.",
-      "noMatch": "The beats found in the audio do not line up with this tab."
+      "noMatch": "The beats found in the audio do not line up with this tab.",
+      "badStart": "That bar is not in this tab."
     },
     "stems": {
       "noWorker": "No worker is running that can separate stems.",
@@ -1686,6 +1687,12 @@
       "one": "Accepting replaces your {count} current mark.",
       "other": "Accepting replaces your {count} current marks."
     },
+    "startHint": "Does the recording start with the tab's first bar? If it has an intro or count-in the tab lacks, or begins partway through the song, say where the music starts. Leave both as they are otherwise.",
+    "musicBar": "Music starts at bar",
+    "musicTime": "At this time in the audio",
+    "musicTimePlaceholder": "first sound, or 12.5 or 0:12",
+    "musicTimeInvalid": "Enter seconds (12.5) or minutes and seconds (0:12).",
+    "estimate": "Estimate",
     "startAt": "Start at bar",
     "preview": "Preview with click",
     "stop": "Stop",

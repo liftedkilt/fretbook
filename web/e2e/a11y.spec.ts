@@ -95,6 +95,8 @@ for (const scheme of ["light", "dark"] as const) {
       await page.getByTestId("player-panel-toggle").click();
       await page.getByTestId("player-autosync").click();
       await expect(page.getByTestId("autosync-sheet")).toBeVisible();
+      found.push(...(await violations(page, "autosync-sheet")));
+      await page.getByTestId("autosync-estimate").click();
       await expect(page.getByTestId("autosync-summary")).toBeVisible({ timeout: 30_000 });
       found.push(...(await violations(page, "autosync-sheet")));
       expect(found).toEqual([]);

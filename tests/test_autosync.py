@@ -77,6 +77,47 @@ def test_a_drifting_or_slower_performance_is_followed() -> None:
     assert marked == total and errors.max() < 50
 
 
+def test_rubato_and_a_closing_ritardando_are_followed() -> None:
+    document = build_document([(4, 4)] * 32, bpm=100)
+    starts = bar_starts_for(document, lead_in=1.5, sway=0.15, ritardando=0.5, jitter=0.01)
+    audio = render(document, starts)
+    flexible = propose(document, audio, tracker="flexible")
+    auto = propose(document, audio)
+    for proposal in (flexible, auto):
+        errors = np.array([abs(proposal.anchors[str(i)] - t) for i, t in enumerate(starts)])
+        # The slowing at the very end is the loosest: the last mark may be a tenth of a second out.
+        assert np.median(errors) < 0.02
+        assert errors.max() < 0.15
+    assert auto.anchors == flexible.anchors  # the steady tracker is left behind by this much sway
+    with pytest.raises(ValueError):
+        propose(document, audio, tracker="psychic")
+
+
+def test_a_stated_start_places_bar_zero_after_an_intro_and_count_in() -> None:
+    document = build_document([(4, 4)] * 24, bpm=120)
+    starts = bar_starts_for(document, lead_in=7.0)
+    audio = render(document, starts, count_in=4, intro=4.0)
+    # 0.2 s out, as a listener's "about 7 seconds" would be.
+    proposal = propose(document, audio, start_seconds=7.2)
+    assert len(proposal.anchors) == len(starts)
+    assert max(abs(proposal.anchors[str(i)] - t) for i, t in enumerate(starts)) < 0.05
+
+
+def test_a_recording_cut_partway_is_keyed_from_the_stated_bar() -> None:
+    document = build_document([(4, 4)] * 24, bpm=120)
+    starts = bar_starts_for(document, lead_in=0.5)
+    audio = render(document, starts)
+    cut = starts[8] - 0.5
+    proposal = propose(document, audio[int(cut * SAMPLE_RATE) :], start_bar=8, start_seconds=0.5)
+    assert min(int(key) for key in proposal.anchors) == 8
+    assert max(int(key) for key in proposal.anchors) == 24
+    assert max(abs(proposal.anchors[str(i)] - (starts[i] - cut)) for i in range(8, 25)) < 0.05
+    assert all(bar >= 8 for bar in proposal.low_confidence)
+    with pytest.raises(AudioDecodeError) as raised:
+        propose(document, audio, start_bar=99)
+    assert raised.value.key == "autosync.badStart"
+
+
 def test_confidence_is_high_for_a_clear_beat_and_low_for_noise() -> None:
     document = build_document([(4, 4)] * 24, bpm=120)
     clear = propose(document, render(document, bar_starts_for(document, lead_in=1.0)))
@@ -174,6 +215,27 @@ def test_endpoint_queues_a_job_that_proposes_anchors_without_saving(tmp_path: Pa
         accepted = client.patch(f"/api/songs/{song_id}/sync", json={"bpm": 120, "anchors": proposal["anchors"]})
         assert accepted.status_code == 200
         assert len(accepted.json()["document"]["sync"]["anchors"]) == 13
+
+
+def test_endpoint_passes_the_start_to_the_job_and_checks_the_bar(tmp_path: Path) -> None:
+    document = build_document([(4, 4)] * 12, bpm=120)
+    starts = bar_starts_for(document, lead_in=4.0)
+    wav = tmp_path / "song.wav"
+    _write_wav(wav, render(document, starts, count_in=4))
+    with _client(tmp_path / "data") as client:
+        song_id = _create_tab(client, document)
+        client.post(f"/api/songs/{song_id}/audio", files={"file": ("song.wav", wav.read_bytes(), "audio/wav")})
+        bad = client.post(f"/api/songs/{song_id}/autosync", json={"start_bar": 12})
+        assert bad.status_code == 400
+        assert bad.json()["detail"]["key"] == "autosync.badStart"
+        assert client.post(f"/api/songs/{song_id}/autosync", json={"start_seconds": -1}).status_code == 422
+        queued = client.post(f"/api/songs/{song_id}/autosync", json={"start_seconds": 4.1})
+        assert queued.status_code == 202
+        client.app.state.ctx.jobs.run_once()
+        job = client.get(f"/api/jobs/{queued.json()['job_id']}").json()
+        assert job["status"] == "done", job
+        anchors = job["result"]["autosync"]["anchors"]
+        assert max(abs(anchors[str(i)] - t) for i, t in enumerate(starts)) < 0.05
 
 
 def test_endpoint_refuses_chord_sheets_and_other_owners_songs(tmp_path: Path) -> None:

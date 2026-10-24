@@ -10,6 +10,8 @@
     confidencePercent,
     dueClicks,
     firstClickAt,
+    firstMarkedBar,
+    parseStartTime,
     previewClicks,
     proposedStarts,
     type Click,
@@ -47,6 +49,10 @@
   let error = $state("");
   let proposal = $state<AutoSyncProposal | null>(null);
   let startBar = $state(1);
+  // Where the music starts, before estimating: a tab with no intro or count-in needs neither.
+  let musicBar = $state(1);
+  let musicTime = $state("");
+  let musicTimeInvalid = $state(false);
   let previewing = $state(false);
   let volume = 0.8;
 
@@ -61,10 +67,18 @@
   const barCount = $derived(
     proposal ? Object.keys(proposal.anchors).filter((key) => Number(key) < playedCount).length : 0,
   );
+  const firstBar = $derived(proposal ? firstMarkedBar(proposal) : 0);
   const toCheck = $derived(proposal ? barsToCheck(proposal) : []);
   const shown = $derived(toCheck.slice(0, SHOWN_BARS).join(", "));
 
   async function estimate() {
+    const seconds = parseStartTime(musicTime);
+    musicTimeInvalid = seconds === undefined;
+    if (seconds === undefined) {
+      phase = "idle";
+      return;
+    }
+    const bar = clampBar(musicBar, playedCount);
     const mine = ++run;
     stopPreview();
     phase = "working";
@@ -72,7 +86,7 @@
     error = "";
     proposal = null;
     try {
-      const { job_id } = await startAutoSync(songId);
+      const { job_id } = await startAutoSync(songId, { start_bar: bar, start_seconds: seconds });
       for (let attempt = 0; attempt < 1200; attempt += 1) {
         const job = await getJob(job_id);
         if (job.status === "done" || job.status === "error") {
@@ -89,7 +103,8 @@
           const found = job.result?.autosync;
           if (!found) throw new Error(t("autoSync.noResult"));
           proposal = found;
-          startBar = found.low_confidence.length ? found.low_confidence[0] + 1 : 1;
+          startBar =
+            (found.low_confidence.length ? found.low_confidence[0] : firstMarkedBar(found)) + 1;
           phase = "ready";
           return;
         }
@@ -104,10 +119,9 @@
     }
   }
 
-  // Start estimating each time the sheet opens; closing it drops the proposal and stops the preview.
+  // Closing the sheet drops the proposal and stops the preview; it opens on the start options.
   let wasOpen = false;
   $effect(() => {
-    if (open && !wasOpen) void estimate();
     if (!open && wasOpen) reset();
     wasOpen = open;
   });
@@ -125,7 +139,7 @@
     clicker.unlock();
     clicks = previewClicks(score, proposal.anchors);
     const starts = proposedStarts(score, proposal.anchors);
-    const from = starts[clampBar(startBar, barCount)] ?? 0;
+    const from = starts[clampBar(startBar, firstBar + barCount)] ?? 0;
     audio ??= new Audio(audioUrl);
     audio.currentTime = Math.max(0, from);
     cursor = firstClickAt(clicks, audio.currentTime);
@@ -176,7 +190,52 @@
   }}
 >
   <div class="autosync">
-    {#if phase === "working" || phase === "idle"}
+    {#if phase === "idle"}
+      <form
+        class="start"
+        data-testid="autosync-options"
+        onsubmit={(event) => {
+          event.preventDefault();
+          void estimate();
+        }}
+      >
+        <p class="muted">{t("autoSync.startHint")}</p>
+        <div class="row">
+          <label class="field">
+            <span>{t("autoSync.musicBar")}</span>
+            <input
+              data-testid="autosync-music-bar"
+              type="number"
+              min="1"
+              max={Math.max(1, playedCount)}
+              bind:value={musicBar}
+            />
+          </label>
+          <label class="field">
+            <span>{t("autoSync.musicTime")}</span>
+            <input
+              data-testid="autosync-music-time"
+              type="text"
+              inputmode="decimal"
+              placeholder={t("autoSync.musicTimePlaceholder")}
+              aria-invalid={musicTimeInvalid}
+              bind:value={musicTime}
+            />
+          </label>
+        </div>
+        {#if musicTimeInvalid}
+          <p class="alert" role="alert" data-testid="autosync-time-error">
+            <Icon name="alert" size={18} />{t("autoSync.musicTimeInvalid")}
+          </p>
+        {/if}
+        <div class="row">
+          <button class="primary" type="submit" data-testid="autosync-estimate">
+            <Icon name="play" size={18} />{t("autoSync.estimate")}
+          </button>
+          <button class="ghost" type="button" onclick={onclose}>{t("autoSync.close")}</button>
+        </div>
+      </form>
+    {:else if phase === "working"}
       <p class="muted" role="status" data-testid="autosync-working">{progress}</p>
     {:else if phase === "failed"}
       <p class="alert" role="alert" data-testid="autosync-error">
@@ -220,11 +279,15 @@
           <input
             data-testid="autosync-start"
             type="number"
-            min="1"
-            max={Math.max(1, barCount)}
+            min={firstBar + 1}
+            max={Math.max(firstBar + 1, firstBar + barCount)}
             value={startBar}
             onchange={(event) => {
-              startBar = clampBar(Number(event.currentTarget.value), barCount) + 1;
+              startBar =
+                Math.max(
+                  firstBar,
+                  clampBar(Number(event.currentTarget.value), firstBar + barCount),
+                ) + 1;
               event.currentTarget.value = String(startBar);
             }}
           />
@@ -256,6 +319,10 @@
 
 <style>
   .autosync {
+    display: grid;
+    gap: 0.9rem;
+  }
+  .start {
     display: grid;
     gap: 0.9rem;
   }

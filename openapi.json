@@ -495,6 +495,32 @@
         "title": "AutoSyncProposal",
         "type": "object"
       },
+      "AutoSyncRequest": {
+        "description": "Where the music starts, when the audio has an intro or count-in the tab does not, or is cut mid-song.",
+        "properties": {
+          "start_bar": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Start Bar",
+            "type": "integer"
+          },
+          "start_seconds": {
+            "anyOf": [
+              {
+                "maximum": 86400.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Seconds"
+          }
+        },
+        "title": "AutoSyncRequest",
+        "type": "object"
+      },
       "Bar": {
         "description": "One song-level bar (alphaTab's master bar).",
         "properties": {
@@ -12164,7 +12190,7 @@
     },
     "/api/songs/{song_id}/autosync": {
       "post": {
-        "description": "Queue an estimate of the bar marks from the song's audio.\n\nThe finished job's ``result.autosync`` holds the proposed anchors and a confidence for each. Nothing is\nsaved: accept a proposal by sending its anchors to ``PATCH /api/songs/{song_id}/sync``.",
+        "description": "Queue an estimate of the bar marks from the song's audio.\n\nThe finished job's ``result.autosync`` holds the proposed anchors and a confidence for each. Nothing is\nsaved: accept a proposal by sending its anchors to ``PATCH /api/songs/{song_id}/sync``.\n\nThe body is optional. By default the tab's first bar starts with the first sound in the audio; when the\nrecording has an intro or count-in the tab lacks, give ``start_seconds`` (and ``start_bar`` if the audio\nbegins partway through the tab).",
         "operationId": "start_autosync_api_songs__song_id__autosync_post",
         "parameters": [
           {
@@ -12177,6 +12203,23 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/AutoSyncRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
         "responses": {
           "202": {
             "content": {
