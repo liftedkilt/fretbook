@@ -8,11 +8,15 @@
 
   let host = $state<HTMLElement | null>(null);
   let failed = $state(false);
+  let chosen = $state("");
+  const shown = $derived(
+    score.tracks.find((track) => track.id === chosen) ?? preferredTrack(score),
+  );
 
   // alphaTab is loaded on demand: most visits to the Add sheet never preview a tab.
   $effect(() => {
     const element = host;
-    const source = trackToAlphaTex(score, preferredTrack(score).id, title, "");
+    const source = trackToAlphaTex(score, shown.id, title, "");
     if (!element) return;
     let cancelled = false;
     let instance: { destroy(): void } | null = null;
@@ -41,6 +45,16 @@
   });
 </script>
 
+{#if score.tracks.length > 1}
+  <label class="field">
+    <span>{t("asciiTab.previewTrack")}</span>
+    <select value={shown.id} onchange={(event) => (chosen = event.currentTarget.value)}>
+      {#each score.tracks as track (track.id)}
+        <option value={track.id}>{track.name}</option>
+      {/each}
+    </select>
+  </label>
+{/if}
 {#if failed}
   <p class="alert" role="alert">{t("asciiTab.previewFailed")}</p>
 {:else}

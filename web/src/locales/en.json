@@ -571,7 +571,6 @@
       "tooLong": "The tab is longer than {limit} characters.",
       "badGrid": "That shortest note value is not supported.",
       "tooDense": "Bar {bar} has too many notes to place.",
-      "skippedSystems": "{count} tab system(s) with a different number of strings were skipped.",
       "gridRefined": "{count} bar(s) have more notes than the grid has slots, so a finer grid was used there."
     },
     "token": {
@@ -714,6 +713,7 @@
     "preview": "Preview",
     "previewEmpty": "Paste a tab to see it here.",
     "previewLoading": "Reading the tab…",
+    "previewTrack": "Track",
     "previewFailed": "The preview could not be drawn.",
     "chordsDetected": "This looks like chords over lyrics, so it will be saved as a chord sheet.",
     "create": "Create song",
