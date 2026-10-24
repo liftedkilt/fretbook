@@ -18,6 +18,7 @@ import type {
   ImportPreview as ContractImportPreview,
   Job as ContractJob,
   JobAccepted,
+  LibraryFacets as ContractLibraryFacets,
   LessonDetail,
   LessonPreview,
   LessonPackResult,
@@ -66,6 +67,7 @@ import type {
   ImportPreview,
   Job,
   Keyed,
+  LibraryFacets,
   Me,
   Meta,
   PracticeExerciseDraft,
@@ -80,6 +82,7 @@ import type {
   SetlistEntryDraft,
   SetlistSummary,
   SongDetail,
+  SongMetadataPatch,
   SongPage,
   SongQuery,
   SongPractice,
@@ -98,6 +101,7 @@ type _matchesContract = [
   AssertAssignable<ContractSongSummary, SongSummary>,
   AssertAssignable<ContractSongPage, SongPage>,
   AssertAssignable<ContractTagCount, TagCount>,
+  AssertAssignable<ContractLibraryFacets, LibraryFacets>,
   AssertAssignable<ContractImportPreview, ImportPreview>,
   AssertAssignable<ContractAdminUser, AdminUser>,
   AssertAssignable<ContractAudioCalibration, AudioCalibration>,
@@ -249,6 +253,35 @@ export function deleteCalibration(
 /** One page of the library. */
 export function listSongs(query: SongQuery = {}): Promise<SongPage> {
   return request<ContractSongPage>(songsPath(query));
+}
+
+/** The keys and genres in the library with their song counts, for the library filters. */
+export function getFacets(): Promise<LibraryFacets> {
+  return request<ContractLibraryFacets>("/api/library/facets");
+}
+
+/** Set a song's key, genre, album, year or notes. It does not change the song's revision. */
+export function updateSongMetadata(id: string, patch: SongMetadataPatch): Promise<SongDetail> {
+  return view(request<ContractSongDetail>(`/api/songs/${id}/metadata`, json("PATCH", patch)));
+}
+
+/** Replace the song's cover art with a PNG, JPEG or WebP image. */
+export function uploadCover(id: string, file: File): Promise<SongDetail> {
+  const data = new FormData();
+  data.append("file", file);
+  return view(
+    request<ContractSongDetail>(`/api/songs/${id}/cover`, { method: "POST", body: data }),
+  );
+}
+
+/** Remove the uploaded cover art. */
+export function deleteCover(id: string): Promise<SongDetail> {
+  return view(request<ContractSongDetail>(`/api/songs/${id}/cover`, { method: "DELETE" }));
+}
+
+/** Fill in an empty album, year and cover from MusicBrainz (needs `metadata_lookup` in the meta). */
+export function lookupMetadata(id: string): Promise<SongDetail> {
+  return view(request<ContractSongDetail>(`/api/songs/${id}/metadata/lookup`, { method: "POST" }));
 }
 
 /** Record that the song was opened, for the "last opened" sort. */

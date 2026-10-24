@@ -7,13 +7,19 @@
     kind = "tab",
     strings = 6,
     size = "md",
+    src,
   }: {
     id: string;
     title: string;
     kind?: "tab" | "chords";
     strings?: number;
     size?: "sm" | "md" | "lg";
+    /** Uploaded cover art. The generated cover shows when there is none or it does not load. */
+    src?: string | null;
   } = $props();
+
+  let failed = $state<string | null>(null);
+  const image = $derived(src && failed !== src ? src : "");
 
   const palette = $derived(paletteFor(id));
   const letters = $derived(monogram(title));
@@ -30,9 +36,13 @@
 
 <div
   class="cover cover-{size}"
+  class:has-image={!!image}
   style="--c-from:{palette.from};--c-via:{palette.via};--c-to:{palette.to};--c-ink:{palette.ink}"
   aria-hidden="true"
 >
+  {#if image}
+    <img class="cover-image" {src} alt="" loading="lazy" onerror={() => (failed = src ?? null)} />
+  {/if}
   <svg class="cover-art" viewBox="0 0 100 100" preserveAspectRatio="none">
     {#if kind === "chords"}
       {#each [0, 1, 2, 3, 4] as row (row)}

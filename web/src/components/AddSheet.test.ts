@@ -39,6 +39,7 @@ vi.mock("../lib/api", () => ({
   waitForJob: (...args: unknown[]) => mockWaitForJob(...args),
   listSongs: (...args: unknown[]) => mockListSongs(...args),
   listTags: vi.fn().mockResolvedValue([]),
+  getFacets: vi.fn().mockResolvedValue({ keys: [], genres: [] }),
   setFavourite: vi.fn(),
   addTags: vi.fn(),
   apiUrl: (p: string) => p,

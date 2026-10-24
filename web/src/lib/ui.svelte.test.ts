@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const listSongs = vi.fn();
 const listTags = vi.fn();
+const getFacets = vi.fn();
 const getMeta = vi.fn();
 const getMe = vi.fn();
 const saveSettings = vi.fn();
@@ -9,6 +10,7 @@ const saveSettings = vi.fn();
 vi.mock("./api", () => ({
   listSongs: (...args: unknown[]) => listSongs(...args),
   listTags: () => listTags(),
+  getFacets: () => getFacets(),
   getMeta: () => getMeta(),
   getMe: () => getMe(),
   saveSettings: (...args: unknown[]) => saveSettings(...args),
@@ -48,6 +50,8 @@ beforeEach(() => {
   listSongs.mockReset();
   listTags.mockReset();
   listTags.mockResolvedValue([]);
+  getFacets.mockReset();
+  getFacets.mockResolvedValue({ keys: [], genres: [] });
   getMeta.mockReset();
   getMe.mockReset();
   saveSettings.mockReset();
@@ -103,6 +107,22 @@ describe("library", () => {
     expect(ui.recent.map((song) => song.id)).toEqual(["a"]);
     expect(ui.favourites.map((song) => song.id)).toEqual(["a"]);
     expect(ui.tagList).toEqual([{ tag: "Funk", count: 1 }]);
+  });
+
+  it("loads the key and genre facets and drops a filter nobody has any more", async () => {
+    listSongs.mockResolvedValue(page(["a"]));
+    getFacets.mockResolvedValue({
+      keys: [{ name: "C", count: 2 }],
+      genres: [{ name: "Blues", count: 1 }],
+    });
+    ui.keyFilter = "Am";
+    ui.genreFilter = "blues";
+    await refreshSongs();
+    expect(ui.facets.keys).toEqual([{ name: "C", count: 2 }]);
+    expect(ui.keyFilter).toBe("");
+    // Genres match ignoring case, as on the server.
+    expect(ui.genreFilter).toBe("blues");
+    ui.genreFilter = "";
   });
 
   it("remembers the sort in its natural order", () => {

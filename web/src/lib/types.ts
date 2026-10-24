@@ -133,6 +133,15 @@ export interface SongSummary {
   difficulty: number | null;
   /** Sorted A to Z ignoring case. */
   tags: string[];
+  /** The key (`C`, `F#`, `Am`, `Bbm`): the one set, else the one detected; null when unknown. */
+  key: string | null;
+  /** True when `key` was detected from the score and not set by the person. */
+  key_detected: boolean;
+  genre: string;
+  album: string;
+  year: number | null;
+  /** Where the uploaded or looked-up cover art is served from (relative to the app root), or null. */
+  cover_url: string | null;
   /** Matching lyric words when a search found the song only through its lyrics; see `lyricsSnippet.ts`. */
   lyrics_snippet: string | null;
 }
@@ -183,6 +192,8 @@ export interface SongQuery {
   /** A song needs every tag listed. */
   tag?: string[];
   favourite?: boolean;
+  key?: string;
+  genre?: string;
   difficulty_min?: number;
   difficulty_max?: number;
   limit?: number;
@@ -212,6 +223,28 @@ export interface SongDetail extends SongSummary {
   audio_url: string | null;
   preferred_track_id: string;
   difficulty_tracks: TrackDifficulty[];
+  /** Personal notes as Markdown. */
+  notes: string;
+}
+
+/** What `PATCH /api/songs/{id}/metadata` takes. A field left out stays; "" (or null for `year`) clears it. */
+export interface SongMetadataPatch {
+  key?: string;
+  genre?: string;
+  album?: string;
+  year?: number | null;
+  notes?: string;
+}
+
+export interface FacetCount {
+  name: string;
+  count: number;
+}
+
+/** The keys and genres in the library, most used first. */
+export interface LibraryFacets {
+  keys: FacetCount[];
+  genres: FacetCount[];
 }
 
 export type DifficultyFactorKey =
@@ -276,6 +309,8 @@ export interface Meta {
   ytdlp: YtDlpStatus;
   /** A read-only public demo (`FRETBOOK_DEMO_MODE`). */
   demo_mode?: boolean;
+  /** Online lookup of album, year and cover art is on (`FRETBOOK_METADATA_LOOKUP`). */
+  metadata_lookup?: boolean;
 }
 
 export interface Settings {

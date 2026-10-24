@@ -13,6 +13,7 @@ vi.mock("../lib/api", () => ({
   setFavourite: (...args: unknown[]) => mockSetFavourite(...args),
   listSongs: (...args: unknown[]) => mockListSongs(...args),
   listTags: vi.fn().mockResolvedValue([]),
+  getFacets: vi.fn().mockResolvedValue({ keys: [], genres: [] }),
 }));
 
 const song = {

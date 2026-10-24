@@ -80,6 +80,14 @@ for (const scheme of ["light", "dark"] as const) {
       found.push(...(await violations(page, "shortcut-help")));
       await page.keyboard.press("Escape");
 
+      await page.goto(`/songs/${tab.id}`);
+      await expect(page.getByTestId("player-play")).toBeVisible();
+      await page.getByTestId("song-metadata-edit").click();
+      await expect(page.getByTestId("metadata-sheet")).toBeVisible();
+      found.push(...(await violations(page, "metadata-sheet")));
+      await page.keyboard.press("Escape");
+      await expect(page.getByTestId("metadata-sheet")).toBeHidden();
+
       // Auto-sync needs a recording: the click-track fixture is enough for the sheet to show a proposal.
       const synced = await seed.syncedSongWithAudio();
       await page.goto(`/songs/${synced.id}`);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { monogram, paletteFor, PALETTES } from "./cover";
+import { coverSrc, monogram, paletteFor, PALETTES } from "./cover";
 
 describe("cover art", () => {
   it("gives the same song the same palette", () => {
@@ -13,5 +13,13 @@ describe("cover art", () => {
     expect(monogram("Another One Bites the Dust")).toBe("AO");
     expect(monogram("  ")).toBe("♪");
     expect(monogram("águas de março")).toBe("ÁD");
+  });
+});
+
+describe("coverSrc", () => {
+  it("is undefined without a cover and resolves a relative address", () => {
+    expect(coverSrc(null)).toBeUndefined();
+    expect(coverSrc("")).toBeUndefined();
+    expect(coverSrc("api/songs/s1/cover?v=1")).toContain("api/songs/s1/cover?v=1");
   });
 });

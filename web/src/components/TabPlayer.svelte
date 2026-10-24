@@ -3,6 +3,7 @@
   import { onMount, untrack } from "svelte";
 
   import Cover from "./Cover.svelte";
+  import { coverSrc } from "../lib/cover";
   import Fretboard from "./Fretboard.svelte";
   import FretboardPanel from "./FretboardPanel.svelte";
   import Highway from "./Highway.svelte";
@@ -1284,7 +1285,13 @@
       ><Icon name="back" size={18} />{t("app.back")}</a
     >
     <div class="song-hero">
-      <Cover id={song.id} title={song.title} strings={track.tuning_midi.length} size="lg" />
+      <Cover
+        id={song.id}
+        title={song.title}
+        strings={track.tuning_midi.length}
+        size="lg"
+        src={coverSrc(song.cover_url)}
+      />
       <div class="song-hero-text">
         <p class="eyebrow">{instrumentLabel(track.instrument)}</p>
         <h1 class="display song-heading" data-testid="song-heading">{song.title}</h1>

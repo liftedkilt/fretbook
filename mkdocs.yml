@@ -54,6 +54,7 @@ nav:
   - User guide:
       - Importing songs: guides/importing.md
       - Playing and syncing: guides/playing.md
+      - Song details and cover art: guides/song-details.md
       - Practice modes: guides/practice.md
       - Learning a song (lessons): guides/lessons.md
       - Writing lessons: lessons.md

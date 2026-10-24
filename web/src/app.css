@@ -1187,6 +1187,20 @@ textarea {
   opacity: 0.42;
 }
 
+.cover-image {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cover.has-image .cover-art,
+.cover.has-image .cover-mono {
+  display: none;
+}
+
 .cover-art line {
   stroke-width: 0.8;
   vector-effect: non-scaling-stroke;
@@ -5131,4 +5145,105 @@ kbd {
   .song-card:not(:hover):not(:focus-within) .song-actions.starred {
     opacity: 1;
   }
+}
+
+/* Song details: key, genre, year, album, notes */
+.song-metadata {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.6rem;
+  margin: 0 0 1rem;
+}
+
+.meta-pills {
+  display: contents;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.song-notes {
+  flex-basis: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  color: var(--text-2);
+  font-size: 0.92rem;
+}
+
+.markdown > :first-child {
+  margin-top: 0;
+}
+
+.markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown h3,
+.markdown h4,
+.markdown h5 {
+  margin: 0.8rem 0 0.3rem;
+  font-size: 1rem;
+}
+
+.markdown p,
+.markdown ul,
+.markdown ol {
+  margin: 0.4rem 0;
+}
+
+.markdown code {
+  padding: 0 0.3em;
+  border-radius: 4px;
+  background: var(--surface);
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+}
+
+.metadata-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.metadata-cover {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.metadata-cover-art {
+  flex: none;
+  width: 96px;
+}
+
+.metadata-cover-actions {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.facet-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  margin: 0 0 0.75rem;
+}
+
+.facet {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-2);
+  font-size: 0.84rem;
+}
+
+.facet select {
+  min-width: 9rem;
 }

@@ -42,3 +42,9 @@ export function monogram(title: string): string {
     words.length === 1 ? [...words[0]].slice(0, 1) : [[...words[0]][0], [...words[1]][0]];
   return letters.join("").toUpperCase();
 }
+
+/** The address of a song's uploaded cover art, resolved against the app's base path, or `undefined` for none. */
+export function coverSrc(url: string | null | undefined): string | undefined {
+  if (!url) return undefined;
+  return typeof document === "undefined" ? url : new URL(url, document.baseURI).toString();
+}
