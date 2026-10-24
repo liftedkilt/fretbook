@@ -137,8 +137,9 @@ describe("startListening", () => {
     vi.stubGlobal("AudioWorkletNode", FakeNode);
 
     const onPitch = vi.fn();
+    const onChroma = vi.fn();
     const onLevel = vi.fn();
-    const session = await startListening({ deviceId: "d", channel: 1, onPitch, onLevel });
+    const session = await startListening({ deviceId: "d", channel: 1, onPitch, onChroma, onLevel });
     expect(getUserMedia).toHaveBeenCalledWith({
       audio: expect.objectContaining({ echoCancellation: false }),
     });
@@ -165,8 +166,20 @@ describe("startListening", () => {
     port.onmessage?.({ data: { type: "pitch", event } });
     expect(onPitch).toHaveBeenCalledWith(event);
 
+    const reading = {
+      time: 1,
+      bins: new Array(12).fill(0),
+      span: 0.17,
+      onset: false,
+      onsetTime: null,
+    };
+    port.onmessage?.({ data: { type: "chroma", event: reading } });
+    expect(onChroma).toHaveBeenCalledWith(reading);
+
     session.setChannel(0);
     session.setExpectedMidi(28);
+    session.setChroma(true);
+    expect(port.postMessage).toHaveBeenCalledWith({ type: "chroma", on: true });
     expect(port.postMessage).toHaveBeenCalledWith({ type: "channel", index: 0 });
     expect(port.postMessage).toHaveBeenCalledWith({ type: "expected", midi: 28 });
 

@@ -1,4 +1,5 @@
 import { t } from "../i18n.svelte";
+import type { ChromaEvent } from "./chroma";
 import type { PitchEvent } from "./engine";
 import type { WorkletCommand, WorkletMessage, WorkletOptions } from "./messages";
 // Vite bundles the processor (and the DSP it imports) into one standalone module for addModule().
@@ -97,6 +98,8 @@ export interface ListenOptions {
   /** Lowest note to track in Hz; 28 covers a 5-string bass tuned down a little. */
   minFrequency?: number;
   onPitch: (event: PitchEvent) => void;
+  /** Pitch-class readings; they arrive only after `setChroma(true)`. */
+  onChroma?: (event: ChromaEvent) => void;
   onLevel?: (level: { rms: number; peak: number }) => void;
 }
 
@@ -106,6 +109,8 @@ export interface ListenSession {
   readonly channelCount: number;
   setChannel(index: number): void;
   setExpectedMidi(midi: number | null): void;
+  /** Start or stop the pitch-class readings used to check chords. */
+  setChroma(on: boolean): void;
   stop(): Promise<void>;
 }
 
@@ -144,6 +149,7 @@ export async function startListening(options: ListenOptions): Promise<ListenSess
     } as AudioWorkletNodeOptions);
     node.port.onmessage = (message: MessageEvent<WorkletMessage>) => {
       if (message.data.type === "pitch") options.onPitch(message.data.event);
+      else if (message.data.type === "chroma") options.onChroma?.(message.data.event);
       else options.onLevel?.({ rms: message.data.rms, peak: message.data.peak });
     };
     const source = context.createMediaStreamSource(stream);
@@ -156,6 +162,7 @@ export async function startListening(options: ListenOptions): Promise<ListenSess
       channelCount,
       setChannel: (index) => send({ type: "channel", index }),
       setExpectedMidi: (midi) => send({ type: "expected", midi }),
+      setChroma: (on) => send({ type: "chroma", on }),
       async stop() {
         source.disconnect();
         node.port.onmessage = null;

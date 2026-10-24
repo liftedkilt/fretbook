@@ -1,3 +1,4 @@
+import type { ChromaEvent } from "./chroma";
 import type { PitchEvent } from "./engine";
 import type { ListenSession, ListenOptions } from "./input";
 import { DEFAULT_WAIT_OPTIONS, WaitMatcher, type WaitOptions, type WaitStep } from "./wait";
@@ -45,7 +46,10 @@ export class WaitRun {
   }
 
   async start(): Promise<void> {
-    this.session = await this.options.listen({ onPitch: (event) => this.hear(event) });
+    this.session = await this.options.listen({
+      onPitch: (event) => this.hear(event),
+      onChroma: (event) => this.hearChroma(event),
+    });
   }
 
   /** The cursor arrived at step `index`. Returns true when it should stop and wait. */
@@ -56,6 +60,7 @@ export class WaitRun {
     this.current = index;
     this.matcher.wait(step);
     this.session.setExpectedMidi(step.kind === "note" ? (step.midis[0] ?? null) : null);
+    this.session.setChroma(step.kind === "chord");
     this.clearHint();
     if (this.options.hintSeconds > 0) {
       this.hintTimer = setTimeout(
@@ -91,6 +96,10 @@ export class WaitRun {
     if (this.matcher.push(event)) this.finish(true);
   }
 
+  private hearChroma(event: ChromaEvent): void {
+    if (this.matcher.pushChroma(event)) this.finish(true);
+  }
+
   private finish(hit: boolean): void {
     const index = this.current;
     const step = this.options.steps[index];
@@ -105,6 +114,7 @@ export class WaitRun {
     this.current = -1;
     this.matcher.wait(null);
     this.session?.setExpectedMidi(null);
+    this.session?.setChroma(false);
   }
 
   private clearHint(): void {

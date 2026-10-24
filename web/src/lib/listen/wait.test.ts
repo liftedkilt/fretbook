@@ -4,7 +4,14 @@ import type { Beat, Note, ScoreDocument } from "../types";
 import type { PitchEvent } from "./engine";
 import { runEngine } from "./harness/evaluate";
 import { renderNotes } from "./harness/synth";
-import { buildWaitSteps, pitchMatches, stepIndexAt, WaitMatcher, type WaitStep } from "./wait";
+import {
+  buildWaitSteps,
+  DEFAULT_WAIT_OPTIONS,
+  pitchMatches,
+  stepIndexAt,
+  WaitMatcher,
+  type WaitStep,
+} from "./wait";
 
 const WHOLE = 3840;
 
@@ -225,10 +232,9 @@ describe("WaitMatcher", () => {
 
   it("is strict about the octave when asked, and about cents", () => {
     const strict = new WaitMatcher({
+      ...DEFAULT_WAIT_OPTIONS,
       anyOctave: false,
       centsTolerance: 20,
-      settleSeconds: 0.3,
-      earlySeconds: 0.08,
     });
     strict.push(event(1, null));
     strict.wait(note(28));

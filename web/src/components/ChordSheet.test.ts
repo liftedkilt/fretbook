@@ -58,4 +58,11 @@ e|--0--|
     expect(screen.getByText("Chorus line")).toBeDefined();
     expect(screen.getByText("e|--0--|")).toBeDefined();
   });
+
+  it("marks the chord to play when asked", () => {
+    const { container } = render(ChordSheet, { props: { text: "[C]one [G]two", active: "0:0:1" } });
+    const marked = container.querySelectorAll("[data-active='true']");
+    expect(marked).toHaveLength(1);
+    expect(marked[0].querySelector("[data-testid='chord-name']")?.textContent?.trim()).toBe("G");
+  });
 });

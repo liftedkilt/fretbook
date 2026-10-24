@@ -189,6 +189,7 @@ describe("CalibrationWizard", () => {
       channelCount: 1,
       setChannel: vi.fn(),
       setExpectedMidi: vi.fn(),
+      setChroma: vi.fn(),
       stop: vi.fn().mockResolvedValue(undefined),
     };
 
@@ -313,6 +314,7 @@ describe("CalibrationWizard", () => {
       channelCount: 1,
       setChannel: vi.fn(),
       setExpectedMidi: vi.fn(),
+      setChroma: vi.fn(),
       stop: vi.fn().mockResolvedValue(undefined),
     };
     vi.spyOn(inputModule, "startListening").mockResolvedValue(mockSession);

@@ -109,3 +109,40 @@ export function renderNotes(
   if (peak > 0.95) for (let i = 0; i < out.length; i++) out[i] *= 0.95 / peak;
   return out;
 }
+
+export interface StrumNote {
+  midi: number;
+  /** Seconds the string rings. */
+  duration?: number;
+}
+
+/**
+ * A strummed chord: every string is rendered on its own (the string model is monophonic) and
+ * the strings are summed, each starting `spread` seconds after the one before. Down strums run
+ * from the lowest string up, up strums the other way.
+ */
+export function renderStrum(
+  midis: number[],
+  start: number,
+  seconds: number,
+  options: SynthOptions & { spread?: number; duration?: number; up?: boolean },
+): Float32Array {
+  const out = new Float32Array(Math.ceil(seconds * options.sampleRate));
+  const ordered = [...midis].sort((a, b) => (options.up ? b - a : a - b));
+  ordered.forEach((midi, index) => {
+    const string = renderNotes(
+      [
+        {
+          midi,
+          start: start + index * (options.spread ?? 0.014),
+          duration: options.duration ?? 1.2,
+          velocity: 0.7,
+        },
+      ],
+      seconds,
+      { ...options, seed: (options.seed ?? 1) + index },
+    );
+    for (let i = 0; i < out.length; i++) out[i] += string[i] * 0.45;
+  });
+  return out;
+}

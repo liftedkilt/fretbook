@@ -27,6 +27,7 @@ class PitchProcessor extends AudioWorkletProcessor {
     this.port.onmessage = (message: MessageEvent<WorkletCommand>) => {
       if (message.data.type === "expected") this.engine.setExpectedMidi(message.data.midi);
       else if (message.data.type === "channel") this.channel = message.data.index;
+      else if (message.data.type === "chroma") this.engine.setChroma(message.data.on);
     };
   }
 
@@ -37,6 +38,7 @@ class PitchProcessor extends AudioWorkletProcessor {
     for (const event of this.engine.process(samples, currentTime)) {
       this.post({ type: "pitch", event });
     }
+    for (const event of this.engine.takeChroma()) this.post({ type: "chroma", event });
     if (currentTime - this.lastLevel >= LEVEL_INTERVAL) {
       this.lastLevel = currentTime;
       this.post({ type: "level", ...this.engine.takeLevel() });

@@ -53,6 +53,18 @@
         />
         {t("wait.silent")}
       </label>
+      <label class="check">
+        <input
+          type="checkbox"
+          data-testid="wait-chords"
+          checked={practice.wait.chords}
+          onchange={(event) => {
+            practice.wait.chords = event.currentTarget.checked;
+            onchange();
+          }}
+        />
+        {t("chordWait.option")}
+      </label>
       <label class="field compact-field">
         <span>{t("wait.hintAfter")}</span>
         <input
