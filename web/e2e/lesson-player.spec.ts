@@ -145,7 +145,9 @@ test("finish a scored lesson from the player", async ({ page, seed }) => {
   await page.getByTestId("player-play").click();
   await expect(page.getByTestId("score-results")).toBeVisible({ timeout: 50_000 });
 
-  await expect(page.getByTestId("lesson-run-passed")).toBeVisible();
+  await expect(page.getByTestId("lesson-run-passed")).toBeAttached();
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("score-results")).not.toBeVisible();
   await page.getByTestId("lesson-run-back").click();
   await expect(page.getByTestId("lesson-done")).toBeVisible();
   const response = await page.request.get("/api/courses/play-along/lessons/riff");
