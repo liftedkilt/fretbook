@@ -10,6 +10,8 @@
   import LoopPanel from "./LoopPanel.svelte";
   import Menu from "./Menu.svelte";
   import PracticePanel from "./PracticePanel.svelte";
+  import ScorePanel from "./ScorePanel.svelte";
+  import ScoreResults from "./ScoreResults.svelte";
   import ShortcutHelp from "./ShortcutHelp.svelte";
   import WaitPanel from "./WaitPanel.svelte";
   import { ApiError, patchSync, recordPracticeSession, uploadAudio } from "../lib/api";
@@ -30,6 +32,17 @@
   import { instrumentLabel } from "../lib/instruments";
   import { describeProblem, ListenError, startListening } from "../lib/listen";
   import { pitchClassName } from "../lib/listen/chordTones";
+  import { getLocalCalibration } from "../lib/listen/calibration";
+  import {
+    bleedSuspected,
+    buildScoredSteps,
+    sectionScores,
+    starsFor,
+    type NoteGrade,
+    type ScoreSummary,
+    type SectionScore,
+  } from "../lib/listen/scored";
+  import { ScoredRun } from "../lib/listen/scoredRun";
   import { buildWaitSteps, stepIndexAt, type WaitStep } from "../lib/listen/wait";
   import { WaitRun } from "../lib/listen/waitRun";
   import { followPlayed, playedBars } from "../lib/playback";
@@ -48,6 +61,13 @@
     updateLoopHighestSpeed,
     type SavedLoop,
   } from "../lib/practice";
+  import {
+    loadScores,
+    loopKey,
+    personalBest,
+    recordScore,
+    type ScoreRecord,
+  } from "../lib/scoreLog";
   import { followLink, hrefFor } from "../lib/router.svelte";
   import { RATES, shortcutFor, stepRate, type ShortcutAction } from "../lib/shortcuts";
   import {
@@ -118,6 +138,24 @@
   let waitRun: WaitRun | null = null;
   let waitFlash = 0;
 
+  // Scored play-along: the music keeps playing and every note of the chosen track is graded.
+  let scoreOn = $state(false);
+  let scoreSummary = $state<ScoreSummary | null>(null);
+  let scoreGrades = $state<Record<string, GemState>>({});
+  let scoreError = $state("");
+  let scoreBleed = $state(false);
+  let scoreCalibrated = $state(true);
+  let scoreResult = $state<{
+    summary: ScoreSummary;
+    sections: SectionScore[];
+    speed: number;
+    loop: { from: number; to: number } | null;
+    isBest: boolean;
+    best: ScoreRecord | null;
+  } | null>(null);
+  let scoreResultsOpen = $state(false);
+  let scoreRun: ScoredRun | null = null;
+
   const document_ = $derived(song.document);
   const track = $derived(
     document_.tracks.find((item) => item.id === trackId) ?? preferredTrack(document_),
@@ -136,6 +174,7 @@
   const tex = $derived(scoreToAlphaTex({ ...document_, bpm: renderBpm }, song.title, song.artist));
   const trackIndex = $derived(Math.max(0, document_.tracks.indexOf(track)));
   const waitSteps = $derived(buildWaitSteps(document_, track, { chords: practice.wait.chords }));
+  const scoredSteps = $derived(buildScoredSteps(document_, track, song.has_audio));
   const fretEvents = $derived(practice.fretboard.on ? buildFretEvents(document_, track) : []);
   const fretFocus = $derived(focusAt(fretEvents, currentMeasure, currentPosition));
 
@@ -287,6 +326,10 @@
       }
     });
     instance.playerFinished.on(() => {
+      if (scoreRun?.running) {
+        scoreRun.finish();
+        return;
+      }
       if (loopA != null && loopB != null && loopB >= barCount - 1 && playing) {
         handleLoopTurnaround();
         return;
@@ -431,6 +474,7 @@
       window.clearTimeout(countInTimer);
       clicker.close();
       waitRun?.stop();
+      scoreRun?.stop();
       document.removeEventListener("keydown", onKey);
       // Leaving the page must not lose a tap that is still waiting to be saved.
       void flushSync();
@@ -493,7 +537,7 @@
       const mix = trackMix(practice, id);
       api.changeTrackVolume([item], mix.volume);
       // In wait mode the player plays the chosen track, so it is left out of the backing.
-      api.changeTrackMute([item], mix.mute || (waitOn && index === trackIndex));
+      api.changeTrackMute([item], mix.mute || ((waitOn || scoreOn) && index === trackIndex));
       api.changeTrackSolo([item], mix.solo);
     });
   }
@@ -594,11 +638,13 @@
       audioEl.currentTime = targetTime;
       currentSeconds = targetTime;
       currentMeasure = index;
+      if (scoreRun) scoreRun.begin(scoreRange(index));
     } else if (player.api) {
       const tick = tickOfBar(index);
       player.api.tickPosition = tick;
       currentMeasure = index;
       currentSeconds = Math.max(0, highwayStarts(song.document, false)[index] ?? 0);
+      if (scoreRun) scoreRun.begin(scoreRange(index));
       if (waitRun) {
         waitRun.seek(tick);
         waitStep = null;
@@ -679,6 +725,11 @@
 
   function handleLoopTurnaround() {
     if (loopA == null || loopB == null) return;
+    // A scored pass covers the loop once: grade it and show the results instead of going round again.
+    if (scoreRun?.running) {
+      scoreRun.finish();
+      return;
+    }
 
     if (practice.speedTrainer.enabled) {
       const currentRatio = speedTrainerPercent / 100;
@@ -747,6 +798,7 @@
   async function startWait() {
     const api = player.api;
     if (!api || song.has_audio || waitRun) return;
+    if (scoreRun) stopScore();
     waitError = "";
     waitGrades = {};
     const run = new WaitRun({
@@ -811,6 +863,125 @@
     applyPractice();
   }
 
+  /** The part of the song a scored pass covers: the loop, or from `bar` to the end. */
+  function scoreRange(bar: number): { from: number; to: number } {
+    const starts = highwayStarts(song.document, song.has_audio);
+    if (loopA != null && loopB != null) {
+      return { from: starts[loopA] ?? 0, to: starts[loopB + 1] ?? starts[starts.length - 1] ?? 0 };
+    }
+    return { from: starts[Math.max(0, bar)] ?? 0, to: starts[starts.length - 1] ?? 0 };
+  }
+
+  async function startScore() {
+    if (!player.api || scoreRun) return;
+    if (waitRun) stopWait();
+    scoreError = "";
+    scoreBleed = false;
+    scoreGrades = {};
+    // Round trip from the calibration for the default device pair, in seconds.
+    const latency = getLocalCalibration("default", "default");
+    scoreCalibrated = latency !== null;
+    const run: ScoredRun = new ScoredRun({
+      steps: scoredSteps,
+      barCount,
+      listen: startListening,
+      songTime: () => currentSeconds,
+      rate: () => rate,
+      latencySeconds: (latency ?? 0) / 1000,
+      onGrades: (changed, grades, summary) => {
+        scoreSummary = summary;
+        if (changed.length === 0) {
+          scoreGrades = {};
+          return;
+        }
+        const next = { ...scoreGrades };
+        for (const index of changed) {
+          const grade = grades[index] as NoteGrade;
+          next[gemKey(scoredSteps[index].bar, scoredSteps[index].position)] = grade;
+        }
+        scoreGrades = next;
+      },
+      onAttacks: (attacks, restAttacks) => {
+        scoreBleed = song.has_audio && bleedSuspected(restAttacks, attacks);
+      },
+      onComplete: (summary) => {
+        player.api?.pause();
+        showScoreResult(summary, run.attacks > 0);
+      },
+    });
+    try {
+      await run.start(scoreRange(currentMeasure));
+    } catch (err) {
+      scoreError = err instanceof ListenError ? describeProblem(err.problem) : message(err);
+      return;
+    }
+    scoreRun = run;
+    scoreOn = true;
+    applyPractice();
+  }
+
+  function showScoreResult(summary: ScoreSummary, played: boolean) {
+    const loop = loopA != null && loopB != null ? { from: loopA, to: loopB } : null;
+    const speed = Math.round(rate * 100);
+    const key = loopKey(loop ? { a: loop.from, b: loop.to } : null);
+    let isBest = false;
+    let best = personalBest(loadScores(song.id), key, speed);
+    // A pass nobody played in (the microphone heard nothing) is shown, but not saved.
+    if (played && summary.graded > 0) {
+      const saved = recordScore(song.id, {
+        at: Date.now(),
+        accuracy: summary.accuracy,
+        stars: starsFor(summary.accuracy, summary.graded),
+        hits: summary.counts.hit,
+        total: summary.total,
+        extras: summary.extras,
+        bestStreak: summary.bestStreak,
+        loop: key,
+        speed,
+      });
+      isBest = saved.isBest;
+      best = saved.isBest ? saved.previous : best;
+    }
+    scoreResult = {
+      summary,
+      sections: sectionScores(document_, summary.bars),
+      speed,
+      loop,
+      isBest,
+      best,
+    };
+    scoreResultsOpen = true;
+  }
+
+  function stopScore() {
+    scoreRun?.stop();
+    scoreRun = null;
+    scoreOn = false;
+    scoreSummary = null;
+    scoreGrades = {};
+    scoreBleed = false;
+    scoreResultsOpen = false;
+    applyPractice();
+  }
+
+  function toggleScore() {
+    if (scoreOn) stopScore();
+    else void startScore();
+  }
+
+  function playScoreAgain() {
+    scoreResultsOpen = false;
+    goToBar(loopA ?? 0);
+  }
+
+  function practiseSection(from: number, to: number) {
+    scoreResultsOpen = false;
+    activeLoopId = null;
+    loopA = from;
+    loopB = to;
+    goToBar(from);
+  }
+
   function toggleWait() {
     if (waitOn) stopWait();
     else void startWait();
@@ -830,6 +1001,7 @@
     void song.has_audio;
     untrack(() => {
       if (waitRun) stopWait();
+      if (scoreRun) stopScore();
     });
   });
 
@@ -1068,7 +1240,7 @@
           {rate}
           {loopA}
           {loopB}
-          grades={waitOn ? waitGrades : undefined}
+          grades={scoreOn ? scoreGrades : waitOn ? waitGrades : undefined}
           waitingAt={waitOn && waitState === "waiting" && waitStep
             ? { bar: waitStep.bar, position: waitStep.position }
             : null}
@@ -1140,6 +1312,14 @@
             }
           }}
           ontoggle={toggleWait}
+        />
+        <ScorePanel
+          on={scoreOn}
+          summary={scoreSummary}
+          bleed={scoreBleed}
+          calibrated={scoreCalibrated}
+          error={scoreError}
+          ontoggle={toggleScore}
         />
         {#if song.has_audio}
           <div class="panel-group">
@@ -1378,4 +1558,16 @@
     </div>
   </div>
   <ShortcutHelp open={helpOpen} onclose={() => (helpOpen = false)} />
+  <ScoreResults
+    open={scoreResultsOpen}
+    summary={scoreResult?.summary ?? null}
+    sections={scoreResult?.sections ?? []}
+    speed={scoreResult?.speed ?? 100}
+    loop={scoreResult?.loop ?? null}
+    isBest={scoreResult?.isBest ?? false}
+    best={scoreResult?.best ?? null}
+    onclose={() => (scoreResultsOpen = false)}
+    onagain={playScoreAgain}
+    onpractise={practiseSection}
+  />
 </div>

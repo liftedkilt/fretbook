@@ -107,6 +107,8 @@ export interface ListenSession {
   readonly sampleRate: number;
   /** Channels the device delivers, for building a channel picker. */
   readonly channelCount: number;
+  /** The microphone clock in seconds, the same clock as `PitchEvent.time`. */
+  readonly currentTime: number;
   setChannel(index: number): void;
   setExpectedMidi(midi: number | null): void;
   /** Start or stop the pitch-class readings used to check chords. */
@@ -160,6 +162,9 @@ export async function startListening(options: ListenOptions): Promise<ListenSess
     return {
       sampleRate: context.sampleRate,
       channelCount,
+      get currentTime() {
+        return context.currentTime;
+      },
       setChannel: (index) => send({ type: "channel", index }),
       setExpectedMidi: (midi) => send({ type: "expected", midi }),
       setChroma: (on) => send({ type: "chroma", on }),
