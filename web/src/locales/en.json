@@ -513,6 +513,11 @@
       "badJson": "Songsterr sent unreadable {what}.",
       "badVideo": "Songsterr named an unexpected video id."
     },
+    "ultimateGuitar": {
+      "noStore": "Ultimate Guitar's page could not be read. The site may have changed, or it blocked this server.",
+      "noTab": "This Ultimate Guitar page has no text version of the tab.",
+      "notText": "Ultimate Guitar's {type} tabs are Guitar Pro based and are not available as text. Import a Guitar Pro file for this song instead."
+    },
     "musicxml": {
       "parse": "The MusicXML file could not be read.",
       "timewise": "Timewise MusicXML is not supported. Save it as partwise.",
@@ -1085,5 +1090,30 @@
     "durationSeconds": "{count}s",
     "durationMinutes": "{count}m",
     "durationHours": "{hours}h {minutes}m"
+  },
+  "chordDiagrams": {
+    "heading": "Chord diagrams",
+    "toolTitle": "Chord library",
+    "toolDescription": "Look up any chord, see several voicings for guitar, bass or ukulele, and hear it strummed.",
+    "openTool": "Open chord library",
+    "libraryHeading": "Chord library",
+    "librarySubtitle": "Search a chord name to see its voicings and hear them.",
+    "search": "Chord",
+    "searchPlaceholder": "Am7, F#m, D/F#, Csus4…",
+    "searchHint": "Type a chord name or pick a root and a quality.",
+    "root": "Root",
+    "quality": "Quality",
+    "major": "major",
+    "unknownChord": "“{chord}” is not a chord that can be drawn.",
+    "noShapes": "No playable shape for {chord} in this tuning.",
+    "diagramLabel": "{chord}, frets from the lowest string: {frets}",
+    "voicingOf": "{n} of {total}",
+    "previousVoicing": "Previous voicing of {chord}",
+    "nextVoicing": "Next voicing of {chord}",
+    "play": "Strum {chord}",
+    "fromSong": "From this song",
+    "noShape": "No shape for this tuning",
+    "capoNote": "Capo {fret}: shapes are shown as you finger them, and the strum sounds {fret} frets higher.",
+    "pdfCapo": "Capo {fret}"
   }
 }

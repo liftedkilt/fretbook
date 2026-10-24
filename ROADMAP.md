@@ -39,7 +39,6 @@ Features that use the microphone to hear the instrument, in the order to build t
 
 - More file formats, such as Power Tab (`.ptb`) and MIDI.
 - Retune or transpose a tab, for example from standard to drop D, or from 4-string to 5-string bass.
-- Chord diagrams on chord sheets, for guitar and ukulele.
 
 ### Playing live
 
