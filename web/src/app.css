@@ -835,7 +835,10 @@ textarea {
 }
 
 .side-link {
+  display: flex;
+  align-items: center;
   justify-content: flex-start;
+  text-decoration: none;
   gap: 0.75rem;
   width: 100%;
   min-height: 40px;

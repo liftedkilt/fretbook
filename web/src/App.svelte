@@ -159,7 +159,7 @@
       onclick={(event) => followLink(event, "/lessons")}
       title={t("lessons.nav")}
     >
-      <Icon name="class" size={19} /><span class="rail-hide">{t("lessons.nav")}</span>
+      <Icon name="graduation" size={19} /><span class="rail-hide">{t("lessons.nav")}</span>
     </a>
 
     <a
