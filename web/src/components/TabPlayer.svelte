@@ -11,6 +11,7 @@
   import Menu from "./Menu.svelte";
   import OfflineToggle from "./OfflineToggle.svelte";
   import PracticePanel from "./PracticePanel.svelte";
+  import RetuneSheet from "./RetuneSheet.svelte";
   import ScorePanel from "./ScorePanel.svelte";
   import ScoreResults from "./ScoreResults.svelte";
   import ShortcutHelp from "./ShortcutHelp.svelte";
@@ -93,6 +94,7 @@
   let audioEl = $state<HTMLAudioElement | null>(null);
   let trackId = $state(untrack(() => song.preferred_track_id || preferredTrack(song.document).id));
   let scoreReady = $state(0);
+  let retuneOpen = $state(false);
   let shiftMs = 0;
   const player: { api: alphaTab.AlphaTabApi | null } = { api: null };
   const clicker = new Clicker();
@@ -1121,6 +1123,14 @@
           {#if song.has_audio}<span class="pill pill-accent"
               ><Icon name="waveform" size={14} />{t("library.audio")}</span
             >{/if}
+          <button
+            type="button"
+            class="pill pill-button"
+            data-testid="song-retune"
+            onclick={() => (retuneOpen = true)}
+          >
+            <Icon name="sliders" size={14} />{t("retune.open")}
+          </button>
         </div>
         {#if practice.loops.length > 0}
           <div
@@ -1305,6 +1315,10 @@
       />
     </div>
   {/if}
+
+  <p class="visually-hidden" role="status" data-testid="player-announcer">
+    {countingIn ? t("player.countingIn") : playing ? t("player.playing") : t("player.paused")}
+  </p>
 
   <div class="dock">
     {#if panelOpen}
@@ -1587,6 +1601,18 @@
     </div>
   </div>
   <ShortcutHelp open={helpOpen} onclose={() => (helpOpen = false)} />
+  <RetuneSheet
+    open={retuneOpen}
+    {song}
+    {track}
+    presets={ui.presets}
+    onclose={() => (retuneOpen = false)}
+    onsaved={(saved, id) => {
+      song = saved;
+      trackId = id;
+      retuneOpen = false;
+    }}
+  />
   <ScoreResults
     open={scoreResultsOpen}
     summary={scoreResult?.summary ?? null}

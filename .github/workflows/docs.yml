@@ -1,0 +1,51 @@
+name: Docs
+
+# Publishes the documentation site (mkdocs.yml, docs/) to GitHub Pages for each release.
+# One-time setup by a maintainer: Settings -> Pages -> Source: "GitHub Actions", and allow tags matching
+# v* to deploy in the github-pages environment (Settings -> Environments).
+# The release workflow starts this by hand for a new tag, because a tag pushed with the
+# default GITHUB_TOKEN does not trigger the push event. Pull requests build the site in ci.yml.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-docs.txt
+      - run: pip install -r requirements-docs.txt
+      - run: python3 scripts/gen_config_docs.py --check
+      - run: mkdocs build --strict
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

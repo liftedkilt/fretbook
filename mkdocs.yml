@@ -1,0 +1,64 @@
+site_name: Fretbook
+site_description: Self-hosted tabs, chord sheets and sheet music for bass and guitar.
+site_url: https://liftedkilt.github.io/fretbook/
+repo_url: https://github.com/liftedkilt/fretbook
+repo_name: liftedkilt/fretbook
+edit_uri: edit/main/docs/
+docs_dir: docs
+strict: true
+
+# ARCHITECTURE.md and design/ are for contributors and link to files outside docs/ (see the repository).
+exclude_docs: |
+  ARCHITECTURE.md
+  design/
+  practice-controls.md
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.superfences
+  - pymdownx.details
+
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - Self-hosting:
+      - Docker Compose: self-hosting/docker-compose.md
+      - Reverse proxy and HTTPS: self-hosting/reverse-proxy.md
+      - Sign-in with OIDC: self-hosting/oidc.md
+      - The job worker (GPU): self-hosting/worker.md
+      - Backups and restore: self-hosting/backups.md
+      - Upgrading: self-hosting/upgrading.md
+  - User guide:
+      - Importing songs: guides/importing.md
+      - Playing and syncing: guides/playing.md
+      - Practice modes: guides/practice.md
+      - Learning a song (lessons): guides/lessons.md
+      - Install and use offline: guides/offline.md
+      - Watched inbox folder: guides/inbox.md
+      - Keeping yt-dlp working: guides/ytdlp.md
+      - Scripts and the command line: guides/cli.md
+  - Reference:
+      - Configuration: reference/configuration.md

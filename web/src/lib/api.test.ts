@@ -106,6 +106,19 @@ describe("request wrappers", () => {
     ["importAuto", () => api.importAuto({ file, text: "t", url: "u" }), "POST", "api/imports/auto"],
     ["inspectMidi", () => api.inspectMidi(file), "POST", "api/imports/midi/inspect"],
     [
+      "convertTrack",
+      () =>
+        api.convertTrack("s1", {
+          track_id: "t1",
+          mode: "preview",
+          semitones: 2,
+          keep: "pitch",
+          reduce: "all",
+        }),
+      "POST",
+      "api/songs/s1/convert",
+    ],
+    [
       "importMidi",
       () => api.importMidi(file, { tracks: ["1:0"], presets: {}, capo: 0, grid: 16 }),
       "POST",

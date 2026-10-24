@@ -16,6 +16,7 @@
     "e2e": "npm run build && playwright test",
     "e2e:run": "playwright test",
     "e2e:smoke": "playwright test e2e/smoke.spec.ts",
+    "docs:screenshots": "npm run build && playwright test -c playwright.docs.config.ts",
     "e2e:install": "playwright install chromium",
     "check:e2e": "tsc -p e2e/tsconfig.json",
     "lint": "eslint .",
@@ -31,6 +32,7 @@
     "pdf-lib": "^1.17.1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@coderline/alphatab-vite": "1.8.4",
     "@eslint/js": "^9.39.5",
     "@playwright/test": "^1.64.1",

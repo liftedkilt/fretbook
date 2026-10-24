@@ -38,7 +38,6 @@ Features that use the microphone to hear the instrument, in the order to build t
 ### Importing and editing
 
 - More file formats, such as Power Tab (`.ptb`).
-- Retune or transpose a tab, for example from standard to drop D, or from 4-string to 5-string bass.
 
 ### Playing live
 

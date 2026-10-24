@@ -1,0 +1,4 @@
+# Builds the documentation site (mkdocs.yml). Not needed to run or develop Fretbook.
+# MkDocs 2.x is not compatible with Material for MkDocs, so stay below it.
+mkdocs>=1.6,<2
+mkdocs-material>=9.5,<10

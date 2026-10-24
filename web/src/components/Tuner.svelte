@@ -337,8 +337,8 @@
                 class:tuner-string-locked={!auto && locked === index}
                 data-testid={`tuner-string-${index}`}
                 aria-pressed={tone?.string === index}
-                aria-label={t("tuner.playString", { note: midiToName(midi) })}
-                title={t("tuner.playString", { note: midiToName(midi) })}
+                aria-label={t("tuner.playString", { string: index + 1, note: midiToName(midi) })}
+                title={t("tuner.playString", { string: index + 1, note: midiToName(midi) })}
                 onclick={() => toggleTone(index)}
               >
                 <span class="tuner-string-no">{index + 1}</span>

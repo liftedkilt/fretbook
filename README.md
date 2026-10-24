@@ -32,16 +32,10 @@ Prebuilt images for amd64 and arm64 are published to GHCR. Each release (`vX.Y.Z
 
 ```sh
 docker pull ghcr.io/liftedkilt/fretbook:latest   # newest main
-docker pull ghcr.io/liftedkilt/fretbook:0.2.0    # a release; pin this one
+docker pull ghcr.io/liftedkilt/fretbook:0.1.3    # a release; pin this one
 ```
 
-**Upgrading.** Fretbook is versioned with [semver](https://semver.org); while it is `0.x`, a minor version may include breaking changes, so read the [changelog](CHANGELOG.md) first. Everything lives in the `/data` volume, so back it up before you upgrade (see [Backup and restore](#backup-and-restore)). Then pull and restart; database migrations run on start and are not reversible, so to roll back, restore the backup and run the older image. Before applying database migrations on upgrade, Fretbook also automatically takes a consistent SQLite backup to `data/backups/pre-migrate-<from>-<to>-<timestamp>.sqlite` (keeping the last 5 by default). If the database is from a newer version than the running code, startup is refused.
-
-```sh
-docker compose pull && docker compose up -d
-```
-
-(`docker-compose.yml` builds the image locally. To use a published image, replace `build: .` with `image: ghcr.io/liftedkilt/fretbook:<version>`.) **Settings** and `GET /api/meta` show the running version; images built from `main` also show the commit.
+**Upgrading.** Back up the `/data` volume, read the [changelog](CHANGELOG.md), then `docker compose pull && docker compose up -d`. Migrations run on start and are not reversible; see [Upgrading](https://liftedkilt.github.io/fretbook/self-hosting/upgrading/).
 
 ### Locally
 
@@ -53,177 +47,18 @@ Python 3.12, Node 22, and ffmpeg (only for downloading YouTube audio).
 
 For development, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Backup and restore
+## Documentation
 
-Everything is one SQLite file plus a `media/` folder under `FRETBOOK_DATA_DIR`. Two ways to keep a copy:
+The full documentation is at **<https://liftedkilt.github.io/fretbook/>**, built from [`docs/`](docs/) on every release:
 
-**Library archive (Settings → Backup and restore).** _Download library_ gives one `.zip` with every song (tabs as Fretbook JSON, chord sheets as ChordPro), its audio and kept uploads, and a `manifest.json` (app and schema version, song metadata, tags and favourites). It is written to disk song by song, so a large library does not load into memory (it needs free space in `$DATA_DIR/inbox` for the temporary file). To restore, choose the zip and decide what happens to songs already in the library (same id, or same title, artist and source): _Skip it_ or _Keep both_. The practice log and daily goal are in the archive too (`practice` in the manifest; sessions follow the songs they name). Setlists are in the archive too, and their entries follow the songs they name (a song kept as a copy gets a new id, and the setlist points at it). The restore runs as a background job, always into the signed-in user's own library. With sign-in on, everyone exports and restores their own library, and admins also get _Download everyone's library_ (restoring that file puts all its songs in the restoring user's library; to recover a whole server use a snapshot). Archives are checked before anything is stored: entry count, unpacked size, compression ratio, and file names (no absolute paths or `..`).
-**Library archive (Settings → Backup and restore).** _Download library_ gives one `.zip` with every song (tabs as Fretbook JSON, chord sheets as ChordPro), its audio and kept uploads, and a `manifest.json` (app and schema version, song metadata, tags and favourites). It is written to disk song by song, so a large library does not load into memory (it needs free space in `$DATA_DIR/inbox` for the temporary file). To restore, choose the zip and decide what happens to songs already in the library (same id, or same title, artist and source): _Skip it_ or _Keep both_. Setlists are in the archive too, and their entries follow the songs they name (a song kept as a copy gets a new id, and the setlist points at it). The restore runs as a background job, always into the signed-in user's own library. With sign-in on, everyone exports and restores their own library, and admins also get _Download everyone's library_ (restoring that file puts all its songs in the restoring user's library; to recover a whole server use a snapshot). Archives are checked before anything is stored: entry count, unpacked size, compression ratio, and file names (no absolute paths or `..`).
+- [Docker Compose](https://liftedkilt.github.io/fretbook/self-hosting/docker-compose/), [reverse proxy and HTTPS](https://liftedkilt.github.io/fretbook/self-hosting/reverse-proxy/) (Caddy, Traefik, nginx, Zoraxy; HTTPS is needed for the microphone), [sign-in with OIDC](https://liftedkilt.github.io/fretbook/self-hosting/oidc/) (Pocket ID, Authelia, Authentik, Keycloak), [the job worker](https://liftedkilt.github.io/fretbook/self-hosting/worker/), [backups and restore](https://liftedkilt.github.io/fretbook/self-hosting/backups/), [upgrading](https://liftedkilt.github.io/fretbook/self-hosting/upgrading/).
+- [Importing songs](https://liftedkilt.github.io/fretbook/guides/importing/), [playing and syncing](https://liftedkilt.github.io/fretbook/guides/playing/), [practice modes](https://liftedkilt.github.io/fretbook/guides/practice/), [installing it and using it offline](https://liftedkilt.github.io/fretbook/guides/offline/), the [watched inbox folder](https://liftedkilt.github.io/fretbook/guides/inbox/), [keeping yt-dlp working](https://liftedkilt.github.io/fretbook/guides/ytdlp/), [scripts and the command line](https://liftedkilt.github.io/fretbook/guides/cli/).
+- [Configuration reference](https://liftedkilt.github.io/fretbook/reference/configuration/): every `FRETBOOK_*` variable. It is generated from `fretbook/config.py` (see [`docs/reference/configuration.md`](docs/reference/configuration.md)).
 
-**Snapshot for cron or a sidecar.** `python -m fretbook backup <dest> [--keep N]` copies the database with SQLite's online backup API (consistent while the server runs) and the `media/` folder into `<dest>/fretbook-backup-<UTC timestamp>/`. `--keep 7` then deletes the oldest `fretbook-backup-*` folders in `<dest>`, leaving anything else alone. It reads the same `FRETBOOK_DATA_DIR` / `FRETBOOK_DATABASE` as the server and prints the folder it wrote; it exits 1 on failure.
+Without sign-in, anyone who can reach the port can use the library, so keep a no-login server on a trusted network or behind an authenticating proxy. To report a vulnerability, see [SECURITY.md](SECURITY.md).
 
-```sh
-# crontab: nightly at 03:15, keep a week
-15 3 * * * cd /opt/fretbook && FRETBOOK_DATA_DIR=/srv/fretbook/data .venv/bin/python -m fretbook backup /srv/backups --keep 7
-# Docker
-docker compose exec fretbook python -m fretbook backup /data/snapshots --keep 7
-```
+To build the docs locally: `pip install -r requirements-docs.txt && mkdocs serve`. `cd web && npm run docs:screenshots` regenerates the screenshots.
 
-To restore a snapshot, stop Fretbook and copy `fretbook.sqlite` and `media/` from the snapshot folder back into the data directory (delete any `fretbook.sqlite-wal` and `-shm` files next to the old database first).
-
-## Scripts and the command line
-
-Every user can make personal API tokens in **Settings → API tokens** (in single-user mode too). A token is shown once; Fretbook keeps only a hash. It can expire, shows when it was last used, and stops working the moment you revoke it. Send it as `Authorization: Bearer <token>` on any `/api` route, in both auth modes. A token acts as its owner, so it reaches the owner's library and, in OIDC mode, the admin routes only if the owner is an admin. It cannot create or revoke tokens; that takes a signed-in session. Requests with a bearer token skip the same-origin check that guards browser sessions.
-
-`python -m fretbook.cli` (installed as `fretbook-cli` where the package is pip-installed) wraps the common calls. It needs only Python, no extra packages, and reads `FRETBOOK_URL` (default `http://localhost:8137`) and `FRETBOOK_TOKEN`:
-
-```sh
-export FRETBOOK_URL=https://fretbook.example.com FRETBOOK_TOKEN=fb_...
-python -m fretbook.cli import song.gp5 https://www.songsterr.com/a/wsa/... ~/tabs   # files, links, and folders
-python -m fretbook.cli import --recursive --no-wait ~/tabs
-python -m fretbook.cli list "blue"                                                  # or: list --json
-python -m fretbook.cli export <song id> -f musicxml -o song.musicxml                # json (default), musicxml, midi, chordpro
-```
-
-In Docker: `docker compose exec -e FRETBOOK_TOKEN=fb_... fretbook python -m fretbook.cli --url http://localhost:8137 list`. A folder import picks up Guitar Pro, MusicXML, MIDI, ChordPro, Fretbook JSON and `.tab` files and skips the rest. `import` waits for each job and exits 1 if any failed. Guitar Pro files need the server-side converter (`FRETBOOK_GP_CONVERTER`; the Docker image has it).
-
-**Example: import a folder of Guitar Pro files from cron.** Drop files in `~/tabs/incoming`, and every night upload them and move the ones that imported:
-
-```sh
-# crontab -e
-30 2 * * * FRETBOOK_URL=https://fretbook.example.com FRETBOOK_TOKEN=fb_... /opt/fretbook/import-incoming.sh
-```
-
-```sh
-#!/bin/sh
-# /opt/fretbook/import-incoming.sh
-export PYTHONPATH=/opt/fretbook
-cd ~/tabs/incoming || exit 1
-for f in *.gp *.gp3 *.gp4 *.gp5 *.gpx; do
-  [ -e "$f" ] || continue
-  /opt/fretbook/.venv/bin/python -m fretbook.cli import "$f" && mv "$f" ../imported/
-done
-```
-
-## Watched inbox folder
-
-For tabs kept on a NAS share, in Syncthing or in Nextcloud: set `FRETBOOK_INBOX_DIR` to a folder the server can read and write, and drop files into it. The folder is polled every `FRETBOOK_INBOX_INTERVAL` seconds (no inotify, so network mounts work). A file is imported when its size and modification time are the same on two polls in a row, by the same content detection as the Add button, so a mislabelled file still lands in the right importer. Partial files (`.part`, `.tmp`, `.crdownload`, names starting with `.` or `~`) are left alone, and a file already in your library is skipped.
-
-- **`move` mode (default).** An imported file moves to `processed/`; a file that could not be imported moves to `failed/` with `<name>.error.txt` beside it saying why. Subfolders are read, and keep their layout under `processed/` and `failed/`. Fix a failed file and drop it in again.
-- **`library` mode (`FRETBOOK_INBOX_MODE=library`).** The folder is the source of truth and is never written to, so it can be mounted read-only. Fretbook remembers each file's hash; a file whose content changes replaces the song it made before, and an unchanged file is not read again. A file that failed is tried again only after it changes (the reason is in the server log).
-- **Sign-in.** With OIDC each user has a subfolder named after their e-mail address, the part before the `@`, their display name or their OIDC subject (for example `<inbox>/ada/`). Files in the folder root, or in a folder that matches no user (or more than one), are ignored. In single-user mode the folder itself is the library.
-
-This is not `$DATA_DIR/inbox`, which only holds uploads while they are being imported.
-
-## Configuration
-
-| Variable                                 | Default                                                | Purpose                                                                                                                                                                                                                         |
-| ---------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `FRETBOOK_HOST`                          | `127.0.0.1`                                            | Bind address. The image sets `0.0.0.0`.                                                                                                                                                                                         |
-| `FRETBOOK_PORT`                          | `8137`                                                 | Listen port.                                                                                                                                                                                                                    |
-| `FRETBOOK_DATA_DIR`                      | `data`                                                 | SQLite database, media, and upload inbox.                                                                                                                                                                                       |
-| `FRETBOOK_DATABASE`                      | `$DATA_DIR/fretbook.sqlite`                            | Database file.                                                                                                                                                                                                                  |
-| `FRETBOOK_MIGRATION_BACKUPS_KEEP`        | `5`                                                    | Number of automatic pre-migration backups to keep in `$DATA_DIR/backups`.                                                                                                                                                       |
-| `FRETBOOK_FAILED_UPLOAD_RETENTION_DAYS`  | `7`                                                    | Days to keep uploaded files from failed imports before cleaning them up.                                                                                                                                                        |
-| `FRETBOOK_WORKER_KINDS`                  | empty                                                  | Comma-separated job kinds the web process leaves for a separate `python -m fretbook.worker` process (see [ARCHITECTURE](docs/ARCHITECTURE.md#background-jobs)). Worker-only kinds such as `echo` are always left to the worker. |
-| `FRETBOOK_INBOX_DIR`                     | empty                                                  | Watched folder: files dropped here are imported. See [Watched inbox folder](#watched-inbox-folder).                                                                                                                             |
-| `FRETBOOK_INBOX_MODE`                    | `move`                                                 | `move` (imported files go to `processed/`, failures to `failed/`) or `library` (the folder is read-only; changed files are imported again).                                                                                     |
-| `FRETBOOK_INBOX_INTERVAL`                | `10`                                                   | Seconds between looks at the inbox folder.                                                                                                                                                                                      |
-| `FRETBOOK_LEGACY_SONGS_DIR`              | `songs`                                                | bass-tab-sync `songs/<slug>/` folders to import on start. Empty disables it.                                                                                                                                                    |
-| `FRETBOOK_AUTH_MODE`                     | `single`, or `oidc` when `FRETBOOK_OIDC_ISSUER` is set | `single` (no login, one library) or `oidc` (sign-in, one library per user).                                                                                                                                                     |
-| `FRETBOOK_ROOT_PATH`                     | empty                                                  | URL prefix when a reverse proxy strips one, for example `/fretbook`.                                                                                                                                                            |
-| `FRETBOOK_FORWARDED_ALLOW_IPS`           | `127.0.0.1`                                            | Proxies allowed to send `X-Forwarded-*`. Set it to your proxy's address.                                                                                                                                                        |
-| `FRETBOOK_DOWNLOAD_AUDIO`                | `true`                                                 | Download the audio of the video a Songsterr tab is synced to, with yt-dlp.                                                                                                                                                      |
-| `FRETBOOK_AUDIO_TIMEOUT`                 | `600`                                                  | Seconds before a yt-dlp download is abandoned.                                                                                                                                                                                  |
-| `FRETBOOK_YTDLP_AUTO_UPDATE`             | `false`                                                | Install the newest yt-dlp into `$DATA_DIR/ytdlp` at start and once a day, and use it. See [Keeping yt-dlp working](#keeping-yt-dlp-working).                                                                                    |
-| `FRETBOOK_YTDLP_COOKIES`                 | empty                                                  | Path to a Netscape-format cookies file for yt-dlp. See the warning below.                                                                                                                                                       |
-| `FRETBOOK_MAX_UPLOAD_BYTES`              | 80 MB                                                  | Largest upload and request body.                                                                                                                                                                                                |
-| `FRETBOOK_ALLOW_PRIVATE_URLS`            | `false`                                                | Let pasted links point at private, loopback and link-local addresses (for example a tab server on your LAN). Off by default so a link cannot reach services on the server's own network.                                        |
-| `FRETBOOK_FETCH_MAX_BYTES`               | 25 MB                                                  | Largest download when importing from a pasted link.                                                                                                                                                                             |
-| `FRETBOOK_FETCH_TIMEOUT`                 | `30`                                                   | Seconds a pasted link may take to download.                                                                                                                                                                                     |
-| `FRETBOOK_GP_CONVERTER`                  | _(auto)_                                               | Path to `gp-to-document.mjs`, the Node script that reads Guitar Pro files on the server. The Docker image has it; a checkout needs `npm run build:gp-cli` in `web/`. Without it, Guitar Pro still imports from the browser.     |
-| `FRETBOOK_NODE`                          | `node`                                                 | The Node 22 binary used for Guitar Pro files.                                                                                                                                                                                   |
-| `FRETBOOK_MAX_RESTORE_BYTES`             | 4 GiB                                                  | Largest library archive accepted by Settings → Backup and restore.                                                                                                                                                              |
-| `FRETBOOK_MAX_RESTORE_UNPACKED_BYTES`    | 16 GiB                                                 | Largest total size an archive may unpack to.                                                                                                                                                                                    |
-| `FRETBOOK_STATIC_DIR`                    | built-in                                               | Serve the web app from another directory.                                                                                                                                                                                       |
-| `FRETBOOK_OIDC_ISSUER`                   | empty                                                  | Provider URL, for example `https://id.example.com`. Setting it turns on sign-in.                                                                                                                                                |
-| `FRETBOOK_OIDC_CLIENT_ID`                | empty                                                  | Client id from the provider.                                                                                                                                                                                                    |
-| `FRETBOOK_OIDC_CLIENT_SECRET`            | empty                                                  | Optional. Leave empty for a public (PKCE-only) client.                                                                                                                                                                          |
-| `FRETBOOK_OIDC_REDIRECT_URI`             | empty                                                  | The public callback URL, `https://<your host>[/prefix]/auth/callback`.                                                                                                                                                          |
-| `FRETBOOK_SESSION_SECRET`                | empty                                                  | At least 32 characters, for example `openssl rand -hex 32`. Signs the short-lived sign-in cookie.                                                                                                                               |
-| `FRETBOOK_OIDC_USER_GROUP`               | `fretbook_users`                                       | Members get their own library. Empty admits everyone the provider signs in.                                                                                                                                                     |
-| `FRETBOOK_OIDC_ADMIN_GROUP`              | `fretbook_admins`                                      | Members are users who also manage the Users page.                                                                                                                                                                               |
-| `FRETBOOK_OIDC_GROUPS_CLAIM`             | `groups`                                               | Claim that lists the groups, read from the ID token or else from userinfo.                                                                                                                                                      |
-| `FRETBOOK_OIDC_SCOPES`                   | `openid profile email groups`                          | Requested scopes.                                                                                                                                                                                                               |
-| `FRETBOOK_OIDC_POST_LOGOUT_REDIRECT_URI` | empty                                                  | Where the provider sends the browser after sign-out. It must be registered with the provider.                                                                                                                                   |
-| `FRETBOOK_SESSION_MAX_AGE`               | `604800`                                               | Session length in seconds (7 days).                                                                                                                                                                                             |
-
-### Keeping yt-dlp working
-
-YouTube changes often, and an old yt-dlp stops downloading audio. Fretbook helps in three ways:
-
-- **Version.** `GET /api/meta` reports the yt-dlp version, its release date, its age in days, and whether it is stale (older than 30 days). **Settings** shows the same and warns when it is stale.
-- **Explained failures.** When a download fails, the import result says why: YouTube asked for a sign-in or bot check, the video is unavailable, it is blocked in the server's country, or yt-dlp is out of date. A timeout is reported as before. Each message suggests uploading an mp3 on the song page instead. The tab is always saved.
-- **Updating.** Rebuild or pull the image for a new yt-dlp, or set `FRETBOOK_YTDLP_AUTO_UPDATE=true`. Then the server runs `pip install -U yt-dlp` into `$DATA_DIR/ytdlp` when it starts and once a day, and downloads use that copy whenever it is newer than the one in the image. It is off by default because it fetches and runs code from PyPI; the container needs outbound access to it. A failed update keeps the previous copy. Delete `$DATA_DIR/ytdlp` to go back to the image's version.
-
-**Cookies (optional).** If YouTube keeps asking for a sign-in, set `FRETBOOK_YTDLP_COOKIES` to a Netscape-format cookies file, for example exported from a browser, and mount it into the container (read-only is fine; Fretbook gives yt-dlp a private copy for each download). Warning: the file holds your logged-in session. Anyone who can read it can act as that account, and Google may restrict an account that downloads automatically. Use a throwaway account, never your main one, and keep the file out of version control.
-
-### Sign-in with Pocket ID
-
-1. In Pocket ID, open **Administration → User Groups** and create `fretbook_users` and `fretbook_admins`. Add people to one of them; admins do not also need to be in `fretbook_users`.
-2. Open **Administration → OIDC Clients → Add OIDC Client**. Name it Fretbook and set the callback URL to `https://fretbook.example.com/auth/callback` (with your prefix, if you set `FRETBOOK_ROOT_PATH`, before `/auth`). Turn on **Public client** to use PKCE without a secret, or keep the generated secret. Optionally restrict the client to the two groups as well.
-3. Optionally add a logout callback URL such as `https://fretbook.example.com/` and set the same value in `FRETBOOK_OIDC_POST_LOGOUT_REDIRECT_URI`.
-4. Configure Fretbook:
-
-   ```yaml
-   environment:
-     FRETBOOK_OIDC_ISSUER: "https://id.example.com"
-     FRETBOOK_OIDC_CLIENT_ID: "<client id>"
-     FRETBOOK_OIDC_CLIENT_SECRET: "<secret, or leave out for a public client>"
-     FRETBOOK_OIDC_REDIRECT_URI: "https://fretbook.example.com/auth/callback"
-     FRETBOOK_SESSION_SECRET: "<openssl rand -hex 32>"
-     FRETBOOK_FORWARDED_ALLOW_IPS: "<your reverse proxy's address>"
-   ```
-
-Fretbook requests the scopes `openid profile email groups`. Every page, asset, and API route except `/api/health` needs a session; a browser without one is sent to Pocket ID and comes back to the page it asked for. Members of neither group are refused at the callback.
-
-Roles are read from the groups claim at each sign-in, so a group change in Pocket ID applies at the user's next sign-in. To apply it at once, an admin can end that user's sessions on the **Users** page. Each user's library is private. Songs from single-user mode (and bass-tab-sync imports) belong to no signed-in user; an admin can move them into their own library from the Users page.
-
-**Security.** To report a vulnerability, see [SECURITY.md](SECURITY.md). In single-user mode there is no login: anyone who can reach the port can use the library, so keep it on a trusted network or behind an authenticating proxy. Writes from other websites are refused (the `Origin` must match the `Host`), and request bodies are capped. With sign-in, sessions are stored server-side (the cookie holds a random token and the database only its hash); cookies are `HttpOnly`, `SameSite=Lax`, and `Secure` when the redirect URI is https. The ID token's signature, issuer, audience, expiry, and nonce are checked, and the callback URL always comes from `FRETBOOK_OIDC_REDIRECT_URI`, never from request headers. Behind a reverse proxy, forward `Host` and `X-Forwarded-Proto` and set `FRETBOOK_FORWARDED_ALLOW_IPS`. Run one server process per database.
-
-### Microphone features need HTTPS
-
-Features that listen to your instrument (the pitch-detection engine in `web/src/lib/listen/`, which the tuner and the play-along modes use) read the microphone in the browser. Browsers only allow microphone access on **HTTPS pages or on `localhost`**. If you run Fretbook on another machine over plain `http://`, the browser blocks the microphone and Fretbook says so. Put it behind a reverse proxy with a certificate (see the proxy notes under Security) or open it through an SSH tunnel to `http://localhost`. Audio never leaves the browser, and echo cancellation, noise suppression and auto gain are turned off because they damage instrument sound.
-
-### Install it and use it offline
-
-Fretbook is an installable web app: use your browser's **Install** (or **Add to Home Screen**) command. Installing needs HTTPS or `localhost`, like the microphone. The first visit saves the app itself (screens, fonts, the notation font and the synth soundfont, about 10 MB) on the device, so it starts with no network.
-
-To have a song or a whole setlist at a gig, open it and press **Make available offline**. That keeps the song document and its audio, and for a setlist every song in it, on the device; pressing it again removes them. Saved songs are refreshed whenever the app is open and online. Songs you did not save, the library list and search results seen last, and anything that needs the server (importing, tags, practice log) are not available offline; the library and setlists lists show what was last loaded.
-
-- The **Offline** notice at the top of the page shows when the browser has no connection.
-- Saving a song or chord sheet while offline keeps the edit on the device ("1 edit is waiting to sync") and the saved copy shows it at once. When the connection returns the edit is sent with the revision it was made on. If the song changed elsewhere in the meantime, nothing is overwritten: the notice asks whether to **Keep my edits** (saved on top of the newer version) or **Use the other version** (your edits are dropped). Only edits made in the editors are queued; sync marks tapped in the player, tags, stars and the practice log need a connection.
-- **Behind an auth proxy or OIDC.** The saved app and songs open with no network whatever the session state, because nothing has to be checked with the proxy. The browser only talks to the proxy again when it is online. If the session expired while you were offline, the next page load sends you through sign-in (a reload while online is enough); edits queued on the device wait and are sent once you are back in. A proxy that answers API calls with a redirect to its sign-in page looks like "no network" to the app, so the queue also waits then. The app shell is only saved from a signed-in page, never from a sign-in redirect. **Sign out** removes the saved songs, audio and unsent edits from the device. A saved copy stays readable by anyone who can use the browser profile until then, like any download.
-- Browsers may delete stored data from sites that are not used for a while (Safari after about a week); the app asks the browser to keep it, but open the setlist once before the gig to be sure.
-
-## Using it
-
-- **Default instrument** (top of the library) is a per-user setting. It is the preset for new tabs and added tracks, and decides which Songsterr parts start checked: bass parts for a bass preset, guitar parts (acoustic and electric) otherwise.
-- **Songsterr**: paste a link (`https://www.songsterr.com/a/wsa/…-s123`). If the song has several fretted tracks, you pick which ones to import. The import runs in the background.
-  - If YouTube refuses the audio download (common from datacenter addresses), the tab is still saved and you can upload an mp3 on the song page.
-  - Importing the same song again refreshes it and keeps your sync marks. If you edited the tab, the new import is saved as a separate song instead.
-- **Library**: filter by bass, electric guitar, or acoustic guitar. The song page shows the instrument, tuning, and capo.
-- **Tags and favourites**: each song has free-form tags (per user, up to 30 of 40 characters, matched ignoring case) and a favourite star. Edit them on the song page; in the library, pick several tag chips to show only songs that have all of them, turn on _Favourites_, or use _Select_ to add a tag to many songs at once. Starred songs are also listed in the sidebar. A new import starts with tags the file gives away, such as the instrument, an alternate tuning like Drop D, the capo, and the key of a chord sheet; remove any you do not want. Tags and stars do not change a song's revision, so they never conflict with an open editor. They are part of the library archive. The API is `GET /api/songs?tag=…&tag=…&favourite=true`, `GET /api/tags`, `PUT /api/songs/{id}/tags`, `PUT /api/songs/{id}/favourite` and `POST /api/tags/add` (see `openapi.json`).
-- **Files**: MusicXML, ChordPro (`.cho`, `.chordpro`, `.crd`, `.txt`), ASCII tab (`.tab`, or a `.txt` that contains a tab), MIDI (`.mid`, `.midi`), and Fretbook JSON upload to the server. Guitar Pro files (3–8) are read in the browser by alphaTab and, for uploads, watched folders and bulk imports, on the server by the same alphaTab under Node (`FRETBOOK_GP_CONVERTER`). A `.txt` file is read as tab when it holds a tab system and as a chord sheet otherwise.
-- **MIDI**: a `.mid` file has pitches but no strings, so Fretbook asks first (`POST /api/imports/midi/inspect` lists the parts): which tracks and channels to import (guitar and bass programs are ticked by default, drums are skipped), an instrument preset with its tuning for each, a capo, and the grid to snap notes to (sixteenths by default). Frets are then assigned by `fretbook/score/fingering.py`, which keeps the hand close to where it was and within a four-fret stretch; notes the instrument cannot reach are moved by octaves and the import says so. Tempo and time-signature events are kept. A note that crosses a bar line is tied, a note lasts until the next onset at most, and triplets snap to the grid. A MIDI file that arrives without the dialog (in a folder, a zip, a bulk import, or sent to `POST /api/imports/auto`) imports every guitar and bass part with suggested instruments. Export a tab as `.mid` from the song's export menu (`GET /api/songs/{id}/export.mid`): repeats are expanded, each track gets its own channel and a guitar or bass program, and tempo and time-signature changes are written.
-- **Ultimate Guitar**: paste a `tabs.ultimate-guitar.com/tab/…` link. The server fetches the page and reads the tab text from the data embedded in it. A _Chords_ page becomes a chord sheet (ChordPro) with the page's key and capo as `{key}` and `{capo}`, and a non-standard tuning as a comment; a _Tabs_ or _Bass Tabs_ page goes through the ASCII tab importer (so the rhythm is estimated). _Official_ and _Pro_ tabs are Guitar Pro based and are not available as text, so they are refused with a message. Pasting the link again refreshes an untouched import in place; if you edited the song, the new import is saved next to it. This is for personal use of tabs you could already open in a browser. The site may block datacenter and VPN addresses, in which case the import fails with "could not be read".
-- **Add anything**: the first mode in the Add sheet takes a dropped file, pasted text, or a pasted link, and works out what it is from the content, not the name: Guitar Pro (3–8), MusicXML and compressed `.mxl`, ChordPro, chords over lyrics, ASCII tab, Fretbook JSON, and audio (an audio file becomes a song with a blank tab and the audio attached, ready for tapping sync or typing the tab by hand). PDF and images are recognised but not importable yet, and the message says so. A MIDI file dropped there opens a dialog to pick its parts and an instrument for each (see below). Links are routed by site: Songsterr (as above), Ultimate Guitar (below), YouTube (a blank tab with the video's audio, when audio downloads are on), a direct link to any supported file, or any other page, which is searched for a linked tab file (`.gp5`, `.musicxml`, `.cho`…) and then for a `<pre>` block holding a tab. Fetching a link is SSRF-safe: only `http` and `https`, every address the host resolves to must be public (set `FRETBOOK_ALLOW_PRIVATE_URLS=true` to allow your LAN), the connection goes to the address that was checked, redirects are re-checked at every hop (at most 5), and the download is capped by size and time. A Guitar Pro file behind a link is downloaded and read on the server.
-- **Paste tab**: in the Add sheet, paste ASCII tab (or a chords-over-lyrics sheet, which goes to the chord sheet converter instead) and see it drawn before you save. The importer reads string labels and tunings in either order (`e B G D A E`, `E A D G`, `B E A D G`), multi-digit frets, `h p / \ b r ~ x ( ) < >`, bar lines and repeat signs, `x4` markers, `[Verse]` headers, `PM` rows, and skips chord names and lyrics between systems. ASCII tab has no rhythm, so note lengths are **estimated** from the spacing in each bar on a grid you choose (eighth notes by default; tempo and time signature are optional), and the song is marked "Rhythm estimated". Check the timing before you play along.
-- **Song page**: Space plays, arrows move a bar, `T` marks the start of the next bar against the audio. Loop A/B, speed, and nudge buttons help line up a recording.
-- **Practice controls** (Sync & audio panel on the song page): a metronome that follows the song's tempo and time-signature changes (and its sync marks, when a recording plays), a one- or two-bar count-in (optionally before each loop pass), volume for the recording or the synth, and mute, solo and volume for each track while the synth plays. Slowing a recording keeps its pitch. Settings are remembered per song, in this browser. Press `?` on the song page for every shortcut (`M` metronome, `C` count-in, `X`/`S` mute/solo the shown track, `-`/`+` volume, `[`/`]` speed). Manual browser checks are in [docs/practice-controls.md](docs/practice-controls.md).
-- **Editor**: bars are shared by every track, so time signatures, tempo changes, sections, and inserting or deleting a bar apply to the whole song, and sync marks move with their bars. If the song changed elsewhere since you opened it (for example sync marks tapped in another tab), saving merges your edits on top; real conflicts ask you to reload.
-- **Audio latency calibration** (under Settings): measures round-trip delay and jitter between sound output and microphone input via an interactive click/tap wizard, stored per device pair per user with manual offset adjustment.
-- **Language**: English and Brazilian Portuguese. The header switcher remembers the choice. With no choice saved, the browser language is used (`pt` and `pt-PT` select `pt-BR`).
 
 ## More
 

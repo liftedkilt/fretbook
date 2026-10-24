@@ -8,6 +8,8 @@ import type {
   AudioCalibrationBody as ContractAudioCalibrationBody,
   AutoImportAccepted,
   BulkImportAccepted as ContractBulkImportAccepted,
+  ConvertBody,
+  ConvertReport,
   ErrorDetail,
   ImportPreview as ContractImportPreview,
   Job as ContractJob,
@@ -65,6 +67,7 @@ import type {
   SongPractice,
   SongSummary,
   TagCount,
+  Track,
 } from "./types";
 
 /** Flat contract responses must be usable as the UI models in `./types`. */
@@ -384,6 +387,18 @@ export async function updateSong(id: string, edit: SongEdit): Promise<SongDetail
     await refreshSavedSong(queued).catch(() => undefined);
     return queued;
   }
+}
+
+/** A conversion: the track as it would be saved, what changed, and the saved song for `add` and `replace`. */
+export interface ConvertOutcome {
+  track: Track;
+  report: ConvertReport;
+  song: SongDetail | null;
+}
+
+/** Transpose, retune or convert a track. A `preview` saves nothing; `add` and `replace` need the loaded revision. */
+export function convertTrack(id: string, body: ConvertBody): Promise<ConvertOutcome> {
+  return view(request<unknown>(`/api/songs/${id}/convert`, json("POST", body)));
 }
 
 export function patchSync(

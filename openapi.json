@@ -818,6 +818,205 @@
         "title": "BulkImportJobItem",
         "type": "object"
       },
+      "ConvertBody": {
+        "properties": {
+          "capo": {
+            "anyOf": [
+              {
+                "maximum": 24.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capo"
+          },
+          "instrument": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instrument"
+          },
+          "keep": {
+            "default": "pitch",
+            "enum": [
+              "pitch",
+              "shape"
+            ],
+            "title": "Keep",
+            "type": "string"
+          },
+          "mode": {
+            "default": "preview",
+            "enum": [
+              "preview",
+              "add",
+              "replace"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "preset": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preset"
+          },
+          "reduce": {
+            "default": "all",
+            "enum": [
+              "all",
+              "lowest"
+            ],
+            "title": "Reduce",
+            "type": "string"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          },
+          "semitones": {
+            "default": 0,
+            "maximum": 48.0,
+            "minimum": -48.0,
+            "title": "Semitones",
+            "type": "integer"
+          },
+          "track_id": {
+            "maxLength": 64,
+            "title": "Track Id",
+            "type": "string"
+          },
+          "tuning_midi": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "maxItems": 16,
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tuning Midi"
+          }
+        },
+        "required": [
+          "track_id"
+        ],
+        "title": "ConvertBody",
+        "type": "object"
+      },
+      "ConvertReport": {
+        "properties": {
+          "dropped": {
+            "title": "Dropped",
+            "type": "integer"
+          },
+          "dropped_bars": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Dropped Bars",
+            "type": "array"
+          },
+          "notes": {
+            "title": "Notes",
+            "type": "integer"
+          },
+          "reduced": {
+            "title": "Reduced",
+            "type": "integer"
+          },
+          "refretted": {
+            "title": "Refretted",
+            "type": "integer"
+          },
+          "shifted_bars": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Shifted Bars",
+            "type": "array"
+          },
+          "techniques_dropped": {
+            "title": "Techniques Dropped",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "notes",
+          "refretted",
+          "reduced",
+          "shifted_bars",
+          "dropped_bars",
+          "dropped",
+          "techniques_dropped"
+        ],
+        "title": "ConvertReport",
+        "type": "object"
+      },
+      "ConvertResult": {
+        "properties": {
+          "report": {
+            "$ref": "#/components/schemas/ConvertReport"
+          },
+          "song": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SongDetail"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "track": {
+            "$ref": "#/components/schemas/Track"
+          }
+        },
+        "required": [
+          "track",
+          "report"
+        ],
+        "title": "ConvertResult",
+        "type": "object"
+      },
       "CreateSetlistBody": {
         "properties": {
           "entries": {
@@ -7818,6 +8017,109 @@
           }
         },
         "summary": "Upload Audio",
+        "tags": [
+          "songs"
+        ]
+      }
+    },
+    "/api/songs/{song_id}/convert": {
+      "post": {
+        "description": "Transpose, retune or convert one track of a tab (see `ConvertBody`), optionally saving the result.",
+        "operationId": "convert_song_track_api_songs__song_id__convert_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "song_id",
+            "required": true,
+            "schema": {
+              "title": "Song Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConvertBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConvertResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Convert Song Track",
         "tags": [
           "songs"
         ]
