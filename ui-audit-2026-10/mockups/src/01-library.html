@@ -1,0 +1,63 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="mock.css">
+<style>
+.toolbar { display:flex; gap:10px; align-items:center; margin-bottom:14px; }
+.toolbar .input { flex:1; max-width:520px; }
+.chips { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:26px; }
+.banner { display:flex; align-items:center; gap:12px; padding:12px 16px; border-radius:var(--r-md); background:var(--warn-soft); border:1px solid rgba(255,198,92,.2); color:var(--text); margin-bottom:22px; font-size:14px; }
+.banner svg { color:var(--warn); }
+.grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:22px 18px; }
+.song h3 { font-size:15px; font-weight:600; margin-top:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.song .by { color:var(--text-2); font-size:13.5px; }
+.song .m { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+.lvl { display:inline-flex; gap:2px; align-items:center; }
+.lvl i { width:5px; height:10px; border-radius:2px; background:var(--surface-3); display:inline-block; }
+.lvl i.f { background:var(--accent); }
+.star { position:absolute; top:10px; right:10px; width:32px; height:32px; border-radius:9px; display:grid; place-items:center; background:rgba(10,8,14,.45); color:#fff; }
+.continue { display:grid; grid-template-columns: 1.4fr 1fr 1fr; gap:16px; margin-bottom:34px; }
+.ccard { display:flex; gap:14px; align-items:center; padding:14px; }
+.ccard .cv { width:56px; height:56px; border-radius:12px; flex:none; position:relative; overflow:hidden; }
+</style></head><body>
+<div class="shell">
+<aside class="side" data-on="library"></aside>
+<main class="main"><div class="container wide">
+  <div class="ph">
+    <div><p class="eyebrow">Library</p><h1 class="display">Your library</h1><p class="sub">48 songs · 31 tabs · 17 chord sheets</p></div>
+    <div class="actions"><span class="seg"><span class="on">Grid</span><span>List</span></span></div>
+  </div>
+
+  <div class="banner"><i data-i="alert"></i><span><b>3 imports need attention.</b> <span class="t2">2 files had no tab data and 1 link could not be reached.</span></span><span style="margin-left:auto" class="btn sm">Review</span><span class="ibtn ghost" style="width:32px;height:32px"><i data-i="close" class="sm"></i></span></div>
+
+  <div class="toolbar">
+    <div class="input"><i data-i="search"></i>Search titles, artists, lyrics and tags</div>
+    <span class="select"><i data-i="sort" class="sm"></i>Recently played <i data-i="chevronDown" class="sm"></i></span>
+    <span class="btn"><i data-i="filter" class="sm"></i>Filters <span class="meta" style="background:var(--accent-soft);color:var(--accent-text);height:20px">2</span></span>
+    <span class="btn ghost" style="margin-left:auto">Select</span>
+  </div>
+  <div class="chips">
+    <span class="chip on">All <span class="n">48</span></span>
+    <span class="chip"><i data-i="bass" class="sm"></i>Bass <span class="n">19</span></span>
+    <span class="chip"><i data-i="guitar" class="sm"></i>Guitar <span class="n">12</span></span>
+    <span class="chip"><i data-i="chords" class="sm"></i>Chord sheets <span class="n">17</span></span>
+    <span class="chip"><i data-i="star" class="sm"></i>Favourites <span class="n">6</span></span>
+    <span style="width:1px;height:22px;background:var(--line-strong);margin:0 6px"></span>
+    <span class="chip active">Easy (1–3) <i data-i="close" class="sm"></i></span>
+    <span class="chip active">Key: E minor <i data-i="close" class="sm"></i></span>
+    <span class="link" style="margin-left:4px">Clear</span>
+  </div>
+<div class="section-head" style="margin-top:0"><h2 class="h2">All songs</h2><span class="muted" style="font-size:13px">Sorted by recently played</span></div>
+  <div class="grid">
+    <div class="song"><div class="cover g1"><span class="lines"></span><span class="glyph"><i data-i="bass"></i></span><span class="star"><i data-i="star" class="sm" data-f="1"></i></span><span class="kind"><i data-i="bass" class="sm"></i>Bass</span></div><h3>Walking Home</h3><p class="by">Fretbook Demo</p><div class="m"><span class="meta">C major</span><span class="meta">120 BPM</span><span class="meta lvl"><i class="f"></i><i class="f"></i><i></i><i></i><i></i>&nbsp;2</span></div></div>
+    <div class="song"><div class="cover g2"><span class="lines"></span><span class="glyph"><i data-i="guitar"></i></span><span class="kind"><i data-i="guitar" class="sm"></i>Electric</span></div><h3>Open String Riff</h3><p class="by">Fretbook Demo</p><div class="m"><span class="meta">E minor</span><span class="meta">90 BPM</span><span class="meta lvl"><i class="f"></i><i></i><i></i><i></i><i></i>&nbsp;1</span></div></div>
+    <div class="song"><div class="cover g5"><span class="lines"></span><span class="glyph"><i data-i="chords"></i></span><span class="kind"><i data-i="chords" class="sm"></i>Chord sheet</span></div><h3>Porch Light</h3><p class="by">Fretbook Demo</p><div class="m"><span class="meta">C major</span><span class="meta">Capo 2</span></div></div>
+    <div class="song"><div class="cover g4"><span class="lines"></span><span class="glyph"><i data-i="bass"></i></span><span class="kind"><i data-i="bass" class="sm"></i>Bass</span></div><h3>Night Drive</h3><p class="by">The Long Weekends</p><div class="m"><span class="meta">A minor</span><span class="meta">104 BPM</span><span class="meta lvl"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i></i>&nbsp;4</span></div></div>
+    <div class="song"><div class="cover g3"><span class="lines"></span><span class="glyph"><i data-i="guitar"></i></span><span class="kind"><i data-i="guitar" class="sm"></i>Acoustic</span></div><h3>Greensleeves</h3><p class="by">Traditional</p><div class="m"><span class="meta">A minor</span><span class="meta">3/4</span><span class="meta lvl"><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i>&nbsp;3</span></div></div>
+    <div class="song"><div class="cover g7"><span class="lines"></span><span class="glyph"><i data-i="chords"></i></span><span class="kind"><i data-i="chords" class="sm"></i>Chord sheet</span></div><h3>Sunny Day Blues</h3><p class="by">Fretbook Tests</p><div class="m"><span class="meta">E major</span><span class="meta">12-bar</span></div></div>
+    <div class="song"><div class="cover g6"><span class="lines"></span><span class="glyph"><i data-i="bass"></i></span><span class="kind"><i data-i="bass" class="sm"></i>Bass</span></div><h3>Root–Fifth Drill</h3><p class="by">Exercise</p><div class="m"><span class="meta">G major</span><span class="meta">80 BPM</span></div></div>
+  </div>
+</div></main>
+</div>
+<div class="note" data-n="1" style="left:212px;top:140px">One “New”. Kind filters and “Recently updated” leave the sidebar; Practice, Lessons, Setlists are real nav items with icons.</div>
+<div class="note" data-n="2" style="left:276px;top:160px">Failed imports collapse into one dismissible summary.</div>
+<div class="note" data-n="3" style="left:1158px;top:262px">One toolbar row: search, sort, Filters popover. Level, key and tags live in the popover; active ones show as removable chips.</div>
+<div class="note" data-n="4" style="left:276px;top:405px">Covers carry a kind glyph, not just a monogram, so “Corpus Riff” ×3 aren’t identical tiles. Meta are flat pills, never truncated mid-word.</div>
+<script src="mock.js"></script></body></html>

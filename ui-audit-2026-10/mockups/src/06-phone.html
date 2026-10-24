@@ -1,0 +1,65 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="mock.css">
+<style>
+body { padding: 30px; display:flex; gap: 40px; align-items:flex-start; background: #08070b; }
+body::before { display:none; }
+.phone { width: 375px; height: 812px; border-radius: 44px; background: var(--bg); position: relative; overflow: hidden; outline: 10px solid #1d1b22; box-shadow: 0 40px 80px -30px rgba(0,0,0,.8); flex:none; }
+.cap { text-align:center; color: var(--text-3); font-size: 13px; margin-top: 18px; font-weight: 600; }
+.status { height: 44px; display:flex; justify-content:space-between; align-items:center; padding: 0 28px; font-size: 14px; font-weight: 600; }
+.top { display:flex; align-items:center; justify-content:space-between; padding: 6px 16px 10px; }
+.pad { padding: 0 16px; }
+.tabbar { position:absolute; left:0; right:0; bottom:0; height: 84px; background: var(--glass); backdrop-filter: blur(18px); border-top: 1px solid var(--line-strong); display:grid; grid-template-columns: repeat(5,1fr); align-items:start; padding-top: 8px; }
+.tab { display:flex; flex-direction:column; align-items:center; gap: 3px; font-size: 10.5px; font-weight: 600; color: var(--text-3); }
+.tab.on { color: var(--text); } .tab.on svg { color: var(--accent); }
+.fab { width: 52px; height: 52px; border-radius: 50%; background: var(--grad); box-shadow: var(--glow); display:grid; place-items:center; color:#fff; margin: -2px auto 0; }
+.scroller { display:flex; gap:8px; overflow:hidden; padding: 0 16px; mask: linear-gradient(90deg, #000 85%, transparent); }
+.lrow { display:flex; gap: 12px; align-items:center; padding: 10px 16px; }
+.lrow .cv { width: 52px; height: 52px; border-radius: 12px; position:relative; overflow:hidden; flex:none; }
+.lrow .t { flex:1; min-width:0; } .lrow b { font-size: 15px; display:block; } .lrow span.s { font-size: 12.5px; color: var(--text-3); }
+.mini { position:absolute; left: 10px; right: 10px; bottom: 30px; height: 64px; border-radius: 18px; background: var(--glass); backdrop-filter: blur(18px); border: 1px solid var(--line-strong); display:flex; align-items:center; gap: 10px; padding: 0 10px; box-shadow: var(--shadow-lg); }
+.mini .play { width: 44px; height: 44px; }
+</style></head><body>
+<div>
+<div class="phone">
+  <div class="status"><span>9:41</span><span>●●●</span></div>
+  <div class="top"><span class="wordmark" style="font-size:18px">Fret<em>book</em></span><span class="row" style="gap:4px"><span class="ibtn ghost"><i data-i="search"></i></span><span class="ibtn ghost"><i data-i="settings"></i></span></span></div>
+  <div class="pad" style="margin-bottom:12px"><p class="eyebrow">Library</p><h1 class="display" style="font-size:40px">Your library</h1></div>
+  <div class="pad" style="margin-bottom:12px"><span class="seg" style="width:100%;display:flex"><span class="on" style="flex:1;justify-content:center">Songs</span><span style="flex:1;justify-content:center">Setlists</span></span></div>
+  <div class="scroller" style="margin-bottom:8px"><span class="chip on">All <span class="n">48</span></span><span class="chip">Bass <span class="n">19</span></span><span class="chip">Guitar <span class="n">12</span></span><span class="chip">Chord sheets</span><span class="chip">Favourites</span></div>
+  <div class="row pad" style="justify-content:space-between;margin:10px 0 2px"><span class="t2" style="font-size:13px"><i data-i="sort" class="sm"></i></span><span class="muted" style="font-size:13px;flex:1;margin-left:6px">Recently played</span><span class="btn sm"><i data-i="filter" class="sm"></i>Filters</span></div>
+  <div class="lrow"><span class="cv g1"><span class="lines"></span></span><div class="t"><b>Walking Home</b><span class="s">Fretbook Demo · Bass · C major</span></div><span class="ibtn ghost"><i data-i="more"></i></span></div>
+  <div class="lrow"><span class="cv g2"><span class="lines"></span></span><div class="t"><b>Open String Riff</b><span class="s">Fretbook Demo · Electric · E minor</span></div><span class="ibtn ghost"><i data-i="more"></i></span></div>
+  <div class="lrow"><span class="cv g5"><span class="lines"></span></span><div class="t"><b>Porch Light</b><span class="s">Fretbook Demo · Chord sheet</span></div><span class="ibtn ghost"><i data-i="more"></i></span></div>
+  <div class="lrow"><span class="cv g4"><span class="lines"></span></span><div class="t"><b>Night Drive</b><span class="s">The Long Weekends · Bass · A minor</span></div><span class="ibtn ghost"><i data-i="more"></i></span></div>
+  <div class="lrow"><span class="cv g3"><span class="lines"></span></span><div class="t"><b>Greensleeves</b><span class="s">Traditional · Acoustic · A minor</span></div><span class="ibtn ghost"><i data-i="more"></i></span></div>
+  <div class="tabbar">
+    <span class="tab"><i data-i="target"></i>Practice</span>
+    <span class="tab on"><i data-i="library"></i>Library</span>
+    <span><span class="fab"><i data-i="plus" class="lg"></i></span></span>
+    <span class="tab"><i data-i="graduation"></i>Lessons</span>
+    <span class="tab"><i data-i="wrench"></i>Tools</span>
+  </div>
+</div>
+<p class="cap">Library: list layout on phones, Songs | Setlists switch, one + in a centred tab bar, actions behind ⋯</p>
+</div>
+
+<div>
+<div class="phone">
+  <div class="status"><span>9:41</span><span>●●●</span></div>
+  <div class="top"><span class="back" style="margin:0"><i data-i="back" class="sm"></i>Library</span><span class="row" style="gap:2px"><span class="ibtn ghost"><i data-i="star"></i></span><span class="ibtn ghost"><i data-i="more"></i></span></span></div>
+  <div class="pad row" style="gap:12px;margin-bottom:10px"><span class="cv g1" style="width:48px;height:48px;border-radius:11px;position:relative;overflow:hidden"></span><div><h1 class="title" style="font-size:28px">Walking Home</h1><span class="muted" style="font-size:12.5px">Bass · G2 D2 A1 E1 · 120 BPM</span></div></div>
+  <div class="pad row" style="margin-bottom:10px"><span class="seg"><span class="on">Tab</span><span>Highway</span><span>Split</span></span><span class="chip" style="margin-left:auto;height:32px"><i data-i="gauge" class="sm"></i>80%</span></div>
+  <div class="paper" style="margin: 0 10px; height: 470px; padding: 14px 10px; border-radius: 16px;">
+    <svg viewBox="0 0 340 440" width="100%"><g stroke="#1d1a17" stroke-width="1" fill="none"><g id="s"><path d="M8 10h324M8 24h324M8 38h324M8 52h324M8 10v42M170 10v42M332 10v42"/></g><use href="#s" y="80"/><use href="#s" y="160"/><use href="#s" y="240"/><use href="#s" y="320"/></g>
+    <rect x="170" y="88" width="162" height="68" fill="rgba(255,122,80,.12)"/><rect x="214" y="90" width="22" height="64" fill="rgba(255,122,80,.3)"/>
+    <g font-family="Georgia" font-size="11" text-anchor="middle" fill="#1d1a17"><text x="40" y="28">3</text><text x="80" y="28">3</text><text x="120" y="28">5</text><text x="155" y="14">2</text><text x="200" y="14">5</text><text x="240" y="14">3</text><text x="280" y="14">2</text><text x="315" y="28">3</text><text x="40" y="122">1</text><text x="80" y="122">1</text><text x="120" y="108">0</text><text x="155" y="108">2</text><text x="200" y="108">3</text><text x="225" y="108">2</text><text x="280" y="94">0</text><text x="315" y="108">3</text><text x="40" y="188">3</text><text x="80" y="202">5</text><text x="120" y="188">2</text><text x="155" y="188">3</text><text x="200" y="216">0</text><text x="240" y="202">3</text><text x="280" y="202">5</text><text x="315" y="188">2</text></g></svg>
+  </div>
+  <div class="mini">
+    <span class="play"><i data-i="play"></i></span>
+    <div class="scrub" style="flex:1;display:flex;flex-direction:column;gap:6px"><span class="mono muted" style="font-size:11px">Bar 14 / 32</span><div style="height:4px;border-radius:4px;background:var(--surface-3)"><div style="width:44%;height:100%;border-radius:4px;background:var(--accent)"></div></div></div>
+    <span class="ibtn ghost"><i data-i="repeat"></i></span>
+    <span class="ibtn on"><i data-i="target"></i></span>
+  </div>
+</div>
+<p class="cap">Player: compact header, the score fills the first screen, a slim dock; practice, audio, sync and view open as a bottom sheet with tabs</p>
+</div>
+<script src="mock.js"></script></body></html>

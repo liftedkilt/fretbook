@@ -1,0 +1,123 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="mock.css">
+<style>
+.main { padding-top: 28px; }
+.head { display:grid; grid-template-columns: 120px 1fr auto; gap: 24px; align-items: end; margin-bottom: 22px; }
+.head .cover { width:120px; } .head .actions { align-self:start; margin-top:24px; }
+.pills { display:flex; gap:6px; flex-wrap:wrap; margin-top:12px; align-items:center; }
+.tagchip { display:inline-flex; align-items:center; gap:5px; height:24px; padding:0 9px; border-radius:var(--r-pill); border:1px dashed var(--line-strong); color:var(--text-3); font-size:12px; font-weight:550; }
+.tagchip.set { border-style: solid; color: var(--text-2); }
+.viewbar { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.paper { padding: 28px 34px 40px; height: 520px; position: relative; overflow: hidden; margin-right: 400px; }
+.panel { position: fixed; right: var(--pad); top: 226px; bottom: 112px; width: 384px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-lg); box-shadow: var(--shadow-lg); display: flex; flex-direction: column; z-index: 4; overflow: hidden; }
+.tabs { display:flex; gap:2px; padding: 10px 10px 0; border-bottom: 1px solid var(--line); }
+.tabs span { display:inline-flex; align-items:center; gap:6px; padding: 10px 12px; font-size: 13.5px; font-weight: 600; color: var(--text-2); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tabs span.on { color: var(--text); border-color: var(--accent); }
+.pbody { padding: 18px; display:flex; flex-direction:column; gap: 18px; overflow:hidden; }
+.grp h4 { margin: 0 0 10px; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-3); font-weight: 650; }
+.mode { display:flex; gap:12px; align-items:flex-start; padding: 12px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--surface-2); margin-bottom: 8px; }
+.mode.on { border-color: var(--accent); background: var(--accent-soft); }
+.mode .mi { width: 34px; height: 34px; border-radius: 9px; display:grid; place-items:center; background: var(--surface-3); color: var(--text-2); flex:none; }
+.mode.on .mi { background: var(--grad); color: #fff; }
+.mode b { font-size: 14px; } .mode p { font-size: 12.5px; color: var(--text-3); margin-top: 2px; }
+.kv { display:flex; align-items:center; gap: 10px; font-size: 13.5px; color: var(--text-2); }
+.scrub { flex:1; display:flex; flex-direction:column; gap:6px; min-width: 0; }
+.scrub .top { display:flex; justify-content:space-between; font-size: 12px; color: var(--text-3); }
+.track { position: relative; height: 6px; border-radius: 6px; background: var(--surface-3); }
+.track .loop { position:absolute; left: 38%; width: 22%; top: -4px; bottom: -4px; border-radius: 4px; background: var(--accent-soft); border: 1px solid var(--accent-ring); }
+.track .fill { position:absolute; left:0; width: 44%; height:100%; border-radius: 6px; background: var(--accent); }
+.track .head { position:absolute; left: 44%; top: 50%; width: 14px; height: 14px; border-radius: 50%; background: var(--text); transform: translate(-50%,-50%); margin:0; display:block; }
+.sect { position:absolute; top: 12px; font-size: 10.5px; color: var(--text-3); }
+</style></head><body>
+<div class="shell">
+<aside class="side" data-on="library"></aside>
+<main class="main"><div class="container wide">
+  <a class="back"><i data-i="back" class="sm"></i>Library</a>
+  <div class="head">
+    <div class="cover g1"><span class="lines"></span><span class="glyph"><i data-i="bass"></i></span></div>
+    <div>
+      <p class="eyebrow">Bass · Fretbook Demo</p>
+      <h1 class="display" style="font-size:52px">Walking Home</h1>
+      <div class="pills">
+        <span class="meta">G2 D2 A1 E1</span><span class="meta">No capo</span><span class="meta">120 BPM</span><span class="meta">C major</span><span class="meta">32 bars</span><span class="meta" style="color:var(--accent-text)"><i data-i="waveform" class="sm"></i>Synced audio</span><span class="meta">Level 2</span>
+        <span style="width:8px"></span>
+        <span class="tagchip set"><i data-i="tag" class="sm"></i>Walking bass</span><span class="tagchip"><i data-i="plus" class="sm"></i>Tag</span>
+      </div>
+    </div>
+    <div class="actions">
+      <span class="ibtn"><i data-i="star"></i></span>
+      <span class="btn"><i data-i="sliders" class="sm"></i>Transpose</span>
+      <span class="btn"><i data-i="edit" class="sm"></i>Edit</span>
+      <span class="ibtn"><i data-i="more"></i></span>
+    </div>
+  </div>
+  <div class="viewbar" style="margin-right:400px">
+    <span class="seg"><span class="on">Tab</span><span>Highway</span><span>Split</span></span>
+    <span class="chip" style="margin-left:auto"><i data-i="repeat" class="sm"></i>Loop · Chorus (bars 13–20)</span>
+    <span class="chip"><i data-i="gauge" class="sm"></i>80%</span>
+  </div>
+  <div class="paper">
+    <div style="text-align:center;font-family:Georgia,serif;font-size:26px">Walking Home</div>
+    <div style="text-align:center;font-family:Georgia,serif;color:var(--paper-dim);margin-bottom:22px">Fretbook Demo</div>
+    <svg viewBox="0 0 900 360" width="100%" style="display:block">
+      <g stroke="#1d1a17" stroke-width="1" fill="none">
+        <g id="sys"><path d="M30 20h840M30 36h840M30 52h840M30 68h840"/><path d="M30 20v48M240 20v48M450 20v48M660 20v48M870 20v48"/></g>
+        <use href="#sys" y="110"/><use href="#sys" y="220"/>
+      </g>
+      <rect x="240" y="120" width="420" height="80" fill="rgba(255,122,80,.10)" stroke="rgba(196,69,30,.5)" stroke-dasharray="4 4"/>
+      <rect x="452" y="124" width="46" height="72" fill="rgba(255,122,80,.28)"/>
+      <g font-family="Georgia,serif" font-size="13" fill="#1d1a17" text-anchor="middle">
+        <text x="70" y="40">3</text><text x="120" y="40">3</text><text x="170" y="40">5</text><text x="215" y="24">2</text>
+        <text x="280" y="24">5</text><text x="330" y="24">3</text><text x="380" y="24">2</text><text x="425" y="40">3</text>
+        <text x="490" y="56">1</text><text x="540" y="56">1</text><text x="590" y="40">0</text><text x="635" y="40">2</text>
+        <text x="700" y="40">3</text><text x="750" y="24">2</text><text x="800" y="24">0</text><text x="845" y="40">3</text>
+        <text x="70" y="150">3</text><text x="120" y="150">5</text><text x="170" y="134">2</text><text x="215" y="134">3</text>
+        <text x="280" y="166">0</text><text x="330" y="150">3</text><text x="380" y="150">5</text><text x="425" y="134">2</text>
+        <text x="475" y="150">3</text><text x="525" y="134">5</text><text x="575" y="134">3</text><text x="625" y="150">2</text>
+        <text x="700" y="150">3</text><text x="750" y="150">3</text><text x="800" y="134">2</text><text x="845" y="134">0</text>
+        <text x="70" y="260">1</text><text x="120" y="260">1</text><text x="170" y="244">0</text><text x="215" y="244">2</text>
+        <text x="280" y="244">3</text><text x="330" y="244">2</text><text x="380" y="244">0</text><text x="425" y="260">3</text>
+      </g>
+      <g font-family="Inter" font-size="11" font-weight="700" fill="#c4451e"><text x="32" y="12">1</text><text x="242" y="12">2</text><text x="242" y="114">Chorus</text><text x="32" y="114">5</text><text x="32" y="214">9</text></g>
+    </svg>
+  </div>
+</div></main>
+</div>
+
+<div class="panel">
+  <div class="tabs"><span class="on"><i data-i="target" class="sm"></i>Practice</span><span><i data-i="sliders" class="sm"></i>Audio</span><span><i data-i="waveform" class="sm"></i>Sync</span><span><i data-i="eye" class="sm"></i>View</span><span class="ibtn ghost" style="margin-left:auto;width:34px;height:34px"><i data-i="close" class="sm"></i></span></div>
+  <div class="pbody">
+    <div class="grp"><h4>Mode</h4>
+      <div class="mode"><span class="mi"><i data-i="play" class="sm"></i></span><div><b>Free play</b><p>Play along at your own pace.</p></div></div>
+      <div class="mode on"><span class="mi"><i data-i="star" class="sm"></i></span><div><b>Score my playing</b><p>Every note graded on time. Headphones on.</p></div></div>
+      <div class="mode"><span class="mi"><i data-i="hourglass" class="sm"></i></span><div><b>Wait for me</b><p>The cursor waits until you play each note.</p></div></div>
+    </div>
+    <div class="grp"><h4>Loop</h4>
+      <div class="kv"><span class="select" style="flex:1">Chorus · bars 13–20 <i data-i="chevronDown" class="sm"></i></span><span class="btn sm">Set A–B</span></div>
+    </div>
+    <div class="grp"><h4>Speed</h4>
+      <div class="kv"><span class="mono" style="width:44px;color:var(--text)">80%</span><div class="range"><i style="width:40%"></i><b style="left:40%"></b></div></div>
+      <div class="kv" style="margin-top:12px;justify-content:space-between"><span>Speed trainer: +5% each clean pass</span><span class="switch"></span></div>
+    </div>
+  </div>
+</div>
+
+<div class="dock">
+  <span class="ibtn ghost"><i data-i="prev"></i></span><span class="play"><i data-i="play" class="lg"></i></span><span class="ibtn ghost"><i data-i="next"></i></span>
+  <div class="scrub" style="margin:0 10px">
+    <div class="top"><span class="mono">Bar 14 / 32 · 0:28</span><span class="mono">1:04</span></div>
+    <div class="track"><span class="loop"></span><span class="fill"></span><span class="head"></span></div>
+  </div>
+  <span class="tb-label"><i data-i="gauge" class="sm"></i>80%</span>
+  <span class="tb-label on"><i data-i="repeat" class="sm"></i>Loop</span>
+  <span class="vsep"></span>
+  <span class="tb-label on"><i data-i="target" class="sm"></i>Practice</span>
+  <span class="ibtn ghost"><i data-i="crosshair"></i><span class="tip">Follow the cursor</span></span>
+  <span class="ibtn ghost"><i data-i="maximize"></i></span>
+</div>
+<div class="note" data-n="1" style="left:272px;top:30px"></div>
+<div class="note" data-n="2" style="left:1068px;top:96px"></div>
+<div class="note" data-n="3" style="left:650px;top:238px"></div>
+<div class="note" data-n="4" style="left:1004px;top:212px"></div>
+<div class="note" data-n="5" style="left:1160px;top:806px"></div>
+<div class="note" data-n="6" style="left:960px;top:806px"></div>
+<script src="mock.js"></script></body></html>

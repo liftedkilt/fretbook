@@ -1,0 +1,103 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="mock.css">
+<style>
+.hero { display:grid; grid-template-columns: 1.25fr 1fr; gap:16px; }
+.today { display:flex; gap:28px; align-items:center; padding:26px; }
+.ring { position:relative; width:150px; height:150px; flex:none; }
+.ring svg { width:150px; height:150px; transform: rotate(-90deg); }
+.ring .c { position:absolute; inset:0; display:grid; place-content:center; text-align:center; }
+.ring .c b { font-size:40px; font-weight:700; line-height:1; letter-spacing:-.02em; }
+.stats { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.stat { padding:20px; display:flex; flex-direction:column; gap:6px; }
+.stat .ic { width:34px; height:34px; border-radius:10px; display:grid; place-items:center; background:var(--surface-2); color:var(--text-2); }
+.stat b { font-size:30px; font-weight:700; letter-spacing:-.02em; line-height:1.1; }
+.stat span { color:var(--text-3); font-size:13px; }
+.heat { display:grid; grid-auto-flow: column; grid-auto-columns: 1fr; grid-template-rows: repeat(7, 13px); gap:4px; flex:1; }
+.heat i { width:100%; height:13px; border-radius:3px; background: var(--heat-0); display:block; }
+.months { display:flex; justify-content:space-between; color:var(--text-3); font-size:11.5px; margin: 0 0 8px 30px; }
+.legend { display:flex; gap:4px; align-items:center; font-size:11.5px; color:var(--text-3); }
+.legend i { width:11px; height:11px; border-radius:3px; display:inline-block; }
+.recs { display:grid; grid-template-columns: repeat(3, 1fr); gap:16px; }
+.rec { display:flex; gap:14px; padding:16px; align-items:center; }
+.rec .cv { width:64px; height:64px; border-radius:12px; flex:none; position:relative; overflow:hidden; }
+.rec .why { font-size:12px; color:var(--accent-text); font-weight:600; margin-bottom:2px; }
+.lists { display:grid; grid-template-columns: repeat(3, 1fr); gap:16px; }
+.li { display:flex; align-items:center; gap:12px; padding:9px 0; border-top:1px solid var(--line); }
+.li:first-of-type { border-top:0; }
+.li .cv { width:36px; height:36px; border-radius:8px; flex:none; }
+.li .t { flex:1; min-width:0; } .li .t b { display:block; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .li .t span { display:block; font-size:12.5px; color:var(--text-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.li .r { font-size:13px; color:var(--text-2); font-variant-numeric: tabular-nums; white-space:nowrap; }
+.stars { color: var(--warn); letter-spacing: 1px; font-size: 12px; }
+.toast { position:fixed; right:40px; top:28px; display:flex; gap:12px; align-items:center; padding:12px 16px 12px 12px; background:var(--surface-2); border:1px solid var(--line-strong); border-radius:var(--r-md); box-shadow:var(--shadow-lg); z-index:6; }
+.toast .ic { width:36px; height:36px; border-radius:10px; background:var(--grad); color:#fff; display:grid; place-items:center; box-shadow: var(--glow); }
+</style></head><body>
+<div class="shell">
+<aside class="side" data-on="practice"></aside>
+<main class="main"><div class="container">
+  <div class="ph">
+    <div><p class="eyebrow">Practice</p><h1 class="display">Good evening</h1><p class="sub">Saturday, 24 October · You’re 9 minutes from today’s goal.</p></div>
+    <div class="actions"><span class="btn">Practice log</span><span class="btn primary"><i data-i="play" class="sm"></i>Continue Walking Home</span></div>
+  </div>
+
+  <div class="hero">
+    <div class="card today">
+      <div class="ring"><svg viewBox="0 0 150 150"><circle cx="75" cy="75" r="64" stroke="var(--surface-3)" stroke-width="12" fill="none"/><circle cx="75" cy="75" r="64" stroke="url(#g)" stroke-width="12" fill="none" stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="161"/><defs><linearGradient id="g"><stop offset="0" stop-color="#ffa25a"/><stop offset="1" stop-color="#ff4f81"/></linearGradient></defs></svg>
+        <div class="c"><b>6</b><span class="muted" style="font-size:12.5px">of 15 min</span></div></div>
+      <div style="flex:1">
+        <p class="muted" style="font-size:12px;font-weight:650;letter-spacing:.12em;text-transform:uppercase">Today</p>
+        <h2 style="font-size:22px;font-weight:600;margin:4px 0 10px">Keep the streak going</h2>
+        <div class="row" style="gap:8px;flex-wrap:wrap"><span class="meta">Walking Home · 4 min</span><span class="meta">Fretboard notes · 2 min</span></div>
+        <div class="row" style="margin-top:16px;gap:6px"><span class="muted" style="font-size:13px">Daily goal</span><span class="chip" style="height:28px;font-size:12.5px">15 min <i data-i="edit" class="sm"></i></span></div>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="card stat"><span class="ic" style="background:var(--accent-soft);color:var(--accent)"><i data-i="flame"></i></span><b>6 days</b><span>Current streak · best 11</span></div>
+      <div class="card stat"><span class="ic"><i data-i="clock"></i></span><b>1h 50m</b><span>This week · +34% on last week</span></div>
+      <div class="card stat"><span class="ic"><i data-i="library"></i></span><b>11</b><span>Songs practised this month</span></div>
+      <div class="card stat"><span class="ic" style="color:var(--warn)"><i data-i="trophy"></i></span><b>97%</b><span>Best score · Corpus Directives</span></div>
+    </div>
+  </div>
+
+  <div class="section-head"><h2 class="h2">Up next for you</h2><span class="muted" style="font-size:13px">You’ve been playing level 2 songs well, so these are a step up.</span></div>
+  <div class="recs">
+    <div class="card rec"><span class="cv g4"><span class="lines"></span></span><div style="min-width:0"><p class="why">A step up · Level 3</p><b>Night Drive</b><div class="muted" style="font-size:13px">The Long Weekends</div></div></div>
+    <div class="card rec"><span class="cv g1"><span class="lines"></span></span><div style="min-width:0"><p class="why">Loop scored 62%</p><b>Walking Home · Chorus</b><div class="muted" style="font-size:13px">Try it at 80%</div></div></div>
+    <div class="card rec"><span class="cv g5"><span class="lines"></span></span><div style="min-width:0"><p class="why">Due for a refresher</p><b>Porch Light</b><div class="muted" style="font-size:13px">Last played 16 days ago</div></div></div>
+  </div>
+
+  <div class="section-head"><h2 class="h2">Last 6 months</h2><span class="legend">Less <i style="background:var(--heat-0)"></i><i style="background:var(--heat-1)"></i><i style="background:var(--heat-2)"></i><i style="background:var(--heat-3)"></i><i style="background:var(--heat-4)"></i> More</span></div>
+  <div class="card" style="padding:20px 22px">
+    <div class="months"><span>May</span><span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span></div>
+    <div class="row" style="align-items:flex-start;gap:8px"><div style="display:grid;grid-template-rows:repeat(7,13px);gap:4px;font-size:10.5px;color:var(--text-3);width:22px"><span></span><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span></div><div class="heat" id="heat"></div></div>
+  </div>
+
+  <div class="section-head"><h2 class="h2">Your songs</h2></div>
+  <div class="lists">
+    <div class="card"><h3 style="font-size:15px;margin-bottom:8px">Recently practised</h3>
+      <div class="li"><span class="cv g2"></span><div class="t"><b>Corpus Techniques</b><span>Fretbook Fixtures</span></div><span class="r">27m · today</span></div>
+      <div class="li"><span class="cv g5"></span><div class="t"><b>Porch Light</b><span>Fretbook Demo</span></div><span class="r">2h 36m · yesterday</span></div>
+      <div class="li"><span class="cv g1"></span><div class="t"><b>Walking Home</b><span>Fretbook Demo</span></div><span class="r">1h 07m · 7 days</span></div>
+    </div>
+    <div class="card"><h3 style="font-size:15px;margin-bottom:8px">Best scores</h3>
+      <div class="li"><span class="cv g7"></span><div class="t"><b>Corpus Directives</b><span>at 100% speed</span></div><span class="r"><span class="stars">★★★</span> 97%</span></div>
+      <div class="li"><span class="cv g5"></span><div class="t"><b>Porch Light</b><span>at 100% speed</span></div><span class="r"><span class="stars">★★★</span> 96%</span></div>
+      <div class="li"><span class="cv g3"></span><div class="t"><b>Sunny Day Blues</b><span>at 80% speed</span></div><span class="r"><span class="stars">★★☆</span> 88%</span></div>
+    </div>
+    <div class="card"><h3 style="font-size:15px;margin-bottom:8px">Haven’t played in a while</h3>
+      <div class="li"><span class="cv g3"></span><div class="t"><b>Sunny Day Blues</b><span>Fretbook Tests</span></div><span class="r">22 days</span></div>
+      <div class="li"><span class="cv g6"></span><div class="t"><b>Practice Riff</b><span>Fretbook Tests</span></div><span class="r">19 days</span></div>
+      <div class="li"><span class="cv g4"></span><div class="t"><b>Corpus Chords</b><span>Fretbook Fixtures</span></div><span class="r">16 days</span></div>
+    </div>
+  </div>
+</div></main>
+</div>
+<div class="toast"><span class="ic"><i data-i="flame"></i></span><div><b style="font-size:14px">6-day streak</b><div class="muted" style="font-size:12.5px">Play 9 more minutes to meet today’s goal.</div></div></div>
+<div class="note" data-n="1" style="left:256px;top:36px"></div>
+<div class="note" data-n="2" style="left:310px;top:206px"></div>
+<div class="note" data-n="3" style="left:870px;top:206px"></div>
+<div class="note" data-n="4" style="left:276px;top:540px"></div>
+<div class="note" data-n="5" style="left:1180px;top:14px"></div>
+<script>
+const h=document.getElementById('heat'); let s=7;
+for(let d=0;d<26*7;d++){ s=(s*9301+49297)%233280; const r=s/233280; const recent=d>26*7-60; const v= recent ? (r<.25?0:r<.45?1:r<.7?2:r<.88?3:4) : (r<.75?0:r<.88?1:r<.96?2:3); const i=document.createElement('i'); i.style.background=`var(--heat-${v})`; h.appendChild(i);}
+</script>
+<script src="mock.js"></script></body></html>

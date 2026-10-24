@@ -1,0 +1,102 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="mock.css">
+<style>
+body { padding: 48px 56px 64px; }
+.wrap { position:relative; z-index:1; max-width: 1330px; }
+.grid2 { display:grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.grid3 { display:grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
+h2.h2 { margin-bottom: 14px; }
+.lbl { font-size: 11.5px; font-weight: 650; letter-spacing: .12em; text-transform: uppercase; color: var(--text-3); margin: 18px 0 10px; }
+.sw { display:flex; gap: 10px; flex-wrap: wrap; }
+.sw div { width: 92px; } .sw i { display:block; height: 54px; border-radius: var(--r-sm); border: 1px solid var(--line-strong); }
+.sw span { display:block; font-size: 11.5px; color: var(--text-2); margin-top: 6px; font-family: var(--font-mono); }
+.ts > div { display:flex; align-items:baseline; gap: 18px; padding: 8px 0; border-top: 1px solid var(--line); }
+.ts code { width: 130px; font-size: 11.5px; color: var(--text-3); font-family: var(--font-mono); flex:none; }
+.scale { display:flex; align-items:flex-end; gap: 14px; }
+.scale div { text-align:center; font-size: 11px; color: var(--text-3); font-family: var(--font-mono); }
+.scale i { display:block; background: var(--accent-soft); border: 1px solid var(--accent-ring); margin: 0 auto 6px; }
+.rad { display:flex; gap: 16px; } .rad div { text-align:center; font-size:11px; color:var(--text-3); font-family: var(--font-mono); } .rad i { display:block; width: 64px; height: 64px; background: var(--surface-2); border: 1px solid var(--line-strong); margin-bottom: 6px; }
+.icons { display:grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+.icons div { display:flex; flex-direction:column; align-items:center; gap: 6px; padding: 12px 6px; border-radius: var(--r-sm); background: var(--surface-2); font-size: 11px; color: var(--text-2); text-align:center; }
+.toast { display:flex; gap:12px; align-items:center; padding:12px 16px 12px 12px; background:var(--surface-2); border:1px solid var(--line-strong); border-radius:var(--r-md); box-shadow:var(--shadow-md); }
+.toast .ic { width:36px; height:36px; border-radius:10px; background:var(--grad); color:#fff; display:grid; place-items:center; box-shadow: var(--glow); }
+.menu { width: 220px; background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: var(--r-md); box-shadow: var(--shadow-md); padding: 6px; }
+.menu div { display:flex; gap:10px; align-items:center; height: 36px; padding: 0 10px; border-radius: 8px; font-size: 13.5px; color: var(--text-2); }
+.menu div.d { color: var(--danger); } .menu hr { border:0; border-top: 1px solid var(--line); margin: 4px 0; }
+.results { display:flex; gap: 22px; align-items:center; }
+</style></head><body><div class="wrap">
+<p class="eyebrow">Fretbook design language · v1</p>
+<h1 class="display" style="margin-bottom:6px">Night session, refined</h1>
+<p class="sub" style="margin-bottom:34px;max-width:80ch">Evolves the current tokens in <span class="mono">app.css</span>: same ember accent, serif display and paper for notation, plus the rules that were missing — spacing, radius, type scale, one primary action, one meaning per icon, and a restrained celebration layer.</p>
+
+<div class="grid2">
+  <div class="card">
+    <h2 class="h2">Colour</h2>
+    <p class="lbl">Surfaces &amp; text</p>
+    <div class="sw"><div><i style="background:var(--bg)"></i><span>--bg</span></div><div><i style="background:var(--bg-elev)"></i><span>--bg-elev</span></div><div><i style="background:var(--surface)"></i><span>--surface</span></div><div><i style="background:var(--surface-2)"></i><span>--surface-2</span></div><div><i style="background:var(--surface-3)"></i><span>--surface-3</span></div><div><i style="background:var(--text)"></i><span>--text</span></div></div>
+    <p class="lbl">Accent, reward, paper</p>
+    <div class="sw"><div><i style="background:var(--accent)"></i><span>--accent</span></div><div><i style="background:var(--accent-soft)"></i><span>--accent-soft</span></div><div><i style="background:var(--grad)"></i><span>--grad (CTA)</span></div><div><i style="background:var(--paper)"></i><span>--paper</span></div><div><i style="background:var(--paper-chord)"></i><span>--paper-chord</span></div></div>
+    <p class="lbl">Grades &amp; heat</p>
+    <div class="sw"><div><i style="background:var(--grade-hit)"></i><span>--grade-hit</span></div><div><i style="background:var(--grade-early)"></i><span>--grade-early</span></div><div><i style="background:var(--grade-late)"></i><span>--grade-late</span></div><div><i style="background:var(--grade-miss)"></i><span>--grade-miss</span></div><div style="width:200px"><i style="background:linear-gradient(90deg,var(--heat-0) 0 20%,var(--heat-1) 20% 40%,var(--heat-2) 40% 60%,var(--heat-3) 60% 80%,var(--heat-4) 80%)"></i><span>--heat-0 … 4</span></div></div>
+  </div>
+  <div class="card ts">
+    <h2 class="h2">Type</h2>
+    <div><code>--fs-display 56</code><span class="display" style="font-size:52px">Your library</span></div>
+    <div><code>--fs-title 32</code><span class="title" style="font-size:32px">Friday rehearsal</span></div>
+    <div><code>--fs-h2 20 / 600</code><span style="font-size:20px;font-weight:600">What to practise next</span></div>
+    <div><code>--fs-h3 16 / 600</code><span style="font-size:16px;font-weight:600">Recently practised</span></div>
+    <div><code>--fs-body 15</code><span>Play along without stopping and every note is graded.</span></div>
+    <div><code>--fs-sm 13</code><span class="muted" style="font-size:13px">4 strings · 32 bars · 120 BPM</span></div>
+    <div><code>--fs-eyebrow</code><span class="eyebrow" style="margin:0">Practice</span></div>
+    <div><code>--fs-hero-num</code><span style="font-size:52px;font-weight:700;letter-spacing:-.03em;line-height:1">120</span></div>
+  </div>
+</div>
+
+<div class="grid3" style="margin-top:20px">
+  <div class="card"><h2 class="h2">Spacing (4px base)</h2>
+    <div class="scale"><div><i style="width:4px;height:4px"></i>4</div><div><i style="width:8px;height:8px"></i>8</div><div><i style="width:12px;height:12px"></i>12</div><div><i style="width:16px;height:16px"></i>16</div><div><i style="width:24px;height:24px"></i>24</div><div><i style="width:32px;height:32px"></i>32</div><div><i style="width:48px;height:48px"></i>48</div><div><i style="width:64px;height:64px"></i>64</div></div></div>
+  <div class="card"><h2 class="h2">Radius</h2>
+    <div class="rad"><div><i style="border-radius:6px"></i>xs 6</div><div><i style="border-radius:10px"></i>sm 10</div><div><i style="border-radius:14px"></i>md 14</div><div><i style="border-radius:20px"></i>lg 20</div><div><i style="border-radius:999px"></i>pill</div></div></div>
+  <div class="card"><h2 class="h2">Page header</h2>
+    <a class="back" style="margin-bottom:10px"><i data-i="back" class="sm"></i>Setlists</a><p class="eyebrow">Setlists</p>
+    <div class="row" style="justify-content:space-between;align-items:flex-end"><div><h1 class="title">Friday rehearsal</h1><p class="sub" style="font-size:13.5px">5 songs · about 22 min</p></div><div class="row" style="gap:6px"><span class="ibtn"><i data-i="more"></i></span><span class="btn primary"><i data-i="play" class="sm"></i>Play through</span></div></div></div>
+</div>
+
+<div class="grid2" style="margin-top:20px">
+  <div class="card"><h2 class="h2">Actions</h2>
+    <p class="lbl">Buttons — one primary per view</p>
+    <div class="row" style="flex-wrap:wrap;gap:10px"><span class="btn primary"><i data-i="play" class="sm"></i>Start</span><span class="btn"><i data-i="edit" class="sm"></i>Edit</span><span class="btn ghost">Cancel</span><span class="btn" style="background:var(--danger-soft);color:var(--danger);border-color:transparent"><i data-i="trash" class="sm"></i>Delete setlist</span><span class="ibtn"><i data-i="keyboard"></i><span class="tip">Keyboard shortcuts</span></span></div>
+    <p class="lbl">Filter chips · meta pills · segmented</p>
+    <div class="row" style="flex-wrap:wrap;gap:8px"><span class="chip on">All <span class="n">48</span></span><span class="chip">Bass <span class="n">19</span></span><span class="chip active">Easy (1–3) <i data-i="close" class="sm"></i></span><span class="meta">G2 D2 A1 E1</span><span class="meta">120 BPM</span><span class="seg"><span class="on">Tab</span><span>Highway</span><span>Split</span></span></div>
+    <p class="lbl">Themed controls (no browser blue)</p>
+    <div class="row" style="gap:16px"><div class="range" style="max-width:260px"><i style="width:60%"></i><b style="left:60%"></b></div><span class="mono muted">60%</span><span class="switch"></span><span class="switch off"></span><span class="select">Guitar (6-string) <i data-i="chevronDown" class="sm"></i></span></div>
+  </div>
+  <div class="card"><h2 class="h2">Overflow &amp; destructive</h2>
+    <div class="row" style="align-items:flex-start;gap:24px">
+      <div class="menu"><div><i data-i="cloudDownload" class="sm"></i>Keep on this device</div><div><i data-i="download" class="sm"></i>Export…</div><div><i data-i="listMusic" class="sm"></i>Add to setlist</div><div><i data-i="edit" class="sm"></i>Edit details</div><hr><div class="d"><i data-i="trash" class="sm"></i>Delete song…</div></div>
+      <div style="flex:1"><p class="t2" style="font-size:14px">Destructive actions live last in the overflow menu, in red, behind a confirm that names the item — or an Undo toast when the action is reversible.</p>
+      <div class="toast" style="margin-top:16px"><div><b style="font-size:13.5px">Removed “Porch Light” from Friday rehearsal</b></div><span class="link" style="margin-left:12px">Undo</span></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="grid2" style="margin-top:20px">
+  <div class="card"><h2 class="h2">Icons — one meaning each</h2>
+    <div class="icons">
+      <div><i data-i="target"></i>Practice</div><div><i data-i="graduation"></i>Lessons</div><div><i data-i="listMusic"></i>Setlists</div><div><i data-i="tuningFork"></i>Tuner</div><div><i data-i="metronome"></i>Metronome</div><div><i data-i="drum"></i>Rhythm</div>
+      <div><i data-i="ear"></i>Ear trainer</div><div><i data-i="dumbbell"></i>Exercises</div><div><i data-i="download"></i>Export</div><div><i data-i="cloudDownload"></i>Offline</div><div><i data-i="crosshair"></i>Follow</div><div><i data-i="keyboard"></i>Shortcuts</div>
+      <div><i data-i="hourglass"></i>Wait mode</div><div><i data-i="star"></i>Score</div><div><i data-i="repeat"></i>Loop</div><div><i data-i="gauge"></i>Speed</div><div><i data-i="sliders"></i>Audio</div><div><i data-i="waveform"></i>Sync</div>
+    </div>
+  </div>
+  <div class="card"><h2 class="h2">Celebration — warm, short, never in the way</h2>
+    <div class="row" style="gap:12px;flex-wrap:wrap">
+      <div class="toast"><span class="ic"><i data-i="flame"></i></span><div><b style="font-size:14px">7-day streak</b><div class="muted" style="font-size:12.5px">A full week. Nice and steady.</div></div></div>
+      <div class="toast"><span class="ic"><i data-i="check"></i></span><div><b style="font-size:14px">Lesson passed</b><div class="muted" style="font-size:12.5px">Next: Notes on the high strings</div></div></div>
+    </div>
+    <div class="results" style="margin-top:20px">
+      <div><div class="muted" style="font-size:12px;font-weight:650;letter-spacing:.12em;text-transform:uppercase">Walking Home · 100%</div><div class="display" style="font-size:64px">94%</div></div>
+      <div><span class="meta" style="background:var(--grad);color:#fff;height:26px;padding:0 10px">New best · +6</span><div style="color:var(--warn);font-size:26px;letter-spacing:4px;margin-top:8px">★★★</div></div>
+    </div>
+    <p class="muted" style="font-size:12.5px;margin-top:12px">≤ 1.2 s of motion · one at a time · no sound by default · reduced motion shows the message only.</p>
+  </div>
+</div>
+</div><script src="mock.js"></script></body></html>

@@ -1,0 +1,65 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="mock.css">
+<style>
+.chead { display:grid; grid-template-columns: 1fr 340px; gap:28px; align-items:start; margin-bottom: 34px; }
+.art { height: 150px; border-radius: var(--r-lg); position:relative; overflow:hidden; }
+.prog { height:8px; border-radius:8px; background:var(--surface-3); overflow:hidden; } .prog i { display:block; height:100%; width:20%; background:var(--grad); }
+.level { display:grid; grid-template-columns: 40px 1fr; gap: 0 18px; }
+.level h3 { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--text-3); font-weight: 650; margin: 6px 0 12px; grid-column: 2; }
+.rail { grid-row: span 99; display:flex; justify-content:center; position:relative; }
+.rail::before { content:""; position:absolute; top:0; bottom:0; width:2px; background: var(--line-strong); }
+.rail.done::before { background: linear-gradient(var(--accent), var(--accent)); }
+.lesson { display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius: var(--r-md); border:1px solid var(--line); background: var(--surface); margin-bottom: 10px; position:relative; }
+.lesson .dot { position:absolute; left:-47px; width:26px; height:26px; border-radius:50%; display:grid; place-items:center; background: var(--surface-2); border: 2px solid var(--line-strong); color: var(--text-3); }
+.lesson.done .dot { background: var(--accent); border-color: var(--accent); color:#fff; }
+.lesson.cur { border-color: var(--accent); background: linear-gradient(90deg, var(--accent-soft), var(--surface) 60%); }
+.lesson.cur .dot { background: var(--bg); border-color: var(--accent); color: var(--accent); box-shadow: 0 0 0 5px var(--accent-soft); }
+.lesson.locked { opacity: .62; }
+.lesson b { font-size: 15px; } .lesson p { font-size: 13px; color: var(--text-3); }
+.lesson .tail { margin-left:auto; display:flex; gap:8px; align-items:center; color: var(--text-3); font-size: 12.5px; }
+</style></head><body>
+<div class="shell">
+<aside class="side" data-on="lessons"></aside>
+<main class="main"><div class="container">
+  <a class="back"><i data-i="back" class="sm"></i>Lessons</a>
+  <div class="chead">
+    <div>
+      <p class="eyebrow">Lessons · Guitar</p>
+      <h1 class="display">Guitar first steps</h1>
+      <p class="sub" style="max-width:62ch">From holding the guitar to your first full song: strings, notes, open chords, strumming and power chords.</p>
+      <div class="row" style="margin-top:20px;gap:10px"><span class="btn primary lg"><i data-i="play"></i>Continue: Counting the beat</span><span class="ibtn" style="width:52px;height:52px"><i data-i="more"></i></span></div>
+    </div>
+    <div class="card" style="padding:18px">
+      <div class="art cover g6" style="aspect-ratio:auto"><span class="lines"></span><span class="glyph"><i data-i="guitar"></i></span></div>
+      <div class="row" style="justify-content:space-between;margin:14px 0 8px;font-size:13.5px"><b>4 of 20 lessons</b><span class="muted">≈ 2h left</span></div>
+      <div class="prog"><i></i></div>
+      <div class="row" style="gap:14px;margin-top:14px;font-size:12.5px" ><span class="t2"><i data-i="clock" class="sm"></i></span><span class="muted">1h 12m practised</span><span class="t2"><i data-i="star" class="sm"></i></span><span class="muted">3 passed with ★★★</span></div>
+    </div>
+  </div>
+
+  <div class="level">
+    <div class="rail done"></div>
+    <h3>Basics · done</h3>
+    <div>
+      <div class="lesson done"><span class="dot"><i data-i="check" class="sm"></i></span><div><b>Holding and tuning</b><p>Sit comfortably, hold the guitar, and get it in tune.</p></div><span class="tail"><span class="stars" style="color:var(--warn)">★★★</span></span></div>
+      <div class="lesson done"><span class="dot"><i data-i="check" class="sm"></i></span><div><b>The open strings</b><p>Name the six strings and pluck each one cleanly.</p></div><span class="tail"><span class="stars" style="color:var(--warn)">★★★</span></span></div>
+      <div class="lesson done"><span class="dot"><i data-i="check" class="sm"></i></span><div><b>Reading tab</b><p>Lines are strings, numbers are frets.</p></div><span class="tail"><span class="stars" style="color:var(--warn)">★★☆</span></span></div>
+      <div class="lesson cur"><span class="dot"><i data-i="play" class="sm"></i></span><div><b>Counting the beat</b><p>Count “1 2 3 4” and play on the beat with the click.</p></div><span class="tail"><span class="meta">Pass: 80% at 70 BPM</span><span class="meta" style="background:var(--accent-soft);color:var(--accent-text)">Up next</span></span></div>
+    </div>
+  </div>
+  <div class="level" style="margin-top:14px">
+    <div class="rail"></div>
+    <h3>First notes · 0 of 4</h3>
+    <div>
+      <div class="lesson locked"><span class="dot"><i data-i="lock" class="sm"></i></span><div><b>Notes on the high strings</b><p>E, F and G on the first string, then B, C and D.</p></div><span class="tail">12 min</span></div>
+      <div class="lesson locked"><span class="dot"><i data-i="lock" class="sm"></i></span><div><b>Notes on the middle and low strings</b><p>Finish the high-string notes first.</p></div><span class="tail">15 min</span></div>
+      <div class="lesson locked"><span class="dot"><i data-i="lock" class="sm"></i></span><div><b>Your first melody</b><p>Put the notes together in a short tune.</p></div><span class="tail">10 min</span></div>
+    </div>
+  </div>
+</div></main>
+</div>
+<div class="note" data-n="1" style="left:256px;top:22px"></div>
+<div class="note" data-n="2" style="left:262px;top:222px"></div>
+<div class="note" data-n="3" style="left:1040px;top:80px"></div>
+<div class="note" data-n="4" style="left:262px;top:620px"></div>
+<div class="note" data-n="5" style="left:262px;top:840px"></div>
+<script src="mock.js"></script></body></html>

@@ -1,0 +1,46 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="mock.css">
+<style>
+.tool { display:grid; grid-template-columns: 1.3fr 1fr; gap: 16px; }
+.stage { padding: 34px; display:flex; flex-direction:column; align-items:center; gap: 22px; }
+.beats { display:flex; gap: 14px; }
+.beats span { width: 46px; height: 46px; border-radius: 50%; display:grid; place-items:center; background: var(--surface-2); border: 1px solid var(--line-strong); font-weight: 700; color: var(--text-2); }
+.beats span.on { background: var(--grad); border-color: transparent; color: #fff; box-shadow: var(--glow); }
+.bpm { font-size: 96px; font-weight: 700; letter-spacing: -.04em; line-height: .9; font-variant-numeric: tabular-nums; }
+.step { display:flex; gap:8px; align-items:center; }
+.step .ibtn { width: 44px; height: 44px; font-weight: 700; color: var(--text); }
+.field { display:flex; flex-direction:column; gap: 8px; }
+.field label { font-size: 13px; font-weight: 600; color: var(--text-2); }
+.set { padding: 22px; display:flex; flex-direction:column; gap: 20px; }
+.line { display:flex; align-items:center; justify-content:space-between; gap: 12px; font-size: 14px; }
+.hub { display:grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-top: 40px; }
+.hub .card { padding: 16px; display:flex; gap:12px; align-items:center; }
+.hub .ic { width:38px; height:38px; border-radius:10px; display:grid; place-items:center; background:var(--accent-soft); color:var(--accent); flex:none; }
+</style></head><body>
+<div class="shell">
+<aside class="side" data-on="tools"></aside>
+<main class="main"><div class="container">
+  <a class="back"><i data-i="back" class="sm"></i>Tools</a>
+  <div class="ph"><div><p class="eyebrow">Tools</p><h1 class="title">Metronome</h1><p class="sub">Keep steady time with accents, subdivisions and tap tempo.</p></div></div>
+  <div class="tool">
+    <div class="card stage">
+      <div class="beats"><span class="on">1</span><span>2</span><span>3</span><span>4</span></div>
+      <div style="text-align:center"><div class="bpm">120</div><div class="muted" style="font-size:12px;font-weight:650;letter-spacing:.14em;margin-top:6px">BPM · ALLEGRO</div></div>
+      <div class="row" style="width:100%;max-width:440px;gap:14px"><span class="ibtn">−</span><div class="range"><i style="width:36%"></i><b style="left:36%"></b></div><span class="ibtn">+</span></div>
+      <div class="row" style="gap:10px"><span class="btn"><i data-i="tap" class="sm"></i>Tap tempo</span><span class="btn primary lg" style="min-width:180px;justify-content:center"><i data-i="play"></i>Start</span></div>
+      <p class="muted" style="font-size:12.5px">Space starts and stops · ↑ ↓ change by 1 · Shift for 5</p>
+    </div>
+    <div class="card set">
+      <div class="field"><label>Time signature</label><span class="seg"><span class="on">4/4</span><span>3/4</span><span>6/8</span><span>More…</span></span></div>
+      <div class="field"><label>Subdivisions</label><span class="seg"><span class="on">None</span><span>♪♪</span><span>Triplets</span><span>♬</span></span></div>
+      <div class="line"><span>Accent on beat 1</span><span class="switch"></span></div>
+      <div class="field"><label>Volume</label><div class="row"><div class="range"><i style="width:70%"></i><b style="left:70%"></b></div><span class="mono muted" style="width:44px;text-align:right">70%</span></div></div>
+      
+    </div>
+  </div>
+</div></main>
+</div>
+<div class="note" data-n="1" style="left:256px;top:22px"></div>
+<div class="note" data-n="2" style="left:640px;top:440px"></div>
+<div class="note" data-n="3" style="left:1196px;top:250px"></div>
+
+<script src="mock.js"></script></body></html>
