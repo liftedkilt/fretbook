@@ -6,8 +6,8 @@ a copy, and you probably want both.
 ## Library archive (in the app)
 
 **Settings → Backup and restore → Download library** gives one `.zip` with every song (tabs as Fretbook JSON, chord
-sheets as ChordPro), its audio and kept uploads, the practice log and daily goal, setlists, tags and favourites, and a
-`manifest.json` with the app and schema version.
+sheets as ChordPro), its audio and kept uploads, the practice log and daily goal, lesson progress, setlists, tags and favourites, and a
+`manifest.json` with the app and schema version. Your own lesson files (`FRETBOOK_LESSONS_DIR`) are not in the archive: back that folder up with the data directory.
 
 - It is written to disk song by song, so a large library does not load into memory. It needs free space in
   `$FRETBOOK_DATA_DIR/inbox` for the temporary file.

@@ -4696,8 +4696,9 @@ kbd {
   color: inherit;
 }
 
-.course-card.locked {
-  opacity: 0.75;
+.course-card.locked,
+.lesson-row.locked {
+  border-style: dashed;
 }
 
 .course-card-title {
@@ -4728,10 +4729,6 @@ kbd {
 .lesson-row {
   border: 1px solid var(--line-strong);
   border-radius: 12px;
-}
-
-.lesson-row.locked {
-  opacity: 0.65;
 }
 
 .lesson-row-link,

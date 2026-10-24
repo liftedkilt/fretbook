@@ -5,8 +5,6 @@ level: chords
 order: 3
 requires: [02-e-minor-and-a-minor, 03-a-steady-strum]
 ---
-# Play along
-
 Choose any slow song in your library that uses a few simple chords, and strum along with **Em** and **Am** where
 they fit. Use the speed trainer from 60 % up, and loop the part you like best.
 

@@ -4,8 +4,6 @@ summary: Down, down-up, up-down-up: a pattern for most folk songs.
 level: chords
 order: 2
 ---
-# A steady strum
-
 Keep your strumming hand moving down and up all the time, even when it misses the strings. Count
 "**1** & **2** & **3** & **4** &" and strum **D** on the numbers and **U** on the "&".
 

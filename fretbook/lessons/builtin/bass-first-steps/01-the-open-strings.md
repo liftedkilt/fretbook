@@ -4,8 +4,6 @@ summary: Name the four strings and find them on the neck.
 level: basics
 order: 1
 ---
-# The open strings
-
 A four-string bass in standard tuning is **E A D G**, from the thickest string to the thinnest. They are the same
 notes as the four lowest strings of a guitar, one octave lower.
 

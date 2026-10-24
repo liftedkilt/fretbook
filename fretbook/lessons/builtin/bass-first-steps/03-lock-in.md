@@ -4,8 +4,6 @@ summary: Play every note exactly on the click.
 level: groove
 order: 1
 ---
-# Lock in with the beat
-
 A bass player's main job is to land together with the drums. Set the metronome in **Tools → Metronome** to 70 and
 play one root note on every click. Then play two notes per click, then four.
 

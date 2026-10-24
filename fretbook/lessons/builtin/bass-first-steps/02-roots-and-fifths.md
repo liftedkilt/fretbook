@@ -4,8 +4,6 @@ summary: The two notes that hold most songs together.
 level: basics
 order: 2
 ---
-# Roots and fifths
-
 The **root** is the note a chord is named after. The **fifth** sits one string over and two frets up from it.
 Alternating root and fifth is the simplest bass line there is.
 

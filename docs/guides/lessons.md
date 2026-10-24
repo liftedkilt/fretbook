@@ -1,7 +1,10 @@
 # Learning a song (lessons)
 
-Fretbook has no lesson player or course feature. What it has is the pieces for working through a song the way a
-teacher would set it, in this order:
+Fretbook has **courses of lessons** for guitar and bass (open **Lessons** in the sidebar, or **Tools → Lessons** on a
+phone): each lesson opens the next, the page remembers where you were, and you pass a lesson by reaching a score or
+finishing wait mode. How to write your own is in [Writing lessons](../lessons.md).
+
+For working through a song of your own the way a teacher would set it, use the pieces in this order:
 
 1. **Get the material.** [Import](importing.md) a tab or chord sheet, and put the recording on the song page. Lesson
    videos from YouTube can be added as the song's audio with a pasted YouTube link (a blank tab plus the video's audio),
@@ -13,6 +16,9 @@ teacher would set it, in this order:
    [score your playing](practice.md#scored-play-along). **Practise this section** loops the weakest part.
 5. **Make it a habit.** Set a daily goal and watch the [practice log](practice.md#practice-log). Collect a rehearsal in
    a [setlist](playing.md#setlists).
+
+A lesson can send you straight to a [generated exercise](exercises.md) or to a song in your library, and **Check my
+practice** reads your [practice log](practice.md#practice-log) to see whether you reached the lesson's goal.
 
 Recognising tabs in lesson videos is planned and tracked in the
 [roadmap](https://github.com/liftedkilt/fretbook/blob/main/ROADMAP.md); this page will grow with it.

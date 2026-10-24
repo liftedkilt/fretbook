@@ -4,8 +4,6 @@ summary: Your first two chords, each with only two or three fingers.
 level: chords
 order: 1
 ---
-# Em and Am
-
 **E minor** needs two fingers on the second fret. **A minor** is the same shape moved over one string, with an
 extra finger on the first fret.
 

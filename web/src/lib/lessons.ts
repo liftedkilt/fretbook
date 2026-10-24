@@ -192,7 +192,7 @@ export function isYouTube(src: string): boolean {
 
 /** A starting file for a new lesson or course, so the front matter is there to edit. */
 export function lessonTemplate(title = ""): string {
-  return `---\ntitle: ${title}\nsummary: \nlevel: \norder: 1\n---\n# ${title}\n\nWrite the lesson here.\n`;
+  return `---\ntitle: ${title}\nsummary: \nlevel: \norder: 1\n---\nWrite the lesson here.\n`;
 }
 
 export function courseTemplate(track: "guitar" | "bass" = "guitar"): string {
