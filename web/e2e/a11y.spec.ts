@@ -5,8 +5,19 @@ import { expect, test } from "./support/fixtures";
 
 const TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
 
+/** Wait for all running CSS/Web animations on the page (excluding infinite loops) to finish. */
+async function waitForAnimations(page: Page) {
+  await page.waitForFunction(() =>
+    document.getAnimations().every((a) => {
+      const timing = a.effect?.getComputedTiming?.();
+      return timing?.iterations === Infinity || a.playState !== "running";
+    }),
+  );
+}
+
 /** Every WCAG A/AA violation on the page as readable strings (empty when the page is clean). */
 async function violations(page: Page, where: string, include?: string) {
+  await waitForAnimations(page);
   let builder = new AxeBuilder({ page }).withTags(TAGS);
   if (include) builder = builder.include(include);
   const results = await builder.analyze();
