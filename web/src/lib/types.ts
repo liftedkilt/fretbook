@@ -133,6 +133,8 @@ export interface SongSummary {
   difficulty: number | null;
   /** Sorted A to Z ignoring case. */
   tags: string[];
+  /** Matching lyric words when a search found the song only through its lyrics; see `lyricsSnippet.ts`. */
+  lyrics_snippet: string | null;
 }
 
 export interface SetlistSummary {

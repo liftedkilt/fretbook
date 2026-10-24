@@ -4069,6 +4069,17 @@
             "title": "Id",
             "type": "string"
           },
+          "lyrics_snippet": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lyrics Snippet"
+          },
           "measure_count": {
             "title": "Measure Count",
             "type": "integer"
@@ -4142,6 +4153,7 @@
           "favourite",
           "difficulty",
           "tags",
+          "lyrics_snippet",
           "source_ref",
           "document",
           "chordpro",
@@ -4369,6 +4381,17 @@
             "title": "Id",
             "type": "string"
           },
+          "lyrics_snippet": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lyrics Snippet"
+          },
           "measure_count": {
             "title": "Measure Count",
             "type": "integer"
@@ -4432,7 +4455,8 @@
           "updated_at",
           "favourite",
           "difficulty",
-          "tags"
+          "tags",
+          "lyrics_snippet"
         ],
         "title": "SongSummary",
         "type": "object"

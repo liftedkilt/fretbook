@@ -1772,5 +1772,8 @@
     "importPack": "Import a lesson pack",
     "imported": "Imported {courses} courses and {lessons} lessons.",
     "problems": "{count} lesson files have problems"
+  },
+  "librarySnippet": {
+    "label": "Lyrics match"
   }
 }

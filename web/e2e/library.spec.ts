@@ -68,6 +68,24 @@ test("search, sort and paging run on the server", async ({ page, seed }) => {
   await expect(page.getByTestId("song-title").first()).toHaveText("Song 50");
 });
 
+test("a search that matches only the lyrics shows the matching line", async ({ page, seed }) => {
+  await seed.chordSheet();
+  await page.goto("/");
+  const search = page.getByTestId("library-search");
+
+  await search.fill("road today");
+  const card = page.getByTestId("song-card");
+  await expect(card).toHaveCount(1);
+  const snippet = card.getByTestId("song-lyrics-snippet");
+  await expect(snippet).toContainText("Walking down the road today");
+  await expect(snippet.locator("mark")).toHaveText(["road", "today"]);
+
+  // A title match needs no explanation.
+  await search.fill("sunny day");
+  await expect(card).toHaveCount(1);
+  await expect(card.getByTestId("song-lyrics-snippet")).toHaveCount(0);
+});
+
 test("opening a song feeds the last opened sort", async ({ page, seed }) => {
   await seed.create({ title: "Alpha" });
   const beta = await seed.create({ title: "Beta" });

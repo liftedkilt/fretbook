@@ -78,6 +78,11 @@ _TAGS_COLUMN = (
 )
 
 
+# Around each matched word in a lyrics snippet. `_index_lyrics` strips them from the indexed words.
+SNIPPET_START = "\x02"
+SNIPPET_END = "\x03"
+
+
 def _fts_query(text: str) -> str:
     """Turn user text into an FTS5 query: every word is a quoted prefix, all of them required."""
     words = re.findall(r"\w+", text)
@@ -358,7 +363,11 @@ class SongRepository:
             counts["favourites"] = conn.execute(
                 "SELECT count(*) FROM songs WHERE owner_id = ? AND favourite = 1", (owner_id,)
             ).fetchone()[0]
-        return {"items": [_summary(row) for row in rows], "total": total, "counts": counts}
+            snippets = _lyric_snippets(conn, match, [row["id"] for row in rows]) if match else {}
+        items = [_summary(row) for row in rows]
+        for item in items:
+            item["lyrics_snippet"] = snippets.get(item["id"])
+        return {"items": items, "total": total, "counts": counts}
 
     def mark_opened(self, owner_id: str, song_id: str) -> bool:
         """Record that the song was opened. Leaves ``updated_at`` and ``revision`` alone."""
@@ -856,9 +865,36 @@ def _index_lyrics(conn: sqlite3.Connection, song_id: str, chordpro: str | None) 
     """Put a chord sheet's words in the search index (a tab has none, so its entry is emptied)."""
     conn.execute(
         "UPDATE songs_fts SET lyrics = ? WHERE song_id = ?",
-        (chordpro_text.lyrics(chordpro) if chordpro else "", song_id),
+        (
+            chordpro_text.lyrics(chordpro).replace(SNIPPET_START, "").replace(SNIPPET_END, "") if chordpro else "",
+            song_id,
+        ),
     )
     conn.execute("UPDATE songs SET lyrics_indexed = 1 WHERE id = ?", (song_id,))
+
+
+def _lyric_snippets(conn: sqlite3.Connection, match: str, song_ids: list[str]) -> dict[str, str]:
+    """The matching lyric line of each song that the search found only through its lyrics.
+
+    A song whose title, artist or tags match the whole search gets none, and neither does one whose lyrics hold
+    none of the words. Matched words sit between ``SNIPPET_START`` and ``SNIPPET_END``; lines are joined by " / ".
+    """
+    if not song_ids:
+        return {}
+    marks = ", ".join("?" for _ in song_ids)
+    rows = conn.execute(
+        f"""
+        SELECT song_id, snippet(songs_fts, 3, ?, ?, '…', 12) AS snippet FROM songs_fts
+        WHERE songs_fts MATCH ? AND song_id IN ({marks})
+          AND song_id NOT IN (SELECT song_id FROM songs_fts WHERE songs_fts MATCH ?)
+        """,
+        (SNIPPET_START, SNIPPET_END, match, *song_ids, f"{{title artist tags}} : ({match})"),
+    ).fetchall()
+    return {
+        row["song_id"]: " / ".join(line.strip() for line in row["snippet"].splitlines() if line.strip())
+        for row in rows
+        if SNIPPET_START in row["snippet"]
+    }
 
 
 def _insert_tags(conn: sqlite3.Connection, song_id: str, tags: list[str]) -> None:
@@ -911,6 +947,7 @@ def _summary(row: sqlite3.Row) -> dict[str, Any]:
         "favourite": bool(row["favourite"]),
         "difficulty": row["difficulty"],
         "tags": json.loads(row["tags_json"] or "[]"),
+        "lyrics_snippet": None,
     }
 
 
