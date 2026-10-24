@@ -461,7 +461,11 @@
     if (!playing || !follow || !scroller || ui.playerView === "highway") return;
     const score = scroller;
     untrack(() => {
-      const dock = document.querySelector(".dock-bar")?.getBoundingClientRect();
+      // On a phone the fretboard rides above the dock, so the score must clear it too.
+      const dock = (
+        document.querySelector("[data-testid=player-fretboard]") ??
+        document.querySelector(".dock-bar")
+      )?.getBoundingClientRect();
       const box = score.getBoundingClientRect();
       if (box.top >= 0 && (!dock || box.bottom <= dock.top)) return;
       const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -1223,6 +1227,8 @@
 
   let exporting = $state(false);
   let panelOpen = $state(false);
+  // Phones fold the less-used dock buttons into a ⋯ popover (app.css).
+  let moreOpen = $state(false);
   const loopStyle = $derived(
     loopA != null && loopB != null && barCount > 1
       ? `left:${(loopA / barCount) * 100}%;width:${((loopB - loopA + 1) / barCount) * 100}%`
@@ -1255,7 +1261,11 @@
   }
 </script>
 
-<div class="song-page player-page" class:stage={handsFree.stage}>
+<div
+  class="song-page player-page"
+  class:stage={handsFree.stage}
+  class:has-fretboard={practice.fretboard.on}
+>
   {#if lessonRef}<LessonRunBanner bind:this={lessonBanner} lesson={lessonRef} />{/if}
   <header class="song-header">
     <a class="back-link" href={hrefFor("/")} onclick={(event) => followLink(event, "/")}
@@ -1771,42 +1781,54 @@
           </select>
         </label>
         <button
-          class="icon-button ghost"
-          aria-pressed={ui.notation}
-          onclick={toggleNotation}
-          aria-label={t("player.notation")}
-          title={t("player.notation")}
+          class="icon-button ghost dock-more"
+          data-testid="player-more"
+          aria-expanded={moreOpen}
+          onclick={() => (moreOpen = !moreOpen)}
+          aria-label={t("player.more")}
+          title={t("player.more")}
         >
-          <Icon name="chords" size={18} />
+          <Icon name="more" size={18} />
         </button>
-        <button
-          class="icon-button ghost"
-          aria-pressed={follow}
-          onclick={() => setFollow(!follow)}
-          aria-label={t("player.follow")}
-          title={t("player.follow")}
-        >
-          <Icon name="follow" size={18} />
-        </button>
-        <button
-          class="icon-button ghost"
-          data-testid="stage-toggle"
-          aria-pressed={handsFree.stage}
-          onclick={() => setStage(!handsFree.stage)}
-          aria-label={t("handsFree.stage")}
-          title={t("handsFree.stage")}
-        >
-          <Icon name="monitor" size={18} />
-        </button>
-        <button
-          class="icon-button ghost"
-          data-testid="player-shortcuts"
-          onclick={() => (helpOpen = true)}
-          aria-label={t("shortcuts.title")}
-          title={t("shortcuts.title")}
-        >
-          <Icon name="info" size={18} />
-        </button>
+        <div class="dock-secondary" data-open={moreOpen || undefined}>
+          <button
+            class="icon-button ghost"
+            aria-pressed={ui.notation}
+            onclick={toggleNotation}
+            aria-label={t("player.notation")}
+            title={t("player.notation")}
+          >
+            <Icon name="chords" size={18} />
+          </button>
+          <button
+            class="icon-button ghost"
+            aria-pressed={follow}
+            onclick={() => setFollow(!follow)}
+            aria-label={t("player.follow")}
+            title={t("player.follow")}
+          >
+            <Icon name="follow" size={18} />
+          </button>
+          <button
+            class="icon-button ghost"
+            data-testid="stage-toggle"
+            aria-pressed={handsFree.stage}
+            onclick={() => setStage(!handsFree.stage)}
+            aria-label={t("handsFree.stage")}
+            title={t("handsFree.stage")}
+          >
+            <Icon name="monitor" size={18} />
+          </button>
+          <button
+            class="icon-button ghost"
+            data-testid="player-shortcuts"
+            onclick={() => (helpOpen = true)}
+            aria-label={t("shortcuts.title")}
+            title={t("shortcuts.title")}
+          >
+            <Icon name="info" size={18} />
+          </button>
+        </div>
         <button
           class="icon-button ghost"
           data-testid="player-panel-toggle"

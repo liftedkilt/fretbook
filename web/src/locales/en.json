@@ -246,6 +246,7 @@
     "keys": "Space plays. Arrows move a bar. T taps the next mark. M metronome, C count-in, [ ] speed, ? all shortcuts.",
     "loopRange": "A{a}–B{b}",
     "export": "Export",
+    "more": "More controls",
     "syncPanel": "Sync & audio",
     "syncMarks": "Sync marks",
     "loop": "Loop",

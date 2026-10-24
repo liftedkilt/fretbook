@@ -42,6 +42,62 @@ test("practice and the player stay within a phone and a tablet", async ({ page, 
   }
 });
 
+// Issue #245: on a phone the fretboard sits above the dock instead of under it, the
+// secondary buttons fold into a ⋯ popover, and the score doesn't move while it plays.
+test("the phone player keeps the fretboard clear of the dock and doesn't shift", async ({
+  page,
+  seed,
+}) => {
+  const song = await seed.musicXmlTab();
+
+  for (const size of [
+    { width: 360, height: 800 },
+    { width: 375, height: 812 },
+    { width: 414, height: 896 },
+  ]) {
+    await page.setViewportSize(size);
+    await page.goto(`/songs/${song.id}`);
+    await expect(page.getByTestId("player-play")).toBeVisible();
+    await page.getByTestId("player-panel-toggle").click();
+    await page.getByTestId("fretboard-on").check();
+    await page.getByTestId("player-panel-toggle").click();
+    await expect(page.getByTestId("player-fretboard")).toBeVisible();
+
+    const rects = () =>
+      page.evaluate(() => {
+        const box = (selector: string) => {
+          const rect = document.querySelector(selector)!.getBoundingClientRect();
+          return { top: rect.top, bottom: rect.bottom };
+        };
+        return {
+          fretboard: box("[data-testid=player-fretboard]"),
+          dock: box(".dock-bar"),
+          score: box("[data-testid=player-score]"),
+        };
+      });
+    const before = await rects();
+    expect(before.fretboard.bottom).toBeLessThanOrEqual(before.dock.top);
+
+    await page.getByTestId("player-play").click();
+    await page.waitForTimeout(1500);
+    const during = await rects();
+    // Starting playback may scroll the page once to bring the score into view; after
+    // that nothing moves, and the score ends above the fretboard, which ends above the dock.
+    expect(during.score.bottom).toBeLessThanOrEqual(during.fretboard.top + 1);
+    expect(during.fretboard.bottom).toBeLessThanOrEqual(during.dock.top);
+    await page.waitForTimeout(1500);
+    const later = await rects();
+    expect(later.score.top).toBeCloseTo(during.score.top, 0);
+    expect(later.fretboard.top).toBeCloseTo(during.fretboard.top, 0);
+    await page.getByTestId("player-play").click();
+
+    await expect(page.getByTestId("stage-toggle")).toBeHidden();
+    await page.getByTestId("player-more").click();
+    await expect(page.getByTestId("stage-toggle")).toBeVisible();
+    await page.screenshot({ path: `test-results/player-${size.width}.png` });
+  }
+});
+
 test("library cards and the tab bar fit a phone", async ({ page, seed }) => {
   await seed.create({ title: "First Song", artist: "Band" });
   await seed.create({ title: "Second Song", artist: "Band" });

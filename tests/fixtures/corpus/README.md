@@ -18,6 +18,8 @@ few bars of techniques invented for the tests, and the lyrics are placeholder te
 | `ugtext/*.txt` | Ultimate Guitar style chords-over-lyrics, with and without a header | Hand-written |
 | `asciitab/*.tab`, `asciitab/*.txt` | ASCII tab in twelve styles: labelled and unlabelled rows, bass, drop D, 5-string bass written low string first, 7-string, multi-digit frets, technique marks, repeat signs, sections with chord lines and lyrics, `PM` rows, wrapped systems, sixteenth runs, and a `.txt` with a tab among prose | Hand-written |
 | `midi/riff.mid` | The riff as a format-0 MIDI file (imports to the same notes as the MusicXML riff) | Written byte by byte |
+| `midi/triplets.mid` | Eighth triplets, a quintuplet and a swung pair next to straight notes | `python tests/fixtures/corpus/generate_midi.py` (original phrase) |
+| `midi/sustain.mid` | A held bass and a held chord under moving melodies, imported as a second voice | `python tests/fixtures/corpus/generate_midi.py` (original phrase) |
 | `json/*.json` | Fretbook JSON: tab export, chord export, bare document, malformed | Produced by the MusicXML and ChordPro importers |
 | `golden/*.json` | Expected result of importing each file above | `pytest tests/test_import_corpus.py --update-golden` |
 | `golden-web/*.json` | Expected result of importing each Guitar Pro file in the browser | `UPDATE_GOLDEN=1 npm test --prefix web` |

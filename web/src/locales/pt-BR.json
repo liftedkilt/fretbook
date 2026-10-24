@@ -246,6 +246,7 @@
     "keys": "Espaço toca. As setas mudam de compasso. T marca o próximo ponto. M metrônomo, C contagem, [ ] velocidade, ? todos os atalhos.",
     "loopRange": "A{a}–B{b}",
     "export": "Exportar",
+    "more": "Mais controles",
     "syncPanel": "Sincronia e áudio",
     "syncMarks": "Marcas de sincronia",
     "loop": "Repetição",

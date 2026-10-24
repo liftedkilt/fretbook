@@ -437,3 +437,141 @@ def test_a_midi_file_in_a_zip_is_imported_with_the_defaults(tmp_path: Path) -> N
 def test_capabilities_list_the_midi_exporter(tmp_path: Path) -> None:
     with _client(tmp_path) as client:
         assert "midi" in client.get("/api/meta").json()["exporters"]
+
+
+def timed(*items: tuple[int, int, int], channel: int = 0, program: int = 25) -> list:
+    """``(start tick, pitch, length)`` notes (480 ticks per quarter) as a track, in any order."""
+    flat = []
+    for start, pitch, length in items:
+        flat.append((start, 1, mido.Message("note_on", channel=channel, note=pitch, velocity=80)))
+        flat.append((start + length, 0, mido.Message("note_off", channel=channel, note=pitch, velocity=0)))
+    flat.sort(key=lambda item: (item[0], item[1]))
+    messages: list = [mido.Message("program_change", channel=channel, program=program, time=0)]
+    now = 0
+    for at, _, message in flat:
+        messages.append(message.copy(time=at - now))
+        now = at
+    return messages
+
+
+def imported(tmp_path: Path, *items: tuple[int, int, int], options: dict | None = None, signature=(4, 4)):
+    head = conductor(mido.MetaMessage("time_signature", numerator=signature[0], denominator=signature[1], time=0))
+    return run(make_midi(head, timed(*items)), tmp_path, {"tracks": ["1:0"], **(options or {})}).document
+
+
+def voice_beats(document, voice: int, bar: int = 0) -> list:
+    return [
+        (b.position, b.duration, b.tuplet, [(n.string, n.fret, n.tie) for n in b.notes])
+        for b in document.tracks[0].bars[bar].voices[voice].beats
+    ]
+
+
+def test_triplets_are_kept_not_snapped(tmp_path: Path) -> None:
+    third = TPB // 3
+    document = imported(tmp_path, *[(i * third, 40 + i, third) for i in range(3)], (TPB, 45, TPB))
+    beats = voice_beats(document, 0)
+    assert [(p, d, t) for p, d, t, notes in beats[:3] if notes] == [(0, 320, 3), (320, 320, 3), (640, 320, 3)]
+    assert beats[3][:3] == (960, 960, None)
+
+
+def test_slightly_loose_triplets_still_read_as_triplets(tmp_path: Path) -> None:
+    third = TPB // 3
+    jitter = (4, -6, 5)
+    document = imported(tmp_path, *[(i * third + jitter[i], 40 + i, third) for i in range(3)])
+    assert [(p, d, t) for p, d, t, notes in voice_beats(document, 0) if notes] == [
+        (0, 320, 3),
+        (320, 320, 3),
+        (640, 320, 3),
+    ]
+
+
+def test_a_swung_pair_is_a_triplet_pair(tmp_path: Path) -> None:
+    document = imported(tmp_path, (0, 40, 2 * TPB // 3), (2 * TPB // 3, 45, TPB // 3))
+    assert [(p, d, t) for p, d, t, notes in voice_beats(document, 0) if notes] == [(0, 640, 3), (640, 320, 3)]
+
+
+def test_quintuplets_and_sextuplets(tmp_path: Path) -> None:
+    fifth = TPB // 5
+    document = imported(tmp_path, *[(i * fifth, 40 + i, fifth) for i in range(5)])
+    assert [(p, d, t) for p, d, t, notes in voice_beats(document, 0) if notes] == [(i * 192, 192, 5) for i in range(5)]
+    sixth = TPB // 6
+    document = imported(tmp_path, *[(i * sixth, 40 + i, sixth) for i in range(6)])
+    assert [(p, d, t) for p, d, t, notes in voice_beats(document, 0) if notes] == [(i * 160, 160, 6) for i in range(6)]
+
+
+@pytest.mark.parametrize(
+    "notes",
+    [
+        [(0, 40, 120), (120, 41, 120), (240, 42, 120), (360, 43, 120)],
+        [(4, 40, 120), (118, 41, 120), (243, 42, 120), (355, 43, 120)],
+        [(0, 40, 360), (360, 41, 120)],
+        [(0, 40, 240), (240, 41, 240)],
+    ],
+    ids=["sixteenths", "loose sixteenths", "dotted eighth and sixteenth", "eighths"],
+)
+def test_straight_rhythms_are_not_tuplets(tmp_path: Path, notes) -> None:
+    document = imported(tmp_path, *notes)
+    assert all(beat[2] is None for beat in voice_beats(document, 0))
+
+
+def test_the_coarsest_grid_asks_for_no_tuplets(tmp_path: Path) -> None:
+    third = TPB // 3
+    notes = [(i * third, 40 + i, third) for i in range(3)]
+    assert any(b[2] for b in voice_beats(imported(tmp_path, *notes, options={"grid": 8}), 0))
+    assert not any(b[2] for b in voice_beats(imported(tmp_path, *notes, options={"grid": 4}), 0))
+
+
+def test_tuplets_follow_the_bar_line_in_odd_meters(tmp_path: Path) -> None:
+    third = TPB // 3
+    bar = 7 * TPB // 2
+    document = imported(tmp_path, (0, 40, bar), *[(bar + i * third, 40 + i, third) for i in range(3)], signature=(7, 8))
+    assert [(p, d, t) for p, d, t, notes in voice_beats(document, 0, 1) if notes] == [
+        (0, 320, 3),
+        (320, 320, 3),
+        (640, 320, 3),
+    ]
+    assert sum(b[1] for b in voice_beats(document, 0, 1)) == 3360
+
+
+def test_a_held_note_under_a_melody_is_a_second_voice(tmp_path: Path) -> None:
+    document = imported(tmp_path, (0, 40, 4 * TPB), *[(i * TPB, 64 + 2 * i, TPB) for i in range(4)])
+    assert [d for _, d, _, _ in voice_beats(document, 0)] == [960] * 4
+    assert voice_beats(document, 1) == [(0, 3840, None, [(5, 0, False)])]
+
+
+def test_second_voice_is_fingered_on_other_strings(tmp_path: Path) -> None:
+    # A held E and B with a melody over them: every melody note must avoid the strings the held notes use.
+    document = imported(tmp_path, (0, 45, 4 * TPB), (0, 52, 4 * TPB), *[(i * TPB, 57 + i, TPB) for i in range(4)])
+    held = {n[0] for _, _, _, notes in voice_beats(document, 1) for n in notes}
+    assert len(held) == 2
+    for _, _, _, notes in voice_beats(document, 0):
+        assert not held & {n[0] for n in notes}
+    assert not document.tracks[0].bars[0].voices[1].beats[0].rest
+
+
+def test_a_held_chord_under_a_moving_top_line(tmp_path: Path) -> None:
+    document = imported(
+        tmp_path, (0, 43, 2 * TPB), (0, 47, 2 * TPB), (0, 62, TPB), (TPB, 64, TPB), (2 * TPB, 62, 2 * TPB)
+    )
+    assert [len(n) for _, _, _, n in voice_beats(document, 1) if n] == [2]
+    assert [d for _, d, _, n in voice_beats(document, 0) if n] == [960, 960, 1920]
+
+
+def test_a_sustained_note_is_tied_across_the_bar_line(tmp_path: Path) -> None:
+    document = imported(tmp_path, (0, 40, 6 * TPB), (0, 64, TPB), (TPB, 66, TPB), (4 * TPB, 64, TPB))
+    assert voice_beats(document, 1, 0) == [(0, 3840, None, [(5, 0, False)])]
+    assert voice_beats(document, 1, 1)[0] == (0, 1920, None, [(5, 0, True)])
+    assert len(document.tracks[0].bars[1].voices) == 2
+
+
+def test_a_third_layer_is_cut_by_the_second(tmp_path: Path) -> None:
+    document = imported(
+        tmp_path, (0, 40, 4 * TPB), (TPB, 45, 3 * TPB), (0, 64, TPB), (2 * TPB, 66, TPB), (3 * TPB, 64, TPB)
+    )
+    assert len(document.tracks[0].bars[0].voices) == 2
+    assert [(p, d, n[0][0]) for p, d, _, n in voice_beats(document, 1) if n] == [(0, 960, 5), (960, 2880, 4)]
+
+
+def test_ordinary_legato_overlap_stays_one_voice(tmp_path: Path) -> None:
+    document = imported(tmp_path, *[(i * TPB // 2, 40 + i, TPB // 2 + TPB // 8) for i in range(8)])
+    assert len(document.tracks[0].bars[0].voices) == 1
