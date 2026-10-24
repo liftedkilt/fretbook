@@ -55,6 +55,10 @@ The floors are the current totals rounded down: `fail_under` in `pyproject.toml`
 
 Don't import source files with `?raw` (or other `?query` suffixes) in tests: Vitest's v8 coverage strips the query when it maps coverage back to sources, so the one-line `?raw` module can replace the real file's transform and randomly drop its coverage (issue #150). Read files with `node:fs` instead.
 
+### Accessibility
+
+`web/e2e/a11y.spec.ts` runs [axe](https://github.com/dequelabs/axe-core) (WCAG 2 A/AA, including colour contrast) over the main pages and the sheets in the light and dark themes, and checks keyboard access, focus handling in sheets, playback announcements and reduced motion. New pages and sheets should be added to its lists; give icon-only buttons an `aria-label`, and make a button's accessible name contain its visible text.
+
 ### Formatting and pre-commit
 
 Python is formatted with `ruff format` (run `.venv/bin/ruff format fretbook tests`), and `web/` with Prettier (`npm run format --prefix web`) and linted with ESLint (`npm run lint --prefix web`). `api-types.ts` is generated and excluded. [`.editorconfig`](.editorconfig) sets the editor defaults.

@@ -720,6 +720,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/songs/{song_id}/convert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Convert Song Track
+         * @description Transpose, retune or convert one track of a tab (see `ConvertBody`), optionally saving the result.
+         */
+        post: operations["convert_song_track_api_songs__song_id__convert_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/songs/{song_id}/export.cho": {
         parameters: {
             query?: never;
@@ -1304,6 +1324,69 @@ export interface components {
             filename: string;
             /** Job Id */
             job_id: string;
+        };
+        /** ConvertBody */
+        ConvertBody: {
+            /** Capo */
+            capo?: number | null;
+            /** Instrument */
+            instrument?: string | null;
+            /**
+             * Keep
+             * @default pitch
+             * @enum {string}
+             */
+            keep: "pitch" | "shape";
+            /**
+             * Mode
+             * @default preview
+             * @enum {string}
+             */
+            mode: "preview" | "add" | "replace";
+            /** Name */
+            name?: string | null;
+            /** Preset */
+            preset?: string | null;
+            /**
+             * Reduce
+             * @default all
+             * @enum {string}
+             */
+            reduce: "all" | "lowest";
+            /** Revision */
+            revision?: number | null;
+            /**
+             * Semitones
+             * @default 0
+             */
+            semitones: number;
+            /** Track Id */
+            track_id: string;
+            /** Tuning Midi */
+            tuning_midi?: number[] | null;
+        };
+        /** ConvertReport */
+        ConvertReport: {
+            /** Dropped */
+            dropped: number;
+            /** Dropped Bars */
+            dropped_bars: number[];
+            /** Notes */
+            notes: number;
+            /** Reduced */
+            reduced: number;
+            /** Refretted */
+            refretted: number;
+            /** Shifted Bars */
+            shifted_bars: number[];
+            /** Techniques Dropped */
+            techniques_dropped: number;
+        };
+        /** ConvertResult */
+        ConvertResult: {
+            report: components["schemas"]["ConvertReport"];
+            song?: components["schemas"]["SongDetail"] | null;
+            track: components["schemas"]["Track"];
         };
         /** CreateSetlistBody */
         CreateSetlistBody: {
@@ -2363,6 +2446,9 @@ export type BodyInspectMidiApiImportsMidiInspectPost = components['schemas']['Bo
 export type BodyUploadAudioApiSongsSongIdAudioPost = components['schemas']['Body_upload_audio_api_songs__song_id__audio_post'];
 export type BulkImportAccepted = components['schemas']['BulkImportAccepted'];
 export type BulkImportJobItem = components['schemas']['BulkImportJobItem'];
+export type ConvertBody = components['schemas']['ConvertBody'];
+export type ConvertReport = components['schemas']['ConvertReport'];
+export type ConvertResult = components['schemas']['ConvertResult'];
 export type CreateSetlistBody = components['schemas']['CreateSetlistBody'];
 export type CreateSongBody = components['schemas']['CreateSongBody'];
 export type CreateTokenBody = components['schemas']['CreateTokenBody'];
@@ -5832,6 +5918,86 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SongDetail"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    convert_song_track_api_songs__song_id__convert_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                song_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConvertBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConvertResult"];
                 };
             };
             /** @description Keyed error. `detail` is {key, message, params}. */
