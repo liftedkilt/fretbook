@@ -42,6 +42,7 @@ function makeSong(overrides: Partial<SongSummary>): SongSummary {
     favourite: false,
     difficulty: null,
     tags: [],
+    lyrics_snippet: null,
     ...overrides,
   };
 }
@@ -175,6 +176,27 @@ describe("LibraryView", () => {
 
     await fireEvent.click(screen.getByTestId("library-clear-search"));
     await waitFor(() => expect(screen.getAllByTestId("song-card")).toHaveLength(2));
+  });
+
+  it("shows the matching lyric words on a card the search found by its lyrics", async () => {
+    await load([
+      makeSong({
+        id: "1",
+        title: "Sheet",
+        content_kind: "chords",
+        lyrics_snippet: "down to the \u0002paradise\u0003 <b>city</b>",
+      }),
+      makeSong({ id: "2", title: "Other" }),
+    ]);
+    render(LibraryView);
+
+    const snippets = screen.getAllByTestId("song-lyrics-snippet");
+    expect(snippets).toHaveLength(1);
+    expect(snippets[0]).toHaveTextContent("down to the paradise <b>city</b>");
+    expect(snippets[0].querySelector("b")).toBeNull();
+    expect([...snippets[0].querySelectorAll("mark")].map((mark) => mark.textContent)).toEqual([
+      "paradise",
+    ]);
   });
 
   it("sorts through the server and remembers the choice", async () => {

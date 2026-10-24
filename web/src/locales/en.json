@@ -32,16 +32,6 @@
       "one": "Ended {count} session.",
       "other": "Ended {count} sessions."
     },
-    "tokens": {
-      "one": "{count} API token",
-      "other": "{count} API tokens"
-    },
-    "revokeTokens": "Revoke API tokens",
-    "confirmRevokeTokens": "Revoke every API token of {name}? Scripts using them stop working at once.",
-    "tokensRevoked": {
-      "one": "Revoked {count} API token.",
-      "other": "Revoked {count} API tokens."
-    },
     "adoptHeading": "Library from single-user mode",
     "adoptHint": {
       "one": "{count} song was added before sign-in was turned on. Nobody can see it until an admin moves it into a library.",
@@ -51,6 +41,16 @@
     "adopted": {
       "one": "Moved {count} song into your library.",
       "other": "Moved {count} songs into your library."
+    },
+    "tokens": {
+      "one": "{count} API token",
+      "other": "{count} API tokens"
+    },
+    "revokeTokens": "Revoke API tokens",
+    "confirmRevokeTokens": "Revoke every API token of {name}? Scripts using them stop working at once.",
+    "tokensRevoked": {
+      "one": "Revoked {count} API token.",
+      "other": "Revoked {count} API tokens."
     }
   },
   "language": {
@@ -1793,6 +1793,9 @@
     "imported": "Imported {courses} courses and {lessons} lessons.",
     "problems": "{count} lesson files have problems"
   },
+  "librarySnippet": {
+    "label": "Lyrics match"
+  },
   "handsFree": {
     "autoScroll": "Auto-scroll",
     "scrollSlower": "Scroll slower",
@@ -1818,6 +1821,10 @@
       "nextSong": "Next song in the setlist",
       "previousSong": "Previous song in the setlist"
     }
+  },
+  "fullscreen": {
+    "enter": "Full screen",
+    "exit": "Exit full screen"
   },
   "firstRun": {
     "title": "Welcome to Fretbook",

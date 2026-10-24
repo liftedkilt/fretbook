@@ -9,6 +9,7 @@
   import { t } from "../lib/i18n.svelte";
   import { levelOf } from "../lib/difficulty";
   import { instrumentLabel } from "../lib/instruments";
+  import { snippetParts } from "../lib/lyricsSnippet";
   import { followLink, hrefFor } from "../lib/router.svelte";
   import type { LibraryLevel, LibrarySort, SongSummary } from "../lib/types";
   import {
@@ -409,6 +410,18 @@
                       >{t("difficulty.level", { level: levelOf(song.difficulty) })}</span
                     >{/if}
                 </span>
+              {/if}
+              {#if song.lyrics_snippet}
+                <span
+                  class="song-lyrics"
+                  data-testid="song-lyrics-snippet"
+                  title={t("librarySnippet.label")}
+                  ><span class="visually-hidden"
+                    >{t("librarySnippet.label")}:
+                  </span>{#each snippetParts(song.lyrics_snippet) as part, index (index)}{#if part.hit}<mark
+                        >{part.text}</mark
+                      >{:else}{part.text}{/if}{/each}</span
+                >
               {/if}
               {#if song.tags.length}
                 <span class="song-tag-row" data-testid="song-card-tags">
