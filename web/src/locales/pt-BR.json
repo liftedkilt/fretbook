@@ -431,7 +431,8 @@
       "signIn": "O YouTube pediu login ou uma verificação anti-robô, então não foi possível baixar o áudio. A tablatura foi salva; envie um mp3.",
       "unavailable": "Esse vídeo está indisponível, é privado ou foi removido, então não foi possível baixar o áudio. A tablatura foi salva; envie um mp3.",
       "geoBlocked": "Esse vídeo está bloqueado no país do servidor, então não foi possível baixar o áudio. A tablatura foi salva; envie um mp3.",
-      "outdated": "O yt-dlp não conseguiu ler a página do YouTube, o que costuma indicar que ele está desatualizado. A tablatura foi salva; atualize o yt-dlp ou envie um mp3."
+      "outdated": "O yt-dlp não conseguiu ler a página do YouTube, o que costuma indicar que ele está desatualizado. A tablatura foi salva; atualize o yt-dlp ou envie um mp3.",
+      "notYoutube": "Cole um link de vídeo do YouTube."
     },
     "export": {
       "notTab": "Só tablaturas são exportadas como MusicXML.",
@@ -1639,5 +1640,12 @@
       "other": "Outros"
     },
     "noWorker": "A separação de stems precisa do worker de tarefas com o Demucs instalado. Veja o guia de hospedagem."
+  },
+  "youtubeAudio": {
+    "label": "Adicionar áudio de um link do YouTube",
+    "placeholder": "https://www.youtube.com/watch?v=…",
+    "submit": "Baixar áudio",
+    "working": "Baixando o áudio…",
+    "timeout": "O download demorou demais. Tente novamente mais tarde."
   }
 }

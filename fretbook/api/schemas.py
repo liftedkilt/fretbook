@@ -374,6 +374,11 @@ class StemRequest(BaseModel):
     """``htdemucs_6s`` also separates guitar and piano; ``htdemucs`` gives bass, drums, vocals and other."""
 
 
+class YouTubeAudioRequest(BaseModel):
+    url: str
+    """A YouTube video link (watch, youtu.be, shorts, embed or live)."""
+
+
 class JobAccepted(BaseModel):
     """Accepted import. Poll ``GET /api/jobs/{job_id}``."""
 

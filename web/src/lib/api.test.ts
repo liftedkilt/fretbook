@@ -101,6 +101,12 @@ describe("request wrappers", () => {
     ],
     ["deleteSong", () => api.deleteSong("s1"), "DELETE", "api/songs/s1"],
     ["uploadAudio", () => api.uploadAudio("s1", file), "POST", "api/songs/s1/audio"],
+    [
+      "attachYouTubeAudio",
+      () => api.attachYouTubeAudio("s1", "https://youtu.be/dQw4w9WgXcQ"),
+      "POST",
+      "api/songs/s1/audio/youtube",
+    ],
     ["previewImport", () => api.previewImport("http://x"), "POST", "api/imports/preview"],
     ["importFile", () => api.importFile(file), "POST", "api/imports/file"],
     ["importAuto", () => api.importAuto({ file, text: "t", url: "u" }), "POST", "api/imports/auto"],

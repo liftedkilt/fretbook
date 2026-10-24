@@ -599,6 +599,11 @@ export function uploadAudio(id: string, file: File): Promise<SongDetail> {
   );
 }
 
+/** Queue a download of a YouTube video's audio that replaces the song's audio; wait for the job, then read the song. */
+export function attachYouTubeAudio(id: string, url: string): Promise<JobAccepted> {
+  return request<JobAccepted>(`/api/songs/${id}/audio/youtube`, json("POST", { url }));
+}
+
 export function previewImport(url: string): Promise<ImportPreview> {
   return request<ContractImportPreview>("/api/imports/preview", json("POST", { url }));
 }
