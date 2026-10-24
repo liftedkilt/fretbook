@@ -16,7 +16,7 @@ import { parse, transposeChord } from "../chordpro";
 import type { ScoreDocument } from "../types";
 import { tuningLabel } from "../tuning";
 import { DIAGRAM_CELL, type PdfDiagramInput, diagramsPerRow, paintDiagram } from "./chordDiagrams";
-import { type Box, paginate } from "./layout";
+import { type Box, paginate, snapSystems } from "./layout";
 import { drawSvg, embedFonts, encodable, openMusicFont, type PdfFonts } from "./svg";
 
 export const PDF_PAGE = {
@@ -171,9 +171,12 @@ function engrave(
     renderer.renderScore(score, [0]);
     if (failure)
       throw failure instanceof Error ? failure : new Error("could not engrave the score");
-    const systems = (renderer.boundsLookup?.staffSystems ?? [])
-      .map((system) => ({ y: system.realBounds.y, height: system.realBounds.h }))
-      .filter((system) => system.height > 1);
+    const systems = snapSystems(
+      chunks,
+      (renderer.boundsLookup?.staffSystems ?? [])
+        .map((system) => ({ y: system.realBounds.y, height: system.realBounds.h }))
+        .filter((system) => system.height > 1),
+    );
     const tuning = [...(score.tracks[0]?.staves[0]?.tuning ?? [])];
     if (!chunks.length || !systems.length) throw new Error("the score produced no staves");
     return { chunks, systems, tuning };

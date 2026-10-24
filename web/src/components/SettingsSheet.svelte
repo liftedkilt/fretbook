@@ -6,7 +6,14 @@
   import Icon from "./Icon.svelte";
   import PedalSettings from "./PedalSettings.svelte";
   import Sheet from "./Sheet.svelte";
-  import { apiUrl, getCalibration, saveCalibration } from "../lib/api";
+  import {
+    addDemo,
+    apiUrl,
+    getCalibration,
+    getDemo,
+    removeDemo,
+    saveCalibration,
+  } from "../lib/api";
   import { currentLocale, locales, setLocale, t, tOr } from "../lib/i18n.svelte";
   import { clearOfflineData } from "../lib/offline/offline.svelte";
   import {
@@ -18,6 +25,7 @@
   import {
     closeSheet,
     openSheet,
+    refreshSongs,
     setDefaultInstrument,
     setTheme,
     ui,
@@ -36,9 +44,29 @@
     { id: "light", icon: "sun", key: "settings.themeLight" },
   ];
 
+  let demoInstalled = $state(0);
+  let demoNotice = $state("");
+
   onMount(() => {
     void loadCurrentCalibration();
+    if (!ui.demoMode)
+      void getDemo().then(
+        (demo) => (demoInstalled = demo.installed),
+        () => undefined,
+      );
   });
+
+  async function changeDemo(add: boolean) {
+    if (!add && !confirm(t("demo.confirmRemove"))) return;
+    try {
+      const demo = await (add ? addDemo() : removeDemo());
+      demoInstalled = demo.installed;
+      demoNotice = t(add ? "demo.added" : "demo.removed", { count: demo.changed });
+      await refreshSongs();
+    } catch (err) {
+      error = err instanceof Error ? err.message : t("error.generic");
+    }
+  }
 
   async function loadCurrentCalibration() {
     const local = getLocalCalibration("default", "default");
@@ -154,6 +182,28 @@
         {/each}
       </select>
     </section>
+
+    {#if !ui.demoMode}
+      <section class="setting" data-testid="demo-settings">
+        <div class="setting-label">
+          <span class="setting-icon"><Icon name="sparkle" /></span>
+          <div>
+            <strong>{t("demo.heading")}</strong>
+            <p class="muted">{t("demo.hint")}</p>
+            {#if demoNotice}<p class="muted" role="status">{demoNotice}</p>{/if}
+          </div>
+        </div>
+        {#if demoInstalled > 0}
+          <button data-testid="demo-remove" onclick={() => void changeDemo(false)}
+            >{t("demo.remove")}</button
+          >
+        {:else}
+          <button data-testid="demo-add" onclick={() => void changeDemo(true)}
+            >{t("demo.add")}</button
+          >
+        {/if}
+      </section>
+    {/if}
 
     <section class="setting">
       <div class="setting-label">

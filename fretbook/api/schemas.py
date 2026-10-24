@@ -107,6 +107,8 @@ class Meta(BaseModel):
     ytdlp: YtDlpStatus
     worker_kinds: list[str]
     """Job kinds that a separate worker process is claiming right now. Hide features whose kind is missing."""
+    demo_mode: bool
+    """A read-only public demo (``FRETBOOK_DEMO_MODE``): hide the controls that change the library."""
 
 
 class Settings(BaseModel):
@@ -177,10 +179,16 @@ class AdminUser(BaseModel):
     last_login_at: str | None
     song_count: int
     session_count: int
+    token_count: int
+    """API tokens that still work (not expired)."""
 
 
 class SessionsEnded(BaseModel):
     ended: int
+
+
+class TokensRevoked(BaseModel):
+    revoked: int
 
 
 class SongsMoved(BaseModel):

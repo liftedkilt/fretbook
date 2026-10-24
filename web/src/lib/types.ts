@@ -272,6 +272,8 @@ export interface Meta {
   exporters: string[];
   instruments: InstrumentPreset[];
   ytdlp: YtDlpStatus;
+  /** A read-only public demo (`FRETBOOK_DEMO_MODE`). */
+  demo_mode?: boolean;
 }
 
 export interface Settings {
@@ -300,6 +302,7 @@ export interface AdminUser {
   last_login_at: string | null;
   song_count: number;
   session_count: number;
+  token_count: number;
 }
 
 /** A translatable message: a catalog key under `errors`, its parameters, and English text. */

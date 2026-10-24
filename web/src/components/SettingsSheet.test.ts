@@ -7,12 +7,25 @@ import SettingsSheet from "./SettingsSheet.svelte";
 const mockSaveSettings = vi.fn();
 const mockImportLibrary = vi.fn();
 const mockWaitForJob = vi.fn();
+const mockGetDemo = vi.fn();
+const mockAddDemo = vi.fn();
+const mockRemoveDemo = vi.fn();
 
 vi.mock("../lib/api", () => ({
   saveSettings: (...args: unknown[]) => mockSaveSettings(...args),
   apiUrl: (p: string) => p,
   importLibrary: (...args: unknown[]) => mockImportLibrary(...args),
   waitForJob: (...args: unknown[]) => mockWaitForJob(...args),
+  getDemo: () => mockGetDemo(),
+  addDemo: () => mockAddDemo(),
+  removeDemo: () => mockRemoveDemo(),
+  listSongs: async () => ({
+    items: [],
+    total: 0,
+    counts: { all: 0, bass: 0, electric: 0, acoustic: 0, chords: 0, favourites: 0 },
+    next_cursor: null,
+  }),
+  listTags: async () => [],
 }));
 
 const mockPresets: InstrumentPreset[] = [
@@ -47,6 +60,33 @@ describe("SettingsSheet", () => {
     ui.me = null;
     ui.ytdlp = null;
     ui.theme = "system";
+    ui.demoMode = false;
+    mockGetDemo.mockResolvedValue({ songs: [], installed: 0 });
+  });
+
+  it("adds and removes the demo songs", async () => {
+    mockAddDemo.mockResolvedValueOnce({ songs: [], installed: 3, changed: 3 });
+    mockRemoveDemo.mockResolvedValueOnce({ songs: [], installed: 0, changed: 3 });
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(SettingsSheet);
+
+    await fireEvent.click(await screen.findByTestId("demo-add"));
+    expect(await screen.findByText("Added 3 demo songs.")).toBeInTheDocument();
+    await fireEvent.click(await screen.findByTestId("demo-remove"));
+    expect(await screen.findByText("Removed 3 demo songs.")).toBeInTheDocument();
+    expect(mockAddDemo).toHaveBeenCalledTimes(1);
+    expect(mockRemoveDemo).toHaveBeenCalledTimes(1);
+  });
+
+  it("offers removal when the demo songs are already there, and not in demo mode", async () => {
+    mockGetDemo.mockResolvedValue({ songs: [], installed: 3 });
+    const { unmount } = render(SettingsSheet);
+    expect(await screen.findByTestId("demo-remove")).toBeInTheDocument();
+    unmount();
+
+    ui.demoMode = true;
+    render(SettingsSheet);
+    expect(screen.queryByTestId("demo-settings")).not.toBeInTheDocument();
   });
 
   it("renders default instrument options and updates when changed", async () => {
