@@ -242,6 +242,15 @@ ENV_VARS: tuple[EnvVar, ...] = (
         "Sign-in (OIDC)",
     ),
     EnvVar(
+        "FRETBOOK_SECRET_KEY",
+        "generated",
+        (
+            "Encrypts the LLM API keys stored in the database. Empty: a random key is created once in"
+            " `$FRETBOOK_DATA_DIR/secret.key`. Keep it out of backups that sit next to the database."
+        ),
+        "Storage",
+    ),
+    EnvVar(
         "FRETBOOK_OIDC_USER_GROUP",
         "`fretbook_users`",
         "Members get their own library. Empty admits everyone the provider signs in.",
@@ -293,6 +302,7 @@ class Settings:
     oidc_client_secret: str
     oidc_redirect_uri: str
     session_secret: str
+    secret_key: str = ""
     oidc_scopes: str = "openid profile email groups"
     oidc_groups_claim: str = "groups"
     oidc_user_group: str = "fretbook_users"
@@ -356,6 +366,7 @@ class Settings:
             oidc_client_secret=os.environ.get("FRETBOOK_OIDC_CLIENT_SECRET", "").strip(),
             oidc_redirect_uri=os.environ.get("FRETBOOK_OIDC_REDIRECT_URI", "").strip(),
             session_secret=os.environ.get("FRETBOOK_SESSION_SECRET", "").strip(),
+            secret_key=os.environ.get("FRETBOOK_SECRET_KEY", "").strip(),
             oidc_scopes=os.environ.get("FRETBOOK_OIDC_SCOPES", "").strip() or "openid profile email groups",
             oidc_groups_claim=os.environ.get("FRETBOOK_OIDC_GROUPS_CLAIM", "").strip() or "groups",
             # An empty user group lets every account the provider signs in use Fretbook.

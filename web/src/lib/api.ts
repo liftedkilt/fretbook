@@ -30,6 +30,13 @@ import type {
   LessonProgressBody,
   LessonProgressResult,
   LessonSource,
+  LlmNotice,
+  LlmSettings,
+  LlmSettingsBody,
+  LlmStatus,
+  LlmUsageRow,
+  LlmUserAccess,
+  LlmUserAccessBody,
   MidiInspection,
   Me as ContractMe,
   Meta as ContractMeta,
@@ -357,6 +364,49 @@ export function createApiToken(
 
 export function revokeApiToken(id: string): Promise<void> {
   return request<void>(`/api/tokens/${id}`, { method: "DELETE" });
+}
+
+/** Whether LLM features work for the caller, which key they would use, and their quota use. No keys. */
+export function getLlmStatus(): Promise<LlmStatus> {
+  return request<LlmStatus>("/api/llm");
+}
+
+/** Save the caller's own API key. It is encrypted on the server and never returned. */
+export function saveOwnLlmKey(key: string): Promise<LlmStatus> {
+  return request<LlmStatus>("/api/llm/key", json("PUT", { key }));
+}
+
+export function removeOwnLlmKey(): Promise<LlmStatus> {
+  return request<LlmStatus>("/api/llm/key", { method: "DELETE" });
+}
+
+export function getLlmSettings(): Promise<LlmSettings> {
+  return request<LlmSettings>("/api/admin/llm");
+}
+
+/** Save the provider settings. `admin_key` replaces the shared key; leave it out to keep the saved one. */
+export function saveLlmSettings(body: LlmSettingsBody): Promise<LlmSettings> {
+  return request<LlmSettings>("/api/admin/llm", json("PUT", body));
+}
+
+export function listLlmUsers(): Promise<LlmUserAccess[]> {
+  return request<LlmUserAccess[]>("/api/admin/llm/users");
+}
+
+export function saveLlmUser(userId: string, body: LlmUserAccessBody): Promise<LlmUserAccess> {
+  return request<LlmUserAccess>(`/api/admin/llm/users/${userId}`, json("PUT", body));
+}
+
+export function listLlmUsage(limit = 50): Promise<LlmUsageRow[]> {
+  return request<LlmUsageRow[]>(`/api/admin/llm/usage?limit=${limit}`);
+}
+
+export function listLlmNotices(): Promise<LlmNotice[]> {
+  return request<LlmNotice[]>("/api/admin/llm/notices");
+}
+
+export async function clearLlmNotices(): Promise<void> {
+  await request("/api/admin/llm/notices", { method: "DELETE" });
 }
 
 export async function putFavourite(id: string, favourite: boolean): Promise<boolean> {

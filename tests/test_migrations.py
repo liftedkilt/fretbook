@@ -838,6 +838,36 @@ def verify_v19(conn: sqlite3.Connection) -> None:
     assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
 
 
+def seed_v20(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        INSERT INTO users (id, external_subject, display_name, created_at)
+        VALUES ('user-v20', 'sub-v20', 'User V17', '2026-01-20T00:00:00Z')
+        """
+    )
+    conn.commit()
+
+
+def verify_v20(conn: sqlite3.Connection) -> None:
+    # An existing user has no LLM row until an admin or the user sets something: the default is "own_key".
+    assert conn.execute("SELECT count(*) FROM llm_user").fetchone()[0] == 0
+    conn.execute(
+        "INSERT INTO llm_user (user_id, own_key_enc, updated_at) VALUES ('user-v20', 'enc', '2026-01-20T00:00:00Z')"
+    )
+    row = conn.execute("SELECT mode, daily_limit, monthly_limit FROM llm_user").fetchone()
+    assert tuple(row) == ("own_key", None, None)
+    conn.execute(
+        "INSERT INTO llm_usage (user_id, at, model, key_source) VALUES ('user-v20', '2026-01-20', 'm', 'shared')"
+    )
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute("INSERT INTO llm_settings (id, updated_at) VALUES (2, 'x')")
+    conn.execute("DELETE FROM users WHERE id = 'user-v20'")
+    assert conn.execute("SELECT count(*) FROM llm_usage").fetchone()[0] == 0
+    assert conn.execute("SELECT count(*) FROM llm_user").fetchone()[0] == 0
+    conn.rollback()
+    assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+
+
 SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.Connection], None]]] = {
     1: (seed_v1, verify_v1),
     2: (seed_v2, verify_v2),
@@ -858,6 +888,7 @@ SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.C
     17: (seed_v17, verify_v17),
     18: (seed_v18, verify_v18),
     19: (seed_v19, verify_v19),
+    20: (seed_v20, verify_v20),
 }
 
 
