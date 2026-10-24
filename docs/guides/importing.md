@@ -79,6 +79,14 @@ every guitar and bass part with suggested instruments.
   page. In the library, pick several tag chips to show songs that have all of them, turn on *Favourites*, or use *Select*
   to tag many songs at once. A new import starts with tags the file gives away, such as the instrument, an alternate
   tuning like Drop D, the capo, and the key of a chord sheet.
+- **Transpose, retune or convert** a tab with **Transpose or retune** on the song page. A preview shows the new part and
+  what had to give; then save it as a new track next to the original or replace the track. Choose to transpose by
+  semitones, retune keeping the pitches (standard to Drop D or Eb, a different capo, 4 to 5-string bass, 6 to 7-string
+  guitar), retune keeping the shapes (the frets stay and the pitch changes, capo-style), convert to another instrument,
+  or make a bass line from the lowest note of each beat. Notes stay on their string when they still fit. A note that
+  falls off the neck, or a chord that no longer fits the hand, is placed again, a pitch the instrument cannot reach moves
+  by an octave and the preview names the bars, and a natural harmonic that moves becomes a plain note. Type your own
+  tuning as note names (`E4 B3 G3 D3 A2 D2`) or pick an instrument. The API is `POST /api/songs/{id}/convert`.
 - **Export** a song as MusicXML, MIDI, ChordPro, Fretbook JSON or PDF from its export menu.
 
 ## Chord sheets
@@ -86,4 +94,5 @@ every guitar and bass part with suggested instruments.
 Lyrics with chords over them, stored as ChordPro. You can transpose and print them. A sheet shows a diagram for every
 chord it uses, for guitar, bass or ukulele and the common alternate tunings, with a voicing picker. A ChordPro
 `{define: Am7 base-fret 1 frets x 0 2 0 1 0}` is offered first. **Tools → Chord library** searches any chord name,
-lists its voicings and strums them.
+lists its voicings and strums them. **Capo suggestions** on a sheet list capo frets (1 to 7) that turn barre chords into
+open shapes, for example "Capo 3: play G, C, D, Em" for a song in Bb.

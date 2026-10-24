@@ -1,6 +1,7 @@
 <script lang="ts">
   import { untrack } from "svelte";
 
+  import CapoSuggestions from "./CapoSuggestions.svelte";
   import ChordSetupPicker from "./ChordSetupPicker.svelte";
   import ChordSheet from "./ChordSheet.svelte";
   import ChordStrip from "./ChordStrip.svelte";
@@ -188,6 +189,8 @@
       />
     </section>
   {/if}
+
+  <CapoSuggestions chords={chordsUsed(sheet, transpose, flats)} {capo} {flats} />
 
   <ChordWait
     text={song.chordpro ?? ""}

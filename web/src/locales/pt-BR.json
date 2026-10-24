@@ -571,6 +571,14 @@
       "badOptions": "As opções da importação MIDI não são válidas.",
       "shifted": "{count} nota(s) em \"{track}\" estão fora da extensão do instrumento e foram movidas por oitavas.",
       "dropped": "{count} acorde(s) em \"{track}\" não podem ser digitados em uma só posição e perderam algumas notas."
+    },
+    "convert": {
+      "notTab": "Só tablaturas podem ser convertidas.",
+      "needsRevision": "Recarregue a música e tente de novo.",
+      "noTrack": "Essa faixa não foi encontrada.",
+      "badPreset": "Esse instrumento não é conhecido.",
+      "badTuning": "A afinação tem uma nota fora do alcance.",
+      "invalid": "Essa conversão não é possível."
     }
   },
   "ui": {
@@ -1149,5 +1157,48 @@
     "gridHint": "As casas são escolhidas automaticamente para manter a mão perto de onde estava. Tercinas se ajustam à posição mais próxima da grade.",
     "import": "Importar partes selecionadas",
     "cancel": "Cancelar"
+  },
+  "retune": {
+    "open": "Transpor ou reafinar",
+    "title": "Transpor, reafinar ou converter",
+    "subtitle": "{track} · {tuning}",
+    "goal": "O que fazer",
+    "goalTranspose": "Transpor por semitons",
+    "goalRetune": "Reafinar, mantendo as alturas",
+    "goalShapes": "Reafinar, mantendo as formas (estilo capotraste)",
+    "goalConvert": "Converter para outro instrumento",
+    "goalBassLine": "Linha de baixo a partir desta parte (notas mais graves)",
+    "goalHint": "Escolha como as notas devem mudar. Nada é salvo até você escolher Adicionar ou Substituir.",
+    "semitones": "Semitons",
+    "semitonesHint": "Positivo é mais agudo, negativo é mais grave. 12 é uma oitava.",
+    "instrument": "Instrumento",
+    "instrumentKeep": "Manter a afinação atual",
+    "tuning": "Afinação, da corda mais aguda para a mais grave",
+    "tuningHint": "Nomes de notas com oitava, por exemplo E4 B3 G3 D3 A2 D2. Escolha um instrumento para preencher isto ou digite a sua.",
+    "tuningInvalid": "Não foi possível ler essa afinação. Use nomes de notas como E4 B3 G3 D3 A2 E2.",
+    "tuningStrings": "Manter as formas exige o mesmo número de cordas.",
+    "capo": "Capotraste",
+    "name": "Nome da nova faixa",
+    "preview": "Prévia",
+    "previewing": "Preparando a nova parte…",
+    "previewFailed": "Não foi possível gerar a prévia.",
+    "nothingToDo": "Estas escolhas deixam a faixa como está.",
+    "reportMoved": "{moved} de {notes} notas mudaram para outra corda ou casa.",
+    "reportReduced": "Foi mantida a nota mais grave de cada tempo; {count} outras notas ficaram de fora.",
+    "reportShifted": "Algumas notas estavam fora de alcance e subiram ou desceram uma oitava no compasso {bars}.",
+    "reportDropped": "{count} notas não puderam ser tocadas juntas e ficaram de fora (compasso {bars}).",
+    "reportHarmonics": "{count} harmônicos naturais viraram notas comuns porque mudaram de lugar.",
+    "add": "Salvar como nova faixa",
+    "replace": "Substituir esta faixa",
+    "replaceHint": "Substituir sobrescreve esta faixa na música. Salve como nova faixa para manter a original.",
+    "cancel": "Cancelar",
+    "saving": "Salvando…",
+    "saved": "Salvo.",
+    "newTrackName": "{name} ({label})",
+    "labelConverted": "convertida",
+    "capoHeading": "Sugestões de capotraste",
+    "capoHint": "Menos pestanas com um capotraste.",
+    "capoOption": "Capotraste {capo}: toque {shapes}",
+    "capoNone": "Estes acordes já são fáceis de tocar sem capotraste."
   }
 }
