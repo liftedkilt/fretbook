@@ -38,6 +38,7 @@ beforeEach(() => {
   ui.filter = "all";
   ui.tags = [];
   ui.favouritesOnly = false;
+  ui.level = "all";
 });
 
 afterEach(() => {
@@ -123,6 +124,8 @@ describe("setSort", () => {
     expect([ui.sort, ui.order]).toEqual(["title", "asc"]);
     setSort("opened");
     expect([ui.sort, ui.order]).toEqual(["opened", "desc"]);
+    setSort("difficulty");
+    expect([ui.sort, ui.order]).toEqual(["difficulty", "asc"]);
     setSort("added", "asc");
     expect(JSON.parse(localStorage.getItem("fretbook.librarySort") ?? "{}")).toEqual({
       sort: "added",

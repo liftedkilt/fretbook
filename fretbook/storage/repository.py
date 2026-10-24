@@ -7,11 +7,13 @@ import json
 import re
 import sqlite3
 import uuid
+from dataclasses import asdict
 from typing import Any
 
 from fretbook.config import Settings
 from fretbook.db.connection import session
 from fretbook.db.migrate import utcnow
+from fretbook.score import difficulty as difficulty_estimate
 from fretbook.score.instruments import DEFAULT_PRESET, get_preset, is_preset
 from fretbook.score.model import (
     Bar,
@@ -34,6 +36,9 @@ _EMPTY_SUMMARY: dict[str, Any] = {
     "preferred_track_id": "",
     "has_sync": False,
     "duration": None,
+    "difficulty": None,
+    "difficulty_detail": None,
+    "difficulty_version": None,
 }
 
 
@@ -44,6 +49,7 @@ _SORTS: dict[str, tuple[str, str]] = {
     "added": ("s.created_at {dir}", "desc"),
     "updated": ("s.updated_at {dir}", "desc"),
     "opened": ("(s.last_opened_at IS NULL) ASC, s.last_opened_at {dir}", "desc"),
+    "difficulty": ("(s.difficulty IS NULL) ASC, s.difficulty {dir}, s.title COLLATE NOCASE ASC", "asc"),
 }
 
 # Library filters. These mirror ``instrumentFamily`` in web/src/lib/instruments.ts.
@@ -61,7 +67,8 @@ _FILTERS: dict[str, str] = {
 
 _SUMMARY_COLUMNS = (
     "s.id, s.slug, s.title, s.artist, s.content_kind, s.source_kind, s.revision, s.bpm, s.measure_count, "
-    "s.track_count, s.string_count, s.preferred_instrument, s.has_sync, s.duration, s.updated_at, s.favourite"
+    "s.track_count, s.string_count, s.preferred_instrument, s.has_sync, s.duration, s.updated_at, s.favourite, "
+    "s.difficulty"
 )
 # The song's tags as a JSON array, sorted, so a page of songs needs no query per song.
 _TAGS_COLUMN = (
@@ -102,10 +109,21 @@ def _slugify(text: str) -> str:
     return slug[:60] or "song"
 
 
+def difficulty_fields(document: ScoreDocument) -> dict[str, Any]:
+    """The stored difficulty columns for a score: the preferred track's level and every track's breakdown."""
+    tracks = difficulty_estimate.estimate(document)
+    return {
+        "difficulty": difficulty_estimate.song_level(document, tracks),
+        "difficulty_detail": json.dumps([asdict(track) for track in tracks]),
+        "difficulty_version": difficulty_estimate.VERSION,
+    }
+
+
 def _content_fields(document: ScoreDocument | None, chordpro: str | None) -> dict[str, Any]:
     if document is not None:
         return {
             **summary_fields(document),
+            **difficulty_fields(document),
             "content_kind": "tab",
             "document": document.model_dump_json(),
             "chordpro": None,
@@ -259,14 +277,18 @@ class SongRepository:
         instrument: str = "all",
         tags: list[str] | None = None,
         favourite: bool = False,
+        difficulty_min: int | None = None,
+        difficulty_max: int | None = None,
         limit: int = 50,
         offset: int = 0,
     ) -> dict[str, Any]:
         """One page of the owner's songs plus the total match count and per-filter counts.
 
         ``q`` is matched as word prefixes against title and artist. ``tags`` keeps songs that have every
-        one of them, and ``favourite`` only starred songs. Summaries come from explicit columns so the
-        score and ChordPro text are never read. The counts ignore the search, tags and favourites.
+        one of them, and ``favourite`` only starred songs. ``difficulty_min`` and ``difficulty_max`` keep tabs
+        whose level, rounded to 1..10, is in range; chord sheets have none and are left out. Summaries come from
+        explicit columns so the score and ChordPro text are never read. The counts ignore the search, tags and
+        favourites.
         """
         sort_sql, default_order = _SORTS[sort]
         direction = "DESC" if (order or default_order) == "desc" else "ASC"
@@ -288,6 +310,12 @@ class SongRepository:
             params.extend([*wanted, len(wanted)])
         if favourite:
             where.append("s.favourite = 1")
+        if difficulty_min is not None:
+            where.append("round(s.difficulty) >= ?")
+            params.append(difficulty_min)
+        if difficulty_max is not None:
+            where.append("round(s.difficulty) <= ?")
+            params.append(difficulty_max)
         clause = " AND ".join(where)
         with self._session() as conn:
             total = conn.execute(f"SELECT count(*) FROM songs s WHERE {clause}", params).fetchone()[0]
@@ -441,8 +469,9 @@ class SongRepository:
                         INSERT INTO songs (
                             id, owner_id, slug, title, artist, content_kind, source_kind, source_ref,
                             bpm, measure_count, track_count, string_count, preferred_instrument,
-                            preferred_track_id, has_sync, duration, document, chordpro, created_at, updated_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            preferred_track_id, has_sync, duration, document, chordpro, created_at, updated_at,
+                            difficulty, difficulty_detail, difficulty_version
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         (
                             song_id,
@@ -465,6 +494,9 @@ class SongRepository:
                             fields["chordpro"],
                             now,
                             now,
+                            fields["difficulty"],
+                            fields["difficulty_detail"],
+                            fields["difficulty_version"],
                         ),
                     )
                 break
@@ -559,6 +591,9 @@ class SongRepository:
             "document = ?",
             "chordpro = ?",
             "updated_at = ?",
+            "difficulty = ?",
+            "difficulty_detail = ?",
+            "difficulty_version = ?",
             "revision = revision + 1",
         ]
         values: list[Any] = [
@@ -576,6 +611,9 @@ class SongRepository:
             fields["document"],
             fields["chordpro"],
             utcnow(),
+            fields["difficulty"],
+            fields["difficulty_detail"],
+            fields["difficulty_version"],
         ]
         if source_ref is not None:
             assignments.append("source_ref = ?")
@@ -614,10 +652,11 @@ class SongRepository:
             document.bpm = bpm
             document.sync.anchors = {str(key): float(value) for key, value in anchors.items()}
             document = ScoreDocument.model_validate(document.model_dump())
-            fields = summary_fields(document)
+            fields = {**summary_fields(document), **difficulty_fields(document)}
             conn.execute(
                 """
                 UPDATE songs SET bpm = ?, has_sync = ?, duration = ?, document = ?, updated_at = ?,
+                                 difficulty = ?, difficulty_detail = ?, difficulty_version = ?,
                                  revision = revision + 1
                 WHERE owner_id = ? AND id = ?
                 """,
@@ -627,11 +666,47 @@ class SongRepository:
                     fields["duration"],
                     document.model_dump_json(),
                     utcnow(),
+                    fields["difficulty"],
+                    fields["difficulty_detail"],
+                    fields["difficulty_version"],
                     owner_id,
                     song_id,
                 ),
             )
         return self.get_song(owner_id, song_id)
+
+    def refresh_difficulty(self) -> int:
+        """Estimate the difficulty of every tab that has none, or one from an older estimate. Returns the count.
+
+        Songs saved before the estimate existed, and every song after its algorithm changes, are filled in here at
+        start-up. Rows are updated without touching ``updated_at`` or ``revision``: the score did not change.
+        """
+        done = 0
+        while True:
+            with self._session() as conn:
+                rows = conn.execute(
+                    """
+                    SELECT id, document FROM songs
+                    WHERE content_kind = 'tab' AND (difficulty_version IS NULL OR difficulty_version != ?)
+                    LIMIT 100
+                    """,
+                    (difficulty_estimate.VERSION,),
+                ).fetchall()
+            if not rows:
+                return done
+            with self._session(immediate=True) as conn:
+                for row in rows:
+                    try:
+                        fields = difficulty_fields(ScoreDocument.model_validate_json(row["document"]))
+                    except ValueError:
+                        # A score that no longer validates keeps no level; the version stops it being retried.
+                        fields = {"difficulty": None, "difficulty_detail": None}
+                        fields["difficulty_version"] = difficulty_estimate.VERSION
+                    conn.execute(
+                        "UPDATE songs SET difficulty = ?, difficulty_detail = ?, difficulty_version = ? WHERE id = ?",
+                        (fields["difficulty"], fields["difficulty_detail"], fields["difficulty_version"], row["id"]),
+                    )
+            done += len(rows)
 
     # --- tags and favourites -----------------------------------------------
     # These leave ``revision`` and ``updated_at`` alone, like ``mark_opened``: an open editor can still save.
@@ -745,6 +820,7 @@ def _summary(row: sqlite3.Row) -> dict[str, Any]:
         "duration": row["duration"],
         "updated_at": row["updated_at"],
         "favourite": bool(row["favourite"]),
+        "difficulty": row["difficulty"],
         "tags": json.loads(row["tags_json"] or "[]"),
     }
 
@@ -757,4 +833,5 @@ def _detail(row: sqlite3.Row) -> dict[str, Any]:
     payload["created_at"] = row["created_at"]
     payload["audio_url"] = _audio_url(row)
     payload["preferred_track_id"] = row["preferred_track_id"]
+    payload["difficulty_tracks"] = json.loads(row["difficulty_detail"] or "[]")
     return payload

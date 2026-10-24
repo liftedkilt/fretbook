@@ -163,6 +163,9 @@ def create_app(
             backup_keep=settings.migration_backups_keep,
         )
         songs.ensure_user("local", "Local")
+        filled = songs.refresh_difficulty()
+        if filled:
+            logger.info("estimated the difficulty of %s song(s)", filled)
         count = import_legacy(app.state.ctx)
         if count:
             logger.info("imported %s legacy song(s)", count)

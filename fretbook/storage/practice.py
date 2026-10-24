@@ -15,6 +15,7 @@ from typing import Any
 from fretbook.config import Settings
 from fretbook.db.connection import session
 from fretbook.db.migrate import utcnow
+from fretbook.recommend import LEVEL_DAYS, LOOP_DAYS, build
 
 MODES = ("free", "wait", "scored")
 MIN_SECONDS = 1
@@ -152,6 +153,36 @@ class PracticeRepository:
                 )
             ]
         return _dashboard(goal, per_day, songs, today)
+
+    def recommendations(self, owner_id: str, today: date) -> dict[str, Any]:
+        """Songs to stretch to, loops to revisit and songs due for review, as of the player's ``today``."""
+        since = (today - timedelta(days=max(LEVEL_DAYS, LOOP_DAYS))).isoformat()
+        with self._session() as conn:
+            songs = [
+                dict(row)
+                for row in conn.execute(
+                    """
+                    SELECT s.id AS song_id, s.title, s.artist, s.content_kind, s.difficulty,
+                           count(p.id) AS session_count, count(DISTINCT p.day) AS practice_days,
+                           max(p.day) AS last_day
+                    FROM songs s LEFT JOIN practice_sessions p ON p.song_id = s.id AND p.owner_id = s.owner_id
+                    WHERE s.owner_id = ? GROUP BY s.id
+                    """,
+                    (owner_id,),
+                )
+            ]
+            scored = [
+                dict(row)
+                for row in conn.execute(
+                    """
+                    SELECT song_id, loop_name, loop_start, loop_end, day, score FROM practice_sessions
+                    WHERE owner_id = ? AND mode = 'scored' AND score IS NOT NULL AND day >= ?
+                    ORDER BY started_at DESC, id
+                    """,
+                    (owner_id, since),
+                )
+            ]
+        return build(songs, scored, today)
 
     def export_all(self, owner_id: str | None) -> dict[str, Any]:
         """Sessions (of one owner, or of all) and, for one owner, their goal, for the backup archive."""

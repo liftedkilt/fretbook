@@ -40,6 +40,7 @@ function makeSong(overrides: Partial<SongSummary>): SongSummary {
     duration: 180,
     updated_at: "2026-01-01T00:00:00Z",
     favourite: false,
+    difficulty: null,
     tags: [],
     ...overrides,
   };
@@ -104,6 +105,7 @@ describe("LibraryView", () => {
     ui.tags = [];
     ui.tagList = [];
     ui.favouritesOnly = false;
+    ui.level = "all";
     ui.search = "";
     ui.sheet = "";
     ui.error = "";
@@ -307,6 +309,31 @@ describe("LibraryView", () => {
       ),
     );
     await waitFor(() => expect(screen.getAllByTestId("song-card")).toHaveLength(1));
+  });
+
+  it("shows each tab's level and filters by band through the server", async () => {
+    await load([
+      makeSong({ id: "1", title: "Easy One", difficulty: 2.4 }),
+      makeSong({ id: "2", title: "Sheet", content_kind: "chords", difficulty: null }),
+    ]);
+    render(LibraryView);
+
+    const levels = screen.getAllByTestId("song-difficulty");
+    expect(levels).toHaveLength(1);
+    expect(levels[0]).toHaveTextContent("Level 2");
+
+    await fireEvent.click(screen.getByTestId("library-level-hard"));
+    await waitFor(() =>
+      expect(mockListSongs).toHaveBeenLastCalledWith(
+        expect.objectContaining({ difficulty_min: 7, difficulty_max: 10 }),
+      ),
+    );
+    expect(screen.getByTestId("library-level-hard")).toHaveAttribute("aria-pressed", "true");
+
+    await fireEvent.click(screen.getByTestId("library-level-all"));
+    await waitFor(() =>
+      expect(mockListSongs.mock.calls.at(-1)?.[0].difficulty_min).toBeUndefined(),
+    );
   });
 
   it("stars a song from its card", async () => {
