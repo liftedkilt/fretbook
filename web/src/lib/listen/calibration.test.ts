@@ -187,6 +187,7 @@ describe("CalibrationWizard", () => {
     const mockSession = {
       sampleRate: 44100,
       channelCount: 1,
+      currentTime: 0,
       setChannel: vi.fn(),
       setExpectedMidi: vi.fn(),
       setChroma: vi.fn(),
@@ -312,6 +313,7 @@ describe("CalibrationWizard", () => {
     const mockSession = {
       sampleRate: 44100,
       channelCount: 1,
+      currentTime: 0,
       setChannel: vi.fn(),
       setExpectedMidi: vi.fn(),
       setChroma: vi.fn(),
