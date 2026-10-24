@@ -49,6 +49,9 @@ pair per user, with a manual offset.
 
 **Tools** has a standalone tuner (it follows the instrument's own tuning on a song page) and a metronome.
 
+The tuner lets you pick the audio input, and the channel too when your interface has several. A level meter shows what
+the microphone hears, and Fretbook remembers the device and each device's channel.
+
 ## Ear and fretboard trainer
 
 **Tools → Ear & fretboard trainer** has three games. Pick a round length (30, 60 or 120 seconds, or no limit) and press

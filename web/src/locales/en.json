@@ -665,6 +665,8 @@
     "defaultDevice": "Default input",
     "channel": "Channel {n}",
     "level": "Input level",
+    "channelPicker": "Channel",
+    "unnamedDevice": "Input {n}",
     "problem": {
       "insecure": "The browser only allows the microphone on HTTPS pages or on localhost. Open Fretbook over HTTPS (put it behind a reverse proxy with a certificate) or from http://localhost.",
       "unsupported": "This browser cannot record from a microphone.",

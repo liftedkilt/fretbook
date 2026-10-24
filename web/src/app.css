@@ -4575,3 +4575,37 @@ kbd {
     fill: #000;
   }
 }
+
+/* ------------------------------------------------------------ listen panel */
+
+.listen-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.listen-panel .alert {
+  grid-column: 1 / -1;
+}
+
+.listen-meter {
+  height: 0.6rem;
+  border-radius: 999px;
+  background: var(--surface-2, var(--surface));
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.listen-meter-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 60ms linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .listen-meter-fill {
+    transition: none;
+  }
+}
