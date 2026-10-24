@@ -3,14 +3,16 @@
   import { untrack } from "svelte";
 
   import Icon from "./Icon.svelte";
+  import ListenPanel from "./ListenPanel.svelte";
   import { t } from "../lib/i18n.svelte";
   import {
     ListenError,
-    describeProblem,
     startListening,
+    type ListenProblem,
     type ListenSession,
     type PitchEvent,
   } from "../lib/listen";
+  import { getSavedChannel, getSavedDevice } from "../lib/listen/devicePrefs";
   import { midiToFrequency } from "../lib/listen/notes";
   import { midiToName } from "../lib/tuning";
   import {
@@ -47,7 +49,11 @@
   let a4 = $state(440);
   let running = $state(false);
   let starting = $state(false);
-  let problem = $state("");
+  let problem = $state<ListenProblem | null>(null);
+  const savedDevice = getSavedDevice();
+  let deviceId = $state(savedDevice);
+  let channel = $state(getSavedChannel(savedDevice));
+  let level = $state(0);
   let reading = $state<{ frequency: number; cents: number; midi: number; string: number } | null>(
     null,
   );
@@ -59,7 +65,7 @@
   let muted = $state(readMuted());
   let tone = $state<{ string: number; handle: ReferenceTone } | null>(null);
 
-  let session: ListenSession | null = null;
+  let session = $state<ListenSession | null>(null);
   const tracker = new TuneTracker();
   const smoother = new PitchSmoother();
 
@@ -145,12 +151,18 @@
   async function start() {
     if (running || starting) return;
     starting = true;
-    problem = "";
+    problem = null;
     try {
-      session = await startListening({ a4, onPitch });
+      session = await startListening({
+        a4,
+        deviceId: deviceId || undefined,
+        channel,
+        onPitch,
+        onLevel: ({ peak }) => (level = peak),
+      });
       running = true;
     } catch (error) {
-      problem = describeProblem(error instanceof ListenError ? error.problem : "other");
+      problem = error instanceof ListenError ? error.problem : "other";
     } finally {
       starting = false;
     }
@@ -168,9 +180,17 @@
     const current = session;
     session = null;
     running = false;
+    level = 0;
     clearReading();
     stopTone();
     await current?.stop().catch(() => undefined);
+  }
+
+  async function changeDevice(next: string) {
+    deviceId = next;
+    if (!running) return;
+    await stop();
+    await start();
   }
 
   function startOver() {
@@ -353,7 +373,15 @@
     <p class="muted tuner-hint">{t("tuner.toneHint")}</p>
   {/if}
 
-  {#if problem}<p class="alert" role="alert"><Icon name="alert" size={18} />{problem}</p>{/if}
+  <ListenPanel
+    {session}
+    {deviceId}
+    {channel}
+    {level}
+    {problem}
+    onDevice={(next) => void changeDevice(next)}
+    onChannel={(next) => (channel = next)}
+  />
 
   <div class="tuner-actions">
     {#if strings}

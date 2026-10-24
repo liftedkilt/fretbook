@@ -658,6 +658,8 @@
     "defaultDevice": "Entrada padrão",
     "channel": "Canal {n}",
     "level": "Nível de entrada",
+    "channelPicker": "Canal",
+    "unnamedDevice": "Entrada {n}",
     "problem": {
       "insecure": "O navegador só permite o microfone em páginas HTTPS ou em localhost. Abra o Fretbook por HTTPS (coloque-o atrás de um proxy reverso com certificado) ou em http://localhost.",
       "unsupported": "Este navegador não consegue gravar pelo microfone.",
