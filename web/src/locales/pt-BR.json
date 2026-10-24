@@ -551,7 +551,6 @@
     },
     "musicxml": {
       "parse": "Não foi possível ler o arquivo MusicXML.",
-      "timewise": "MusicXML no formato timewise não é suportado. Salve como partwise.",
       "notMusicXml": "Isto não é uma partitura MusicXML.",
       "noTab": "Este arquivo MusicXML não tem tablatura (corda e casa).",
       "tooLarge": "Este arquivo MusicXML é grande demais depois de descompactado."

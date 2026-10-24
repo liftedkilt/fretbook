@@ -1,10 +1,14 @@
 """MusicXML import fixtures, written the way MuseScore and Guitar Pro export them."""
 
+import io
+import re
+import zipfile
 from pathlib import Path
 
 import pytest
 
 from fretbook.export.musicxml import to_musicxml
+from fretbook.importers import musicxml
 from fretbook.importers.base import ImportError, ImportRequest, silent_progress
 from fretbook.importers.musicxml import MusicXmlImporter
 from fretbook.score.model import Bar, Beat, Note, ScoreDocument, Track, TrackBar, Voice
@@ -291,3 +295,81 @@ def test_musicxml_repeats_voltas_and_directions_round_trip(tmp_path: Path) -> No
     assert back.bars[3].alternate_endings == [2] and back.bars[3].directions == ["da_coda"]
     assert back.bars[4].directions == ["dal_segno_al_coda"]
     assert sorted(back.bars[5].directions) == ["coda", "fine"]
+
+
+def _timewise(partwise: str) -> str:
+    """The same score regrouped as measures holding parts, built from BASS's single part."""
+    head, rest = partwise.split('<part id="P1">', 1)
+    body = rest.rsplit("</part>", 1)[0]
+    measures = re.findall(r'<measure number="(\d+)">(.*?)</measure>', body, re.S)
+    wrapped = "".join(f'<measure number="{n}"><part id="P1">{m}</part></measure>' for n, m in measures)
+    return head.replace("score-partwise", "score-timewise") + wrapped + "</score-timewise>"
+
+
+def test_timewise_imports_like_partwise(tmp_path: Path) -> None:
+    partwise = _import(tmp_path, "a.xml", BASS)
+    timewise = _import(tmp_path, "b.xml", _timewise(BASS))
+    assert timewise.document == partwise.document
+    assert timewise.title == partwise.title == "Fixture"
+
+
+def test_timewise_keeps_every_part_in_order(tmp_path: Path) -> None:
+    xml = """<score-timewise version="4.0">
+  <part-list>
+    <score-part id="P1"><part-name>One</part-name></score-part>
+    <score-part id="P2"><part-name>Two</part-name></score-part>
+  </part-list>
+  <measure number="1">
+    <part id="P1"><attributes><divisions>1</divisions></attributes>{note}</part>
+    <part id="P2"><attributes><divisions>1</divisions></attributes>{note}</part>
+  </measure>
+</score-timewise>""".format(
+        note="<note><pitch><step>E</step><octave>2</octave></pitch><duration>4</duration><notations><technical><string>6</string><fret>0</fret></technical></notations></note>"
+    )
+    result = _import(tmp_path, "two.xml", xml)
+    assert [track.name for track in result.document.tracks] == ["One", "Two"]
+
+
+def _mxl(files: dict[str, bytes]) -> bytes:
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        for name, data in files.items():
+            archive.writestr(name, data)
+    return buffer.getvalue()
+
+
+CONTAINER = b'<container><rootfiles><rootfile full-path="score.xml"/></rootfiles></container>'
+
+
+def test_compressed_mxl_imports_like_plain_xml(tmp_path: Path) -> None:
+    plain = _import(tmp_path, "a.xml", BASS)
+    packed = _import(tmp_path, "b.mxl", _mxl({"META-INF/container.xml": CONTAINER, "score.xml": BASS.encode()}))
+    assert packed.document == plain.document
+
+
+def test_compressed_mxl_with_timewise_root(tmp_path: Path) -> None:
+    packed = _import(
+        tmp_path, "c.mxl", _mxl({"META-INF/container.xml": CONTAINER, "score.xml": _timewise(BASS).encode()})
+    )
+    assert packed.document == _import(tmp_path, "a.xml", BASS).document
+
+
+def test_mxl_that_unpacks_too_large_is_refused(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(musicxml, "MAX_MXL_BYTES", 100)
+    with pytest.raises(ImportError) as caught:
+        _import(tmp_path, "bomb.mxl", _mxl({"META-INF/container.xml": CONTAINER, "score.xml": BASS.encode()}))
+    assert caught.value.key == "musicxml.tooLarge"
+
+
+@pytest.mark.parametrize(
+    "files",
+    [
+        {"score.xml": b"<x/>"},
+        {"META-INF/container.xml": b"<container/>"},
+        {"META-INF/container.xml": CONTAINER},
+    ],
+)
+def test_broken_mxl_is_a_parse_error(tmp_path: Path, files: dict[str, bytes]) -> None:
+    with pytest.raises(ImportError) as caught:
+        _import(tmp_path, "broken.mxl", _mxl(files))
+    assert caught.value.key == "musicxml.parse"
