@@ -1,0 +1,24 @@
+name: Dagger
+
+# Runs on the self-hosted Dagger CI runner on the media host (label `dagger`).
+# Proof of concept: test branches only for now. Never run untrusted fork PRs here.
+on:
+  push:
+    branches: ["ci/dagger-**"]
+
+concurrency:
+  group: dagger-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: [self-hosted, dagger]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lint (dagger call lint)
+        env:
+          # Labels the trace at https://ci.forsyth.cloud with the GitHub run it came from.
+          OTEL_RESOURCE_ATTRIBUTES: >-
+            github.repository=${{ github.repository }},github.ref=${{ github.ref_name }},github.sha=${{ github.sha }},github.run_id=${{ github.run_id }},github.run_attempt=${{ github.run_attempt }},github.job=${{ github.job }},github.actor=${{ github.actor }}
+        run: dagger call --progress=plain lint
