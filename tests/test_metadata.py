@@ -460,3 +460,32 @@ def test_restore_checks_metadata_from_an_archive(tmp_path: Path) -> None:
         _restore(client, archive({}, cover=JPEG, cover_name="weird.html"))
         song = client.get("/api/songs").json()["items"][0]
         assert client.get(f"/api/songs/{song['id']}/cover").headers["content-type"] == "image/jpeg"
+
+
+@pytest.mark.parametrize(
+    ("chords", "expected"),
+    [
+        (["G", "C", "D", "G"], "G"),
+        (["Am", "F", "C", "G", "Am"], "Am"),
+        (["C", "Am", "F", "G", "C"], "C"),
+        (["Em", "C", "G", "D", "Em"], "Em"),
+        (["Dm7", "G7", "Cmaj7"], "C"),
+        (["A", "D/F#", "E", "A"], "A"),
+    ],
+)
+def test_chords_key(chords: list[str], expected: str) -> None:
+    assert key_detect.chords_key(chords) == expected
+
+
+def test_chords_key_needs_enough_chords() -> None:
+    assert key_detect.chords_key(["C", "G"]) is None
+    assert key_detect.chords_key(["C", "C", "C", "C"]) is None
+    assert key_detect.chords_key([]) is None
+
+
+def test_chordpro_key_prefers_directive_then_chords_then_capo() -> None:
+    body = "[Verse]\n[G]Hello [C]there [D]my [G]friend\n{comment: [Am] ignored}\n"
+    assert key_detect.chordpro_key(body) == "G"
+    assert key_detect.chordpro_key("{key: Em}\n" + body) == "Em"
+    assert key_detect.chordpro_key("{capo: 2}\n" + body) == "A"
+    assert key_detect.chordpro_key("{title: x}\nno chords here\n") is None

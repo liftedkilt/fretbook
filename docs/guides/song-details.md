@@ -15,7 +15,7 @@ Saving details does not change the song's revision, so it never conflicts with a
 
 ## How the key is found
 
-For a tab, Fretbook counts how long each of the twelve pitch classes sounds in the preferred track (dead notes skipped, capo included) and compares that with the Krumhansl-Schmuckler major and minor key profiles. The best of the 24 wins. A score with fewer than eight sounding notes has no key. For a chord sheet, the key is the one its `{key: ...}` directive names. A key you pick always wins over the detected one, and picking *automatic* again brings the detected key back. Songs saved before this feature get their key the first time the server starts.
+For a tab, Fretbook counts how long each of the twelve pitch classes sounds in the preferred track (dead notes skipped, capo included) and compares that with the Krumhansl-Schmuckler major and minor key profiles. The best of the 24 wins. A score with fewer than eight sounding notes has no key. For a chord sheet, the key is the one its `{key: ...}` directive names. Without the directive it is estimated from the chords: each of the 24 keys scores a point for every chord whose notes are all in its scale and another for every tonic chord, and the first and last chords count extra when they are the tonic (which separates a major key from its relative minor). A sheet with fewer than three chords, or a tie, has no key, and a `{capo}` is added to the result. A key you pick always wins over the detected one, and picking *automatic* again brings the detected key back. Songs saved before this feature get their key the first time the server starts.
 
 ## Looking details up online
 
