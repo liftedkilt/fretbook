@@ -124,3 +124,31 @@ def test_reset_hour_is_03_utc() -> None:
     after = datetime(2026, 1, 1, 4, 0, tzinfo=UTC)
     assert demo.seconds_until_reset(before) == 3600
     assert demo.seconds_until_reset(after) == 23 * 3600
+
+
+def test_reset_clears_what_visitors_may_write(tmp_path: Path) -> None:
+    with make_client(tmp_path, demo_mode=True) as client:
+        ctx = client.app.state.ctx  # type: ignore[attr-defined]
+        song_id = client.get("/api/songs").json()["items"][0]["id"]
+        assert client.put("/api/me/settings", json={"default_instrument": "guitar-6"}).status_code == 200
+        progress = client.post(
+            "/api/courses/guitar-first-steps/lessons/01-the-open-strings/progress", json={"completed": True}
+        )
+        assert progress.status_code == 200, progress.text
+        session = client.post(
+            "/api/practice/sessions",
+            json={
+                "song_id": song_id,
+                "mode": "free",
+                "duration_seconds": 60,
+                "day": datetime.now(UTC).date().isoformat(),
+            },
+        )
+        assert session.status_code in (200, 201), session.text
+        demo.reset(ctx)
+        assert client.get("/api/me").json()["settings"]["default_instrument"] == "bass-4"
+        course = client.get("/api/courses/guitar-first-steps").json()
+        statuses = [lesson["status"] for level in course["levels"] for lesson in level["lessons"]]
+        assert "completed" not in statuses
+        with ctx.songs._session() as conn:  # noqa: SLF001
+            assert conn.execute("SELECT count(*) FROM practice_sessions").fetchone()[0] == 0

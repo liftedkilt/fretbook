@@ -209,7 +209,7 @@ def remove(ctx: AppContext, owner: str) -> int:
 
 
 def reset(ctx: AppContext) -> None:
-    """Return a demo instance to a fresh install: no songs of its own, the demo songs, nothing else."""
+    """Return a demo instance to a fresh install: the demo songs, no practice or lesson progress, no settings."""
     owner = "local"
     page = ctx.songs.list_songs(owner, limit=200)
     while page["items"]:
@@ -217,6 +217,7 @@ def reset(ctx: AppContext) -> None:
             ctx.media.delete_song_files(owner, item["id"])
             ctx.songs.delete_song(owner, item["id"])
         page = ctx.songs.list_songs(owner, limit=200)
+    ctx.songs.reset_user_data(owner)
     install(ctx, owner)
 
 
