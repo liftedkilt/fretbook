@@ -4395,3 +4395,152 @@ kbd {
   justify-content: center;
   gap: 0.6rem;
 }
+
+/* Chord diagrams: the strip on a chord sheet and the chord library page. */
+.chord-diagrams {
+  margin: 0 0 1.2rem;
+}
+
+.chord-diagrams-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-bottom: 0.6rem;
+}
+
+.chord-diagrams-title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.chord-setup {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.chord-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chord-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 9rem;
+  padding: 0.5rem 0.3rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.chord-card-name {
+  margin: 0;
+  font-weight: 650;
+}
+
+.chord-card-note {
+  margin: 0.2rem 0 0;
+  color: var(--text-3);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.chord-card-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.chord-card-controls .icon-button {
+  width: 2rem;
+  height: 2rem;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+}
+
+.chord-card-count {
+  min-width: 2.6rem;
+  color: var(--text-3);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.chord-diagram {
+  width: 100%;
+  height: auto;
+}
+
+.chord-diagram .grid {
+  stroke: var(--text-3);
+  stroke-width: 0.8;
+}
+
+.chord-diagram .nut {
+  stroke: var(--text);
+  stroke-width: 3;
+}
+
+.chord-diagram .dot,
+.chord-diagram .barre {
+  fill: var(--accent);
+}
+
+.chord-diagram .open {
+  fill: none;
+  stroke: var(--text-2);
+  stroke-width: 1.2;
+}
+
+.chord-diagram .muted {
+  fill: none;
+  stroke: var(--text-2);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+}
+
+.chord-diagram .fret-number {
+  fill: var(--text-2);
+  font-size: 9px;
+}
+
+.chord-library-grid {
+  margin-top: 1rem;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.7rem;
+}
+
+@media print {
+  .chord-card {
+    border-color: #999;
+    background: none;
+  }
+
+  .chord-diagram .grid,
+  .chord-diagram .nut,
+  .chord-diagram .open,
+  .chord-diagram .muted {
+    stroke: #000;
+  }
+
+  .chord-diagram .dot,
+  .chord-diagram .barre {
+    fill: #000;
+  }
+
+  .chord-diagram .fret-number {
+    fill: #000;
+  }
+}

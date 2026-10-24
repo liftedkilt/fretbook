@@ -290,4 +290,61 @@ describe("renderChordSheetPdf", () => {
     expect(plain).not.toContain("F#m7");
     expect(contentHeight()).toBeGreaterThan(600);
   });
+
+  it("prints the chosen chord diagrams under the header", async () => {
+    const frets = [null, 3, 2, 0, 1, 0];
+    const diagrams = {
+      strings: 6,
+      capo: 2,
+      chords: [
+        { name: "C", voicing: { frets, baseFret: 1, barre: null, source: "generated" as const } },
+        {
+          name: "F",
+          voicing: {
+            frets: [1, 3, 3, 2, 1, 1],
+            baseFret: 1,
+            barre: { fret: 1, from: 0, to: 5 },
+            source: "generated" as const,
+          },
+        },
+        {
+          name: "Bm",
+          voicing: {
+            frets: [null, 2, 4, 4, 3, 2],
+            baseFret: 2,
+            barre: { fret: 2, from: 1, to: 5 },
+            source: "generated" as const,
+          },
+        },
+        {
+          name: "Am",
+          voicing: {
+            frets: [null, 0, 2, 2, 1, 0],
+            baseFret: 1,
+            barre: null,
+            source: "generated" as const,
+          },
+        },
+      ],
+    };
+    const input = { chordpro: "[C]Hello [F]world", title: "Diagrams", artist: "Ada" };
+    const plain = await renderChordSheetPdf(input);
+    const withDiagrams = await renderChordSheetPdf({ ...input, diagrams });
+    const text = (await pdfText(withDiagrams.bytes)).text;
+    expect(text).toContain("Capo 2");
+    expect(text).toContain("Bm");
+    expect(withDiagrams.bytes.length).toBeGreaterThan(plain.bytes.length);
+    const none = await renderChordSheetPdf({ ...input, diagrams: { ...diagrams, chords: [] } });
+    expect(none.bytes.length).toBe(plain.bytes.length);
+    const many = await renderChordSheetPdf({
+      ...input,
+      diagrams: {
+        ...diagrams,
+        capo: 0,
+        chords: Array.from({ length: 80 }, () => diagrams.chords[0]),
+      },
+    });
+    expect(many.pageCount).toBeGreaterThan(1);
+    expect((await pdfText(many.bytes)).text).not.toContain("Capo");
+  });
 });

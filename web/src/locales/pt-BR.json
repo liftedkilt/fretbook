@@ -971,5 +971,29 @@
     "highestSpeed": "Velocidade máxima: {speed}%",
     "reset": "Reiniciar",
     "selectLoop": "Repetições salvas…"
+  },
+  "chordDiagrams": {
+    "heading": "Diagramas de acordes",
+    "toolTitle": "Biblioteca de acordes",
+    "toolDescription": "Procure qualquer acorde, veja várias posições para violão, baixo ou ukulele e ouça-o dedilhado.",
+    "openTool": "Abrir biblioteca de acordes",
+    "libraryHeading": "Biblioteca de acordes",
+    "librarySubtitle": "Procure o nome de um acorde para ver suas posições e ouvi-las.",
+    "search": "Acorde",
+    "searchPlaceholder": "Am7, F#m, D/F#, Csus4…",
+    "searchHint": "Digite o nome de um acorde ou escolha a nota e o tipo.",
+    "root": "Nota",
+    "quality": "Tipo",
+    "major": "maior",
+    "unknownChord": "“{chord}” não é um acorde que possa ser desenhado.",
+    "noShapes": "Não há posição tocável de {chord} nesta afinação.",
+    "diagramLabel": "{chord}, casas a partir da corda mais grave: {frets}",
+    "voicingOf": "{n} de {total}",
+    "previousVoicing": "Posição anterior de {chord}",
+    "nextVoicing": "Próxima posição de {chord}",
+    "play": "Dedilhar {chord}",
+    "fromSong": "Desta música",
+    "noShape": "Sem posição para esta afinação",
+    "capoNote": "Capotraste {fret}: as posições são mostradas como você as toca, e o som fica {fret} casas mais agudo."
   }
 }

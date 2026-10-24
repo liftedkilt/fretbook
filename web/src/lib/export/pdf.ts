@@ -15,6 +15,7 @@ import { preferredTrack, trackToAlphaTex } from "../alphatex";
 import { parse, transposeChord } from "../chordpro";
 import type { ScoreDocument } from "../types";
 import { tuningLabel } from "../tuning";
+import { DIAGRAM_CELL, type PdfDiagramInput, diagramsPerRow, paintDiagram } from "./chordDiagrams";
 import { type Box, paginate } from "./layout";
 import { drawSvg, embedFonts, encodable, openMusicFont, type PdfFonts } from "./svg";
 
@@ -228,6 +229,8 @@ export interface ChordPdfInput {
   artist: string;
   transpose?: number;
   flats?: boolean;
+  /** Chord diagrams to print under the header, in the voicings the reader picked. */
+  diagrams?: PdfDiagramInput;
 }
 
 interface FlowLine extends Box {
@@ -284,6 +287,37 @@ export async function renderChordSheetPdf(
     cursor += height;
   };
   const shifted = (chord: string | null) => (chord ? transposeChord(chord, transpose, flats) : "");
+  const diagrams = input.diagrams;
+  if (diagrams?.chords.length) {
+    if (diagrams.capo > 0) {
+      add(16, (page, originTop) => {
+        page.drawText(`Capo ${diagrams.capo}`, {
+          x: PDF_PAGE.marginX,
+          y: originTop - 11,
+          size: 10,
+          font: bodyBold,
+          color: INK,
+        });
+      });
+    }
+    const perRow = diagramsPerRow(width);
+    for (let start = 0; start < diagrams.chords.length; start += perRow) {
+      const row = diagrams.chords.slice(start, start + perRow);
+      add(DIAGRAM_CELL.height, (page, originTop) => {
+        row.forEach((chord, column) => {
+          paintDiagram(
+            page,
+            chordFont,
+            chord,
+            diagrams.strings,
+            PDF_PAGE.marginX + column * DIAGRAM_CELL.width,
+            originTop,
+          );
+        });
+      });
+    }
+    add(10, () => undefined);
+  }
   for (const block of sheet.blocks) {
     if (block.label) {
       add(18, (page, originTop) => {
