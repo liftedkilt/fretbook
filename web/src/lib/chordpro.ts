@@ -32,6 +32,8 @@ export interface ChordDefine {
   baseFret: number;
   /** Absolute fret per string, lowest string first. `null` is a muted string. */
   frets: (number | null)[];
+  /** Finger (1 index to 4 little) per string, lowest first; `null` for none. Absent when not given. */
+  fingers?: (number | null)[];
 }
 
 export interface Sheet {
@@ -99,13 +101,21 @@ export function parseDefine(value: string): ChordDefine | null {
   if (!name || !CHORD.test(name)) return null;
   let baseFret = 1;
   let rest: string[];
+  let fingerTokens: string[] = [];
   const framesAt = tokens.findIndex((token) => token.toLowerCase() === "frets");
   if (framesAt >= 0) {
     const baseAt = tokens.findIndex((token) => token.toLowerCase() === "base-fret");
     if (baseAt >= 0 && baseAt < framesAt) baseFret = Number(tokens[baseAt + 1]);
     rest = tokens.slice(framesAt + 1);
     const stop = rest.findIndex((token) => /^[A-Za-z]{2,}/.test(token) && !/^x+$/i.test(token));
-    if (stop >= 0) rest = rest.slice(0, stop);
+    if (stop >= 0) {
+      if (rest[stop].toLowerCase() === "fingers") {
+        const after = rest.slice(stop + 1);
+        const end = after.findIndex((token) => /^[A-Za-z]{2,}/.test(token) && !/^x+$/i.test(token));
+        fingerTokens = end >= 0 ? after.slice(0, end) : after;
+      }
+      rest = rest.slice(0, stop);
+    }
   } else {
     baseFret = Number(tokens.shift());
     rest = tokens;
@@ -120,7 +130,12 @@ export function parseDefine(value: string): ChordDefine | null {
       frets.push(fret === 0 ? 0 : baseFret + fret - 1);
     } else return null;
   }
-  return { name, baseFret, frets };
+  const define: ChordDefine = { name, baseFret, frets };
+  // One entry per string; a list of another length is ignored rather than guessed at.
+  if (fingerTokens.length === frets.length) {
+    define.fingers = fingerTokens.map((token) => (/^[1-4]$/.test(token) ? Number(token) : null));
+  }
+  return define;
 }
 
 export function parse(text: string): Sheet {

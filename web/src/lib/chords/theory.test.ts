@@ -43,3 +43,33 @@ describe("shapeName", () => {
     expect(shapeName("C", 1, true)).toBe("Db");
   });
 });
+
+describe("extended qualities", () => {
+  it("reads elevenths, thirteenths and altered dominants", () => {
+    const cases: [string, string][] = [
+      ["C11", "11"],
+      ["Am11", "m11"],
+      ["G13", "13"],
+      ["Dm13", "m13"],
+      ["Fmaj13", "maj13"],
+      ["CM13", "maj13"],
+      ["G7b5", "7b5"],
+      ["G7(b5)", "7b5"],
+      ["G7#11", "7#11"],
+      ["Cmaj7#11", "maj7#11"],
+      ["G7b13", "aug7"],
+      ["G9sus4", "9sus4"],
+      ["Cmadd9", "madd9"],
+      ["Cadd11", "add11"],
+    ];
+    for (const [name, quality] of cases) expect(parseChord(name)?.quality, name).toBe(quality);
+  });
+
+  it("keeps the colour tones required and lets the fifth and ninth go", () => {
+    const sorted = (list: number[]) => [...list].sort((a, b) => a - b);
+    expect(sorted(parseChord("C13")!.required)).toEqual([0, 4, 9, 10]);
+    expect(sorted(parseChord("C13")!.optional)).toEqual([2, 7]);
+    expect(sorted(parseChord("Cm11")!.required)).toEqual([0, 3, 5, 10]);
+    expect(sorted(parseChord("G7b5")!.required)).toEqual([1, 5, 7, 11]);
+  });
+});

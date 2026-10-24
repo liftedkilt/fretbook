@@ -15,6 +15,7 @@
   import { parse } from "../lib/chordpro";
   import { loadChoice, saveChoice } from "../lib/chords/choice";
   import { buildEntries } from "../lib/chords/entries";
+  import { movedDefines } from "../lib/chords/voicings";
   import { resolveSetup } from "../lib/chords/instruments";
   import { playStrum, strumNotes } from "../lib/chords/strum";
   import { capoOf, chordsUsed } from "../lib/chords/used";
@@ -57,7 +58,7 @@
       chordsUsed(sheet, shapeShift, flats),
       setup.tuning.strings,
       setup.instrument.rootInBass,
-      sheet.defines,
+      movedDefines(sheet.defines, shapeShift, flats),
       choice.voicings,
     ),
   );

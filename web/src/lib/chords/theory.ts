@@ -36,6 +36,19 @@ const QUALITIES: Record<string, Quality> = {
   maj9: { intervals: [0, 2, 4, 7, 11], optional: [7] },
   "7b9": { intervals: [0, 1, 4, 7, 10], optional: [7] },
   "7#9": { intervals: [0, 3, 4, 7, 10], optional: [7] },
+  madd9: { intervals: [0, 2, 3, 7], optional: [7] },
+  add11: { intervals: [0, 4, 5, 7], optional: [7] },
+  "7b5": { intervals: [0, 4, 6, 10], optional: [] },
+  "7#11": { intervals: [0, 4, 6, 7, 10], optional: [7] },
+  "maj7#11": { intervals: [0, 4, 6, 7, 11], optional: [7] },
+  "9sus4": { intervals: [0, 2, 5, 7, 10], optional: [7] },
+  // From the eleventh up, a voicing may leave out the ninth and the fifth (and the
+  // third of an 11th, which clashes with the fourth), as players do.
+  "11": { intervals: [0, 2, 4, 5, 7, 10], optional: [2, 4, 7] },
+  m11: { intervals: [0, 2, 3, 5, 7, 10], optional: [2, 7] },
+  "13": { intervals: [0, 2, 4, 7, 9, 10], optional: [2, 7] },
+  m13: { intervals: [0, 2, 3, 7, 9, 10], optional: [2, 7] },
+  maj13: { intervals: [0, 2, 4, 7, 9, 11], optional: [2, 7] },
 };
 
 const ALIASES: Record<string, string> = {
@@ -93,6 +106,28 @@ const ALIASES: Record<string, string> = {
   M9: "maj9",
   "7b9": "7b9",
   "7#9": "7#9",
+  madd9: "madd9",
+  minadd9: "madd9",
+  add11: "add11",
+  "7b5": "7b5",
+  "7-5": "7b5",
+  "7#11": "7#11",
+  "7+11": "7#11",
+  "maj7#11": "maj7#11",
+  "M7#11": "maj7#11",
+  "7b13": "aug7",
+  "9sus4": "9sus4",
+  "9sus": "9sus4",
+  "11": "11",
+  m11: "m11",
+  min11: "m11",
+  "-11": "m11",
+  "13": "13",
+  m13: "m13",
+  min13: "m13",
+  "-13": "m13",
+  maj13: "maj13",
+  M13: "maj13",
 };
 
 export interface ParsedChord {
