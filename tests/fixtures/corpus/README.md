@@ -14,6 +14,7 @@ few bars of techniques invented for the tests, and the lyrics are placeholder te
 | `musicxml/mixed.nontab.musicxml` | Piano part without string/fret data | Hand-written |
 | `gp/riff.gp3`, `.gp4`, `.gp5` | The riff in Guitar Pro 3, 4 and 5 | `gp/../generate_gp.py` (PyGuitarPro) |
 | `gp/riff.gp` | The riff in Guitar Pro 7/8 | `web/scripts/generate-gp7.mjs` (alphaTab's exporter) |
+| `gp/riff.gpx` | The riff in Guitar Pro 6 | `python tests/fixtures/corpus/generate_gpx.py`: wraps `riff.gp`'s `score.gpif` in a GPX container (see below) |
 | `chordpro/*.cho` | ChordPro with long and short directive forms | Hand-written |
 | `ugtext/*.txt` | Ultimate Guitar style chords-over-lyrics, with and without a header | Hand-written |
 | `asciitab/*.tab`, `asciitab/*.txt` | ASCII tab in sixteen styles: labelled and unlabelled rows, bass, drop D, 5-string bass written low string first, 7-string, multi-digit frets, technique marks, repeat signs, sections with chord lines and lyrics, `PM` rows, a bass and a guitar tab in one file (two tracks), wrapped systems, sixteenth runs, and a `.txt` with a tab among prose | Hand-written |
@@ -24,8 +25,12 @@ few bars of techniques invented for the tests, and the lyrics are placeholder te
 | `golden/*.json` | Expected result of importing each file above | `pytest tests/test_import_corpus.py --update-golden` |
 | `golden-web/*.json` | Expected result of importing each Guitar Pro file in the browser | `UPDATE_GOLDEN=1 npm test --prefix web` |
 
-Not covered yet, because there is no way to generate an original file or no importer exists: Guitar Pro 6 (`.gpx`),
-and a server importer for `.mxl`. Those fixtures are snapshotted as "no importer" so the snapshot
+Not covered yet, because there is no way to generate an original file or no importer exists: a server importer for `.mxl`. That fixture is snapshotted as "no importer" so the snapshot
 changes when support lands.
+
+`riff.gpx` was not saved from Guitar Pro 6, which nobody here can run, and neither PyGuitarPro nor alphaTab can write
+`.gpx`. The generator packs the riff's GPIF XML (from `riff.gp`, version string changed to 6.1.0) into a real BCFZ/BCFS
+container using literal runs only, so it exercises the container reader but not GP6-specific XML or back-reference
+compression. Replace it with a file saved from Guitar Pro 6 if one becomes available.
 
 To add a file, put it in the matching folder and run both update commands; review the new snapshot in the diff.

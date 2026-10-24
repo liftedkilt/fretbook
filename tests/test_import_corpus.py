@@ -74,7 +74,8 @@ def normalize(path: Path, tmp_path: Path) -> dict:
 def test_corpus_is_complete() -> None:
     kinds = {p.parent.name for p in FILES}
     assert {"musicxml", "gp", "chordpro", "ugtext", "asciitab", "midi", "json"} <= kinds
-    assert {p.suffix for p in FILES} >= {".musicxml", ".mxl", ".gp3", ".gp4", ".gp5", ".gp", ".cho", ".mid", ".json"}
+    suffixes = {".musicxml", ".mxl", ".gp3", ".gp4", ".gp5", ".gp", ".gpx", ".cho", ".mid", ".json"}
+    assert {p.suffix for p in FILES} >= suffixes
 
 
 @pytest.mark.parametrize("path", FILES, ids=lambda p: str(p.relative_to(CORPUS)))

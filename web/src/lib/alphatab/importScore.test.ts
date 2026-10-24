@@ -10,7 +10,7 @@ import type { ScoreDocument } from "../types";
 // Regenerate the snapshots after an intended change with `UPDATE_GOLDEN=1 npm test`.
 
 const corpus = fileURLToPath(new URL("../../../../tests/fixtures/corpus/", import.meta.url));
-const FILES = ["riff.gp3", "riff.gp4", "riff.gp5", "riff.gp"];
+const FILES = ["riff.gp3", "riff.gp4", "riff.gp5", "riff.gp", "riff.gpx"];
 
 function load(path: string): Uint8Array {
   return new Uint8Array(readFileSync(corpus + path));
