@@ -134,7 +134,6 @@
               type="number"
               min="0"
               max="720"
-              step="5"
               bind:value={goalDraft}
             />
             <span class="muted">{t("practiceLog.minutes")}</span>

@@ -25,7 +25,6 @@ Practice controls (metronome, count-in, mixer, pitch-preserving slowdown) are do
 
 - **Automatic sync**: estimate the bar marks from the audio (beat tracking) so tapping `T` becomes fixing marks instead of placing them all.
 - **Stem separation**: isolate or remove the bass or guitar in the recording (for example with Demucs). It needs a GPU, so it could share the worker planned for [#6](https://github.com/liftedkilt/fretbook/issues/6).
-- **Practice log**: time spent and the highest speed reached per song or loop.
 
 ### Listening to you play
 
