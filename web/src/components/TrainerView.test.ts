@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import TrainerView from "./TrainerView.svelte";
+import { startListening, type ChromaEvent, type ListenSession } from "../lib/listen";
 
 const mocks = vi.hoisted(() => ({
   record: vi.fn(async () => undefined),
@@ -95,7 +96,7 @@ describe("TrainerView", () => {
   it("plays a chord and checks its quality", async () => {
     render(TrainerView);
     await fireEvent.click(screen.getByTestId("trainer-tab-chord"));
-    expect(screen.queryByTestId("trainer-answer-by")).toBeNull();
+    expect(screen.getByTestId("trainer-answer-by")).toHaveValue("buttons");
     await fireEvent.change(screen.getByTestId("trainer-time"), { target: { value: "0" } });
     await fireEvent.click(screen.getByTestId("trainer-start"));
     expect(mocks.playChord).toHaveBeenCalledTimes(1);
@@ -110,5 +111,52 @@ describe("TrainerView", () => {
     await fireEvent.click(screen.getByTestId("trainer-start"));
     expect(await screen.findByTestId("trainer-problem")).toBeInTheDocument();
     expect(screen.queryByTestId("trainer-hud")).toBeNull();
+  });
+
+  it("answers the chord game by playing the chord", async () => {
+    let onChroma: ((event: ChromaEvent) => void) | undefined;
+    const session = { setChroma: vi.fn(), stop: vi.fn(async () => undefined) };
+    vi.mocked(startListening).mockImplementationOnce(async (options) => {
+      onChroma = options?.onChroma;
+      return session as unknown as ListenSession;
+    });
+    // Strums of C major (random() = 0 asks for a major chord on C) and then of C minor.
+    const strum = (time: number, pcs: number[], onset = false): ChromaEvent => ({
+      time,
+      span: 0.05,
+      onset,
+      onsetTime: onset ? time - 0.1 : null,
+      bins: Array.from({ length: 12 }, (_, pc) => (pcs.includes(pc) ? 1 : 0)),
+    });
+    render(TrainerView);
+    await fireEvent.click(screen.getByTestId("trainer-tab-chord"));
+    await fireEvent.change(screen.getByTestId("trainer-answer-by"), { target: { value: "play" } });
+    await fireEvent.change(screen.getByTestId("trainer-time"), { target: { value: "0" } });
+    await fireEvent.click(screen.getByTestId("trainer-start"));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(session.setChroma).toHaveBeenCalledWith(true);
+    expect(screen.queryByTestId("trainer-choices")).toBeNull();
+    expect(screen.getByTestId("trainer-prompt")).toHaveTextContent("Play the chord");
+
+    onChroma!(strum(1, [0, 4, 7], true));
+    onChroma!(strum(1.05, [0, 4, 7]));
+    onChroma!(strum(1.1, [0, 4, 7]));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(screen.getByTestId("trainer-score")).toHaveTextContent("1 of 1");
+    expect(screen.getByTestId("trainer-feedback")).toHaveTextContent("Right");
+    await vi.advanceTimersByTimeAsync(1000);
+
+    // The next question is also a major chord on C; a minor chord is the wrong answer, and the
+    // reveal names the root as well as the quality.
+    onChroma!(strum(5, [0, 3, 7], true));
+    for (let i = 1; i <= 6; i += 1) onChroma!(strum(5 + i * 0.05, [0, 3, 7]));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(screen.getByTestId("trainer-score")).toHaveTextContent("1 of 2");
+    expect(screen.getByTestId("trainer-reveal")).toHaveTextContent("It was: C Major");
+    await vi.advanceTimersByTimeAsync(3000);
+    await fireEvent.click(screen.getByTestId("trainer-stop"));
+    expect(mocks.record).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: "chord", rounds: 2, correct: 1 }),
+    );
   });
 });

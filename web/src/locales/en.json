@@ -1275,7 +1275,7 @@
     "about": {
       "fretboard": "A note and a string are shown. Find the note on that string by tapping the fretboard, or by playing it on your instrument.",
       "interval": "Two notes play one after the other. Name the interval between them, or play the second note on your instrument.",
-      "chord": "A chord plays. Name its quality: major, minor, seventh and so on."
+      "chord": "A chord plays. Name its quality: major, minor, seventh and so on, or play the chord back on your instrument."
     },
     "noteNames": "Note names",
     "sharps": "Sharps (C#)",
@@ -1305,6 +1305,7 @@
     "listen": "Listen again",
     "whichOne": "What do you hear?",
     "playTheSecond": "Play the second note.",
+    "playTheChord": "Play the chord you heard.",
     "itWas": "It was: {answer}",
     "right": "Right!",
     "wrong": "Not quite.",
