@@ -1087,6 +1087,10 @@
   },
   "practiceLog": {
     "nav": "Prática",
+    "chordPractice": "Estou praticando isto",
+    "chordPracticeHint": "O tempo nesta cifra entra no seu diário de prática enquanto a página estiver aberta.",
+    "chordPracticeOn": "Contando seu tempo de prática.",
+    "chordPracticePaused": "Em pausa: nada foi tocado há um tempo. Toque ou role a página para continuar.",
     "heading": "Diário de prática",
     "today": "hoje",
     "yesterday": "ontem",

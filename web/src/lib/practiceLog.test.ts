@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   addDays,
   agoDays,
@@ -7,10 +7,12 @@ import {
   goalProgress,
   heatLevel,
   heatmapWeeks,
+  IdleWatch,
   localDay,
   MAX_SESSION_SECONDS,
   MERGE_PAUSE_MS,
   MIN_SESSION_SECONDS,
+  WAIT_IDLE_MS,
   minutesOf,
   parseDay,
   PracticeTimer,
@@ -263,5 +265,54 @@ describe("heatmap", () => {
     expect(last.map((cell) => cell.future)).toEqual([false, false, false, true, true, true, true]);
     expect(last[1]).toMatchObject({ seconds: 600, level: 4 });
     expect(last[0]).toMatchObject({ seconds: 0, level: 0 });
+  });
+});
+
+describe("IdleWatch", () => {
+  it("fires once after the quiet time, and re-arming restarts it", () => {
+    vi.useFakeTimers();
+    const onIdle = vi.fn();
+    const watch = new IdleWatch(WAIT_IDLE_MS, onIdle);
+    watch.arm();
+    vi.advanceTimersByTime(WAIT_IDLE_MS - 1);
+    watch.arm();
+    vi.advanceTimersByTime(WAIT_IDLE_MS - 1);
+    expect(onIdle).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    expect(onIdle).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(WAIT_IDLE_MS * 2);
+    expect(onIdle).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+
+  it("does not fire once disarmed", () => {
+    vi.useFakeTimers();
+    const onIdle = vi.fn();
+    const watch = new IdleWatch(1000, onIdle);
+    watch.arm();
+    watch.disarm();
+    vi.advanceTimersByTime(5000);
+    expect(onIdle).not.toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it("stops a wait-mode session counting when the player is stuck", () => {
+    const h = harness();
+    h.timer.update(true, { ...base, mode: "wait" });
+    h.advance(WAIT_IDLE_MS);
+    // The idle cap turns the activity off; the stretch before it is kept.
+    h.timer.update(false, { ...base, mode: "wait" });
+    h.advance(10 * 60_000);
+    expect(h.sessions).toHaveLength(1);
+    expect(h.sessions[0].session.duration_seconds).toBe(120);
+    expect(h.sessions[0].session.mode).toBe("wait");
+  });
+
+  it("logs scored mode with its score", () => {
+    const h = harness();
+    h.timer.update(true, { ...base, mode: "scored", score: 87.5 });
+    h.advance(30_000);
+    h.timer.flush();
+    expect(h.sessions[0].session).toMatchObject({ mode: "scored", score: 87.5 });
   });
 });

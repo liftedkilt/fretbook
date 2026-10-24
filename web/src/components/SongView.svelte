@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ChordPractice from "./ChordPractice.svelte";
   import ChordSheetView from "./ChordSheetView.svelte";
   import DifficultyPanel from "./DifficultyPanel.svelte";
   import SongPractice from "./SongPractice.svelte";
@@ -12,6 +13,8 @@
 
   let song = $state<SongDetail | null>(null);
   let error = $state("");
+  // Bumped when a chord-sheet practice session is saved, so the history below reloads.
+  let logged = $state(0);
 
   $effect(() => {
     const songId = id;
@@ -46,6 +49,10 @@
   {#if song.content_kind === "chords"}
     <ChordSheetView {song} initialTranspose={transpose} />
     <DifficultyPanel tracks={song.difficulty_tracks} preferredId="chords" chords />
+    {#key song.id}
+      <ChordPractice songId={song.id} onlogged={() => (logged += 1)} />
+    {/key}
+    <SongPractice songId={song.id} reload={logged} />
   {:else}
     {#key song.id}
       <TabPlayer song={song as TabSong} />

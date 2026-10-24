@@ -1087,6 +1087,10 @@
   },
   "practiceLog": {
     "nav": "Practice",
+    "chordPractice": "I'm practising this",
+    "chordPracticeHint": "Time on this sheet is added to your practice log while the page is open.",
+    "chordPracticeOn": "Counting your practice time.",
+    "chordPracticePaused": "Paused: nothing touched for a while. Tap or scroll to carry on.",
     "heading": "Practice log",
     "today": "today",
     "yesterday": "yesterday",
