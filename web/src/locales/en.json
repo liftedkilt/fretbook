@@ -977,6 +977,9 @@
     "reset": "Reset",
     "selectLoop": "Saved loops…"
   },
+  "job": {
+    "echo": "Echoing the job"
+  },
   "practiceLog": {
     "nav": "Practice",
     "heading": "Practice log",

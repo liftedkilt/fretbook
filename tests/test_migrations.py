@@ -483,6 +483,31 @@ def verify_v8(conn: sqlite3.Connection) -> None:
     assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
 
 
+def seed_v9(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        INSERT INTO users (id, external_subject, display_name, created_at)
+        VALUES ('user-v9', 'sub-v9', 'User V9', '2026-01-09T00:00:00Z')
+        """
+    )
+    conn.execute(
+        """
+        INSERT INTO jobs (id, owner_id, kind, status, payload, created_at, updated_at)
+        VALUES ('job-v9', 'user-v9', 'import.file', 'queued', '{}', '2026-01-09T00:00:00Z', '2026-01-09T00:00:00Z')
+        """
+    )
+    conn.commit()
+
+
+def verify_v9(conn: sqlite3.Connection) -> None:
+    assert conn.execute("SELECT worker_id FROM jobs WHERE id = 'job-v9'").fetchone()[0] == ""
+    conn.execute(
+        "INSERT INTO workers (id, kinds, started_at, heartbeat_at) VALUES ('w', '[]', '2026-01-09', '2026-01-09')"
+    )
+    conn.rollback()
+    assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+
+
 def seed_v10(conn: sqlite3.Connection) -> None:
     conn.execute(
         """
@@ -537,6 +562,7 @@ SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.C
     6: (seed_v6, verify_v6),
     7: (seed_v7, verify_v7),
     8: (seed_v8, verify_v8),
+    9: (seed_v9, verify_v9),
     10: (seed_v10, verify_v10),
 }
 

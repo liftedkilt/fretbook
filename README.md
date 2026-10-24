@@ -111,6 +111,7 @@ done
 | `FRETBOOK_DATABASE` | `$DATA_DIR/fretbook.sqlite` | Database file. |
 | `FRETBOOK_MIGRATION_BACKUPS_KEEP` | `5` | Number of automatic pre-migration backups to keep in `$DATA_DIR/backups`. |
 | `FRETBOOK_FAILED_UPLOAD_RETENTION_DAYS` | `7` | Days to keep uploaded files from failed imports before cleaning them up. |
+| `FRETBOOK_WORKER_KINDS` | empty | Comma-separated job kinds the web process leaves for a separate `python -m fretbook.worker` process (see [ARCHITECTURE](docs/ARCHITECTURE.md#background-jobs)). Worker-only kinds such as `echo` are always left to the worker. |
 | `FRETBOOK_LEGACY_SONGS_DIR` | `songs` | bass-tab-sync `songs/<slug>/` folders to import on start. Empty disables it. |
 | `FRETBOOK_AUTH_MODE` | `single`, or `oidc` when `FRETBOOK_OIDC_ISSUER` is set | `single` (no login, one library) or `oidc` (sign-in, one library per user). |
 | `FRETBOOK_ROOT_PATH` | empty | URL prefix when a reverse proxy strips one, for example `/fretbook`. |

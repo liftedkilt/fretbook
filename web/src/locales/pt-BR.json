@@ -977,6 +977,9 @@
     "reset": "Reiniciar",
     "selectLoop": "Repetições salvas…"
   },
+  "job": {
+    "echo": "Repetindo o trabalho"
+  },
   "practiceLog": {
     "nav": "Prática",
     "heading": "Diário de prática",

@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Fail when fretbook/db/migrations/ has duplicate, skipped or malformed numbers.
 
-``RESERVED`` lists numbers an unmerged issue holds; those may be absent.
-
 Parallel pull requests that both add the next migration collide here. Usage:
 ``python scripts/check_migrations.py [migrations_dir]``.
 """
@@ -16,10 +14,6 @@ from pathlib import Path
 
 DEFAULT_DIR = Path(__file__).resolve().parent.parent / "fretbook" / "db" / "migrations"
 NAME = re.compile(r"^(\d{3})_[a-z0-9_]+\.sql$")
-# Numbers held for an issue that has not merged yet, so the next migration can take a later one.
-# They may be missing without failing the "no gaps" check. Remove an entry once its file is on main,
-# and update test_reserved_migration_number_may_be_missing in tests/test_ci_checks.py with it.
-RESERVED = {9: "#34 (separate worker process)"}
 
 
 def check(directory: Path) -> list[str]:
@@ -46,7 +40,7 @@ def check(directory: Path) -> list[str]:
 
     if by_number:
         expected = set(range(1, max(by_number) + 1))
-        for number in sorted(expected - set(by_number) - set(RESERVED)):
+        for number in sorted(expected - set(by_number)):
             errors.append(
                 f"missing migration number {number:03d}: numbers must run 001..{max(by_number):03d} with no gaps."
             )
