@@ -1900,7 +1900,8 @@
     "error": "Não foi possível salvar o resultado na lição. Verifique a conexão e toque de novo.",
     "pick": "Pratique em uma música",
     "pickPlaceholder": "Escolha uma música…",
-    "play": "Abrir no player"
+    "play": "Abrir no player",
+    "import": "Importar uma música para praticar"
   },
   "metadata": {
     "heading": "Detalhes",

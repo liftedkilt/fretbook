@@ -148,6 +148,8 @@ export const ui = $state({
   filter: "all" as LibraryFilter,
   search: "",
   sheet: "" as Sheet,
+  /** Set when the add sheet opens from a lesson: the imported song opens in the player for that lesson. */
+  addForLesson: null as { course: string; lesson: string } | null,
   /** Set when the tuner opens from a song, so it can preload that song's tuning. */
   tunerRequest: null as TunerRequest | null,
   theme: storedTheme(),
@@ -301,6 +303,13 @@ export function defaultFamily(): InstrumentPreset["family"] {
 
 export function openSheet(sheet: Sheet): void {
   ui.sheet = sheet;
+  ui.addForLesson = null;
+}
+
+/** Open the add sheet so the song it imports opens in the player for the lesson. */
+export function openAddForLesson(ref: { course: string; lesson: string }): void {
+  ui.sheet = "add";
+  ui.addForLesson = ref;
 }
 
 /** Open the tuner, optionally preloaded with a song's tuning and capo. */
@@ -311,6 +320,7 @@ export function openTuner(request: TunerRequest | null = null): void {
 
 export function closeSheet(): void {
   ui.sheet = "";
+  ui.addForLesson = null;
 }
 
 function resolvedTheme(theme: Theme): "dark" | "light" {

@@ -85,3 +85,69 @@ test("a wait run that starts part way through the song does not finish the lesso
   const response = await page.request.get("/api/courses/play-along/lessons/riff");
   expect((await response.json()).progress.completed).toBe(false);
 });
+
+test("a learner with an empty library imports a song from the lesson and plays it there", async ({
+  page,
+}) => {
+  await page.request.put("/api/courses/play-along/source", { data: { text: COURSE } });
+  await page.request.put("/api/courses/play-along/lessons/riff/source", {
+    data: { text: lesson("Play the riff", "type: wait") },
+  });
+
+  await page.goto("/lessons/play-along/riff");
+  await expect(page.getByTestId("lesson-song-pick")).toHaveCount(0);
+  await page.getByTestId("lesson-import").click();
+  await page.getByTestId("add-mode-file").click();
+  await page.getByTestId("add-file-input").setInputFiles(fixture("practice-riff.musicxml"));
+
+  // The imported song opens in the player with the lesson attached.
+  await expect(page).toHaveURL(/\/songs\/[^/]+\?lesson=play-along\/riff$/);
+  await expect(page.getByTestId("lesson-run")).toContainText("wait mode");
+
+  // Back on the lesson, the song is already picked.
+  await page.getByTestId("lesson-run-back").click();
+  await expect(page.getByTestId("lesson-song-pick")).not.toHaveValue("");
+  await expect(page.getByTestId("lesson-play-link")).toBeVisible();
+});
+
+test("the song a learner picked is the one the lesson starts on next time", async ({
+  page,
+  seed,
+}) => {
+  const first = await seed.musicXmlTab();
+  await page.request.put("/api/courses/play-along/source", { data: { text: COURSE } });
+  await page.request.put("/api/courses/play-along/lessons/riff/source", {
+    data: { text: lesson("Play the riff", "type: wait") },
+  });
+
+  await page.goto("/lessons/play-along/riff");
+  await expect(page.getByTestId("lesson-song-pick")).toHaveValue("");
+  await page.getByTestId("lesson-song-pick").selectOption(first.id);
+  await page.reload();
+  await expect(page.getByTestId("lesson-song-pick")).toHaveValue(first.id);
+});
+
+test("finish a scored lesson from the player", async ({ page, seed }) => {
+  const song = await seed.musicXmlTab();
+  await page.request.put("/api/courses/play-along/source", { data: { text: COURSE } });
+  // Any score passes: what is checked is that a whole scored run reaches the lesson.
+  await page.request.put("/api/courses/play-along/lessons/riff/source", {
+    data: { text: lesson("Play the riff", "type: score\nmin_score: 0") },
+  });
+
+  await page.goto(`/songs/${song.id}?lesson=play-along/riff`);
+  await expect(page.getByTestId("lesson-run")).toContainText("scored mode");
+  await expect(page.getByTestId("player-score").locator("svg").first()).toBeVisible();
+
+  await page.getByTestId("player-panel-toggle").click();
+  await page.getByTestId("score-toggle").click();
+  await expect(page.getByTestId("score-live")).toBeVisible();
+  await page.getByTestId("player-play").click();
+  await expect(page.getByTestId("score-results")).toBeVisible({ timeout: 50_000 });
+
+  await expect(page.getByTestId("lesson-run-passed")).toBeVisible();
+  await page.getByTestId("lesson-run-back").click();
+  await expect(page.getByTestId("lesson-done")).toBeVisible();
+  const response = await page.request.get("/api/courses/play-along/lessons/riff");
+  expect((await response.json()).progress.completed).toBe(true);
+});
