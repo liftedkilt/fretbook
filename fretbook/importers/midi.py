@@ -8,27 +8,34 @@ MIDI knows pitches, not strings, so the importer places every note with
   or bass (by General MIDI program, else by pitch range) becomes a track;
 * tempo and time-signature events. A time signature takes effect at the next bar line, and a tempo change applies from
   the bar after it happens, so bars never hold two tempos;
-* notes, snapped to a grid (sixteenths by default). Notes that start together are one chord, a note lasts until the
-  next onset at most (a tab voice cannot overlap itself), and a note that crosses a bar line is split and tied.
+* notes, snapped to a grid (sixteenths by default). Notes that start together are one chord and a note that crosses a
+  bar line is split and tied. A quarter of a bar whose onsets sit clearly closer to a triplet, quintuplet or sextuplet
+  than to the grid is written as that tuplet (``Beat.tuplet``, with the scaled duration) instead of being snapped;
+* sustained notes. A note lasts until the next onset, unless it rings on for two or more grid units past it: then it
+  keeps its full length in a second voice of the same bar (a held bass under a melody, a chord under a moving top
+  line). The second voice is never overlapped by itself, so a third layer is cut at the next onset of the second.
+  Both voices are fingered together, so a ringing note keeps its string.
 
-Not read: velocities, controllers, pitch bends, lyrics, and triplets (a triplet snaps to the nearest grid position).
+Not read: velocities, controllers, pitch bends and lyrics.
 """
 
 from __future__ import annotations
 
 import io
 import statistics
+from bisect import bisect_right
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 import mido
 
-from fretbook.importers.ascii_tab import _fill
+from fretbook.importers.ascii_tab import _REPRESENTABLE, _fill
 from fretbook.importers.base import ImportError, ImportRequest, ImportResult, Notice, Progress
 from fretbook.score.fingering import assign_frets
 from fretbook.score.instruments import InstrumentPreset, family, get_preset, is_preset
 from fretbook.score.model import TICKS_PER_QUARTER, Bar, Beat, Note, ScoreDocument, Track, TrackBar, Voice
+from fretbook.score.techniques import tuplet_ratio
 
 EXTENSIONS = (".mid", ".midi")
 MAX_BYTES = 8 * 1024 * 1024
@@ -326,71 +333,234 @@ class _Event:
     start: int
     duration: int
     pitches: list[int]
+    voice: int = 0
 
 
-def _events(source: MidiSource, grid_ticks: int) -> list[_Event]:
-    def snap(tick: int) -> int:
-        return round(tick / grid_ticks) * grid_ticks
+_QUARTER = TICKS_PER_QUARTER
+_TUPLETS = (3, 5, 6)
+"""Notes per quarter that are looked for, in the order they are tried: triplets, quintuplets, sextuplets."""
+_MIN_TUPLET_GRID = {3: 8, 5: 16, 6: 16}
+"""The coarsest grid that still looks for each tuplet: a quarter-note grid asked for no subdivision at all."""
+_FIT = 0.2
+"""How far an onset may sit from a tuplet position, as a share of the step, and still count as on it."""
+_OVERLAP_UNITS = 2
+"""How many grid units a note must ring past the next onset to move to the second voice (less is just legato)."""
+_VOICES = 2
 
-    starts: dict[int, dict[int, int]] = {}
+
+class _Grid:
+    """Where the notes of one source snap to: the straight grid, except in the beats found to hold a tuplet.
+
+    A tuplet span is one quarter of a bar, counted from the bar line, so it also works in bars that do not start on
+    a quarter of the song (3/8, 5/8).
+    """
+
+    def __init__(self, bars: list[tuple[int, Bar]], grid_ticks: int, tuplets: dict[int, int]) -> None:
+        self.bars = bars
+        self.starts = [start for start, _ in bars]
+        self.grid = grid_ticks
+        self.tuplets = tuplets
+        self.spans = sorted(tuplets)
+
+    def span_start(self, tick: int) -> int | None:
+        """The start of the tuplet span ``tick`` falls in, or ``None`` when it is on the straight grid."""
+        index = bisect_right(self.spans, tick) - 1
+        if index >= 0 and tick < self.spans[index] + _QUARTER:
+            return self.spans[index]
+        return None
+
+    def step_at(self, tick: int) -> int:
+        start = self.span_start(tick)
+        return self.grid if start is None else _QUARTER // self.tuplets[start]
+
+    def snap(self, tick: int) -> int:
+        start = self.span_start(tick)
+        if start is None:
+            return round(tick / self.grid) * self.grid
+        step = _QUARTER // self.tuplets[start]
+        return start + round((tick - start) / step) * step
+
+    def segments(self, begin: int, end: int) -> list[tuple[int, int, int | None]]:
+        """``(start, length, tuplet)`` pieces covering ``begin..end``, cut where a tuplet span starts or ends."""
+        pieces: list[tuple[int, int, int | None]] = []
+        cursor = begin
+        while cursor < end:
+            start = self.span_start(cursor)
+            if start is not None:
+                stop = min(end, start + _QUARTER)
+                whole = cursor == start and stop == start + _QUARTER
+                pieces.append((cursor, stop - cursor, None if whole else self.tuplets[start]))
+            else:
+                after = bisect_right(self.spans, cursor)
+                stop = min(end, self.spans[after]) if after < len(self.spans) else end
+                pieces.append((cursor, stop - cursor, None))
+            cursor = stop
+        return pieces
+
+
+def _find_tuplets(source: MidiSource, bars: list[tuple[int, Bar]], grid_ticks: int) -> dict[int, int]:
+    """Spans (a quarter of a bar, keyed by start tick) whose onsets sit on a tuplet and not on the straight grid."""
+    division = _WHOLE // grid_ticks
+    allowed = [n for n in _TUPLETS if division >= _MIN_TUPLET_GRID[n]]
+    if not allowed:
+        return {}
+    starts = [start for start, _ in bars]
+    onsets: dict[int, set[int]] = {}
+    for start, _, _ in source.notes:
+        index = bisect_right(starts, start) - 1
+        if index < 0 or index >= len(bars):
+            continue
+        bar_start, bar = bars[index]
+        offset = (start - bar_start) // _QUARTER * _QUARTER
+        if offset + _QUARTER > bar.length_ticks:
+            continue
+        onsets.setdefault(bar_start + offset, set()).add(start)
+    found: dict[int, int] = {}
+    for span, ticks in onsets.items():
+        if len(ticks) < 2:
+            continue
+        straight = sum(abs(tick - round(tick / grid_ticks) * grid_ticks) for tick in ticks)
+        for n in allowed:
+            step = _QUARTER // n
+            deviations = [abs(tick - span - round((tick - span) / step) * step) for tick in ticks]
+            if straight and max(deviations) <= _FIT * step and sum(deviations) * 2 <= straight:
+                found[span] = n
+                break
+    return found
+
+
+def _events(source: MidiSource, grid: _Grid) -> list[_Event]:
+    """The source's notes as chords on the quantizing grid, with notes that ring on under later onsets in voice 2."""
+    held: dict[int, dict[int, int]] = {}
     for start, end, pitch in source.notes:
-        begin = snap(start)
-        finish = max(snap(end), begin + grid_ticks)
-        held = starts.setdefault(begin, {})
-        held[pitch] = max(held.get(pitch, 0), finish - begin)
-    ordered = sorted(starts)
+        begin = grid.snap(start)
+        finish = max(grid.snap(end), begin + grid.step_at(begin))
+        chord = held.setdefault(begin, {})
+        chord[pitch] = max(chord.get(pitch, 0), finish - begin)
+    onsets = sorted(held)
+    voices: list[dict[int, dict[int, int]]] = [{} for _ in range(_VOICES)]
+    for position, begin in enumerate(onsets):
+        following = onsets[position + 1] if position + 1 < len(onsets) else None
+        for pitch, length in held[begin].items():
+            ringing = following is not None and begin + length - following >= _OVERLAP_UNITS * grid.grid
+            voices[1 if ringing else 0].setdefault(begin, {})[pitch] = length
     events: list[_Event] = []
-    for position, begin in enumerate(ordered):
-        held = starts[begin]
-        duration = max(held.values())
-        if position + 1 < len(ordered):
-            duration = min(duration, ordered[position + 1] - begin)
-        events.append(_Event(begin, duration, sorted(held, reverse=True)))
+    for voice, chords in enumerate(voices):
+        # Voice 1 is cut by its own next onset, so a sustained note never overlaps another sustained one. Voice 0 is
+        # cut by any onset of the source, as a single voice always was.
+        cuts = sorted(chords) if voice else onsets
+        for begin, chord in chords.items():
+            duration = max(chord.values())
+            after = bisect_right(cuts, begin)
+            if after < len(cuts):
+                duration = min(duration, cuts[after] - begin)
+            events.append(_Event(begin, duration, sorted(chord, reverse=True), voice))
+    events.sort(key=lambda event: (event.start, event.voice))
     return events
 
 
+def _parts(length: int, tuplet: int) -> list[int]:
+    """``length`` (a whole number of tuplet steps) split into beats whose written value the notation can draw."""
+    step = _QUARTER // tuplet
+    actual, normal = tuplet_ratio(tuplet)
+    drawable = set(_REPRESENTABLE)
+    parts: list[int] = []
+    left = length // step
+    while left > 0:
+        count = next(k for k in range(left, 0, -1) if k * step * actual // normal in drawable or k == 1)
+        parts.append(count * step)
+        left -= count
+    return parts
+
+
+def _beats(
+    grid: _Grid, begin: int, end: int, bar_start: int, notes: list[tuple[int, int]] | None, tie: bool
+) -> list[Beat]:
+    """Beats from ``begin`` to ``end``: rests when ``notes`` is ``None``, else the notes, tied after the first beat."""
+    beats: list[Beat] = []
+    for start, length, tuplet in grid.segments(begin, end):
+        parts = _fill(length) if tuplet is None else _parts(length, tuplet)
+        for duration in parts:
+            chord = [] if notes is None else [Note(string=string, fret=fret, tie=tie) for string, fret in sorted(notes)]
+            beats.append(Beat(position=start - bar_start, duration=duration, notes=chord, tuplet=tuplet))
+            start += duration
+            tie = True
+    return beats
+
+
 def _layout(
-    events: list[_Event], placements: list[list[tuple[int, int]]], bars: list[tuple[int, Bar]]
+    events: list[_Event], placements: list[list[tuple[int, int]]], bars: list[tuple[int, Bar]], grid: _Grid
 ) -> list[TrackBar]:
     """Lay the placed events out bar by bar: rests for gaps, ties for notes across bar lines or beyond one value."""
     starts = [start for start, _ in bars]
-    pieces: list[list[tuple[int, int, list[tuple[int, int]], bool]]] = [[] for _ in bars]
-    bar_index = 0
+    pieces: list[list[list[tuple[int, int, list[tuple[int, int]], bool]]]] = [
+        [[] for _ in bars] for _ in range(_VOICES)
+    ]
     for event, placed in zip(events, placements, strict=True):
         if not placed:
             continue
         cursor = event.start
         remaining = event.duration
         first = True
+        bar_index = max(bisect_right(starts, cursor) - 1, 0)
         while remaining > 0:
             while bar_index + 1 < len(starts) and starts[bar_index + 1] <= cursor:
                 bar_index += 1
-            while bar_index > 0 and starts[bar_index] > cursor:
-                bar_index -= 1
             bar_end = starts[bar_index] + bars[bar_index][1].length_ticks
             length = min(remaining, bar_end - cursor)
-            pieces[bar_index].append((cursor - starts[bar_index], length, placed, not first))
+            pieces[event.voice][bar_index].append((cursor - starts[bar_index], length, placed, not first))
             cursor += length
             remaining -= length
             first = False
     result: list[TrackBar] = []
-    for index, (_, bar) in enumerate(bars):
-        beats: list[Beat] = []
-        position = 0
-        for at, length, placed, continues in pieces[index]:
-            for rest in _fill(at - position):
-                beats.append(Beat(position=position, duration=rest))
-                position += rest
-            for part, duration in enumerate(_fill(length)):
-                tie = continues or part > 0
-                notes = [Note(string=string, fret=fret, tie=tie) for string, fret in sorted(placed)]
-                beats.append(Beat(position=position, duration=duration, notes=notes))
-                position += duration
-        for rest in _fill(bar.length_ticks - position):
-            beats.append(Beat(position=position, duration=rest))
-            position += rest
-        result.append(TrackBar(voices=[Voice(beats=beats)]))
+    for index, (bar_start, bar) in enumerate(bars):
+        voices: list[Voice] = []
+        for voice in range(_VOICES):
+            if voice and not pieces[voice][index]:
+                continue
+            beats: list[Beat] = []
+            position = 0
+            for at, length, placed, continues in sorted(pieces[voice][index], key=lambda piece: piece[0]):
+                beats += _beats(grid, bar_start + position, bar_start + at, bar_start, None, False)
+                beats += _beats(grid, bar_start + at, bar_start + at + length, bar_start, placed, continues)
+                position = at + length
+            beats += _beats(grid, bar_start + position, bar_start + bar.length_ticks, bar_start, None, False)
+            voices.append(Voice(beats=beats))
+        result.append(TrackBar(voices=voices))
     return result
+
+
+def _fingered(
+    events: list[_Event], tuning: list[int], capo: int
+) -> tuple[list[list[tuple[int, int]]], list[int], list[int]]:
+    """Strings and frets for every event, fingering both voices together so a ringing note keeps its string."""
+    # A group is everything sounding at one onset: the notes starting there, then those still ringing from before.
+    groups: list[list[tuple[int, int]]] = []
+    fresh: list[int] = []
+    active: list[int] = []
+    position = 0
+    while position < len(events):
+        start = events[position].start
+        starting = []
+        while position < len(events) and events[position].start == start:
+            starting += [(position, pitch) for pitch in events[position].pitches]
+            position += 1
+        active = [index for index in active if events[index].start + events[index].duration > start]
+        ringing = [(index, pitch) for index in active for pitch in events[index].pitches]
+        groups.append(sorted(starting, key=lambda item: -item[1]) + sorted(ringing, key=lambda item: -item[1]))
+        fresh.append(len(starting))
+        active += dict.fromkeys(index for index, _ in starting)
+    holds = []
+    for position, group in enumerate(groups):
+        before = {item: slot for slot, item in enumerate(groups[position - 1])} if position else {}
+        holds.append([(before[item], slot) for slot, item in enumerate(group) if item in before])
+    fingering = assign_frets([[pitch for _, pitch in group] for group in groups], tuning, capo=capo, holds=holds)
+    placed: list[list[tuple[int, int]]] = [[] for _ in events]
+    for position, placed_group in enumerate(fingering.groups):
+        for item in placed_group:
+            if item.source < fresh[position]:
+                placed[groups[position][item.source][0]].append((item.string, item.fret))
+    return placed, fingering.shifted, fingering.dropped
 
 
 def build_document(parsed: ParsedMidi, options: MidiOptions) -> tuple[ScoreDocument, list[Notice], list[MidiSource]]:
@@ -408,30 +578,34 @@ def build_document(parsed: ParsedMidi, options: MidiOptions) -> tuple[ScoreDocum
         raise ImportError("this MIDI file has no guitar or bass notes to import", "midi.noTracks")
 
     grid_ticks = _WHOLE // options.grid
-    prepared = [(source, _preset_for(source, options), _events(source, grid_ticks)) for source in chosen]
-    end = max(event.start + event.duration for _, _, events in prepared for event in events)
-    bars = _bars(parsed, end)
+    reach = max(end for source in chosen for _, end, _ in source.notes) + grid_ticks
+    bars = _bars(parsed, reach)
+    prepared = []
+    for source in chosen:
+        grid = _Grid(bars, grid_ticks, _find_tuplets(source, bars, grid_ticks))
+        prepared.append((source, _preset_for(source, options), grid, _events(source, grid)))
+    end = max(event.start + event.duration for _, _, _, events in prepared for event in events)
+    bars = [item for item in bars if item[0] < end] or bars[:1]
     notices: list[Notice] = []
     tracks: list[Track] = []
-    for source, preset, events in prepared:
-        fingering = assign_frets([event.pitches for event in events], preset.tuning_midi, capo=options.capo)
-        if fingering.shifted:
+    for source, preset, grid, events in prepared:
+        placements, shifted, dropped = _fingered(events, list(preset.tuning_midi), options.capo)
+        if shifted:
             notices.append(
                 Notice(
                     "midi.shifted",
                     "{count} note(s) on '{track}' are outside the instrument's range and were moved by octaves",
-                    {"count": len(fingering.shifted), "track": source.name},
+                    {"count": len(shifted), "track": source.name},
                 )
             )
-        if fingering.dropped:
+        if dropped:
             notices.append(
                 Notice(
                     "midi.dropped",
                     "{count} chord(s) on '{track}' cannot be fingered in one position and lost some notes",
-                    {"count": len(fingering.dropped), "track": source.name},
+                    {"count": len(dropped), "track": source.name},
                 )
             )
-        placements = [[(item.string, item.fret) for item in group] for group in fingering.groups]
         tracks.append(
             Track(
                 id=f"midi-{source.track}-{source.channel}",
@@ -440,7 +614,7 @@ def build_document(parsed: ParsedMidi, options: MidiOptions) -> tuple[ScoreDocum
                 capo=options.capo,
                 tuning_midi=list(preset.tuning_midi),
                 preferred=not tracks,
-                bars=_layout(events, placements, bars),
+                bars=_layout(events, placements, bars, grid),
             )
         )
     document = ScoreDocument(bpm=min(max(parsed.opening_bpm, 1.0), 399.0), bars=[bar for _, bar in bars], tracks=tracks)
