@@ -437,6 +437,59 @@
         "title": "AutoImportAccepted",
         "type": "object"
       },
+      "AutoSyncProposal": {
+        "description": "Bar marks estimated from the audio. Nothing is saved until the anchors go to ``PATCH /api/songs/{id}/sync``.",
+        "properties": {
+          "anchors": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Anchors",
+            "type": "object"
+          },
+          "audio_seconds": {
+            "title": "Audio Seconds",
+            "type": "number"
+          },
+          "beat_count": {
+            "title": "Beat Count",
+            "type": "integer"
+          },
+          "confidence": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Confidence",
+            "type": "object"
+          },
+          "low_confidence": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Low Confidence",
+            "type": "array"
+          },
+          "overall": {
+            "title": "Overall",
+            "type": "number"
+          },
+          "tempo_bpm": {
+            "title": "Tempo Bpm",
+            "type": "number"
+          }
+        },
+        "required": [
+          "anchors",
+          "confidence",
+          "overall",
+          "tempo_bpm",
+          "beat_count",
+          "audio_seconds",
+          "low_confidence"
+        ],
+        "title": "AutoSyncProposal",
+        "type": "object"
+      },
       "Bar": {
         "description": "One song-level bar (alphaTab's master bar).",
         "properties": {
@@ -1598,6 +1651,16 @@
       "JobResult": {
         "additionalProperties": true,
         "properties": {
+          "autosync": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AutoSyncProposal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "content_kind": {
             "anyOf": [
               {
@@ -8757,6 +8820,99 @@
           }
         },
         "summary": "Upload Audio",
+        "tags": [
+          "songs"
+        ]
+      }
+    },
+    "/api/songs/{song_id}/autosync": {
+      "post": {
+        "description": "Queue an estimate of the bar marks from the song's audio.\n\nThe finished job's ``result.autosync`` holds the proposed anchors and a confidence for each. Nothing is\nsaved: accept a proposal by sending its anchors to ``PATCH /api/songs/{song_id}/sync``.",
+        "operationId": "start_autosync_api_songs__song_id__autosync_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "song_id",
+            "required": true,
+            "schema": {
+              "title": "Song Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Start Autosync",
         "tags": [
           "songs"
         ]

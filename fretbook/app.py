@@ -17,6 +17,7 @@ from starlette.responses import Response
 
 from fretbook import __version__
 from fretbook.api.ascii_tab_routes import router as ascii_tab_router
+from fretbook.api.autosync_routes import router as autosync_router
 from fretbook.api.backup import RESTORE_PATH
 from fretbook.api.backup import router as backup_router
 from fretbook.api.bulk_routes import router as bulk_router
@@ -257,6 +258,7 @@ def create_app(
     app.include_router(backup_router)
     app.include_router(ascii_tab_router)
     app.include_router(midi_router)
+    app.include_router(autosync_router)
     app.include_router(retune_router)
     app.include_router(universal_router)
     app.include_router(tag_router)

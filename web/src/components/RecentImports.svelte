@@ -42,7 +42,8 @@
   async function loadJobs() {
     try {
       const res = await listJobs();
-      serverJobs = res ?? [];
+      // Auto-sync estimates are the player's own business, not imports.
+      serverJobs = (res ?? []).filter((job) => job.kind !== "audio.autosync");
     } catch {
       // ignore network errors when polling
     }

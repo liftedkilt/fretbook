@@ -23,7 +23,6 @@ Practice controls (metronome, count-in, mixer, pitch-preserving slowdown) are do
 
 ### Practice
 
-- **Automatic sync**: estimate the bar marks from the audio (beat tracking) so tapping `T` becomes fixing marks instead of placing them all.
 - **Stem separation**: isolate or remove the bass or guitar in the recording (for example with Demucs). It needs a GPU, so it can run as a kind in the job worker (`python -m fretbook.worker`, `Dockerfile.worker`).
 
 ### Listening to you play

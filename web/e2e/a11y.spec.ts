@@ -68,6 +68,17 @@ for (const scheme of ["light", "dark"] as const) {
       await page.keyboard.press("?");
       await expect(page.getByTestId("shortcut-help")).toBeVisible();
       found.push(...(await violations(page, "shortcut-help")));
+      await page.keyboard.press("Escape");
+
+      // Auto-sync needs a recording: the click-track fixture is enough for the sheet to show a proposal.
+      const synced = await seed.syncedSongWithAudio();
+      await page.goto(`/songs/${synced.id}`);
+      await expect(page.getByTestId("player-play")).toBeVisible();
+      await page.getByTestId("player-panel-toggle").click();
+      await page.getByTestId("player-autosync").click();
+      await expect(page.getByTestId("autosync-sheet")).toBeVisible();
+      await expect(page.getByTestId("autosync-summary")).toBeVisible({ timeout: 30_000 });
+      found.push(...(await violations(page, "autosync-sheet")));
       expect(found).toEqual([]);
     });
   });

@@ -586,6 +586,13 @@
     },
     "offline": {
       "unavailable": "You are offline and this is not saved on this device."
+    },
+    "autosync": {
+      "noFfmpeg": "This server cannot read that audio format because ffmpeg is not installed.",
+      "decodeFailed": "The audio file could not be read.",
+      "tooShort": "The audio is too short to find a beat.",
+      "noBeat": "No steady beat was found in this audio.",
+      "noMatch": "The beats found in the audio do not line up with this tab."
     }
   },
   "ui": {
@@ -1535,5 +1542,34 @@
       "gallop": "Gallop",
       "tripletRests": "Triplets with rests"
     }
+  },
+  "autoSync": {
+    "button": "Auto-sync",
+    "buttonHint": "Estimate the bar marks from the audio",
+    "title": "Auto-sync",
+    "subtitle": "Estimate where each bar starts by listening to the beat in the audio.",
+    "queued": "Waiting to start…",
+    "working": "Listening to the audio…",
+    "decoding": "Reading the audio",
+    "tracking": "Finding the beats and matching them to the bars",
+    "noResult": "The estimate finished without a result.",
+    "timeout": "The estimate took too long. Try again.",
+    "retry": "Try again",
+    "close": "Close",
+    "summary": "{marks} bar marks found, with {confidence}% confidence. The audio runs at about {bpm} BPM.",
+    "check": "Worth checking after you accept: bars {bars}.",
+    "checkMore": "And {count} more.",
+    "allClear": "Every mark sits on a clear beat.",
+    "replaces": {
+      "one": "Accepting replaces your {count} current mark.",
+      "other": "Accepting replaces your {count} current marks."
+    },
+    "startAt": "Start at bar",
+    "preview": "Preview with click",
+    "stop": "Stop",
+    "previewHint": "Plays the audio with a click on each beat, and a higher click on the first beat of each bar. If the clicks line up with the music, accept.",
+    "accept": "Accept marks",
+    "discard": "Discard",
+    "acceptHint": "After accepting, fix any mark that is off with the tap, nudge and clear buttons, as before."
   }
 }

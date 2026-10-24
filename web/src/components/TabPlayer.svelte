@@ -11,6 +11,7 @@
   import Menu from "./Menu.svelte";
   import OfflineToggle from "./OfflineToggle.svelte";
   import PracticePanel from "./PracticePanel.svelte";
+  import AutoSyncSheet from "./AutoSyncSheet.svelte";
   import RetuneSheet from "./RetuneSheet.svelte";
   import ScorePanel from "./ScorePanel.svelte";
   import ScoreResults from "./ScoreResults.svelte";
@@ -95,6 +96,7 @@
   let trackId = $state(untrack(() => song.preferred_track_id || preferredTrack(song.document).id));
   let scoreReady = $state(0);
   let retuneOpen = $state(false);
+  let autoSyncOpen = $state(false);
   let shiftMs = 0;
   const player: { api: alphaTab.AlphaTabApi | null } = { api: null };
   const clicker = new Clicker();
@@ -465,6 +467,8 @@
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       if (target && /INPUT|TEXTAREA|SELECT/.test(target.tagName)) return;
+      // Space and T in the Auto-sync preview must not tap a bar behind the sheet.
+      if (target?.closest('[data-testid="autosync-sheet"]')) return;
       // A focused button already handles Space itself.
       if (target?.tagName === "BUTTON" && event.key === " ") return;
       const action = shortcutFor(event);
@@ -630,6 +634,17 @@
     }
     if (api.playerState === alphaTab.synth.PlayerState.Playing) api.pause();
     else runCountIn(currentMeasure, () => api.play(), countBars);
+  }
+
+  function openAutoSync() {
+    if (playing) toggle();
+    autoSyncOpen = true;
+  }
+
+  function acceptAutoSync(anchors: Record<string, number>) {
+    commitAnchors(anchors);
+    tapIndex = 0;
+    autoSyncOpen = false;
   }
 
   function step(direction: number) {
@@ -1377,6 +1392,12 @@
               <button onclick={() => commitAnchors(pointAnchors(song.document.sync, barCount))}
                 >{t("player.restore")}</button
               >
+              <button
+                data-testid="player-autosync"
+                title={t("autoSync.buttonHint")}
+                onclick={openAutoSync}
+                ><Icon name="waveform" size={18} />{t("autoSync.button")}</button
+              >
               <button class="danger-text" onclick={() => commitAnchors({})}
                 >{t("player.clearAll")}</button
               >
@@ -1613,6 +1634,17 @@
       retuneOpen = false;
     }}
   />
+  {#if song.has_audio}
+    <AutoSyncSheet
+      open={autoSyncOpen}
+      songId={song.id}
+      document={song.document}
+      audioUrl={audioSrc}
+      existing={Object.keys(song.document.sync.anchors).length}
+      onclose={() => (autoSyncOpen = false)}
+      onaccept={acceptAutoSync}
+    />
+  {/if}
   <ScoreResults
     open={scoreResultsOpen}
     summary={scoreResult?.summary ?? null}
