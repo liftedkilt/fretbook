@@ -56,6 +56,7 @@ nav:
       - Playing and syncing: guides/playing.md
       - Practice modes: guides/practice.md
       - Learning a song (lessons): guides/lessons.md
+      - Practice exercises: guides/exercises.md
       - Watched inbox folder: guides/inbox.md
       - Keeping yt-dlp working: guides/ytdlp.md
       - Scripts and the command line: guides/cli.md

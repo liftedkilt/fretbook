@@ -40,6 +40,15 @@
       path: "/tools/chords",
       testId: "tool-card-chords",
     },
+    {
+      id: "exercises",
+      titleKey: "exercises.toolTitle",
+      descKey: "exercises.toolDescription",
+      openKey: "exercises.openTool",
+      icon: "tab",
+      path: "/tools/exercises",
+      testId: "tool-card-exercises",
+    },
   ];
 </script>
 

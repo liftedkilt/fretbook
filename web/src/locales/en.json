@@ -1244,5 +1244,150 @@
       "gallop": "Gallop",
       "tripletRests": "Triplets with rests"
     }
+  },
+  "exercises": {
+    "toolTitle": "Exercises",
+    "toolDescription": "Generate scales, arpeggios, finger drills, chord-change and bass practice, ready to play along with.",
+    "openTool": "Open Exercises",
+    "heading": "Exercises",
+    "subtitle": "Build a practice exercise from theory, preview the tab, and save it to your library to play it like any song.",
+    "presetsHeading": "Preset drills",
+    "kind": "Exercise type",
+    "kinds": {
+      "scale": "Scale or mode",
+      "arpeggio": "Arpeggio",
+      "spider": "Finger drill",
+      "changes": "Chord changes",
+      "bass": "Bass pattern"
+    },
+    "key": "Key",
+    "scale": "Scale",
+    "chord": "Chord",
+    "chords": "Chords",
+    "chordsHelp": "Two to four chords, such as G C D Em.",
+    "bassChordsHelp": "Up to eight chords, one bar each, such as E7 A7 E7 B7.",
+    "position": "Position",
+    "positionAuto": "Lowest position",
+    "positionFret": "From a fret",
+    "positionCaged": "CAGED shape",
+    "startFret": "Start fret",
+    "shape": "Shape",
+    "shapeName": "{shape} shape",
+    "range": "Range",
+    "ranges": {
+      "position": "Whole position",
+      "octave": "One octave",
+      "twoOctaves": "Two octaves"
+    },
+    "direction": "Direction",
+    "directions": {
+      "up": "Ascending",
+      "down": "Descending",
+      "both": "Up and down"
+    },
+    "rhythm": "Rhythm",
+    "rhythms": {
+      "quarter": "Quarter notes",
+      "eighth": "Eighth notes",
+      "triplet": "Triplets",
+      "sixteenth": "Sixteenth notes"
+    },
+    "fingers": "Finger order",
+    "stringsDirection": "Across the strings",
+    "lowToHigh": "Low to high",
+    "highToLow": "High to low",
+    "shifts": "Shifts up a fret",
+    "beatsEach": "Beats per chord",
+    "strum": "Strumming pattern",
+    "strums": {
+      "quarters": "Quarter-note downstrokes",
+      "eighths": "Steady eighths",
+      "folk": "Folk strum",
+      "ballad": "Ballad",
+      "pop": "Pop"
+    },
+    "bassPattern": "Pattern",
+    "bassPatterns": {
+      "rootFifthOctave": "Root, fifth, octave",
+      "walking": "Walking bass"
+    },
+    "cycles": "Times through",
+    "save": "Save to library",
+    "tag": "exercise",
+    "scales": {
+      "major": "major",
+      "dorian": "Dorian",
+      "phrygian": "Phrygian",
+      "lydian": "Lydian",
+      "mixolydian": "Mixolydian",
+      "minor": "natural minor",
+      "locrian": "Locrian",
+      "harmonicMinor": "harmonic minor",
+      "melodicMinor": "melodic minor",
+      "majorPentatonic": "major pentatonic",
+      "minorPentatonic": "minor pentatonic",
+      "blues": "blues",
+      "wholeTone": "whole tone"
+    },
+    "title": {
+      "scale": "{key} {scale}, from fret {fret}",
+      "arpeggio": "{chord} arpeggio, from fret {fret}",
+      "spider": "Finger drill {pattern} from fret {fret}",
+      "changes": "Chord changes: {chords}",
+      "rootFifthOctave": "Root-fifth-octave: {chords}",
+      "walking": "Walking bass: {chords}"
+    },
+    "presets": {
+      "pentatonicBox": {
+        "title": "A minor pentatonic box",
+        "description": "The first box of the minor pentatonic scale, up and down in eighth notes."
+      },
+      "majorOctave": {
+        "title": "C major octave",
+        "description": "One octave of C major in the C shape."
+      },
+      "dorianTriplets": {
+        "title": "D Dorian triplets",
+        "description": "Two octaves of D Dorian in triplets."
+      },
+      "minorSeventhArpeggio": {
+        "title": "Am7 arpeggio",
+        "description": "An A minor seventh arpeggio over two octaves."
+      },
+      "spiderWarmUp": {
+        "title": "Spider warm-up",
+        "description": "1-2-3-4 across every string from the fifth fret."
+      },
+      "spiderCrawl": {
+        "title": "Spider crawl",
+        "description": "1-3-2-4, moving up a fret each pass."
+      },
+      "openChordChanges": {
+        "title": "Open chord changes",
+        "description": "G, C, D and Em, four beats each."
+      },
+      "folkStrum": {
+        "title": "Folk strumming",
+        "description": "Am, F, C and G with a folk strumming pattern."
+      },
+      "rootFifthOctave": {
+        "title": "Root-fifth-octave",
+        "description": "A bass line over C, G, Am and F."
+      },
+      "walkingBlues": {
+        "title": "Walking blues bass",
+        "description": "A walking line over E7, A7, E7 and B7."
+      }
+    },
+    "errors": {
+      "noNotes": "That position has too few notes of this scale or chord. Try another position or a longer range.",
+      "unknownScale": "Unknown scale.",
+      "badChord": "\"{chord}\" is not a chord Fretbook knows.",
+      "noVoicing": "There is no playable shape for {chord} on this instrument.",
+      "badPattern": "That pattern is not valid.",
+      "tooHigh": "The drill runs past the end of the neck. Start lower or use fewer shifts.",
+      "chordCount": "Enter {min} to {max} chords.",
+      "outOfRange": "A note falls outside this instrument's range."
+    }
   }
 }
