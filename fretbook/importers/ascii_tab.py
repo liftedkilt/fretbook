@@ -8,7 +8,8 @@ The result is marked ``rhythm_estimated`` so the UI can say so.
 
 What is read:
 
-* tab systems of 4 to 8 string rows, with or without string labels; the tuning
+* tab systems of 4 to 8 string rows, with or without string labels; systems with different tunings (a bass and
+  a guitar tab in one file) become separate tracks, with empty bars where the other instrument plays; the tuning
   comes from the labels (``e B G D A E``, ``E A D G``, ``B E A D G`` and so on, in either order)
   or from the string count;
 * multi-digit frets, hammer-ons and pull-offs (``h p``), slides (``/ \\ s``), bends (``b ^``, with a
@@ -357,6 +358,42 @@ def _tuning(systems: list[_System]) -> tuple[list[int], bool]:
     return list(_EIGHT_STRING[:count]), False
 
 
+@dataclass
+class _Group:
+    """Systems that are one instrument: the same strings and tuning."""
+
+    tuning: list[int]
+    upside_down: bool
+    systems: list[_System] = field(default_factory=list)
+
+
+def _instrument(tuning: list[int]) -> str:
+    return "bass-guitar" if len(tuning) <= 5 and tuning[0] < 52 else "guitar"
+
+
+def _labelled(system: _System) -> bool:
+    return all(_LABEL.match(row.label) for row in system.rows)
+
+
+def _groups(systems: list[_System]) -> list[_Group]:
+    """One group per tuning, in the order each first appears. Rows without labels join the first group of their size."""
+    found: dict[tuple[int, ...], _Group] = {}
+    for system in systems:
+        if _labelled(system):
+            tuning, upside_down = _tuning([system])
+            found.setdefault(tuple(tuning), _Group(tuning, upside_down)).systems.append(system)
+    for system in systems:
+        if not _labelled(system):
+            group = next((item for item in found.values() if len(item.tuning) == len(system.rows)), None)
+            if group is None:
+                tuning, upside_down = _tuning([system])
+                group = found.setdefault(tuple(tuning), _Group(tuning, upside_down))
+            group.systems.append(system)
+    for group in found.values():
+        group.systems.sort(key=systems.index)
+    return sorted(found.values(), key=lambda group: systems.index(group.systems[0]))
+
+
 # ---------------------------------------------------------------------------
 # Rhythm
 
@@ -570,31 +607,21 @@ def parse(
     if grid not in GRIDS:
         raise ImportError(f"grid must be one of {GRIDS}", "asciiTab.badGrid")
     lines = [_classify(line) for line in text.replace("\r\n", "\n").split("\n")]
-    systems, skipped = _gather(lines)
+    systems, _ = _gather(lines)
     if not systems:
         raise ImportError("no tab found: expected four or more string rows such as e|---3---|", "asciiTab.noTab")
     title, artist, found_tempo = _heading(lines)
     warnings: list[Notice] = []
-    count = len(systems[0].rows)
-    tuned = [system for system in systems if len(system.rows) == count]
-    different = len(systems) - len(tuned)
-    if different:
-        skipped += different
-        warnings.append(
-            Notice(
-                "asciiTab.skippedSystems",
-                f"{different} tab system(s) with a different number of strings were skipped",
-                {"count": different},
-            )
-        )
-    tuning, upside_down = _tuning(tuned)
+    groups = _groups(systems)
+    group_of = {id(system): group for group in groups for system in group.systems}
     numerator, denominator = signature
     bar_ticks = _WHOLE * numerator // denominator
     bars: list[Bar] = []
-    track_bars: list[TrackBar] = []
+    placed: dict[int, dict[int, TrackBar]] = {id(group): {} for group in groups}
     refined = 0
-    for system in tuned:
-        rows = system.rows[::-1] if upside_down else system.rows
+    for system in systems:
+        group = group_of[id(system)]
+        rows = system.rows[::-1] if group.upside_down else system.rows
         parsed = [_segments(row) for row in rows]
         counts = Counter(len(segments) for segments, _ in parsed if segments)
         total = counts.most_common(1)[0][0]
@@ -618,7 +645,7 @@ def parse(
                     raw.extend((string, note) for note in _scan(*cell))
             track_bar, used = _build_bar(_clusters(raw), width, bar_ticks, grid, system.annotations, len(bars) + 1, pad)
             refined += used < _WHOLE // grid
-            track_bars.append(track_bar)
+            placed[id(group)][len(bars)] = track_bar
             bars.append(
                 Bar(
                     signature=signature,
@@ -639,21 +666,23 @@ def parse(
                 {"count": refined},
             )
         )
-    instrument = "bass-guitar" if len(tuning) <= 5 and tuning[0] < 52 else "guitar"
-    document = ScoreDocument(
-        bpm=bpm or found_tempo or DEFAULT_BPM,
-        bars=bars,
-        tracks=[
+    tracks: list[Track] = []
+    for index, group in enumerate(groups):
+        instrument = _instrument(group.tuning)
+        base = "Bass" if instrument == "bass-guitar" else "Guitar"
+        sharing = [item for item in groups if _instrument(item.tuning) == instrument]
+        tracks.append(
             Track(
-                id="trk_ascii_0",
-                name="Bass" if instrument == "bass-guitar" else "Guitar",
+                id=f"trk_ascii_{index}",
+                name=f"{base} {sharing.index(group) + 1}" if len(sharing) > 1 else base,
                 instrument=instrument,
-                tuning_midi=tuning,
-                preferred=True,
-                bars=track_bars,
+                tuning_midi=group.tuning,
+                preferred=index == 0,
+                # A bar another group wrote has nothing for this instrument, so it is empty and the tracks line up.
+                bars=[placed[id(group)].get(number, TrackBar()) for number in range(len(bars))],
             )
-        ],
-    )
+        )
+    document = ScoreDocument(bpm=bpm or found_tempo or DEFAULT_BPM, bars=bars, tracks=tracks)
     warnings.insert(
         0,
         Notice(
@@ -661,7 +690,7 @@ def parse(
             "ASCII tab has no rhythm, so note lengths were estimated from the spacing. Check the timing.",
         ),
     )
-    return ParsedTab(document, title, artist, warnings, len(tuned))
+    return ParsedTab(document, title, artist, warnings, len(systems))
 
 
 def _slug(stem: str) -> str:

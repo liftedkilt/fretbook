@@ -11,7 +11,7 @@ from fretbook.config import Settings
 from fretbook.importers import ascii_tab
 from fretbook.importers.base import ImportError, ImportRequest, silent_progress
 from fretbook.importers.registry import resolve_importer
-from fretbook.score.model import TICKS_PER_QUARTER, ScoreDocument
+from fretbook.score.model import TICKS_PER_QUARTER, ScoreDocument, TrackBar
 
 CORPUS = Path(__file__).parent / "fixtures" / "corpus"
 
@@ -265,12 +265,50 @@ def test_double_bar_lines_do_not_make_empty_bars() -> None:
     assert len(ascii_tab.parse(text).document.bars) == 2
 
 
-def test_short_fragments_and_odd_systems_are_skipped() -> None:
+def test_short_fragments_are_skipped() -> None:
     skipped = ascii_tab.parse("e|-0-----|\nB|-1-----|\n\n" + tab(e2="-0-------------"))
     assert len(skipped.document.bars) == 1
-    mixed = ascii_tab.parse(tab(e2="-0-------------") + "\n" + "G|-0-----|\nD|-------|\nA|-------|\nE|-------|\n")
-    assert len(mixed.document.bars) == 1
-    assert "asciiTab.skippedSystems" in {w.key for w in mixed.warnings}
+    assert len(skipped.document.tracks) == 1
+
+
+BASS = "G|-0-----|\nD|-------|\nA|-3-----|\nE|-------|\n"
+
+
+def test_systems_with_different_string_counts_become_separate_tracks() -> None:
+    parsed = ascii_tab.parse(tab(e2="-0-------------") + "\n" + BASS + "\n" + tab(e2="-5-------------"))
+    document = parsed.document
+    assert "asciiTab.skippedSystems" not in {w.key for w in parsed.warnings}
+    assert len(document.bars) == 3
+    guitar, bass = document.tracks
+    assert (guitar.name, guitar.instrument, len(guitar.tuning_midi), guitar.preferred) == ("Guitar", "guitar", 6, True)
+    assert (bass.name, bass.instrument, len(bass.tuning_midi), bass.preferred) == ("Bass", "bass-guitar", 4, False)
+    assert [track.id for track in document.tracks] == ["trk_ascii_0", "trk_ascii_1"]
+    # Every track has one entry per song-level bar; the other instrument's bars are empty.
+    assert len(guitar.bars) == len(bass.bars) == 3
+    has_notes = lambda track, bar: any(beat.notes for beat in track.bars[bar].voices[0].beats)  # noqa: E731
+    assert [has_notes(guitar, n) for n in range(3)] == [True, False, True]
+    assert [has_notes(bass, n) for n in range(3)] == [False, True, False]
+    assert parsed.system_count == 3
+
+
+def test_other_tracks_get_empty_bars() -> None:
+    document = ascii_tab.parse(tab(e2="-0-------------") + "\n" + BASS).document
+    assert document.tracks[1].bars[0] == TrackBar() and len(document.tracks[1].bars) == len(document.bars)
+
+
+def test_same_string_count_with_another_tuning_is_another_track() -> None:
+    drop = "".join(f"{label}|-0-----|\n" for label in "DADGBE")
+    document = ascii_tab.parse(tab(e2="-0-------------") + "\n" + drop).document
+    assert [track.name for track in document.tracks] == ["Guitar 1", "Guitar 2"]
+    assert document.tracks[1].tuning_midi == [64, 59, 55, 50, 45, 38]
+
+
+def test_unlabeled_continuation_joins_the_labeled_system_of_its_size() -> None:
+    unlabeled = "".join("|-0-----|\n" for _ in range(4))
+    document = ascii_tab.parse(
+        "D|-0-----|\nA|-------|\nE|-------|\nB|-------|\n\n".replace("D", "G") + unlabeled
+    ).document
+    assert len(document.tracks) == 1 and len(document.bars) == 2
 
 
 def test_stacked_systems_without_a_blank_line_are_split() -> None:

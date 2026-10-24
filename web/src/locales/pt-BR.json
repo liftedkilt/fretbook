@@ -571,7 +571,6 @@
       "tooLong": "A tablatura tem mais de {limit} caracteres.",
       "badGrid": "Esse valor de nota mais curta não é compatível.",
       "tooDense": "O compasso {bar} tem notas demais para posicionar.",
-      "skippedSystems": "{count} sistema(s) de tablatura com outro número de cordas foram ignorados.",
       "gridRefined": "{count} compasso(s) têm mais notas do que a grade comporta, então uma grade mais fina foi usada neles."
     },
     "token": {
@@ -703,6 +702,7 @@
     "preview": "Prévia",
     "previewEmpty": "Cole uma tablatura para vê-la aqui.",
     "previewLoading": "Lendo a tablatura…",
+    "previewTrack": "Faixa",
     "previewFailed": "Não foi possível desenhar a prévia.",
     "chordsDetected": "Isto parece uma cifra (acordes sobre a letra), então será salvo como cifra.",
     "create": "Criar música",
