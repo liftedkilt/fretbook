@@ -360,3 +360,69 @@ export interface AudioCalibrationBody {
   offset_ms: number;
   jitter_ms?: number | null;
 }
+
+export type PracticeMode = "free" | "wait" | "scored";
+
+/** One stretch of playing, as sent to the practice log. */
+export interface PracticeSessionDraft {
+  song_id: string;
+  /** The player's local date, `YYYY-MM-DD`. */
+  day: string;
+  started_at?: string;
+  duration_seconds: number;
+  track_id: string;
+  loop_name: string;
+  loop_start: number | null;
+  loop_end: number | null;
+  /** Ratio: 1 is the written tempo. */
+  speed: number;
+  mode: PracticeMode;
+  score: number | null;
+}
+
+export interface PracticeSession extends PracticeSessionDraft {
+  id: string;
+  started_at: string;
+}
+
+export interface PracticeGoal {
+  daily_minutes: number;
+  weekly_summary: boolean;
+}
+
+export interface PracticeSongStats {
+  song_id: string;
+  title: string;
+  artist: string;
+  content_kind: "tab" | "chords";
+  session_count: number;
+  total_seconds: number;
+  last_practised: string;
+  last_day: string;
+  best_speed: number;
+  best_score: number | null;
+}
+
+export interface PracticeStats {
+  today: string;
+  goal: PracticeGoal;
+  today_seconds: number;
+  current_streak: number;
+  longest_streak: number;
+  total_seconds: number;
+  songs_practised: number;
+  heatmap: { day: string; seconds: number; sessions: number }[];
+  week: { seconds: number; previous_seconds: number; days_practised: number; goal_days: number };
+  recent: PracticeSongStats[];
+  best_scores: PracticeSongStats[];
+  stale: PracticeSongStats[];
+}
+
+export interface SongPractice {
+  session_count: number;
+  total_seconds: number;
+  best_speed: number | null;
+  best_score: number | null;
+  last_practised: string | null;
+  sessions: PracticeSession[];
+}

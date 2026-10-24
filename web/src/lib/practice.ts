@@ -235,29 +235,6 @@ export function updateLoopHighestSpeed(
   return { updated, loops: newLoops };
 }
 
-/**
- * Record the highest speed reached for a loop to the practice log (dispatches window event until practice log tables exist).
- */
-export function recordLoopPracticeLog(
-  songId: string,
-  loop: Pick<SavedLoop, "id" | "name">,
-  speed: number,
-): void {
-  if (typeof window !== "undefined") {
-    window.dispatchEvent(
-      new CustomEvent("fretbook:practice-log-record", {
-        detail: {
-          songId,
-          loopId: loop.id,
-          loopName: loop.name,
-          speed: Math.round(speed * 100) / 100,
-          timestamp: Date.now(),
-        },
-      }),
-    );
-  }
-}
-
 export function loadPractice(songId: string): PracticeSettings {
   try {
     const raw =

@@ -7,6 +7,7 @@
   import EditorView from "./components/EditorView.svelte";
   import Icon from "./components/Icon.svelte";
   import LibraryView from "./components/LibraryView.svelte";
+  import PracticeView from "./components/PracticeView.svelte";
   import SetlistPlayView from "./components/SetlistPlayView.svelte";
   import SetlistsView from "./components/SetlistsView.svelte";
   import SetlistView from "./components/SetlistView.svelte";
@@ -34,6 +35,7 @@
   const setlistPlay = $derived(path.match(/^\/setlists\/([^/]+)\/play(?:\/([^/]+))?\/?$/));
   const setlistPage = $derived(path.match(/^\/setlists\/([^/]+)\/?$/));
   const isSetlists = $derived(path === "/setlists" || path === "/setlists/");
+  const isPractice = $derived(path === "/practice" || path === "/practice/");
   const isTools = $derived(path === "/tools" || path === "/tools/");
   const isToolsTuner = $derived(path === "/tools/tuner" || path === "/tools/tuner/");
   const isToolsMetronome = $derived(path === "/tools/metronome" || path === "/tools/metronome/");
@@ -74,7 +76,7 @@
   }
 </script>
 
-<div class="shell" class:shell-library={isLibrary || isTools || isSetlists}>
+<div class="shell" class:shell-library={isLibrary || isTools || isSetlists || isPractice}>
   <aside class="sidebar">
     <a class="brand" href={hrefFor("/")} onclick={(event) => followLink(event, "/")}>
       <img src="favicon.svg" alt={t("app.title")} width="36" height="36" />
@@ -119,6 +121,17 @@
       title={t("setlists.nav")}
     >
       <Icon name="list" size={19} /><span class="rail-hide">{t("setlists.nav")}</span>
+    </a>
+
+    <a
+      class="side-link"
+      data-testid="nav-practice"
+      href={hrefFor("/practice")}
+      aria-current={isPractice ? "page" : undefined}
+      onclick={(event) => followLink(event, "/practice")}
+      title={t("practiceLog.nav")}
+    >
+      <Icon name="clock" size={19} /><span class="rail-hide">{t("practiceLog.nav")}</span>
     </a>
 
     <a
@@ -259,6 +272,8 @@
       <AdminView self={ui.me.user_id} />
     {:else if path === "/admin" && !ui.me}
       <p class="muted">{t("app.loading")}</p>
+    {:else if isPractice}
+      <PracticeView />
     {:else if isSetlists}
       <SetlistsView />
     {:else if setlistPlay}
@@ -280,7 +295,7 @@
     {/if}
   </main>
 
-  {#if isLibrary || isTools || isSetlists}
+  {#if isLibrary || isTools || isSetlists || isPractice}
     <nav class="tabbar" aria-label={t("nav.main")}>
       <a
         class="tab-item"
@@ -307,6 +322,15 @@
       >
         <span><Icon name="plus" size={26} /></span>
       </button>
+      <a
+        class="tab-item"
+        data-testid="tab-practice"
+        href={hrefFor("/practice")}
+        aria-current={isPractice ? "page" : undefined}
+        onclick={(event) => followLink(event, "/practice")}
+      >
+        <Icon name="clock" /><span>{t("practiceLog.nav")}</span>
+      </a>
       <a
         class="tab-item"
         data-testid="tab-tools"

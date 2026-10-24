@@ -190,6 +190,49 @@ describe("request wrappers", () => {
   });
 });
 
+describe("practice log", () => {
+  const draft = {
+    song_id: "s1",
+    day: "2026-03-10",
+    duration_seconds: 60,
+    track_id: "t1",
+    loop_name: "",
+    loop_start: null,
+    loop_end: null,
+    speed: 1,
+    mode: "free" as const,
+    score: null,
+  };
+
+  it("posts a session, with keepalive when the page is going away", async () => {
+    await api.recordPracticeSession(draft, true);
+    expect(calls[0].url).toBe("http://fretbook.test/app/api/practice/sessions");
+    expect(calls[0].init?.method).toBe("POST");
+    expect(calls[0].init?.keepalive).toBe(true);
+    expect(JSON.parse(String(calls[0].init?.body))).toMatchObject({
+      song_id: "s1",
+      day: "2026-03-10",
+    });
+  });
+
+  it("never throws when the log cannot be written", async () => {
+    respond = () => reply({ detail: "down" }, 500);
+    await expect(api.recordPracticeSession(draft)).resolves.toBeUndefined();
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("offline")));
+    await expect(api.recordPracticeSession(draft)).resolves.toBeUndefined();
+  });
+
+  it("reads the dashboard for the player's day, saves the goal and reads a song's history", async () => {
+    await api.getPracticeStats("2026-03-10");
+    expect(calls[0].url).toBe("http://fretbook.test/app/api/practice/stats?today=2026-03-10");
+    await api.savePracticeGoal({ daily_minutes: 20, weekly_summary: false });
+    expect(calls[1].url).toBe("http://fretbook.test/app/api/practice/goal");
+    expect(calls[1].init?.method).toBe("PUT");
+    await api.getSongPractice("s1");
+    expect(calls[2].url).toBe("http://fretbook.test/app/api/songs/s1/practice");
+  });
+});
+
 describe("errors", () => {
   it("builds the sign-in address from the current page", () => {
     vi.stubGlobal("location", { pathname: "/app/songs", search: "?q=1", assign: vi.fn() });

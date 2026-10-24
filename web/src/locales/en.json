@@ -455,7 +455,9 @@
       "songFailed": "Could not restore {title}.",
       "mediaFailed": "Could not restore a file of {title}.",
       "setlistEntriesDropped": "{count} songs of {name} could not be put back in the setlist.",
-      "setlistFailed": "Could not restore the setlist {name}."
+      "setlistFailed": "Could not restore the setlist {name}.",
+      "practiceDropped": "{count} practice sessions could not be put back.",
+      "practiceGoalFailed": "Could not restore the daily practice goal."
     },
     "import": {
       "failed": "The import failed.",
@@ -546,6 +548,9 @@
       "notFound": "That setlist was not found.",
       "unknownSong": "A song in the setlist is not in your library.",
       "tooManyEntries": "A setlist can hold at most {limit} songs."
+    },
+    "practice": {
+      "badDay": "That date is not valid."
     }
   },
   "ui": {
@@ -989,6 +994,59 @@
   },
   "job": {
     "echo": "Echoing the job"
+  },
+  "practiceLog": {
+    "nav": "Practice",
+    "heading": "Practice log",
+    "today": "today",
+    "yesterday": "yesterday",
+    "daysAgo": {
+      "one": "{count} day ago",
+      "other": "{count} days ago"
+    },
+    "ofGoal": "of {minutes} min",
+    "minutesToday": "min today",
+    "dailyGoal": "Daily goal",
+    "minutes": "minutes",
+    "weeklySummary": "Show a weekly summary",
+    "saveGoal": "Save goal",
+    "dayStreak": {
+      "one": "day streak",
+      "other": "day streak"
+    },
+    "longestStreak": "longest streak",
+    "songsPractised": "songs practised",
+    "totalTime": "time played",
+    "thisWeek": "This week",
+    "weekDays": {
+      "one": "{count} day practised",
+      "other": "{count} days practised"
+    },
+    "weekGoalDays": {
+      "one": "goal met {count} day",
+      "other": "goal met {count} days"
+    },
+    "firstWeek": "your first week of practice",
+    "vsLastWeek": "{percent}% on last week",
+    "empty": "Nothing logged yet. Open a tab and play: the time you spend playing is logged here automatically.",
+    "heatmap": "Minutes per day",
+    "heatmapLabel": "Calendar of the days you practised, darker for more time",
+    "recent": "Recently practised",
+    "bestScores": "Best scores",
+    "stale": "Songs you haven't played in a while",
+    "songHeading": "Practice history",
+    "songSummary": "{sessions} sessions, {time}",
+    "bestSpeed": "Best speed: {speed}",
+    "bestScore": "Best score: {score}%",
+    "bars": "bars {from}–{to}",
+    "mode": {
+      "free": "Free play",
+      "wait": "Wait mode",
+      "scored": "Scored"
+    },
+    "durationSeconds": "{count}s",
+    "durationMinutes": "{count}m",
+    "durationHours": "{hours}h {minutes}m"
   },
   "chordDiagrams": {
     "heading": "Chord diagrams",
