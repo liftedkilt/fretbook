@@ -199,6 +199,82 @@ describe("flushQueue", () => {
     expect(api.noteRebase).toHaveBeenCalledWith("a", 4, 5);
   });
 
+  describe("merging with a newer revision", () => {
+    const bars = [{ signature: [4, 4], extras: {} }];
+    const document = (bpm: number, points: number[] = []) => ({
+      bpm,
+      bars,
+      tracks: [{ id: "t", bars: [] }],
+      sync: { video_id: "v", points, anchors: {}, keyed_by: "played" },
+    });
+    const content = JSON.stringify({ bars, tracks: [{ id: "t", bars: [] }] });
+    const tabEdit = (revision = 4, content_ = content) => ({
+      ...edit("a", revision),
+      body: {
+        title: "Song a",
+        artist: "",
+        revision,
+        document: document(100) as never,
+      },
+      base: { content: content_, bpm: 100, origin: [0] },
+    });
+
+    it("sends the edit on top of a newer revision when only sync marks or BPM moved", async () => {
+      queueEdit(tabEdit());
+      api.putSong
+        .mockRejectedValueOnce(new ApiError(409, "changed", "song.conflict"))
+        .mockResolvedValueOnce({ revision: 8 });
+      api.getSong.mockResolvedValue({
+        id: "a",
+        title: "Song a",
+        artist: "",
+        revision: 7,
+        document: document(120, [5]),
+      });
+      await flushQueue();
+      expect(api.putSong).toHaveBeenLastCalledWith(
+        "a",
+        expect.objectContaining({
+          revision: 7,
+          document: expect.objectContaining({
+            bpm: 120,
+            sync: expect.objectContaining({ points: [5] }),
+          }),
+        }),
+      );
+      expect(api.noteRebase).toHaveBeenCalledWith("a", 4, 8);
+      expect(queue.edits).toEqual([]);
+    });
+
+    it("still reports a conflict when the content changed, or the edit has no base", async () => {
+      queueEdit(tabEdit(4, "something else"));
+      queueEdit({ ...tabEdit(), songId: "b", base: undefined });
+      api.putSong.mockRejectedValue(new ApiError(409, "changed", "song.conflict"));
+      api.getSong.mockResolvedValue({ id: "x", revision: 7, document: document(120) });
+      await flushQueue();
+      expect(queue.edits.map((item) => item.state)).toEqual(["conflict", "conflict"]);
+      expect(api.putSong).toHaveBeenCalledTimes(2);
+    });
+
+    it("reports a conflict when the song moves again during the merge", async () => {
+      queueEdit(tabEdit());
+      api.putSong.mockRejectedValue(new ApiError(409, "changed", "song.conflict"));
+      api.getSong.mockResolvedValue({ id: "a", revision: 7, document: document(120) });
+      await flushQueue();
+      expect(queue.edits[0].state).toBe("conflict");
+    });
+
+    it("keeps the edit when the network drops during the merge", async () => {
+      queueEdit(tabEdit());
+      api.putSong
+        .mockRejectedValueOnce(new ApiError(409, "changed", "song.conflict"))
+        .mockRejectedValueOnce(new TypeError("Failed to fetch"));
+      api.getSong.mockResolvedValue({ id: "a", revision: 7, document: document(120) });
+      await flushQueue();
+      expect(queue.edits[0].state).toBe("pending");
+    });
+  });
+
   it("keeps the edit when it cannot tell, because the song could not be fetched", async () => {
     queueEdit(edit("a", 4));
     api.putSong.mockRejectedValue(new ApiError(409, "changed", "song.conflict"));

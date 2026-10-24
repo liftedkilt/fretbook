@@ -37,6 +37,7 @@ import type {
   TagsAdded,
 } from "./api-types";
 import { keyed } from "./i18n.svelte";
+import type { EditBase } from "./offline/merge";
 import { dropEdit, queue, queueEdit } from "./offline/queueState.svelte";
 import { refreshSavedSong } from "./offline/store";
 import type { MidiImportOptions } from "./midiImport";
@@ -367,27 +368,28 @@ export async function putSong(id: string, body: SongEdit): Promise<SongDetail> {
  * (same revision); `flushQueue` in `offline/offline.svelte.ts` sends it later under the usual revision rules.
  * Rejected with a 409 `song.conflict` when the song changed since `revision`.
  */
-export async function updateSong(id: string, edit: SongEdit): Promise<SongDetail> {
+export async function updateSong(id: string, edit: SongEdit, base?: EditBase): Promise<SongDetail> {
   const body = { ...edit, revision: currentRevision(id, edit.revision) };
   try {
     return await putSong(id, body);
   } catch (error) {
-    const base = lastSeen.get(id);
-    if (!isOfflineError(error) || !base) throw error;
+    const seen = lastSeen.get(id);
+    if (!isOfflineError(error) || !seen) throw error;
     queueEdit({
       songId: id,
       title: body.title,
       body,
       queuedAt: new Date().toISOString(),
+      base,
       state: "pending",
       message: "",
     });
     const queued: SongDetail = {
-      ...base,
+      ...seen,
       title: body.title,
       artist: body.artist,
-      document: body.document ?? base.document,
-      chordpro: body.chordpro ?? base.chordpro,
+      document: body.document ?? seen.document,
+      chordpro: body.chordpro ?? seen.chordpro,
     };
     lastSeen.set(id, queued);
     await refreshSavedSong(queued).catch(() => undefined);

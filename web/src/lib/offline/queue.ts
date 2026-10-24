@@ -1,4 +1,5 @@
 import type { ScoreDocument } from "../types";
+import { chainBase, type EditBase } from "./merge";
 
 /** What `PUT /api/songs/{id}` takes. */
 export interface EditBody {
@@ -18,6 +19,8 @@ export interface QueuedEdit {
   title: string;
   body: EditBody;
   queuedAt: string;
+  /** What a tab edit was made on, so a newer server revision can be merged under it. Absent: it cannot be merged. */
+  base?: EditBase;
   state: "pending" | "conflict" | "failed";
   message: string;
 }
@@ -30,6 +33,17 @@ function browserStorage(): Storage | null {
   } catch {
     return null;
   }
+}
+
+function isBase(value: unknown): value is EditBase {
+  if (!value || typeof value !== "object") return false;
+  const base = value as Partial<EditBase>;
+  return (
+    typeof base.content === "string" &&
+    typeof base.bpm === "number" &&
+    Array.isArray(base.origin) &&
+    base.origin.every((source) => source === null || typeof source === "number")
+  );
 }
 
 function isEdit(value: unknown): value is QueuedEdit {
@@ -47,7 +61,12 @@ function isEdit(value: unknown): value is QueuedEdit {
 export function readQueue(storage: Storage | null = browserStorage()): QueuedEdit[] {
   try {
     const parsed: unknown = JSON.parse(storage?.getItem(KEY) ?? "[]");
-    return Array.isArray(parsed) ? parsed.filter(isEdit) : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter(isEdit)
+      .map((edit) =>
+        edit.base === undefined || isBase(edit.base) ? edit : { ...edit, base: undefined },
+      );
   } catch {
     return [];
   }
@@ -67,7 +86,11 @@ export function writeQueue(edits: QueuedEdit[], storage: Storage | null = browse
 export function withEdit(edits: QueuedEdit[], edit: QueuedEdit): QueuedEdit[] {
   const earlier = edits.find((item) => item.songId === edit.songId);
   const next: QueuedEdit = earlier
-    ? { ...edit, body: { ...edit.body, revision: earlier.body.revision } }
+    ? {
+        ...edit,
+        body: { ...edit.body, revision: earlier.body.revision },
+        base: earlier.base && edit.base ? chainBase(earlier.base, edit.base) : undefined,
+      }
     : edit;
   return [...edits.filter((item) => item.songId !== edit.songId), next];
 }

@@ -66,4 +66,25 @@ describe("withEdit", () => {
   it("adds an edit to a song that has none", () => {
     expect(withEdit([], edit("a", 1))).toEqual([edit("a", 1)]);
   });
+
+  it("chains the base of two edits to the same song, and drops it when either has none", () => {
+    const withBase = (item: QueuedEdit, base: QueuedEdit["base"]) => ({ ...item, base });
+    const first = withBase(edit("a", 3), { content: "c1", bpm: 90, origin: [0, null] });
+    const later = withBase(edit("a", 4), { content: "c2", bpm: 90, origin: [1, 0] });
+    expect(withEdit([first], later)[0].base).toEqual({ content: "c1", bpm: 90, origin: [null, 0] });
+    expect(withEdit([edit("a", 3)], later)[0].base).toBeUndefined();
+  });
+});
+
+describe("queue base", () => {
+  it("keeps a stored base and drops a damaged one", () => {
+    const base = { content: "c", bpm: 100, origin: [0, null] };
+    const stored = JSON.stringify([
+      { ...edit("a", 1), base },
+      { ...edit("b", 1), base: { content: 1 } },
+    ]);
+    const read = readQueue(memory({ "fretbook.offline.queue.v1": stored }));
+    expect(read[0].base).toEqual(base);
+    expect(read[1].base).toBeUndefined();
+  });
 });
