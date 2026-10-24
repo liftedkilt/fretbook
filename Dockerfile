@@ -8,7 +8,9 @@ COPY web/ ./
 RUN npm run build && npm run build:gp-cli
 
 FROM python:3.12-slim-bookworm
-RUN apt-get update \
+# Changes daily in CI so the apt layer below is rebuilt with current security fixes.
+ARG APT_REFRESH=
+RUN echo "apt refresh: ${APT_REFRESH}" && apt-get update \
     && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends ffmpeg ca-certificates curl \
     && rm -rf /var/lib/apt/lists/*
