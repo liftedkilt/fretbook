@@ -16,16 +16,22 @@ the player can see *why* a track got its level; the client words the explanation
 The numbers are a heuristic tuned so that a slow open-position riff is about 2, a typical rock song about 4 to 6,
 and fast, technical lead playing 8 or more. Bump :data:`VERSION` when they change: stored levels are recomputed at
 start-up when their version is older.
+
+A chord sheet has no notes, so :func:`estimate_chordpro` rates it from its chords instead, with four factors of its
+own (:data:`CHORD_FACTORS`): how many different chords it uses, how many of them are barre chords, how many are
+extended (ninths, diminished, added notes and the like), and how often the chord changes from line to line.
 """
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from math import ceil
 
+from fretbook.chords.chordpro import is_chord
 from fretbook.score.model import Beat, ScoreDocument, Track, bar_seconds, preferred_track
 
-VERSION = 1
+VERSION = 2
 """Version of the estimate. Rows stored with an older one are recomputed."""
 
 FACTORS = ("density", "shifts", "stretch", "techniques", "chords", "rhythm")
@@ -37,6 +43,11 @@ _WEIGHTS = {
     "chords": 0.10,
     "rhythm": 0.15,
 }
+CHORD_FACTORS = ("vocabulary", "barres", "extensions", "changes")
+_CHORD_WEIGHTS = {"vocabulary": 0.25, "barres": 0.30, "extensions": 0.15, "changes": 0.30}
+CHORD_SHEET_TRACK_ID = "chords"
+CHORD_SHEET_TRACK_NAME = "Chords"
+
 # A weighted sum rarely reaches 1 even on hard music, so it is stretched before it is mapped to 1..10.
 _SCALE = 1.5
 MIN_LEVEL = 1.0
@@ -216,3 +227,84 @@ def song_level(document: ScoreDocument, tracks: list[TrackDifficulty] | None = N
         if item.track_id == chosen:
             return item.level
     return tracks[0].level
+
+
+# --- chord sheets ---------------------------------------------------------------------------------------------
+
+_INLINE_CHORD = re.compile(r"\[([^\]\s]+)\]")
+_ROOT = re.compile(r"^([A-G][#b]?)(.*)$")
+_QUALITY_ALIASES = {"min": "m", "mi": "m", "M": "maj", "M7": "maj7", "-": "m", "": ""}
+_BASIC_QUALITIES = {"", "m", "5", "6", "m6", "7", "m7", "maj7", "sus", "sus2", "sus4", "7sus4"}
+_OPEN_SHAPES = {
+    "C": {"", "7", "maj7", "add9"},
+    "D": {"", "m", "7", "m7", "maj7", "sus2", "sus4", "7sus4"},
+    "E": {"", "m", "7", "m7", "sus4", "7sus4", "m6"},
+    "G": {"", "7", "maj7", "sus4", "6"},
+    "A": {"", "m", "7", "m7", "maj7", "sus2", "sus4", "7sus4"},
+    "B": {"7"},
+    "F": {"maj7"},
+}
+"""Chords with a common open-position fingering that needs no barre, by root. Everything else counts as a barre."""
+
+
+def _split_chord(chord: str) -> tuple[str, str] | None:
+    """``(root, quality)`` of a chord name without its slash bass, or ``None`` when it is not a chord."""
+    name = chord.strip("()")
+    if not is_chord(name):
+        return None
+    match = _ROOT.match(name.split("/")[0])
+    if match is None:
+        return None
+    root, quality = match.groups()
+    return root, _QUALITY_ALIASES.get(quality, quality)
+
+
+def chord_is_barre(root: str, quality: str) -> bool:
+    """Whether the usual fingering of the chord lays one finger across the strings."""
+    return quality != "5" and quality not in _OPEN_SHAPES.get(root, ())
+
+
+def chord_is_extended(quality: str) -> bool:
+    """Whether the chord goes beyond triads, sevenths, sixths and suspensions."""
+    return quality not in _BASIC_QUALITIES
+
+
+def estimate_chordpro(chordpro: str) -> list[TrackDifficulty]:
+    """The difficulty of a ChordPro chord sheet: one entry, or none when the sheet has no chords."""
+    sequence: list[str] = []
+    chord_lines = 0
+    for line in chordpro.splitlines():
+        if line.lstrip().startswith(("{", "#")):
+            continue
+        found = [name for name in _INLINE_CHORD.findall(line) if _split_chord(name)]
+        if found:
+            chord_lines += 1
+            sequence.extend(found)
+    if not sequence:
+        return []
+
+    shapes = {name.strip("()").split("/")[0] for name in sequence}
+    parsed = [split for split in (_split_chord(name) for name in shapes) if split]
+    distinct = len(parsed)
+    barres = sum(1 for root, quality in parsed if chord_is_barre(root, quality))
+    extended = sum(1 for _root, quality in parsed if chord_is_extended(quality))
+    bases = [name.strip("()").split("/")[0] for name in sequence]
+    changes = sum(1 for before, after in zip(bases, bases[1:], strict=False) if before != after)
+    changes_per_line = changes / chord_lines
+
+    values = {
+        "vocabulary": _clamp((distinct - 3) / 9),
+        "barres": _clamp(barres / 5),
+        "extensions": _clamp(extended / 6),
+        "changes": _clamp((changes_per_line - 0.5) / 4.5),
+    }
+    measures = {
+        "vocabulary": distinct,
+        "barres": barres,
+        "extensions": extended,
+        "changes": changes_per_line,
+    }
+    raw = sum(_CHORD_WEIGHTS[key] * values[key] for key in CHORD_FACTORS)
+    level = MIN_LEVEL + (MAX_LEVEL - MIN_LEVEL) * _clamp(raw * _SCALE)
+    factors = [Factor(key, round(values[key], 3), round(measures[key], 2)) for key in CHORD_FACTORS]
+    return [TrackDifficulty(CHORD_SHEET_TRACK_ID, CHORD_SHEET_TRACK_NAME, round(level, 1), factors)]

@@ -129,7 +129,7 @@ export interface SongSummary {
   duration: number | null;
   updated_at: string;
   favourite: boolean;
-  /** Estimated difficulty of the preferred track, 1 to 10; null for chord sheets. */
+  /** Estimated difficulty of the preferred track, 1 to 10; null for a chord sheet without chords. */
   difficulty: number | null;
   /** Sorted A to Z ignoring case. */
   tags: string[];
@@ -213,7 +213,16 @@ export interface SongDetail extends SongSummary {
 }
 
 export type DifficultyFactorKey =
-  "density" | "shifts" | "stretch" | "techniques" | "chords" | "rhythm";
+  | "density"
+  | "shifts"
+  | "stretch"
+  | "techniques"
+  | "chords"
+  | "rhythm"
+  | "vocabulary"
+  | "barres"
+  | "extensions"
+  | "changes";
 
 /** One reason for a track's level; `value` is 0 to 1, `measure` the number behind it. */
 export interface DifficultyFactor {

@@ -3,7 +3,11 @@
   import { t } from "../lib/i18n.svelte";
   import type { TrackDifficulty } from "../lib/types";
 
-  let { tracks, preferredId }: { tracks: TrackDifficulty[]; preferredId: string } = $props();
+  let {
+    tracks,
+    preferredId,
+    chords = false,
+  }: { tracks: TrackDifficulty[]; preferredId: string; chords?: boolean } = $props();
 </script>
 
 {#if tracks.length}
@@ -16,7 +20,7 @@
         >
       {/each}
     </summary>
-    <p class="muted">{t("difficulty.intro")}</p>
+    <p class="muted">{t(chords ? "difficulty.introChords" : "difficulty.intro")}</p>
     <ul class="tracks">
       {#each tracks as track (track.track_id)}
         <li data-testid="difficulty-track">

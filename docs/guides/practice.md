@@ -100,8 +100,13 @@ Every tab gets an estimated **difficulty from 1 to 10**, worked out from its sco
 the written tempo, how far the fretting hand jumps along the neck, how wide the chord stretches are, how many notes use
 bends, slides, hammer-ons, harmonics or vibrato, how often the chord shape changes, and how many beats are tuplets,
 off the sixteenth-note grid or in odd time signatures. The library card shows the level, the library can be sorted by
-difficulty (easiest first; chord sheets, which have no level yet, come last) and filtered to easy (1–3), medium (4–6)
+difficulty (easiest first; songs without a level come last) and filtered to easy (1–3), medium (4–6)
 or hard (7–10), and the song page has a **Difficulty** section listing each track's level and what contributes most.
+A chord sheet is rated from its chords instead: how many different chords it uses, how many of them are barre chords
+or extended chords (ninths, diminished, added notes and the like), and how often the chord changes from line to line.
+A sheet with no chords has no level. Barre chords are recognised by name (anything that is not a common open shape),
+not from the diagram shown on the page.
+
 It is a heuristic, not a verdict: it cannot see how the music sounds or how you fret it. Changing a song's tempo or
 notes updates its level, and songs saved before this feature are rated when the server starts.
 

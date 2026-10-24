@@ -1142,6 +1142,7 @@
   "difficulty": {
     "heading": "Dificuldade",
     "intro": "Estimada a partir das notas da partitura: velocidade, deslocamento da mão, aberturas, técnicas usadas, frequência das trocas de acordes e complexidade do ritmo.",
+    "introChords": "Estimada a partir dos acordes da cifra: quantos acordes diferentes ela usa, quantos são com pestana ou estendidos e com que frequência o acorde muda de uma linha para a outra.",
     "level": "Nível {level}",
     "levelOf": "{level} de 10",
     "share": "{percent} % do máximo deste fator",
@@ -1157,7 +1158,11 @@
       "stretch": "Abertura",
       "techniques": "Técnicas",
       "chords": "Trocas de acordes",
-      "rhythm": "Ritmo"
+      "rhythm": "Ritmo",
+      "vocabulary": "Acordes diferentes",
+      "barres": "Acordes com pestana",
+      "extensions": "Acordes estendidos",
+      "changes": "Trocas de acordes"
     },
     "factor": {
       "density": "{value} notas por segundo nos compassos mais cheios",
@@ -1165,7 +1170,11 @@
       "stretch": "até {value} casas de distância em um acorde",
       "techniques": "{value} % das notas usam bends, slides, hammer-ons e similares",
       "chords": "{value} trocas de acordes por minuto",
-      "rhythm": "{value} % dos tempos são quiálteras ou fora da grade de semicolcheias"
+      "rhythm": "{value} % dos tempos são quiálteras ou fora da grade de semicolcheias",
+      "vocabulary": "{value} acordes diferentes",
+      "barres": "{value} acordes com pestana",
+      "extensions": "{value} acordes estendidos (nonas, diminutos, notas adicionadas e similares)",
+      "changes": "{value} trocas de acordes por linha"
     },
     "recs": {
       "heading": "O que praticar a seguir",

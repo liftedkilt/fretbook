@@ -45,6 +45,7 @@
   {/key}
   {#if song.content_kind === "chords"}
     <ChordSheetView {song} initialTranspose={transpose} />
+    <DifficultyPanel tracks={song.difficulty_tracks} preferredId="chords" chords />
   {:else}
     {#key song.id}
       <TabPlayer song={song as TabSong} />
