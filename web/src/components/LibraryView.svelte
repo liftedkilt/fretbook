@@ -4,9 +4,10 @@
   import RecentImports from "./RecentImports.svelte";
   import { addTags, deleteSong } from "../lib/api";
   import { t } from "../lib/i18n.svelte";
+  import { levelOf } from "../lib/difficulty";
   import { instrumentLabel } from "../lib/instruments";
   import { followLink, hrefFor } from "../lib/router.svelte";
-  import type { LibrarySort, SongSummary } from "../lib/types";
+  import type { LibraryLevel, LibrarySort, SongSummary } from "../lib/types";
   import {
     countFor,
     defaultOrder,
@@ -39,13 +40,20 @@
     { id: "artist", key: "library.sortArtist" },
     { id: "added", key: "library.sortAdded" },
     { id: "opened", key: "library.sortOpened" },
+    { id: "difficulty", key: "library.sortDifficulty" },
+  ];
+  const levels: { id: LibraryLevel; key: string }[] = [
+    { id: "all", key: "difficulty.levelAll" },
+    { id: "easy", key: "difficulty.levelEasy" },
+    { id: "medium", key: "difficulty.levelMedium" },
+    { id: "hard", key: "difficulty.levelHard" },
   ];
 
   // The server searches, filters, sorts and pages. Typing waits a moment; the other changes load at once.
   // App loads the first page; this only reacts to changes once it has.
   $effect(() => {
     const text = ui.search.trim();
-    void [ui.filter, ui.sort, ui.order, ui.tags, ui.favouritesOnly];
+    void [ui.filter, ui.sort, ui.order, ui.tags, ui.favouritesOnly, ui.level];
     if (!ui.loaded) return;
     const delay = text === searchSeen ? 0 : 200;
     searchSeen = text;
@@ -231,6 +239,19 @@
       </button>
     </div>
 
+    <div class="chips" role="group" aria-label={t("difficulty.filters")}>
+      {#each levels as item (item.id)}
+        <button
+          class="chip"
+          data-testid={`library-level-${item.id}`}
+          aria-pressed={ui.level === item.id}
+          onclick={() => (ui.level = item.id)}
+        >
+          {t(item.key)}
+        </button>
+      {/each}
+    </div>
+
     {#if ui.tagList.length}
       <div class="chips tag-chips" role="group" aria-label={t("tags.filters")}>
         {#each ui.tagList as item (item.tag)}
@@ -316,12 +337,13 @@
           ? t("library.searchEmpty", { query: ui.search.trim() })
           : t("library.filterEmpty")}
       </p>
-      {#if ui.tags.length || ui.favouritesOnly}
+      {#if ui.tags.length || ui.favouritesOnly || ui.level !== "all"}
         <button
           data-testid="library-clear-tags"
           onclick={() => {
             ui.tags = [];
             ui.favouritesOnly = false;
+            ui.level = "all";
           }}>{t("tags.clearFilters")}</button
         >
       {/if}
@@ -369,6 +391,10 @@
                   {t("library.strings", { count: song.string_count })} · {t("library.measures", {
                     count: song.measure_count,
                   })} · {t("library.tempo", { bpm: song.bpm })}
+                  {#if song.difficulty !== null}
+                    · <span data-testid="song-difficulty"
+                      >{t("difficulty.level", { level: levelOf(song.difficulty) })}</span
+                    >{/if}
                 </span>
               {/if}
               {#if song.tags.length}

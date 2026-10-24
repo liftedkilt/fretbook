@@ -91,6 +91,26 @@ the current and longest streak, songs practised, a calendar heatmap, a weekly su
 scores, and songs you have not played in two weeks. Days follow your browser's local midnight. Trainer games count toward the day's minutes, the streak and the heatmap, and are listed on the Practice page; the
 song log is part of the library backup (trainer games are not yet).
 
+## Difficulty and what to practise next
+
+Every tab gets an estimated **difficulty from 1 to 10**, worked out from its score: how many notes come per second at
+the written tempo, how far the fretting hand jumps along the neck, how wide the chord stretches are, how many notes use
+bends, slides, hammer-ons, harmonics or vibrato, how often the chord shape changes, and how many beats are tuplets,
+off the sixteenth-note grid or in odd time signatures. The library card shows the level, the library can be sorted by
+difficulty (easiest first; chord sheets, which have no level yet, come last) and filtered to easy (1–3), medium (4–6)
+or hard (7–10), and the song page has a **Difficulty** section listing each track's level and what contributes most.
+It is a heuristic, not a verdict: it cannot see how the music sounds or how you fret it. Changing a song's tempo or
+notes updates its level, and songs saved before this feature are rated when the server starts.
+
+The **Practice** page suggests what to play next:
+
+- **A step up**: tabs a little harder (up to 1.5 levels) than the level you have shown lately, that you have played at
+  most twice. Your level is the median difficulty of the songs you scored 80 % or better on in the last 30 days, or of
+  the songs you practised if you have not scored any. With no history it suggests the easiest tabs.
+- **Loops to revisit**: loops whose latest scored attempt in the last 60 days was under 70 %, lowest first.
+- **Due for a refresher**: songs you have not played for longer than a gap that doubles with every day you have
+  practised them (1, 2, 4, 8 … days, at most 60), the most overdue first.
+
 ## Checking it by hand
 
 Manual browser checks for the practice controls are in

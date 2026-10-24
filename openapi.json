@@ -1150,6 +1150,38 @@
         "title": "CreateTokenBody",
         "type": "object"
       },
+      "DifficultyFactor": {
+        "description": "One reason for a track's level.",
+        "properties": {
+          "key": {
+            "enum": [
+              "density",
+              "shifts",
+              "stretch",
+              "techniques",
+              "chords",
+              "rhythm"
+            ],
+            "title": "Key",
+            "type": "string"
+          },
+          "measure": {
+            "title": "Measure",
+            "type": "number"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "key",
+          "value",
+          "measure"
+        ],
+        "title": "DifficultyFactor",
+        "type": "object"
+      },
       "ErrorBody": {
         "description": "Error response. ``detail`` is ``{key, message, params}``.",
         "examples": [
@@ -2671,6 +2703,60 @@
         "title": "PreviewBody",
         "type": "object"
       },
+      "Recommendations": {
+        "properties": {
+          "level": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Level"
+          },
+          "level_basis": {
+            "enum": [
+              "scored",
+              "practised",
+              "none"
+            ],
+            "title": "Level Basis",
+            "type": "string"
+          },
+          "review": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewSong"
+            },
+            "title": "Review",
+            "type": "array"
+          },
+          "revisit": {
+            "items": {
+              "$ref": "#/components/schemas/RevisitLoop"
+            },
+            "title": "Revisit",
+            "type": "array"
+          },
+          "stretch": {
+            "items": {
+              "$ref": "#/components/schemas/SuggestedSong"
+            },
+            "title": "Stretch",
+            "type": "array"
+          }
+        },
+        "required": [
+          "level",
+          "level_basis",
+          "stretch",
+          "revisit",
+          "review"
+        ],
+        "title": "Recommendations",
+        "type": "object"
+      },
       "RenameSetlistBody": {
         "properties": {
           "name": {
@@ -2701,6 +2787,134 @@
           "entries"
         ],
         "title": "ReplaceEntriesBody",
+        "type": "object"
+      },
+      "ReviewSong": {
+        "properties": {
+          "artist": {
+            "title": "Artist",
+            "type": "string"
+          },
+          "content_kind": {
+            "enum": [
+              "tab",
+              "chords"
+            ],
+            "title": "Content Kind",
+            "type": "string"
+          },
+          "difficulty": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difficulty"
+          },
+          "interval_days": {
+            "title": "Interval Days",
+            "type": "integer"
+          },
+          "last_day": {
+            "title": "Last Day",
+            "type": "string"
+          },
+          "song_id": {
+            "title": "Song Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "song_id",
+          "title",
+          "artist",
+          "content_kind",
+          "difficulty",
+          "last_day",
+          "interval_days"
+        ],
+        "title": "ReviewSong",
+        "type": "object"
+      },
+      "RevisitLoop": {
+        "properties": {
+          "artist": {
+            "title": "Artist",
+            "type": "string"
+          },
+          "attempts": {
+            "title": "Attempts",
+            "type": "integer"
+          },
+          "content_kind": {
+            "enum": [
+              "tab",
+              "chords"
+            ],
+            "title": "Content Kind",
+            "type": "string"
+          },
+          "difficulty": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difficulty"
+          },
+          "last_day": {
+            "title": "Last Day",
+            "type": "string"
+          },
+          "loop_end": {
+            "title": "Loop End",
+            "type": "integer"
+          },
+          "loop_name": {
+            "title": "Loop Name",
+            "type": "string"
+          },
+          "loop_start": {
+            "title": "Loop Start",
+            "type": "integer"
+          },
+          "score": {
+            "title": "Score",
+            "type": "number"
+          },
+          "song_id": {
+            "title": "Song Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "song_id",
+          "title",
+          "artist",
+          "content_kind",
+          "difficulty",
+          "loop_name",
+          "loop_start",
+          "loop_end",
+          "score",
+          "last_day",
+          "attempts"
+        ],
+        "title": "RevisitLoop",
         "type": "object"
       },
       "ScoreDocument": {
@@ -3005,6 +3219,24 @@
             "title": "Created At",
             "type": "string"
           },
+          "difficulty": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difficulty"
+          },
+          "difficulty_tracks": {
+            "items": {
+              "$ref": "#/components/schemas/TrackDifficulty"
+            },
+            "title": "Difficulty Tracks",
+            "type": "array"
+          },
           "document": {
             "anyOf": [
               {
@@ -3113,13 +3345,15 @@
           "duration",
           "updated_at",
           "favourite",
+          "difficulty",
           "tags",
           "source_ref",
           "document",
           "chordpro",
           "created_at",
           "audio_url",
-          "preferred_track_id"
+          "preferred_track_id",
+          "difficulty_tracks"
         ],
         "title": "SongDetail",
         "type": "object"
@@ -3302,6 +3536,17 @@
             "title": "Content Kind",
             "type": "string"
           },
+          "difficulty": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difficulty"
+          },
           "duration": {
             "anyOf": [
               {
@@ -3391,6 +3636,7 @@
           "duration",
           "updated_at",
           "favourite",
+          "difficulty",
           "tags"
         ],
         "title": "SongSummary",
@@ -3480,6 +3726,50 @@
           "capo"
         ],
         "title": "SongsterrTrackChoice",
+        "type": "object"
+      },
+      "SuggestedSong": {
+        "properties": {
+          "artist": {
+            "title": "Artist",
+            "type": "string"
+          },
+          "content_kind": {
+            "enum": [
+              "tab",
+              "chords"
+            ],
+            "title": "Content Kind",
+            "type": "string"
+          },
+          "difficulty": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difficulty"
+          },
+          "song_id": {
+            "title": "Song Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "song_id",
+          "title",
+          "artist",
+          "content_kind",
+          "difficulty"
+        ],
+        "title": "SuggestedSong",
         "type": "object"
       },
       "SyncBody": {
@@ -3656,6 +3946,37 @@
           }
         },
         "title": "TrackBar",
+        "type": "object"
+      },
+      "TrackDifficulty": {
+        "properties": {
+          "factors": {
+            "items": {
+              "$ref": "#/components/schemas/DifficultyFactor"
+            },
+            "title": "Factors",
+            "type": "array"
+          },
+          "level": {
+            "title": "Level",
+            "type": "number"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "track_id": {
+            "title": "Track Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "track_id",
+          "name",
+          "level",
+          "factors"
+        ],
+        "title": "TrackDifficulty",
         "type": "object"
       },
       "UpdateSongBody": {
@@ -6565,6 +6886,109 @@
         ]
       }
     },
+    "/api/practice/recommendations": {
+      "get": {
+        "description": "What to practise next: songs a little above the recent level, weak loops, and songs due for review.",
+        "operationId": "practice_recommendations_api_practice_recommendations_get",
+        "parameters": [
+          {
+            "description": "The player's local date, YYYY-MM-DD.",
+            "in": "query",
+            "name": "today",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 10,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The player's local date, YYYY-MM-DD.",
+              "title": "Today"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recommendations"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Practice Recommendations",
+        "tags": [
+          "practice"
+        ]
+      }
+    },
     "/api/practice/sessions": {
       "post": {
         "operationId": "record_session_api_practice_sessions_post",
@@ -7413,7 +7837,7 @@
     },
     "/api/songs": {
       "get": {
-        "description": "One page of the caller's songs. Summaries omit the score and ChordPro text.\n\n`sort` defaults to the last edit, newest first; `opened` puts never-opened songs last.",
+        "description": "One page of the caller's songs. Summaries omit the score and ChordPro text.\n\n`sort` defaults to the last edit, newest first; `opened` puts never-opened songs last, and `difficulty`\n(easiest first) puts chord sheets, which have no level, last.",
         "operationId": "list_songs_api_songs_get",
         "parameters": [
           {
@@ -7440,7 +7864,8 @@
                 "artist",
                 "added",
                 "updated",
-                "opened"
+                "opened",
+                "difficulty"
               ],
               "title": "Sort",
               "type": "string"
@@ -7511,6 +7936,46 @@
               "description": "Only starred songs.",
               "title": "Favourite",
               "type": "boolean"
+            }
+          },
+          {
+            "description": "Tabs at or above this level (1 to 10).",
+            "in": "query",
+            "name": "difficulty_min",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 10,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Tabs at or above this level (1 to 10).",
+              "title": "Difficulty Min"
+            }
+          },
+          {
+            "description": "Tabs at or below this level (1 to 10).",
+            "in": "query",
+            "name": "difficulty_max",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 10,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Tabs at or below this level (1 to 10).",
+              "title": "Difficulty Max"
             }
           },
           {

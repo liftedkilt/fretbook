@@ -1,5 +1,6 @@
 <script lang="ts">
   import ChordSheetView from "./ChordSheetView.svelte";
+  import DifficultyPanel from "./DifficultyPanel.svelte";
   import SongPractice from "./SongPractice.svelte";
   import SongTags from "./SongTags.svelte";
   import TabPlayer from "./TabPlayer.svelte";
@@ -48,6 +49,7 @@
     {#key song.id}
       <TabPlayer song={song as TabSong} />
     {/key}
+    <DifficultyPanel tracks={song.difficulty_tracks} preferredId={song.preferred_track_id} />
     <SongPractice songId={song.id} />
   {/if}
 {/if}

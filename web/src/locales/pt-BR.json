@@ -161,7 +161,8 @@
     "clearSearch": "Limpar busca",
     "searchShortcut": "Pressione / para buscar",
     "filterChords": "Cifras",
-    "emptyTitle": "Comece seu caderno de músicas"
+    "emptyTitle": "Comece seu caderno de músicas",
+    "sortDifficulty": "Dificuldade"
   },
   "instrument": {
     "bass4": "Baixo de 4 cordas",
@@ -1120,6 +1121,45 @@
     "durationMinutes": "{count}min",
     "durationHours": "{hours}h {minutes}min",
     "exercises": "Jogos de treino"
+  },
+  "difficulty": {
+    "heading": "Dificuldade",
+    "intro": "Estimada a partir das notas da partitura: velocidade, deslocamento da mão, aberturas, técnicas usadas, frequência das trocas de acordes e complexidade do ritmo.",
+    "level": "Nível {level}",
+    "levelOf": "{level} de 10",
+    "share": "{percent} % do máximo deste fator",
+    "trivial": "Nada aqui é exigente.",
+    "filters": "Filtrar por dificuldade",
+    "levelAll": "Qualquer nível",
+    "levelEasy": "Fácil (1–3)",
+    "levelMedium": "Médio (4–6)",
+    "levelHard": "Difícil (7–10)",
+    "name": {
+      "density": "Velocidade",
+      "shifts": "Mudanças de posição",
+      "stretch": "Abertura",
+      "techniques": "Técnicas",
+      "chords": "Trocas de acordes",
+      "rhythm": "Ritmo"
+    },
+    "factor": {
+      "density": "{value} notas por segundo nos compassos mais cheios",
+      "shifts": "{value} grandes saltos no braço por compasso",
+      "stretch": "até {value} casas de distância em um acorde",
+      "techniques": "{value} % das notas usam bends, slides, hammer-ons e similares",
+      "chords": "{value} trocas de acordes por minuto",
+      "rhythm": "{value} % dos tempos são quiálteras ou fora da grade de semicolcheias"
+    },
+    "recs": {
+      "heading": "O que praticar a seguir",
+      "stretch": "Um passo à frente",
+      "revisit": "Trechos para revisitar",
+      "review": "Hora de uma revisão",
+      "level": {
+        "scored": "Você tem tocado bem músicas de nível {level} ultimamente, então estas são um pouco mais difíceis.",
+        "practised": "Você tem praticado principalmente músicas de nível {level}."
+      }
+    }
   },
   "chordDiagrams": {
     "heading": "Diagramas de acordes",

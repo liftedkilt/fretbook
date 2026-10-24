@@ -161,7 +161,8 @@
     "clearSearch": "Clear search",
     "searchShortcut": "Press / to search",
     "filterChords": "Chord sheets",
-    "emptyTitle": "Start your songbook"
+    "emptyTitle": "Start your songbook",
+    "sortDifficulty": "Difficulty"
   },
   "instrument": {
     "bass4": "4-string bass",
@@ -1120,6 +1121,45 @@
     "durationMinutes": "{count}m",
     "durationHours": "{hours}h {minutes}m",
     "exercises": "Trainer games"
+  },
+  "difficulty": {
+    "heading": "Difficulty",
+    "intro": "Estimated from the notes in the score: how fast they come, how far the hand moves, how wide the stretches are, which techniques are used, how often chords change and how tricky the rhythm is.",
+    "level": "Level {level}",
+    "levelOf": "{level} of 10",
+    "share": "{percent} % of the maximum for this factor",
+    "trivial": "Nothing here is demanding.",
+    "filters": "Filter by difficulty",
+    "levelAll": "Any level",
+    "levelEasy": "Easy (1–3)",
+    "levelMedium": "Medium (4–6)",
+    "levelHard": "Hard (7–10)",
+    "name": {
+      "density": "Speed",
+      "shifts": "Position shifts",
+      "stretch": "Stretch",
+      "techniques": "Techniques",
+      "chords": "Chord changes",
+      "rhythm": "Rhythm"
+    },
+    "factor": {
+      "density": "{value} notes a second in the busiest bars",
+      "shifts": "{value} big jumps along the neck per bar",
+      "stretch": "up to {value} frets apart in a chord",
+      "techniques": "{value} % of notes use bends, slides, hammer-ons and the like",
+      "chords": "{value} chord changes a minute",
+      "rhythm": "{value} % of beats are tuplets or off the sixteenth-note grid"
+    },
+    "recs": {
+      "heading": "What to practise next",
+      "stretch": "A step up",
+      "revisit": "Loops to revisit",
+      "review": "Due for a refresher",
+      "level": {
+        "scored": "You have been playing level {level} songs well lately, so these are a little harder.",
+        "practised": "You have mostly been practising level {level} songs."
+      }
+    }
   },
   "chordDiagrams": {
     "heading": "Chord diagrams",

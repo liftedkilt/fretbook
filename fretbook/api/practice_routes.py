@@ -163,6 +163,44 @@ class PracticeStats(BaseModel):
     """Trainer games played, one row per game; their time is already in the totals above."""
 
 
+class SuggestedSong(BaseModel):
+    song_id: str
+    title: str
+    artist: str
+    content_kind: ContentKind
+    difficulty: float | None
+    """1 to 10; null for a chord sheet."""
+
+
+class ReviewSong(SuggestedSong):
+    last_day: str
+    interval_days: int
+    """How long the spaced-repetition schedule waits after a practice day; the song is due once it has passed."""
+
+
+class RevisitLoop(SuggestedSong):
+    loop_name: str
+    loop_start: int
+    loop_end: int
+    score: float
+    """Percent of notes hit on the latest scored attempt."""
+    last_day: str
+    attempts: int
+
+
+class Recommendations(BaseModel):
+    level: float | None
+    """The player's recent level, 1 to 10, or null with nothing to go on."""
+    level_basis: Literal["scored", "practised", "none"]
+    """`scored`: songs played at 80 % or better in the last 30 days. `practised`: songs practised in that time."""
+    stretch: list[SuggestedSong]
+    """Tabs a little above `level` that have had little practice; the easiest tabs when `level` is null."""
+    revisit: list[RevisitLoop]
+    """Loops whose latest scored attempt was under 70 %, lowest first."""
+    review: list[ReviewSong]
+    """Songs due again, most overdue first."""
+
+
 class SongPractice(BaseModel):
     session_count: int
     total_seconds: int
@@ -248,6 +286,18 @@ def practice_stats(
     user: Principal = Depends(principal),
 ):
     return _repo(ctx).stats(user.user_id, _day(today) if today else datetime.now(UTC).date())
+
+
+@router.get(
+    "/api/practice/recommendations", response_model=Recommendations, tags=["practice"], responses=AUTH_RESPONSES
+)
+def practice_recommendations(
+    today: Annotated[str | None, Query(max_length=10, description="The player's local date, YYYY-MM-DD.")] = None,
+    ctx: AppContext = Depends(context),
+    user: Principal = Depends(principal),
+):
+    """What to practise next: songs a little above the recent level, weak loops, and songs due for review."""
+    return _repo(ctx).recommendations(user.user_id, _day(today) if today else datetime.now(UTC).date())
 
 
 @router.get("/api/practice/goal", response_model=PracticeGoal, tags=["practice"], responses=AUTH_RESPONSES)

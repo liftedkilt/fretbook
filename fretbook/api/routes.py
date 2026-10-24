@@ -221,11 +221,13 @@ def update_settings(
 @router.get("/api/songs", response_model=SongPage, tags=["songs"], responses=AUTH_RESPONSES)
 def list_songs(
     q: str = Query("", max_length=200, description="Words matched as prefixes against title and artist."),
-    sort: Literal["title", "artist", "added", "updated", "opened"] = "updated",
+    sort: Literal["title", "artist", "added", "updated", "opened", "difficulty"] = "updated",
     order: Literal["asc", "desc"] | None = Query(None, description="Defaults to the natural order of `sort`."),
     instrument: Literal["all", "bass", "electric", "acoustic", "chords"] = "all",
     tag: list[str] = Query([], max_length=10, description="Repeat to require several tags; a song needs all of them."),
     favourite: bool = Query(False, description="Only starred songs."),
+    difficulty_min: int | None = Query(None, ge=1, le=10, description="Tabs at or above this level (1 to 10)."),
+    difficulty_max: int | None = Query(None, ge=1, le=10, description="Tabs at or below this level (1 to 10)."),
     limit: int = Query(50, ge=1, le=200),
     cursor: str = Query("", max_length=64),
     ctx: AppContext = Depends(_ctx),
@@ -233,7 +235,8 @@ def list_songs(
 ) -> JSONResponse:
     """One page of the caller's songs. Summaries omit the score and ChordPro text.
 
-    `sort` defaults to the last edit, newest first; `opened` puts never-opened songs last.
+    `sort` defaults to the last edit, newest first; `opened` puts never-opened songs last, and `difficulty`
+    (easiest first) puts chord sheets, which have no level, last.
     """
     start = _decode_cursor(cursor)
     page = ctx.songs.list_songs(
@@ -244,6 +247,8 @@ def list_songs(
         instrument=instrument,
         tags=tag,
         favourite=favourite,
+        difficulty_min=difficulty_min,
+        difficulty_max=difficulty_max,
         limit=limit,
         offset=start,
     )

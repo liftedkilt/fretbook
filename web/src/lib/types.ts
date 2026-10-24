@@ -129,6 +129,8 @@ export interface SongSummary {
   duration: number | null;
   updated_at: string;
   favourite: boolean;
+  /** Estimated difficulty of the preferred track, 1 to 10; null for chord sheets. */
+  difficulty: number | null;
   /** Sorted A to Z ignoring case. */
   tags: string[];
 }
@@ -165,9 +167,11 @@ export interface SetlistEntryDraft {
   transpose: number;
 }
 
-export type LibrarySort = "title" | "artist" | "added" | "updated" | "opened";
+export type LibrarySort = "title" | "artist" | "added" | "updated" | "opened" | "difficulty";
 export type SortOrder = "asc" | "desc";
 export type LibraryFilter = "all" | "bass" | "electric" | "acoustic" | "chords";
+/** Difficulty bands: 1 to 3, 4 to 6 and 7 to 10. */
+export type LibraryLevel = "all" | "easy" | "medium" | "hard";
 
 export interface SongQuery {
   q?: string;
@@ -177,6 +181,8 @@ export interface SongQuery {
   /** A song needs every tag listed. */
   tag?: string[];
   favourite?: boolean;
+  difficulty_min?: number;
+  difficulty_max?: number;
   limit?: number;
   cursor?: string;
 }
@@ -203,6 +209,24 @@ export interface SongDetail extends SongSummary {
   created_at: string;
   audio_url: string | null;
   preferred_track_id: string;
+  difficulty_tracks: TrackDifficulty[];
+}
+
+export type DifficultyFactorKey =
+  "density" | "shifts" | "stretch" | "techniques" | "chords" | "rhythm";
+
+/** One reason for a track's level; `value` is 0 to 1, `measure` the number behind it. */
+export interface DifficultyFactor {
+  key: DifficultyFactorKey;
+  value: number;
+  measure: number;
+}
+
+export interface TrackDifficulty {
+  track_id: string;
+  name: string;
+  level: number;
+  factors: DifficultyFactor[];
 }
 
 export interface TabSong extends SongDetail {
@@ -448,4 +472,34 @@ export interface SongPractice {
   best_score: number | null;
   last_practised: string | null;
   sessions: PracticeSession[];
+}
+
+export interface SuggestedSong {
+  song_id: string;
+  title: string;
+  artist: string;
+  content_kind: ContentKind;
+  difficulty: number | null;
+}
+
+export interface ReviewSong extends SuggestedSong {
+  last_day: string;
+  interval_days: number;
+}
+
+export interface RevisitLoop extends SuggestedSong {
+  loop_name: string;
+  loop_start: number;
+  loop_end: number;
+  score: number;
+  last_day: string;
+  attempts: number;
+}
+
+export interface Recommendations {
+  level: number | null;
+  level_basis: "scored" | "practised" | "none";
+  stretch: SuggestedSong[];
+  revisit: RevisitLoop[];
+  review: ReviewSong[];
 }

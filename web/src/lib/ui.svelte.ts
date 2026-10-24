@@ -1,8 +1,10 @@
 import { getMe, getMeta, listSongs, listTags, saveSettings, setFavourite } from "./api";
+import { levelQuery } from "./difficulty";
 import type {
   InstrumentPreset,
   LibraryCounts,
   LibraryFilter,
+  LibraryLevel,
   LibrarySort,
   Me,
   SongQuery,
@@ -39,11 +41,11 @@ const SORT_KEY = "fretbook.librarySort";
 /** Songs per request. The library shows more through "Load more". */
 export const PAGE_SIZE = 48;
 
-const SORTS: LibrarySort[] = ["title", "artist", "added", "updated", "opened"];
+const SORTS: LibrarySort[] = ["title", "artist", "added", "updated", "opened", "difficulty"];
 
-/** The order each sort starts in: newest first for dates, A to Z for text. */
+/** The order each sort starts in: newest first for dates, A to Z for text, easiest first for difficulty. */
 export function defaultOrder(sort: LibrarySort): SortOrder {
-  return sort === "title" || sort === "artist" ? "asc" : "desc";
+  return sort === "title" || sort === "artist" || sort === "difficulty" ? "asc" : "desc";
 }
 
 function storedSort(): { sort: LibrarySort; order: SortOrder } {
@@ -112,6 +114,8 @@ export const ui = $state({
   tags: [] as string[],
   /** Show only starred songs. */
   favouritesOnly: false,
+  /** Keep only tabs in a difficulty band. */
+  level: "all" as LibraryLevel,
   loaded: false,
   loadingMore: false,
   sort: initialSort.sort,
@@ -146,6 +150,7 @@ function currentQuery(): SongQuery {
     instrument: ui.filter,
     tag: [...ui.tags],
     favourite: ui.favouritesOnly,
+    ...levelQuery(ui.level),
     limit: PAGE_SIZE,
   };
 }

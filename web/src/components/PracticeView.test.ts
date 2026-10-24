@@ -9,6 +9,7 @@ const mockSaveGoal = vi.fn();
 vi.mock("../lib/api", () => ({
   getPracticeStats: (...args: unknown[]) => mockStats(...args),
   savePracticeGoal: (...args: unknown[]) => mockSaveGoal(...args),
+  getRecommendations: () => Promise.reject(new Error("offline")),
 }));
 
 function stats(overrides: Partial<PracticeStats> = {}): PracticeStats {
