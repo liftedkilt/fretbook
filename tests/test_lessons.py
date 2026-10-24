@@ -365,6 +365,10 @@ def test_check_reads_the_practice_log_for_a_song_bound_condition(client: TestCli
     log(mode="scored", score=70)
     assert client.post(check).json()["passed"] is False
     log(mode="free", score=None)
+    # Looping the easy bars is not playing the song: neither a high score nor wait mode on a loop counts.
+    log(mode="scored", score=99, loop_start=0, loop_end=1)
+    log(mode="wait", loop_start=0, loop_end=1)
+    assert client.post(check).json()["passed"] is False
     log(mode="scored", score=82)
     result = client.post(check).json()
     assert result["passed"] is True and result["progress"]["best_score"] == 82
@@ -380,6 +384,43 @@ def test_check_reads_the_practice_log_for_a_song_bound_condition(client: TestCli
     assert client.post(check).json()["detail"]["key"] == "song.notFound"
 
 
+def test_a_wait_lesson_tied_to_a_song_needs_a_whole_song_wait_session(client: TestClient) -> None:
+    song = client.post("/api/songs", json={"title": "Scale"}).json()["id"]
+    text = lesson("Wait", level="one", requires="[]", body=f"```fretbook:pass\ntype: wait\nsong: {song}\n```")
+    client.put("/api/courses/c/lessons/b/source", json={"text": text})
+    check = "/api/courses/c/lessons/b/check"
+
+    def log(**extra) -> None:
+        body = {"song_id": song, "day": date.today().isoformat(), "duration_seconds": 60, **extra}
+        assert client.post("/api/practice/sessions", json=body).status_code in (200, 201)
+
+    log(mode="wait", loop_start=2, loop_end=3)
+    log(mode="scored", score=100)
+    assert client.post(check).json()["passed"] is False
+    log(mode="wait")
+    assert client.post(check).json()["passed"] is True
+
+
+def test_the_tempo_of_a_run_is_the_song_tempo_times_the_playback_speed(client: TestClient) -> None:
+    song = client.post("/api/songs", json={"title": "Scale"}).json()["id"]
+    tempo = client.get(f"/api/songs/{song}").json()["bpm"]
+    assert tempo > 0
+    goal = round(tempo * 0.75)
+    body = f"```fretbook:pass\ntype: score\nmin_score: 50\nmin_bpm: {goal}\nsong: {song}\n```"
+    client.put("/api/courses/c/lessons/b/source", json={"text": lesson("T", level="one", requires="[]", body=body)})
+
+    def log(speed: float) -> None:
+        session = {"song_id": song, "day": date.today().isoformat(), "duration_seconds": 60, "mode": "scored"}
+        session.update(score=99, speed=speed)
+        assert client.post("/api/practice/sessions", json=session).status_code in (200, 201)
+
+    check = "/api/courses/c/lessons/b/check"
+    log(0.5)
+    assert client.post(check).json()["passed"] is False
+    log(1.0)
+    assert client.post(check).json()["passed"] is True
+
+
 def test_editing_lessons_previewing_and_deleting(client: TestClient) -> None:
     preview = client.post("/api/lessons/preview", json={"text": lesson("Hi", body="```fretbook:chord\nname: G\n```")})
     assert preview.json()["title"] == "Hi" and preview.json()["blocks"][0]["params"]["name"] == "G"
@@ -387,6 +428,8 @@ def test_editing_lessons_previewing_and_deleting(client: TestClient) -> None:
     assert bad.status_code == 400
     detail = bad.json()["detail"]
     assert detail["key"] == "lesson.invalid" and detail["params"]["line"] == 4
+    unclosed = client.post("/api/lessons/preview", json={"text": "---\ntitle: T\n"}).json()["detail"]
+    assert unclosed["key"] == "lesson.invalidNoLine" and "line" not in unclosed["params"]
 
     saved = client.put("/api/courses/c/lessons/new-one/source", json={"text": lesson("Brand new", level="two")})
     assert saved.status_code == 200
@@ -472,6 +515,16 @@ def test_bad_packs_change_nothing(client: TestClient, files: dict, key: str) -> 
     response = _import(client, _zip(files))
     assert response.status_code == 400 and response.json()["detail"]["key"] == key
     assert "x" not in [c["id"] for c in client.get("/api/courses").json()["courses"]]
+
+
+def test_a_pack_with_too_many_lessons_or_too_many_bytes_is_refused(client: TestClient) -> None:
+    many = {f"big/l{i}.md": lesson(f"L{i}") for i in range(501)}
+    many["big/course.md"] = COURSE
+    over = _import(client, _zip(many)).json()["detail"]
+    assert over["key"] == "lessons.packTooManyLessons" and over["params"]["limit"] == 500
+    huge = _import(client, b"0" * (10 * 1024 * 1024 + 1))
+    assert huge.status_code in (413, 400)
+    assert "big" not in [c["id"] for c in client.get("/api/courses").json()["courses"]]
 
 
 def test_a_pack_that_is_not_a_zip_is_refused(client: TestClient) -> None:

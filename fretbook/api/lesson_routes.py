@@ -448,7 +448,9 @@ def check_lesson(
 
 
 def _invalid(exc: LessonFormatError):
-    return api_error(400, "lesson.invalid", f"{exc}", reason=exc.message, line=exc.line or 0)
+    if exc.line is None:
+        return api_error(400, "lesson.invalidNoLine", f"{exc}", reason=exc.message)
+    return api_error(400, "lesson.invalid", f"{exc}", reason=exc.message, line=exc.line)
 
 
 @router.post("/api/lessons/preview", response_model=LessonPreview, tags=["lessons"], responses=AUTH_RESPONSES)
@@ -560,7 +562,7 @@ async def import_pack(file: UploadFile = File(...), ctx: AppContext = Depends(co
     """Add the courses and lessons of a zip pack (``<course>/course.md`` and ``<course>/<lesson>.md``)."""
     data = await file.read(MAX_PACK_BYTES + 1)
     if len(data) > MAX_PACK_BYTES:
-        raise api_error(413, "lessons.packTooLarge", "the pack is too large", limit=MAX_PACK_BYTES // (1024 * 1024))
+        raise api_error(413, "lessons.packTooLarge", "the pack is too large", megabytes=MAX_PACK_BYTES // (1024 * 1024))
     with tempfile.TemporaryDirectory(prefix="lesson-pack-") as scratch:
         archive = Path(scratch) / "pack.zip"
         archive.write_bytes(data)

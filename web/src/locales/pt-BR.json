@@ -618,14 +618,16 @@
       "invalid": "Não foi possível ler a lição: {reason} (linha {line}).",
       "useCheck": "Esta lição é verificada com o seu registro de prática.",
       "noSong": "Esta lição não tem música para verificar.",
-      "builtin": "As lições incluídas não podem ser apagadas."
+      "builtin": "As lições incluídas não podem ser apagadas.",
+      "invalidNoLine": "Não foi possível ler a lição: {reason}."
     },
     "lessons": {
-      "packTooLarge": "Esse pacote é grande demais (o limite é {limit} MB, ou {limit} lições).",
+      "packTooLarge": "Esse pacote é grande demais (o limite é {megabytes} MB).",
       "packInvalid": "Não foi possível importar o pacote: {file}: {reason}",
       "packEmpty": "O pacote não tem arquivos curso/lição.md.",
       "packNoCourse": "O curso {course} não tem course.md.",
-      "badPack": "Não foi possível importar esse pacote."
+      "badPack": "Não foi possível importar esse pacote.",
+      "packTooManyLessons": "Esse pacote tem lições demais (o limite é {limit})."
     }
   },
   "ui": {

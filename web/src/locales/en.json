@@ -618,14 +618,16 @@
       "invalid": "The lesson could not be read: {reason} (line {line}).",
       "useCheck": "This lesson is checked against your practice log.",
       "noSong": "This lesson has no song to check.",
-      "builtin": "Built-in lessons cannot be deleted."
+      "builtin": "Built-in lessons cannot be deleted.",
+      "invalidNoLine": "The lesson could not be read: {reason}."
     },
     "lessons": {
-      "packTooLarge": "That pack is too large (the limit is {limit} MB, or {limit} lessons).",
+      "packTooLarge": "That pack is too large (the limit is {megabytes} MB).",
       "packInvalid": "The pack could not be imported: {file}: {reason}",
       "packEmpty": "The pack has no course/lesson.md files.",
       "packNoCourse": "The course {course} has no course.md.",
-      "badPack": "That pack could not be imported."
+      "badPack": "That pack could not be imported.",
+      "packTooManyLessons": "That pack has too many lessons (the limit is {limit})."
     }
   },
   "ui": {

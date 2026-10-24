@@ -49,6 +49,10 @@ test("work through a built-in course: lessons unlock, progress is kept, and cont
   await page.goto("/lessons/guitar-first-steps/04-a-chord-song-of-your-own");
   await expect(page.getByTestId("lesson-locked")).toBeVisible();
 
+  // An address that is not a lesson page says so.
+  await page.goto("/lessons/guitar-first-steps/a/b/c");
+  await expect(page.getByText("That page is not in the book.")).toBeVisible();
+
   // The exercise link opens the preset drill.
   await page.goto("/lessons/guitar-first-steps/02-e-minor-and-a-minor");
   await page.getByTestId("lesson-exercise").click();

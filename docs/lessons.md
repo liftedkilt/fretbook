@@ -87,9 +87,9 @@ A lesson with no `fretbook:pass` block is finished with **Mark as done**. Otherw
 | `type` | Keys | Passed when |
 | --- | --- | --- |
 | `score` | `min_score` (0 to 100, required), `min_bpm` (optional), `song` (optional) | A run scored at least `min_score` percent, at `min_bpm` or faster when given. |
-| `wait` | `song` (optional) | Wait mode was completed. |
+| `wait` | `song` (optional) | The learner says they finished wait mode, or (with `song`) a whole-song wait-mode session is in the practice log. |
 
-Without `song`, the learner reports the result themselves in the lesson (score and tempo, or "I played it in wait mode") and Fretbook checks it against the condition. With `song`, **Check my practice** looks in the [practice log](guides/practice.md#practice-log) for a scored run of that library song that meets the condition (its tempo is the song's tempo times the playback speed), or a wait-mode session. A finished lesson stays finished.
+Without `song`, the learner reports the result themselves in the lesson (score and tempo, or "I played it in wait mode") and Fretbook checks it against the condition. With `song`, **Check my practice** looks in the [practice log](guides/practice.md#practice-log) for a scored run of that library song that meets the condition, or for a wait-mode session. Only runs of the **whole song** count: a looped section (**Practise this section**) never passes a lesson, however well it went. The tempo of a run is the song's tempo times the playback speed, so a song with no tempo cannot meet `min_bpm`. The log has no "finished" flag for wait mode, so any whole-song wait session counts. A finished lesson stays finished.
 
 ## A course file
 

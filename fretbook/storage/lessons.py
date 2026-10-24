@@ -93,13 +93,17 @@ class LessonProgressRepository:
         return _progress(row)
 
     def best_practice(self, owner_id: str, song_id: str) -> dict[str, Any]:
-        """The best scored run of a library song and whether wait mode was used, from the practice log."""
+        """Whole-song runs of a library song from the practice log: scored runs, and whether wait mode was used.
+
+        A looped section does not count: looping the easy bars must not pass a lesson about the song.
+        """
         with self._session() as conn:
             song = conn.execute("SELECT bpm FROM songs WHERE id = ? AND owner_id = ?", (song_id, owner_id)).fetchone()
             if song is None:
                 return {"found": False, "runs": [], "waited": False}
             rows = conn.execute(
-                "SELECT mode, speed, score FROM practice_sessions WHERE owner_id = ? AND song_id = ?",
+                "SELECT mode, speed, score FROM practice_sessions "
+                "WHERE owner_id = ? AND song_id = ? AND loop_start IS NULL AND loop_end IS NULL",
                 (owner_id, song_id),
             ).fetchall()
         base = song["bpm"] or 0

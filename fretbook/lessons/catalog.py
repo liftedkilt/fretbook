@@ -196,7 +196,9 @@ class LessonCatalog:
                 count += 1
                 if count > MAX_PACK_FILES:
                     raise PackError(
-                        f"a pack holds at most {MAX_PACK_FILES} lessons", "lessons.packTooLarge", limit=MAX_PACK_FILES
+                        f"a pack holds at most {MAX_PACK_FILES} lessons",
+                        "lessons.packTooManyLessons",
+                        limit=MAX_PACK_FILES,
                     )
                 course_id, name = parts[0], parts[1][:-3]
                 try:
