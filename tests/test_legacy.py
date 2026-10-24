@@ -6,6 +6,7 @@ from fretbook.config import Settings
 from fretbook.context import AppContext
 from fretbook.db.migrate import migrate
 from fretbook.jobs.runner import JobRunner
+from fretbook.llm.service import LlmService
 from fretbook.score.legacy import legacy_document
 from fretbook.storage.media import MediaStore
 from fretbook.storage.repository import SongRepository
@@ -38,6 +39,7 @@ def test_legacy_folder_becomes_a_song(tmp_path: Path) -> None:
         jobs=JobRunner(settings),
         users=UserStore(settings),
         auth=SingleUserAuth(),
+        llm=LlmService(settings),
     )
     assert import_legacy(ctx) == 1
     assert import_legacy(ctx) == 0

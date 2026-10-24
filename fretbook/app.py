@@ -26,6 +26,7 @@ from fretbook.api.calibration_routes import router as calibration_router
 from fretbook.api.demo_routes import router as demo_router
 from fretbook.api.lesson_routes import router as lesson_router
 from fretbook.api.metadata_routes import router as metadata_router
+from fretbook.api.llm_routes import router as llm_router
 from fretbook.api.middleware import BodyLimitMiddleware, SameOriginMiddleware
 from fretbook.api.midi_routes import router as midi_router
 from fretbook.api.practice_routes import router as practice_router
@@ -50,6 +51,7 @@ from fretbook.inbox import InboxWatcher
 from fretbook.jobs.handlers import register_handlers
 from fretbook.jobs.registry import register_kinds
 from fretbook.jobs.runner import JobRunner
+from fretbook.llm.service import LlmService
 from fretbook.score.legacy import legacy_document, load_legacy_dir
 from fretbook.storage.media import MediaStore, QuotaExceeded
 from fretbook.storage.repository import SongRepository
@@ -143,6 +145,7 @@ def create_app(
     *,
     oidc_transport: httpx.AsyncBaseTransport | None = None,
     fetcher: SafeFetcher | None = None,
+    llm_transport: httpx.BaseTransport | None = None,
 ) -> FastAPI:
     """``oidc_transport`` and ``fetcher`` stand in for the network (the OIDC provider, pasted links) in tests."""
     settings = settings or Settings.from_env()
@@ -168,6 +171,7 @@ def create_app(
         users=users,
         auth=build_auth(settings, users, transport=oidc_transport),
         fetcher=fetcher,
+        llm=LlmService(settings, transport=llm_transport),
     )
 
     resetter = DemoResetter(ctx)
@@ -304,6 +308,7 @@ def create_app(
     app.include_router(metadata_router)
     app.include_router(bulk_router)
     app.include_router(token_router)
+    app.include_router(llm_router)
     app.include_router(calibration_router)
     app.include_router(setlist_router)
     app.include_router(practice_router)
