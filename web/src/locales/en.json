@@ -403,6 +403,10 @@
       "crossOrigin": "Requests from other sites are not allowed.",
       "invalid": "Some fields are not valid."
     },
+    "tag": {
+      "notFound": "That tag is not on any of your songs.",
+      "nameEmpty": "The new tag name cannot be empty."
+    },
     "song": {
       "notFound": "That song is not in your library.",
       "conflict": "This song was changed somewhere else after you opened it.",
@@ -780,6 +784,30 @@
       "other": "Added “{tag}” to {count} songs."
     },
     "clearFilters": "Clear tag filters"
+  },
+  "manageTags": {
+    "open": "Manage tags",
+    "title": "Manage tags",
+    "hint": "Changes apply to every song in your library.",
+    "empty": "No tags yet.",
+    "list": "Tags",
+    "songs": {
+      "one": "{count} song",
+      "other": "{count} songs"
+    },
+    "newName": "New name for {tag}",
+    "rename": "Rename",
+    "renameOrMerge": "Rename or merge {tag}",
+    "save": "Save",
+    "cancel": "Cancel",
+    "mergeHint": "A tag with that name exists: the two will merge.",
+    "delete": "Delete",
+    "deleteTag": "Delete {tag}",
+    "confirmDelete": "Remove “{tag}” from {count} songs?",
+    "confirm": "Remove tag",
+    "renamed": "Renamed “{tag}” to “{name}” on {count} songs.",
+    "deleted": "Removed “{tag}” from {count} songs.",
+    "close": "Close"
   },
   "wait": {
     "title": "Wait mode",

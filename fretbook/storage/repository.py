@@ -782,6 +782,46 @@ class SongRepository:
             ).fetchall()
         return [{"tag": row["tag"], "count": row["count"]} for row in rows]
 
+    def rename_tag(self, owner_id: str, tag: str, new_name: str) -> int | None:
+        """Rename a tag on every one of the owner's songs, or merge it into ``new_name`` when that tag exists.
+
+        ``new_name`` must already be cleaned. A song that has both ends up with one. Returns how many songs
+        had ``tag``, or ``None`` when none did.
+        """
+        old_key, new_key = tag_key(tag), tag_key(new_name)
+        with self._session(immediate=True) as conn:
+            owned = "SELECT id FROM songs WHERE owner_id = ?"
+            count = conn.execute(
+                f"SELECT count(*) FROM song_tags WHERE tag_key = ? AND song_id IN ({owned})", (old_key, owner_id)
+            ).fetchone()[0]
+            if not count:
+                return None
+            if old_key != new_key:
+                conn.execute(
+                    f"DELETE FROM song_tags WHERE tag_key = ? AND song_id IN ({owned}) "
+                    "AND song_id IN (SELECT song_id FROM song_tags WHERE tag_key = ?)",
+                    (old_key, owner_id, new_key),
+                )
+                conn.execute(
+                    f"UPDATE song_tags SET tag = ?, tag_key = ? WHERE tag_key = ? AND song_id IN ({owned})",
+                    (new_name, new_key, old_key, owner_id),
+                )
+            # Songs that already had the target keep their spelling otherwise, so the tag reads one way.
+            conn.execute(
+                f"UPDATE song_tags SET tag = ? WHERE tag_key = ? AND song_id IN ({owned})",
+                (new_name, new_key, owner_id),
+            )
+            return count
+
+    def delete_tag(self, owner_id: str, tag: str) -> int:
+        """Remove a tag from every one of the owner's songs. Returns how many songs had it."""
+        with self._session(immediate=True) as conn:
+            cursor = conn.execute(
+                "DELETE FROM song_tags WHERE tag_key = ? AND song_id IN (SELECT id FROM songs WHERE owner_id = ?)",
+                (tag_key(tag), owner_id),
+            )
+            return cursor.rowcount
+
     def delete_song(self, owner_id: str, song_id: str) -> bool:
         with self._session() as conn:
             cursor = conn.execute("DELETE FROM songs WHERE owner_id = ? AND id = ?", (owner_id, song_id))
