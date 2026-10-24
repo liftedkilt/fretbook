@@ -515,3 +515,35 @@ def test_an_archive_without_trainer_games_still_restores(tmp_path: Path) -> None
     with TestClient(create_app(Settings.for_tests(tmp_path / "dst"))) as target:
         job = _restore(target, old)
         assert job["status"] == "done" and job["result"]["practice_exercises"] == 0
+
+
+def test_record_a_rhythm_run(client: TestClient) -> None:
+    created = _exercise(
+        client, kind="rhythm", rounds=16, correct=14, score=87.5, pattern="eighths", bpm=90, mean_error_ms=-12.5
+    )
+    assert created.status_code == 201
+    row = created.json()
+    assert (row["kind"], row["pattern"], row["bpm"], row["mean_error_ms"]) == ("rhythm", "eighths", 90, -12.5)
+    stats = client.get(f"/api/practice/stats?today={_day()}").json()
+    assert [item["kind"] for item in stats["exercises"]] == ["rhythm"]
+    assert _exercise(client, kind="rhythm", bpm=0).status_code == 422
+    assert _exercise(client, kind="rhythm", mean_error_ms=99999).status_code == 422
+    assert _exercise(client).json()["pattern"] is None
+
+
+def test_backup_round_trip_keeps_rhythm_runs(tmp_path: Path) -> None:
+    with TestClient(create_app(Settings.for_tests(tmp_path / "src"))) as source:
+        _exercise(source, kind="rhythm", rounds=8, correct=7, score=87.5, pattern="gallop", bpm=70, mean_error_ms=9.5)
+        archive = source.get("/api/library/export").content
+        with zipfile.ZipFile(io.BytesIO(archive)) as zf:
+            manifest = json.loads(zf.read("manifest.json"))
+        (run,) = manifest["practice"]["exercises"]
+        assert (run["pattern"], run["bpm"], run["mean_error_ms"]) == ("gallop", 70, 9.5)
+
+        with TestClient(create_app(Settings.for_tests(tmp_path / "dst"))) as target:
+            job = _restore(target, archive)
+            assert job["result"]["practice_exercises"] == 1
+            again = target.get("/api/library/export").content
+            with zipfile.ZipFile(io.BytesIO(again)) as zf:
+                (kept,) = json.loads(zf.read("manifest.json"))["practice"]["exercises"]
+            assert (kept["pattern"], kept["bpm"], kept["mean_error_ms"]) == ("gallop", 70, 9.5)

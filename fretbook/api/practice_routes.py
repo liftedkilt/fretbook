@@ -28,7 +28,7 @@ from fretbook.storage.practice import (
 router = APIRouter()
 
 PracticeMode = Literal["free", "wait", "scored"]
-ExerciseKind = Literal["fretboard", "interval", "chord"]
+ExerciseKind = Literal["fretboard", "interval", "chord", "rhythm"]
 # Browsers are up to a day ahead or behind UTC; two days of slack covers that and a slow clock.
 DAY_SLACK = timedelta(days=2)
 
@@ -61,7 +61,7 @@ class PracticeExerciseBody(BaseModel):
     model_config = ConfigDict(allow_inf_nan=False)
 
     kind: ExerciseKind
-    """Which trainer: finding notes on the fretboard, naming intervals, or naming chord qualities."""
+    """Which trainer: finding notes on the fretboard, naming intervals or chord qualities, or a rhythm run."""
     day: str = Field(min_length=10, max_length=10)
     """The player's local date, ``YYYY-MM-DD``."""
     duration_seconds: int = Field(ge=MIN_SECONDS, le=MAX_SECONDS)
@@ -69,7 +69,12 @@ class PracticeExerciseBody(BaseModel):
     rounds: int = Field(default=0, ge=0, le=10_000)
     correct: int = Field(default=0, ge=0, le=10_000)
     score: float | None = Field(default=None, ge=0, le=100)
-    """Percent of rounds answered correctly."""
+    """Percent of rounds answered correctly (for a rhythm run, the hit rate)."""
+    pattern: str | None = Field(default=None, max_length=120)
+    """Rhythm runs: the pattern drilled, a built-in pattern id or a song's bars."""
+    bpm: int | None = Field(default=None, ge=1, le=1000)
+    mean_error_ms: float | None = Field(default=None, ge=-5000, le=5000, allow_inf_nan=False)
+    """Rhythm runs: mean signed timing error in milliseconds; positive is late."""
 
 
 class PracticeExercise(BaseModel):
@@ -81,6 +86,9 @@ class PracticeExercise(BaseModel):
     rounds: int
     correct: int
     score: float | None
+    pattern: str | None = None
+    bpm: int | None = None
+    mean_error_ms: float | None = None
 
 
 class PracticeExerciseStats(BaseModel):
@@ -279,6 +287,9 @@ def record_exercise(
             correct=body.correct,
             score=body.score,
             started_at=body.started_at,
+            pattern=body.pattern,
+            bpm=body.bpm,
+            mean_error_ms=body.mean_error_ms,
         ),
     )
 
