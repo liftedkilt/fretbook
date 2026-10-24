@@ -1,5 +1,7 @@
 <script lang="ts">
   import Icon from "./Icon.svelte";
+  import Page from "./ui/Page.svelte";
+  import PageHeader from "./ui/PageHeader.svelte";
   import { createSetlist, deleteSetlist, listSetlists } from "../lib/api";
   import { t } from "../lib/i18n.svelte";
   import { followLink, hrefFor, navigate } from "../lib/router.svelte";
@@ -48,63 +50,60 @@
   }
 </script>
 
-<section class="setlists-page">
-  <header class="page-hero">
-    <div>
-      <p class="eyebrow">{t("library.heading")}</p>
-      <h1 class="display hero-title">{t("setlists.heading")}</h1>
-    </div>
-  </header>
+<Page width="page">
+  <section class="setlists-page">
+    <PageHeader title={t("setlists.heading")} eyebrow={t("setlists.nav")} />
 
-  {#if !ui.demoMode}<form class="setlist-new" onsubmit={create}>
-      <label class="visually-hidden" for="new-setlist">{t("setlists.newLabel")}</label>
-      <input
-        id="new-setlist"
-        data-testid="setlist-new-name"
-        bind:value={name}
-        maxlength="200"
-        placeholder={t("setlists.newPlaceholder")}
-      />
-      <button class="primary" type="submit" data-testid="setlist-create" disabled={!name.trim()}>
-        <Icon name="plus" size={18} />{t("setlists.create")}
-      </button>
-    </form>{/if}
+    {#if !ui.demoMode}<form class="setlist-new" onsubmit={create}>
+        <label class="visually-hidden" for="new-setlist">{t("setlists.newLabel")}</label>
+        <input
+          id="new-setlist"
+          data-testid="setlist-new-name"
+          bind:value={name}
+          maxlength="200"
+          placeholder={t("setlists.newPlaceholder")}
+        />
+        <button class="primary" type="submit" data-testid="setlist-create" disabled={!name.trim()}>
+          <Icon name="plus" size={18} />{t("setlists.create")}
+        </button>
+      </form>{/if}
 
-  {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
+    {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
 
-  {#if !loaded}
-    <p class="muted" role="status">{t("app.loading")}</p>
-  {:else if setlists.length === 0}
-    <div class="empty-state compact" data-testid="setlists-empty">
-      <span class="empty-art"><Icon name="list" size={30} /></span>
-      <p class="muted">{t("setlists.empty")}</p>
-    </div>
-  {:else}
-    <ul class="setlist-list">
-      {#each setlists as setlist (setlist.id)}
-        <li class="setlist-row" data-testid="setlist-row">
-          <a
-            class="setlist-link"
-            href={hrefFor(setlistPath(setlist.id))}
-            onclick={(event) => followLink(event, setlistPath(setlist.id))}
-          >
-            <Icon name="list" size={20} />
-            <strong>{setlist.name}</strong>
-            <span class="muted">{t("setlists.count", { count: setlist.entry_count })}</span>
-          </a>
-          {#if !ui.demoMode}<button
-              class="icon-button glass"
-              onclick={() => void remove(setlist)}
-              aria-label={`${t("setlists.delete")}: ${setlist.name}`}
-              title={t("setlists.delete")}
+    {#if !loaded}
+      <p class="muted" role="status">{t("app.loading")}</p>
+    {:else if setlists.length === 0}
+      <div class="empty-state compact" data-testid="setlists-empty">
+        <span class="empty-art"><Icon name="listMusic" size={30} /></span>
+        <p class="muted">{t("setlists.empty")}</p>
+      </div>
+    {:else}
+      <ul class="setlist-list">
+        {#each setlists as setlist (setlist.id)}
+          <li class="setlist-row" data-testid="setlist-row">
+            <a
+              class="setlist-link"
+              href={hrefFor(setlistPath(setlist.id))}
+              onclick={(event) => followLink(event, setlistPath(setlist.id))}
             >
-              <Icon name="trash" size={16} />
-            </button>{/if}
-        </li>
-      {/each}
-    </ul>
-  {/if}
-</section>
+              <Icon name="listMusic" size={20} />
+              <strong>{setlist.name}</strong>
+              <span class="muted">{t("setlists.count", { count: setlist.entry_count })}</span>
+            </a>
+            {#if !ui.demoMode}<button
+                class="icon-button glass"
+                onclick={() => void remove(setlist)}
+                aria-label={`${t("setlists.delete")}: ${setlist.name}`}
+                title={t("setlists.delete")}
+              >
+                <Icon name="trash" size={16} />
+              </button>{/if}
+          </li>
+        {/each}
+      </ul>
+    {/if}
+  </section>
+</Page>
 
 <style>
   .setlist-new {

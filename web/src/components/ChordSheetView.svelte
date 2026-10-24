@@ -12,6 +12,10 @@
   import Menu from "./Menu.svelte";
   import OfflineToggle from "./OfflineToggle.svelte";
   import SetlistPicker from "./SetlistPicker.svelte";
+  import SongLibraryActions from "./SongLibraryActions.svelte";
+  import SongMetadata from "./SongMetadata.svelte";
+  import SongTags from "./SongTags.svelte";
+  import PageHeader from "./ui/PageHeader.svelte";
   import { parse } from "../lib/chordpro";
   import { loadChoice, saveChoice } from "../lib/chords/choice";
   import { buildEntries } from "../lib/chords/entries";
@@ -192,13 +196,17 @@
 </script>
 
 <div class="song-page chords-page" class:stage data-stage={stage}>
-  <header class="song-header no-print">
-    {#if !readOnly}
-      <a class="back-link" href={hrefFor("/")} onclick={(event) => followLink(event, "/")}
-        ><Icon name="back" size={18} />{t("app.back")}</a
-      >
-    {/if}
-    <div class="song-hero">
+  <PageHeader
+    class="song-header no-print"
+    title={song.title}
+    titleTestId="song-heading"
+    titleClass="song-heading"
+    eyebrow={t("library.chordSheet")}
+    subtitle={song.artist}
+    backHref={readOnly ? "" : "/"}
+    backLabel={readOnly ? "" : t("app.back")}
+  >
+    {#snippet leading()}
       <Cover
         id={song.id}
         title={song.title}
@@ -206,11 +214,8 @@
         size="lg"
         src={coverSrc(song.cover_url)}
       />
-      <div class="song-hero-text">
-        <p class="eyebrow">{t("library.chordSheet")}</p>
-        <h1 class="display song-heading" data-testid="song-heading">{song.title}</h1>
-        {#if song.artist}<p class="song-byline">{song.artist}</p>{/if}
-      </div>
+    {/snippet}
+    {#snippet actions()}
       <div class="hero-actions">
         {#if !readOnly}
           <OfflineToggle kind="song" id={song.id} title={song.title} compact />
@@ -238,7 +243,7 @@
                     pickerOpen = true;
                   }}
                 >
-                  <Icon name="list" size={18} />
+                  <Icon name="listMusic" size={18} />
                   {t("setlists.addToSetlist")}
                 </button>
               {/if}
@@ -280,9 +285,26 @@
           </Menu>
         {/if}
       </div>
-    </div>
-    {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
-  </header>
+    {/snippet}
+  </PageHeader>
+  <SongTags {song} {readOnly} />
+  {#if !readOnly}<SongLibraryActions songId={song.id} />{/if}
+  <SongMetadata
+    {song}
+    {readOnly}
+    onchange={(saved) => {
+      Object.assign(song, {
+        key: saved.key,
+        key_detected: saved.key_detected,
+        genre: saved.genre,
+        album: saved.album,
+        year: saved.year,
+        notes: saved.notes,
+        cover_url: saved.cover_url,
+      });
+    }}
+  />
+  {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
 
   {#if entries.length}
     <section

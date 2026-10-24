@@ -2,6 +2,7 @@
   import Cover from "./Cover.svelte";
   import Icon from "./Icon.svelte";
   import Sheet from "./Sheet.svelte";
+  import Chip from "./ui/Chip.svelte";
   import { deleteCover, lookupMetadata, updateSongMetadata, uploadCover } from "../lib/api";
   import { coverSrc } from "../lib/cover";
   import { t } from "../lib/i18n.svelte";
@@ -29,7 +30,7 @@
   let error = $state("");
   let fileInput = $state<HTMLInputElement>();
 
-  const notesHtml = $derived(renderMarkdown(song.notes));
+  const notesHtml = $derived(renderMarkdown(song.notes ?? ""));
   const hasDetails = $derived(
     Boolean(song.key || song.genre || song.album || song.year || song.notes),
   );
@@ -108,30 +109,25 @@
 {#if hasDetails || !locked}
   <section class="song-metadata" data-testid="song-metadata" aria-label={t("metadata.heading")}>
     {#if hasDetails}
-      <ul class="meta-pills">
+      <div class="meta-pills">
         {#if song.key}
-          <li
-            class="pill pill-accent"
-            data-testid="song-key"
+          <Chip
+            variant="meta"
+            accent
+            label={keyLabel(song.key, t)}
+            testid="song-key"
             title={song.key_detected
               ? t("metadata.keyDetected", { key: keyLabel(song.key, t) })
               : undefined}
-          >
-            {keyLabel(song.key, t)}
-          </li>
+          />
         {/if}
-        {#if song.genre}<li class="pill" data-testid="song-genre">{song.genre}</li>{/if}
-        {#if song.year}<li class="pill" data-testid="song-year">{song.year}</li>{/if}
-        {#if song.album}<li class="pill" data-testid="song-album">{song.album}</li>{/if}
-      </ul>
+        {#if song.genre}<Chip variant="meta" label={song.genre} testid="song-genre" />{/if}
+        {#if song.year}<Chip variant="meta" label={String(song.year)} testid="song-year" />{/if}
+        {#if song.album}<Chip variant="meta" label={song.album} testid="song-album" />{/if}
+      </div>
     {/if}
     {#if !locked}
-      <button
-        type="button"
-        class="pill pill-button"
-        data-testid="song-metadata-edit"
-        onclick={start}
-      >
+      <button type="button" class="button" data-testid="song-metadata-edit" onclick={start}>
         <Icon name="edit" size={14} />{t("metadata.edit")}
       </button>
     {/if}

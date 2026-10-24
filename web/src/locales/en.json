@@ -2232,5 +2232,8 @@
     "moveSong": "Move",
     "unavailable": "This link is not available.",
     "back": "Fretbook"
+  },
+  "primitives": {
+    "more": "More actions"
   }
 }

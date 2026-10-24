@@ -396,7 +396,7 @@
         disabled={starting}
         onclick={() => void start()}
       >
-        <Icon name="tuner" size={18} />{starting ? t("tuner.starting") : t("tuner.start")}
+        <Icon name="tuningFork" size={18} />{starting ? t("tuner.starting") : t("tuner.start")}
       </button>
     {/if}
   </div>

@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from "./Icon.svelte";
+  import SegmentedControl from "./ui/SegmentedControl.svelte";
   import { apiUrl, importLibrary, waitForJob } from "../lib/api";
   import { keyed, t, tOr } from "../lib/i18n.svelte";
   import { ui } from "../lib/ui.svelte";
@@ -70,14 +71,15 @@
       </a>
     {/if}
   </div>
-  <div class="segmented" role="radiogroup" aria-label={t("backup.modeLabel")}>
-    <button role="radio" aria-checked={mode === "skip"} onclick={() => (mode = "skip")}>
-      {t("backup.modeSkip")}
-    </button>
-    <button role="radio" aria-checked={mode === "copy"} onclick={() => (mode = "copy")}>
-      {t("backup.modeCopy")}
-    </button>
-  </div>
+  <SegmentedControl
+    label={t("backup.modeLabel")}
+    value={mode}
+    onchange={(next) => (mode = next as "skip" | "copy")}
+    options={[
+      { value: "skip", label: t("backup.modeSkip") },
+      { value: "copy", label: t("backup.modeCopy") },
+    ]}
+  />
   <label class="field">
     <span>{t("backup.restore")}</span>
     <input

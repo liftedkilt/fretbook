@@ -7,6 +7,9 @@
   import ManageTagsSheet from "./ManageTagsSheet.svelte";
   import RecentImports from "./RecentImports.svelte";
   import SetlistPicker from "./SetlistPicker.svelte";
+  import Chip from "./ui/Chip.svelte";
+  import Page from "./ui/Page.svelte";
+  import PageHeader from "./ui/PageHeader.svelte";
   import { addTags, deleteSong } from "../lib/api";
   import { t } from "../lib/i18n.svelte";
   import { levelOf } from "../lib/difficulty";
@@ -168,394 +171,398 @@
 
 <svelte:window onkeydown={onKeydown} />
 
-<section class="library">
-  <LibraryPicker />
-  <header class="page-hero">
-    <div>
-      <p class="eyebrow">{t("library.heading")}</p>
-      <h1 class="display hero-title">{ui.filter === "all" ? t("library.welcome") : heading}</h1>
-      <p class="muted" data-testid="library-count">
-        {t("library.count", { count: countFor(ui.filter) })}
-      </p>
-    </div>
-    {#if !ui.demoMode}
-      <button class="primary hero-add" data-testid="add-song-hero" onclick={() => openSheet("add")}
-        ><Icon name="plus" />{t("add.button")}</button
-      >
-    {/if}
-  </header>
-
-  <RecentImports />
-
-  {#if countFor("all") > 0}
-    <div class="toolbar">
-      <label class="search">
-        <Icon name="search" size={18} />
-        <input
-          type="search"
-          data-testid="library-search"
-          bind:this={searchInput}
-          bind:value={ui.search}
-          placeholder={t("library.search")}
-          aria-label={t("library.search")}
-          aria-keyshortcuts="/"
-          title={t("library.searchShortcut")}
-        />
-      </label>
-      <label class="sort">
-        <span class="visually-hidden">{t("library.sort")}</span>
-        <select
-          value={ui.sort}
-          data-testid="library-sort"
-          aria-label={t("library.sort")}
-          onchange={(event) => {
-            const sort = event.currentTarget.value as LibrarySort;
-            setSort(sort, defaultOrder(sort));
-          }}
-        >
-          {#each sorts as item (item.id)}
-            <option value={item.id}>{t(item.key)}</option>
-          {/each}
-        </select>
-      </label>
-      {#if !ui.demoMode}
-        <button
-          class="chip select-toggle"
-          data-testid="library-select"
-          aria-pressed={selecting}
-          onclick={toggleSelecting}
-        >
-          {t("tags.select")}
-        </button>
-      {/if}
-      <button
-        class="icon-button glass sort-order"
-        data-testid="library-order"
-        onclick={flipOrder}
-        aria-label={t("library.order")}
-        title={ui.order === "asc" ? t("library.orderAsc") : t("library.orderDesc")}
-      >
-        <span aria-hidden="true">{ui.order === "asc" ? "↑" : "↓"}</span>
-      </button>
-    </div>
-
-    <div class="chips" role="group" aria-label={t("library.filters")}>
-      {#each filters as item (item.id)}
-        <button
-          class="chip"
-          data-testid={`library-filter-${item.id}`}
-          aria-pressed={ui.filter === item.id}
-          onclick={() => (ui.filter = item.id)}
-        >
-          {t(item.key)}<span class="chip-count">{countFor(item.id)}</span>
-        </button>
-      {/each}
-      <button
-        class="chip"
-        data-testid="library-filter-favourites"
-        aria-pressed={ui.favouritesOnly}
-        onclick={() => (ui.favouritesOnly = !ui.favouritesOnly)}
-      >
-        <Icon name={ui.favouritesOnly ? "starFilled" : "star"} size={14} />{t(
-          "tags.favourites",
-        )}<span class="chip-count">{countFor("favourites")}</span>
-      </button>
-    </div>
-
-    <div class="chips" role="group" aria-label={t("difficulty.filters")}>
-      {#each levels as item (item.id)}
-        <button
-          class="chip"
-          data-testid={`library-level-${item.id}`}
-          aria-pressed={ui.level === item.id}
-          onclick={() => (ui.level = item.id)}
-        >
-          {t(item.key)}
-        </button>
-      {/each}
-    </div>
-
-    {#if ui.facets.keys.length || ui.facets.genres.length}
-      <div class="facet-filters" role="group" aria-label={t("metadata.filters")}>
-        {#if ui.facets.keys.length}
-          <label class="facet">
-            <span>{t("metadata.filterKey")}</span>
-            <select data-testid="library-key-filter" bind:value={ui.keyFilter}>
-              <option value="">{t("metadata.filterAny")}</option>
-              {#each ui.facets.keys as item (item.name)}
-                <option value={item.name}>{keyLabel(item.name, t)} ({item.count})</option>
-              {/each}
-            </select>
-          </label>
-        {/if}
-        {#if ui.facets.genres.length}
-          <label class="facet">
-            <span>{t("metadata.filterGenre")}</span>
-            <select data-testid="library-genre-filter" bind:value={ui.genreFilter}>
-              <option value="">{t("metadata.filterAny")}</option>
-              {#each ui.facets.genres as item (item.name)}
-                <option value={item.name}>{item.name} ({item.count})</option>
-              {/each}
-            </select>
-          </label>
-        {/if}
-      </div>
-    {/if}
-
-    {#if ui.tagList.length}
-      <div class="chips tag-chips" role="group" aria-label={t("tags.filters")}>
-        {#each ui.tagList as item (item.tag)}
-          <button
-            class="chip"
-            data-testid="library-tag"
-            aria-pressed={tagSelectedFilter(item.tag)}
-            onclick={() => toggleTagFilter(item.tag)}
-          >
-            <Icon name="tag" size={13} />{item.tag}<span class="chip-count">{item.count}</span>
-          </button>
-        {/each}
+<Page width="wide">
+  <section class="library">
+    <LibraryPicker />
+    <PageHeader
+      title={ui.filter === "all" ? t("library.welcome") : heading}
+      eyebrow={t("library.heading")}
+      subtitle={t("library.count", { count: countFor(ui.filter) })}
+      subtitleTestId="library-count"
+    >
+      {#snippet actions()}
         {#if !ui.demoMode}
           <button
-            class="chip"
-            data-testid="library-manage-tags"
-            onclick={() => (managingTags = true)}
+            class="primary hero-add"
+            data-testid="add-song-hero"
+            onclick={() => openSheet("add")}><Icon name="plus" />{t("add.button")}</button
           >
-            {t("manageTags.open")}
-          </button>
+        {/if}
+      {/snippet}
+    </PageHeader>
+
+    <RecentImports />
+
+    {#if countFor("all") > 0}
+      <div class="toolbar">
+        <label class="search">
+          <Icon name="search" size={18} />
+          <input
+            type="search"
+            data-testid="library-search"
+            bind:this={searchInput}
+            bind:value={ui.search}
+            placeholder={t("library.search")}
+            aria-label={t("library.search")}
+            aria-keyshortcuts="/"
+            title={t("library.searchShortcut")}
+          />
+        </label>
+        <label class="sort">
+          <span class="visually-hidden">{t("library.sort")}</span>
+          <select
+            value={ui.sort}
+            data-testid="library-sort"
+            aria-label={t("library.sort")}
+            onchange={(event) => {
+              const sort = event.currentTarget.value as LibrarySort;
+              setSort(sort, defaultOrder(sort));
+            }}
+          >
+            {#each sorts as item (item.id)}
+              <option value={item.id}>{t(item.key)}</option>
+            {/each}
+          </select>
+        </label>
+        {#if !ui.demoMode}
+          <Chip
+            variant="filter"
+            label={t("tags.select")}
+            testid="library-select"
+            pressed={selecting}
+            onclick={toggleSelecting}
+          />
+        {/if}
+        <button
+          class="icon-button glass sort-order"
+          data-testid="library-order"
+          onclick={flipOrder}
+          aria-label={t("library.order")}
+          title={ui.order === "asc" ? t("library.orderAsc") : t("library.orderDesc")}
+        >
+          <span aria-hidden="true">{ui.order === "asc" ? "↑" : "↓"}</span>
+        </button>
+      </div>
+
+      <div class="chips" role="group" aria-label={t("library.filters")}>
+        {#each filters as item (item.id)}
+          <Chip
+            variant="filter"
+            label={t(item.key)}
+            count={countFor(item.id)}
+            testid={`library-filter-${item.id}`}
+            pressed={ui.filter === item.id}
+            onclick={() => (ui.filter = item.id)}
+          />
+        {/each}
+        <Chip
+          variant="filter"
+          label={t("tags.favourites")}
+          icon={ui.favouritesOnly ? "starFilled" : "star"}
+          count={countFor("favourites")}
+          testid="library-filter-favourites"
+          pressed={ui.favouritesOnly}
+          onclick={() => (ui.favouritesOnly = !ui.favouritesOnly)}
+        />
+      </div>
+
+      <div class="chips" role="group" aria-label={t("difficulty.filters")}>
+        {#each levels as item (item.id)}
+          <Chip
+            variant="filter"
+            label={t(item.key)}
+            testid={`library-level-${item.id}`}
+            pressed={ui.level === item.id}
+            onclick={() => (ui.level = item.id)}
+          />
+        {/each}
+      </div>
+
+      {#if ui.facets.keys.length || ui.facets.genres.length}
+        <div class="facet-filters" role="group" aria-label={t("metadata.filters")}>
+          {#if ui.facets.keys.length}
+            <label class="facet">
+              <span>{t("metadata.filterKey")}</span>
+              <select data-testid="library-key-filter" bind:value={ui.keyFilter}>
+                <option value="">{t("metadata.filterAny")}</option>
+                {#each ui.facets.keys as item (item.name)}
+                  <option value={item.name}>{keyLabel(item.name, t)} ({item.count})</option>
+                {/each}
+              </select>
+            </label>
+          {/if}
+          {#if ui.facets.genres.length}
+            <label class="facet">
+              <span>{t("metadata.filterGenre")}</span>
+              <select data-testid="library-genre-filter" bind:value={ui.genreFilter}>
+                <option value="">{t("metadata.filterAny")}</option>
+                {#each ui.facets.genres as item (item.name)}
+                  <option value={item.name}>{item.name} ({item.count})</option>
+                {/each}
+              </select>
+            </label>
+          {/if}
+        </div>
+      {/if}
+
+      {#if ui.tagList.length}
+        <div class="chips tag-chips" role="group" aria-label={t("tags.filters")}>
+          {#each ui.tagList as item (item.tag)}
+            <Chip
+              variant="tag"
+              label={item.tag}
+              count={item.count}
+              testid="library-tag"
+              pressed={tagSelectedFilter(item.tag)}
+              onclick={() => toggleTagFilter(item.tag)}
+            />
+          {/each}
+          {#if !ui.demoMode}
+            <button
+              class="button ghost"
+              data-testid="library-manage-tags"
+              onclick={() => (managingTags = true)}
+            >
+              {t("manageTags.open")}
+            </button>
+          {/if}
+        </div>
+      {/if}
+
+      {#if selecting}
+        <form
+          class="bulk-bar"
+          data-testid="library-bulk"
+          onsubmit={(event) => {
+            event.preventDefault();
+            void tagSelected();
+          }}
+        >
+          <span data-testid="library-selected"
+            >{t("tags.selected", { count: selected.length })}</span
+          >
+          <button
+            type="button"
+            data-testid="library-select-all"
+            onclick={() => (selected = ui.songs.map((song) => song.id))}
+            >{t("tags.selectAll")}</button
+          >
+          <input
+            type="text"
+            data-testid="library-bulk-tag"
+            list="library-tag-suggestions"
+            maxlength="40"
+            bind:value={bulkTag}
+            placeholder={t("tags.addPlaceholder")}
+            aria-label={t("tags.bulkAdd")}
+          />
+          <datalist id="library-tag-suggestions">
+            {#each ui.tagList as item (item.tag)}<option value={item.tag}></option>{/each}
+          </datalist>
+          <button
+            class="primary"
+            type="submit"
+            data-testid="library-bulk-apply"
+            disabled={!bulkTag.trim() || selected.length === 0}>{t("tags.bulkAdd")}</button
+          >
+        </form>
+      {/if}
+      {#if bulkNotice}<p class="muted" role="status" data-testid="library-bulk-notice">
+          {bulkNotice}
+        </p>{/if}
+    {/if}
+
+    {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
+
+    {#if !ui.loaded}
+      <div class="song-grid" aria-busy="true">
+        {#each [0, 1, 2, 3, 4, 5] as index (index)}
+          <div class="song-card skeleton">
+            <div class="cover cover-md"></div>
+            <span></span><span></span>
+          </div>
+        {/each}
+      </div>
+    {:else if countFor("all") === 0}
+      {#if ui.demoMode}
+        <div class="empty-state" data-testid="library-empty">
+          <span class="empty-art"><Icon name="sparkle" size={34} /></span>
+          <h2 class="display">{t("library.emptyTitle")}</h2>
+          <p class="muted">{t("demo.banner")}</p>
+        </div>
+      {:else}
+        <FirstRun />
+      {/if}
+    {:else if ui.songs.length === 0}
+      <div class="empty-state compact" data-testid="library-filter-empty">
+        <span class="empty-art"><Icon name="search" size={30} /></span>
+        <p class="muted">
+          {ui.search.trim()
+            ? t("library.searchEmpty", { query: ui.search.trim() })
+            : t("library.filterEmpty")}
+        </p>
+        {#if ui.tags.length || ui.favouritesOnly || ui.level !== "all"}
+          <button
+            data-testid="library-clear-tags"
+            onclick={() => {
+              ui.tags = [];
+              ui.favouritesOnly = false;
+              ui.level = "all";
+            }}>{t("tags.clearFilters")}</button
+          >
+        {/if}
+        {#if ui.search.trim()}
+          <button data-testid="library-clear-search" onclick={() => (ui.search = "")}
+            >{t("library.clearSearch")}</button
+          >
+        {/if}
+      </div>
+    {:else}
+      <div class="song-grid">
+        {#each ui.songs as song (song.id)}
+          <article class="song-card" data-testid="song-card">
+            <a
+              class="song-link"
+              data-testid="song-link"
+              href={hrefFor(`/songs/${song.id}`)}
+              onclick={(event) => followLink(event, `/songs/${song.id}`)}
+            >
+              <span class="song-art">
+                <Cover
+                  id={song.id}
+                  title={song.title}
+                  kind={song.content_kind}
+                  strings={song.string_count}
+                  src={coverSrc(song.cover_url)}
+                />
+                <span class="song-kind">
+                  <Icon
+                    name={song.content_kind === "chords" ? "chords" : "tab"}
+                    size={14}
+                  />{kindLabel(song)}
+                </span>
+                {#if song.has_audio}
+                  <span class="song-audio" title={t("library.audio")}
+                    ><Icon name="waveform" size={14} /></span
+                  >
+                {/if}
+                <span class="song-play" aria-hidden="true"><Icon name="play" size={20} /></span>
+              </span>
+              <span class="song-text">
+                <strong class="song-title" data-testid="song-title">{song.title}</strong>
+                <span class="song-artist">{song.artist || "—"}</span>
+                {#if song.content_kind === "tab"}
+                  <span class="song-meta">
+                    {t("library.strings", { count: song.string_count })} · {t("library.measures", {
+                      count: song.measure_count,
+                    })} · {t("library.tempo", { bpm: song.bpm })}
+                    {#if song.difficulty !== null}
+                      · <span data-testid="song-difficulty"
+                        >{t("difficulty.level", { level: levelOf(song.difficulty) })}</span
+                      >{/if}
+                  </span>
+                {/if}
+                {#if song.key || song.genre}
+                  <span class="song-meta" data-testid="song-card-details"
+                    >{[song.key ? keyLabel(song.key, t) : "", song.genre]
+                      .filter(Boolean)
+                      .join(" · ")}</span
+                  >
+                {/if}
+                {#if song.lyrics_snippet}
+                  <span
+                    class="song-lyrics"
+                    data-testid="song-lyrics-snippet"
+                    title={t("librarySnippet.label")}
+                    ><span class="visually-hidden"
+                      >{t("librarySnippet.label")}:
+                    </span>{#each snippetParts(song.lyrics_snippet) as part, index (index)}{#if part.hit}<mark
+                          >{part.text}</mark
+                        >{:else}{part.text}{/if}{/each}</span
+                  >
+                {/if}
+                {#if song.tags.length}
+                  <span class="song-tag-row" data-testid="song-card-tags">
+                    {#each song.tags.slice(0, 3) as tag (tag)}<span class="tag-mini">{tag}</span
+                      >{/each}
+                    {#if song.tags.length > 3}<span class="tag-mini">+{song.tags.length - 3}</span
+                      >{/if}
+                  </span>
+                {/if}
+              </span>
+            </a>
+            {#if selecting}
+              <label class="song-select">
+                <input
+                  type="checkbox"
+                  data-testid="song-select"
+                  checked={selected.includes(song.id)}
+                  onchange={() => toggleSelected(song.id)}
+                  aria-label={`${t("tags.selectSong")}: ${song.title}`}
+                />
+              </label>
+            {/if}
+            {#if !ui.demoMode}
+              <div class="song-actions" class:starred={song.favourite}>
+                <button
+                  class="icon-button glass song-star"
+                  class:on={song.favourite}
+                  data-testid="song-star"
+                  aria-pressed={song.favourite}
+                  onclick={() => void toggleStar(song)}
+                  aria-label={`${song.favourite ? t("tags.unfavourite") : t("tags.favourite")}: ${song.title}`}
+                  title={song.favourite ? t("tags.unfavourite") : t("tags.favourite")}
+                >
+                  <Icon name={song.favourite ? "starFilled" : "star"} size={16} />
+                </button>
+                <a
+                  class="icon-button glass"
+                  data-testid="song-edit"
+                  href={hrefFor(`/songs/${song.id}/edit`)}
+                  onclick={(event) => followLink(event, `/songs/${song.id}/edit`)}
+                  aria-label={`${t("library.edit")}: ${song.title}`}
+                  title={t("library.edit")}
+                >
+                  <Icon name="edit" size={16} />
+                </a>
+                <button
+                  class="icon-button glass"
+                  data-testid="song-add-to-setlist"
+                  onclick={() => (pickerSong = { id: song.id, title: song.title })}
+                  aria-label={`${t("setlists.addToSetlist")}: ${song.title}`}
+                  title={t("setlists.addToSetlist")}
+                >
+                  <Icon name="listMusic" size={16} />
+                </button>
+                <button
+                  class="icon-button glass"
+                  data-testid="song-delete"
+                  onclick={() => void remove(song)}
+                  aria-label={`${t("library.delete")}: ${song.title}`}
+                  title={t("library.delete")}
+                >
+                  <Icon name="trash" size={16} />
+                </button>
+              </div>
+            {/if}
+          </article>
+        {/each}
+      </div>
+      <div class="load-more">
+        <p class="muted" data-testid="library-showing">
+          {t("library.showing", { shown: ui.songs.length, total: ui.total })}
+        </p>
+        {#if ui.nextCursor}
+          <button
+            data-testid="library-load-more"
+            disabled={ui.loadingMore}
+            onclick={() => void more()}>{t("library.loadMore")}</button
+          >
         {/if}
       </div>
     {/if}
-
-    {#if selecting}
-      <form
-        class="bulk-bar"
-        data-testid="library-bulk"
-        onsubmit={(event) => {
-          event.preventDefault();
-          void tagSelected();
-        }}
-      >
-        <span data-testid="library-selected">{t("tags.selected", { count: selected.length })}</span>
-        <button
-          type="button"
-          data-testid="library-select-all"
-          onclick={() => (selected = ui.songs.map((song) => song.id))}>{t("tags.selectAll")}</button
-        >
-        <input
-          type="text"
-          data-testid="library-bulk-tag"
-          list="library-tag-suggestions"
-          maxlength="40"
-          bind:value={bulkTag}
-          placeholder={t("tags.addPlaceholder")}
-          aria-label={t("tags.bulkAdd")}
-        />
-        <datalist id="library-tag-suggestions">
-          {#each ui.tagList as item (item.tag)}<option value={item.tag}></option>{/each}
-        </datalist>
-        <button
-          class="primary"
-          type="submit"
-          data-testid="library-bulk-apply"
-          disabled={!bulkTag.trim() || selected.length === 0}>{t("tags.bulkAdd")}</button
-        >
-      </form>
-    {/if}
-    {#if bulkNotice}<p class="muted" role="status" data-testid="library-bulk-notice">
-        {bulkNotice}
-      </p>{/if}
-  {/if}
-
-  {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
-
-  {#if !ui.loaded}
-    <div class="song-grid" aria-busy="true">
-      {#each [0, 1, 2, 3, 4, 5] as index (index)}
-        <div class="song-card skeleton">
-          <div class="cover cover-md"></div>
-          <span></span><span></span>
-        </div>
-      {/each}
-    </div>
-  {:else if countFor("all") === 0}
-    {#if ui.demoMode}
-      <div class="empty-state" data-testid="library-empty">
-        <span class="empty-art"><Icon name="sparkle" size={34} /></span>
-        <h2 class="display">{t("library.emptyTitle")}</h2>
-        <p class="muted">{t("demo.banner")}</p>
-      </div>
-    {:else}
-      <FirstRun />
-    {/if}
-  {:else if ui.songs.length === 0}
-    <div class="empty-state compact" data-testid="library-filter-empty">
-      <span class="empty-art"><Icon name="search" size={30} /></span>
-      <p class="muted">
-        {ui.search.trim()
-          ? t("library.searchEmpty", { query: ui.search.trim() })
-          : t("library.filterEmpty")}
-      </p>
-      {#if ui.tags.length || ui.favouritesOnly || ui.level !== "all"}
-        <button
-          data-testid="library-clear-tags"
-          onclick={() => {
-            ui.tags = [];
-            ui.favouritesOnly = false;
-            ui.level = "all";
-          }}>{t("tags.clearFilters")}</button
-        >
-      {/if}
-      {#if ui.search.trim()}
-        <button data-testid="library-clear-search" onclick={() => (ui.search = "")}
-          >{t("library.clearSearch")}</button
-        >
-      {/if}
-    </div>
-  {:else}
-    <div class="song-grid">
-      {#each ui.songs as song (song.id)}
-        <article class="song-card" data-testid="song-card">
-          <a
-            class="song-link"
-            data-testid="song-link"
-            href={hrefFor(`/songs/${song.id}`)}
-            onclick={(event) => followLink(event, `/songs/${song.id}`)}
-          >
-            <span class="song-art">
-              <Cover
-                id={song.id}
-                title={song.title}
-                kind={song.content_kind}
-                strings={song.string_count}
-                src={coverSrc(song.cover_url)}
-              />
-              <span class="song-kind">
-                <Icon
-                  name={song.content_kind === "chords" ? "chords" : "tab"}
-                  size={14}
-                />{kindLabel(song)}
-              </span>
-              {#if song.has_audio}
-                <span class="song-audio" title={t("library.audio")}
-                  ><Icon name="waveform" size={14} /></span
-                >
-              {/if}
-              <span class="song-play" aria-hidden="true"><Icon name="play" size={20} /></span>
-            </span>
-            <span class="song-text">
-              <strong class="song-title" data-testid="song-title">{song.title}</strong>
-              <span class="song-artist">{song.artist || "—"}</span>
-              {#if song.content_kind === "tab"}
-                <span class="song-meta">
-                  {t("library.strings", { count: song.string_count })} · {t("library.measures", {
-                    count: song.measure_count,
-                  })} · {t("library.tempo", { bpm: song.bpm })}
-                  {#if song.difficulty !== null}
-                    · <span data-testid="song-difficulty"
-                      >{t("difficulty.level", { level: levelOf(song.difficulty) })}</span
-                    >{/if}
-                </span>
-              {/if}
-              {#if song.key || song.genre}
-                <span class="song-meta" data-testid="song-card-details"
-                  >{[song.key ? keyLabel(song.key, t) : "", song.genre]
-                    .filter(Boolean)
-                    .join(" · ")}</span
-                >
-              {/if}
-              {#if song.lyrics_snippet}
-                <span
-                  class="song-lyrics"
-                  data-testid="song-lyrics-snippet"
-                  title={t("librarySnippet.label")}
-                  ><span class="visually-hidden"
-                    >{t("librarySnippet.label")}:
-                  </span>{#each snippetParts(song.lyrics_snippet) as part, index (index)}{#if part.hit}<mark
-                        >{part.text}</mark
-                      >{:else}{part.text}{/if}{/each}</span
-                >
-              {/if}
-              {#if song.tags.length}
-                <span class="song-tag-row" data-testid="song-card-tags">
-                  {#each song.tags.slice(0, 3) as tag (tag)}<span class="tag-mini">{tag}</span
-                    >{/each}
-                  {#if song.tags.length > 3}<span class="tag-mini">+{song.tags.length - 3}</span
-                    >{/if}
-                </span>
-              {/if}
-            </span>
-          </a>
-          {#if selecting}
-            <label class="song-select">
-              <input
-                type="checkbox"
-                data-testid="song-select"
-                checked={selected.includes(song.id)}
-                onchange={() => toggleSelected(song.id)}
-                aria-label={`${t("tags.selectSong")}: ${song.title}`}
-              />
-            </label>
-          {/if}
-          {#if !ui.demoMode}
-            <div class="song-actions" class:starred={song.favourite}>
-              <button
-                class="icon-button glass song-star"
-                class:on={song.favourite}
-                data-testid="song-star"
-                aria-pressed={song.favourite}
-                onclick={() => void toggleStar(song)}
-                aria-label={`${song.favourite ? t("tags.unfavourite") : t("tags.favourite")}: ${song.title}`}
-                title={song.favourite ? t("tags.unfavourite") : t("tags.favourite")}
-              >
-                <Icon name={song.favourite ? "starFilled" : "star"} size={16} />
-              </button>
-              <a
-                class="icon-button glass"
-                data-testid="song-edit"
-                href={hrefFor(`/songs/${song.id}/edit`)}
-                onclick={(event) => followLink(event, `/songs/${song.id}/edit`)}
-                aria-label={`${t("library.edit")}: ${song.title}`}
-                title={t("library.edit")}
-              >
-                <Icon name="edit" size={16} />
-              </a>
-              <button
-                class="icon-button glass"
-                data-testid="song-add-to-setlist"
-                onclick={() => (pickerSong = { id: song.id, title: song.title })}
-                aria-label={`${t("setlists.addToSetlist")}: ${song.title}`}
-                title={t("setlists.addToSetlist")}
-              >
-                <Icon name="list" size={16} />
-              </button>
-              <button
-                class="icon-button glass"
-                data-testid="song-delete"
-                onclick={() => void remove(song)}
-                aria-label={`${t("library.delete")}: ${song.title}`}
-                title={t("library.delete")}
-              >
-                <Icon name="trash" size={16} />
-              </button>
-            </div>
-          {/if}
-        </article>
-      {/each}
-    </div>
-    <div class="load-more">
-      <p class="muted" data-testid="library-showing">
-        {t("library.showing", { shown: ui.songs.length, total: ui.total })}
-      </p>
-      {#if ui.nextCursor}
-        <button
-          data-testid="library-load-more"
-          disabled={ui.loadingMore}
-          onclick={() => void more()}>{t("library.loadMore")}</button
-        >
-      {/if}
-    </div>
-  {/if}
-  <SetlistPicker song={pickerSong} onclose={() => (pickerSong = null)} />
-</section>
+    <SetlistPicker song={pickerSong} onclose={() => (pickerSong = null)} />
+  </section>
+</Page>
 
 <ManageTagsSheet open={managingTags} onclose={() => (managingTags = false)} />

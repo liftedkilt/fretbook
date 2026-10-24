@@ -7,6 +7,7 @@
   import BackupSettings from "./BackupSettings.svelte";
   import Icon from "./Icon.svelte";
   import PedalSettings from "./PedalSettings.svelte";
+  import SegmentedControl from "./ui/SegmentedControl.svelte";
   import Sheet from "./Sheet.svelte";
   import {
     addDemo,
@@ -229,17 +230,16 @@
         <span class="setting-icon"><Icon name="sun" /></span>
         <strong>{t("settings.theme")}</strong>
       </div>
-      <div class="segmented" role="radiogroup" aria-label={t("settings.theme")}>
-        {#each themes as item (item.id)}
-          <button
-            role="radio"
-            aria-checked={ui.theme === item.id}
-            onclick={() => setTheme(item.id)}
-          >
-            <Icon name={item.icon} size={16} />{t(item.key)}
-          </button>
-        {/each}
-      </div>
+      <SegmentedControl
+        label={t("settings.theme")}
+        value={ui.theme}
+        onchange={(next) => setTheme(next as Theme)}
+        options={themes.map((item) => ({
+          value: item.id,
+          label: t(item.key),
+          icon: item.icon,
+        }))}
+      />
     </section>
     <PedalSettings />
     {#if !ui.demoMode}<ApiTokens />{/if}
@@ -249,7 +249,7 @@
 
     <section class="setting setting-stacked" data-testid="calibration-setting">
       <div class="setting-label">
-        <span class="setting-icon"><Icon name="gauge" /></span>
+        <span class="setting-icon"><Icon name="sliders" /></span>
         <div>
           <strong>{t("calibration.title")}</strong>
           <p class="muted">{t("calibration.description")}</p>

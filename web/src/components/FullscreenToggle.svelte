@@ -1,7 +1,7 @@
 <script lang="ts">
   // Enters and leaves the song page's full screen layout (see lib/fullscreen.ts).
   // The header copy is hidden while full screen is on; the dock copy only shows then (app.css).
-  import Icon from "./Icon.svelte";
+  import IconButton from "./ui/IconButton.svelte";
   import { t } from "../lib/i18n.svelte";
   import {
     enterFullscreen,
@@ -32,15 +32,13 @@
 </script>
 
 {#if supported}
-  <button
-    type="button"
-    class={placement === "dock" ? "icon-button ghost fullscreen-dock" : "fullscreen-header"}
-    data-testid={placement === "dock" ? "player-fullscreen-exit" : "player-fullscreen"}
-    aria-pressed={on}
-    title={label}
+  <IconButton
+    class={placement === "dock" ? "ghost fullscreen-dock" : "fullscreen-header"}
+    icon={on ? "minimize" : "maximize"}
+    {label}
+    testid={placement === "dock" ? "player-fullscreen-exit" : "player-fullscreen"}
+    pressed={on}
+    placement={placement === "dock" ? "above" : "below"}
     onclick={() => void toggle()}
-  >
-    <Icon name={on ? "minimize" : "maximize"} size={18} />
-    <span class="visually-hidden">{label}</span>
-  </button>
+  />
 {/if}

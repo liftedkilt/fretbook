@@ -25,6 +25,17 @@ describe("icon names", () => {
     expect(defined.size).toBeGreaterThan(40);
   });
 
+  it("includes every icon named in the registry comment", () => {
+    const table = iconSource.slice(0, iconSource.indexOf("const PATHS"));
+    const names = [...table.matchAll(/\|[^|]+\|\s*([^|]+?)\s*\|/g)]
+      .map((match) => match[1].trim())
+      .filter((name) => name !== "Icon name" && !name.startsWith("-"));
+    const missing = names
+      .flatMap((name) => name.split("/").map((part) => part.trim()))
+      .filter((name) => !defined.has(name));
+    expect(missing).toEqual([]);
+  });
+
   it("only uses names that exist in PATHS", () => {
     const missing: string[] = [];
     for (const file of files(SRC)) {

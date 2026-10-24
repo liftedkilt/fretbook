@@ -68,7 +68,7 @@ describe("ExercisesView", () => {
   it("loads a preset drill into the form", async () => {
     render(ExercisesView);
     await fireEvent.click(screen.getByTestId("exercise-preset-openChordChanges"));
-    expect(screen.getByTestId("exercise-kind-changes")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("exercise-kind-changes")).toHaveAttribute("aria-checked", "true");
     expect(screen.getByTestId("exercise-chords")).toHaveValue("G C D Em");
     expect(screen.getByTestId("exercise-bpm")).toHaveValue(70);
     expect(screen.getByTestId("exercise-title")).toHaveTextContent("Chord changes: G – C – D – Em");

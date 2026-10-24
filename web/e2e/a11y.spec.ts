@@ -113,6 +113,16 @@ for (const scheme of ["light", "dark"] as const) {
       found.push(...(await violations(page, "autosync-sheet")));
       expect(found).toEqual([]);
     });
+
+    test("the setlist overflow menu has no axe violations", async ({ page }) => {
+      const made = await page.request.post("/api/setlists", { data: { name: "Friday" } });
+      expect(made.ok()).toBeTruthy();
+      const setlist = (await made.json()) as { id: string };
+      await page.goto(`/setlists/${setlist.id}`);
+      await page.getByTestId("setlist-overflow").click();
+      await expect(page.getByRole("menu")).toBeVisible();
+      expect(await violations(page, "setlist-overflow")).toEqual([]);
+    });
   });
 }
 

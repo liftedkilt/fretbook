@@ -2232,5 +2232,8 @@
     "moveSong": "Mover",
     "unavailable": "Este link não está disponível.",
     "back": "Fretbook"
+  },
+  "primitives": {
+    "more": "Mais ações"
   }
 }

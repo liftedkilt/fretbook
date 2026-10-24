@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from "./Icon.svelte";
+  import SegmentedControl from "./ui/SegmentedControl.svelte";
   import { t } from "../lib/i18n.svelte";
   import {
     defaultTrackMix,
@@ -51,7 +52,7 @@
       onclick={() => {
         practice.metronome.on = !practice.metronome.on;
         onchange();
-      }}><Icon name="gauge" size={16} />{t("practice.metronome")}</button
+      }}><Icon name="metronome" size={16} />{t("practice.metronome")}</button
     >
     <label class="mix-slider">
       <span>{t("practice.volume")}</span>
@@ -76,22 +77,19 @@
 <div class="panel-group">
   <h3>{t("practice.countIn")}</h3>
   <div class="mix-row">
-    <div class="segmented" role="radiogroup" aria-label={t("practice.countIn")}>
-      {#each countOptions as bars (bars)}
-        <button
-          data-testid={`count-in-${bars}`}
-          role="radio"
-          aria-checked={practice.countIn.bars === bars}
-          onclick={() => {
-            practice.countIn.bars = bars;
-            onchange();
-          }}
-          >{bars === 0
-            ? t("practice.countInOff")
-            : t("practice.countInBars", { count: bars })}</button
-        >
-      {/each}
-    </div>
+    <SegmentedControl
+      label={t("practice.countIn")}
+      value={String(practice.countIn.bars)}
+      onchange={(next) => {
+        practice.countIn.bars = Number(next) as CountInBars;
+        onchange();
+      }}
+      options={countOptions.map((bars) => ({
+        value: String(bars),
+        label: bars === 0 ? t("practice.countInOff") : t("practice.countInBars", { count: bars }),
+        testid: `count-in-${bars}`,
+      }))}
+    />
     {#if hasAudio}
       <label class="check">
         <input

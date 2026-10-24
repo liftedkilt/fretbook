@@ -2,6 +2,7 @@
   import { untrack } from "svelte";
 
   import Icon from "./Icon.svelte";
+  import SegmentedControl from "./ui/SegmentedControl.svelte";
   import { ApiError, getSong, updateSong } from "../lib/api";
   import { contentKey, mergeOnto, type EditBase } from "../lib/offline/merge";
   import { barTicks, EDITOR_DURATIONS } from "../lib/durations";
@@ -529,15 +530,15 @@
       </div>
 
       <div class="beat-toolbar">
-        <div class="segmented" role="radiogroup" aria-label={t("editor.voice")}>
-          {#each Array.from({ length: Math.max(2, trackBar.voices.length) }, (_, index) => index) as index (index)}
-            <button
-              role="radio"
-              aria-checked={voiceIndex === index}
-              onclick={() => (voiceIndex = index)}>{t("editor.voice")} {index + 1}</button
-            >
-          {/each}
-        </div>
+        <SegmentedControl
+          label={t("editor.voice")}
+          value={String(voiceIndex)}
+          onchange={(next) => (voiceIndex = Number(next))}
+          options={Array.from({ length: Math.max(2, trackBar.voices.length) }, (_, index) => ({
+            value: String(index),
+            label: `${t("editor.voice")} ${index + 1}`,
+          }))}
+        />
         <span class="fill-status" class:ok={used === length} class:warn={used !== length}>
           <Icon name={used === length ? "check" : "alert"} size={16} />
           {used === length

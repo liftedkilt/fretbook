@@ -68,7 +68,7 @@
 
 <div class="chord-practice no-print">
   <button class="toggle" data-testid="chord-practice" aria-pressed={on} onclick={() => (on = !on)}>
-    <Icon name="clock" size={18} /><span>{t("practiceLog.chordPractice")}</span>
+    <Icon name="target" size={18} /><span>{t("practiceLog.chordPractice")}</span>
   </button>
   <p class="muted" role="status">
     {#if !on}{t("practiceLog.chordPracticeHint")}

@@ -1175,8 +1175,8 @@ textarea {
 }
 
 .content > * {
-  max-width: 1320px;
-  margin-left: auto;
+  max-width: var(--page-wide);
+  margin-left: 0;
   margin-right: auto;
   min-width: 0;
 }
@@ -2376,8 +2376,9 @@ textarea {
   z-index: 40;
   display: grid;
   gap: 10px;
-  max-width: 1320px;
-  margin: 0 auto;
+  max-width: var(--page-wide);
+  margin-left: 0;
+  margin-right: auto;
 }
 
 .dock-bar,
@@ -3841,10 +3842,10 @@ textarea {
 :root[data-fullscreen] .topbar,
 :root[data-fullscreen] .tabbar,
 :root[data-fullscreen] .song-header,
-:root[data-fullscreen] .content > .song-tags,
-:root[data-fullscreen] .content > .song-metadata,
-:root[data-fullscreen] .content > .difficulty,
-:root[data-fullscreen] .content > .song-practice {
+:root[data-fullscreen] .song-tags,
+:root[data-fullscreen] .song-metadata,
+:root[data-fullscreen] .difficulty,
+:root[data-fullscreen] .song-practice {
   display: none !important;
 }
 
@@ -4481,8 +4482,6 @@ kbd {
 
 /* Tools Hub */
 .tools-page {
-  max-width: 960px;
-  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 2rem;
@@ -4569,8 +4568,6 @@ kbd {
 
 /* Standalone Tool Views */
 .tool-view {
-  max-width: 680px;
-  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -5045,7 +5042,6 @@ kbd {
   display: grid;
   gap: 1.25rem;
   align-content: start;
-  max-width: 62rem;
 }
 
 .lesson-resume {

@@ -1,5 +1,36 @@
 <script lang="ts" module>
-  // 24×24 stroke icons, drawn in the style of Lucide. Inline so the app needs nothing from a CDN.
+  /*
+   * Icon registry (docs/design/design-language.md §12).
+   * One meaning per icon, one icon per meaning. 24×24 stroke, Lucide style,
+   * inline so the app needs nothing from a CDN.
+   *
+   * | Meaning                         | Icon name                          |
+   * | ---                             | ---                                |
+   * | Practice (nav, practice log)    | target                             |
+   * | Library                         | library                            |
+   * | Lessons, course                 | graduation                         |
+   * | Setlists                        | listMusic                          |
+   * | Tools                           | wrench                             |
+   * | Tuner                           | tuningFork                         |
+   * | Metronome                       | metronome                          |
+   * | Rhythm trainer                  | drum                               |
+   * | Ear and fretboard trainer       | ear                                |
+   * | Chord library, chord sheet      | chords                             |
+   * | Exercises                       | dumbbell                           |
+   * | Export / download a file        | download                           |
+   * | Keep on this device (offline)   | cloudDownload / cloudCheck         |
+   * | Follow the cursor               | crosshair                          |
+   * | Keyboard shortcuts              | keyboard                           |
+   * | Speed                           | gauge                              |
+   * | Wait mode                       | hourglass                          |
+   * | Score my playing                | star                               |
+   * | Loop                            | repeat                             |
+   * | Mixer / audio                   | sliders                            |
+   * | Sync marks                      | waveform                           |
+   * | Full screen                     | maximize / minimize                |
+   * | Close / remove                  | close                              |
+   * | Overflow menu                   | more                               |
+   */
   const PATHS: Record<string, string> = {
     library:
       "M4 19.5V5a2 2 0 0 1 2-2h13v16H6.5A2.5 2.5 0 0 0 4 21.5v-2ZM4 19.5A2.5 2.5 0 0 1 6.5 17H19M9 7h6",
@@ -77,6 +108,22 @@
       "M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3",
     graduation: "M22 10 12 5 2 10l10 5 10-5ZM22 10v6M6 12.5V17c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5",
     bluetooth: "m7 7 10 10-5 5V2l5 5L7 17",
+    // Registry additions, alphabetical so later icons land on their own lines.
+    cloudCheck: "M20 16.6A5 5 0 0 0 18 7h-1.3A7 7 0 1 0 4 14.4M8 18l2.5 2.5L16 15",
+    cloudDownload: "M12 12v9M8 17l4 4 4-4M20 16.6A5 5 0 0 0 18 7h-1.3A7 7 0 1 0 4 14.4",
+    crosshair: "M12 22v-3M12 5V2M22 12h-3M5 12H2M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z",
+    drum: "M12 4c4.4 0 8 1.2 8 2.7v8.6c0 1.5-3.6 2.7-8 2.7s-8-1.2-8-2.7V6.7C4 5.2 7.6 4 12 4ZM4 6.7c0 1.5 3.6 2.7 8 2.7s8-1.2 8-2.7M12 9.4V18M8.5 8.8v7.2M15.5 8.8v7.2",
+    dumbbell: "M6.5 6.5v11M17.5 6.5v11M3.5 9.5v5M20.5 9.5v5M6.5 12h11",
+    ear: "M6 8.5a6.5 6.5 0 1 1 13 0c0 6-6 6-6 10a3.5 3.5 0 1 1-7 0M15 8.5a2.5 2.5 0 0 0-5 0v1a2 2 0 1 1 0 4",
+    hourglass:
+      "M5 3h14M5 21h14M7 3v3.2a2 2 0 0 0 .6 1.4L12 12l-4.4 4.4a2 2 0 0 0-.6 1.4V21M17 3v3.2a2 2 0 0 1-.6 1.4L12 12l4.4 4.4a2 2 0 0 1 .6 1.4V21",
+    keyboard:
+      "M4 6h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1ZM7 10h1M11 10h1M15 10h1M19 10h1M8 14h8",
+    listMusic: "M21 15.5V6M18.5 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM16 6H3M12 12H3M12 18H3",
+    metronome: "M5 21 10 3h4l5 18H5ZM12 21V9M12 9l5.5-3",
+    target:
+      "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20ZM12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12ZM12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z",
+    tuningFork: "M9 2v8a3 3 0 0 0 6 0V2M8 2h2M14 2h2M12 13v9",
   };
 
   const FILLED = new Set(["play", "pause", "prev", "next", "starFilled"]);

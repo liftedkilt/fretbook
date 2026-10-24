@@ -1,6 +1,8 @@
 <script lang="ts">
   import Icon from "./Icon.svelte";
   import LessonBlocks from "./LessonBlocks.svelte";
+  import Page from "./ui/Page.svelte";
+  import PageHeader from "./ui/PageHeader.svelte";
   import {
     ApiError,
     checkLesson,
@@ -117,198 +119,209 @@
   }
 </script>
 
-<article class="lesson-page" data-testid="lesson-view">
-  <a
-    class="button ghost tool-back"
-    href={hrefFor(coursePath(course))}
-    onclick={(event) => followLink(event, coursePath(course))}
-  >
-    <Icon name="back" size={18} /><span>{detail?.course_title ?? t("lessons.heading")}</span>
-  </a>
+<Page width="page">
+  <article class="lesson-page" data-testid="lesson-view">
+    <PageHeader
+      title={detail?.title ?? t("lessons.heading")}
+      titleSize="title"
+      eyebrow={detail ? t("lessons.nav") : ""}
+      subtitle={detail?.summary ?? ""}
+      backHref={coursePath(course)}
+      backLabel={detail?.course_title ?? t("lessons.heading")}
+    >
+      {#snippet actions()}
+        {#if detail?.can_edit && !ui.demoMode}
+          <a
+            class="button ghost"
+            data-testid="lesson-edit"
+            href={hrefFor(`${lessonPath(course, lesson)}/edit`)}
+            onclick={(event) => followLink(event, `${lessonPath(course, lesson)}/edit`)}
+          >
+            <Icon name="edit" size={18} /><span>{t("lessons.edit")}</span>
+          </a>
+        {/if}
+      {/snippet}
+    </PageHeader>
 
-  {#if error}
-    <p class="alert" role="alert" data-testid={locked ? "lesson-locked" : "lesson-error"}>
-      <Icon name={locked ? "lock" : "alert"} size={18} />{error}
-    </p>
-  {/if}
+    {#if error}
+      <p class="alert" role="alert" data-testid={locked ? "lesson-locked" : "lesson-error"}>
+        <Icon name={locked ? "lock" : "alert"} size={18} />{error}
+      </p>
+    {/if}
 
-  {#if detail}
-    <header class="page-hero">
-      <div>
-        <h1 class="display hero-title">{detail.title}</h1>
-        {#if detail.summary}<p class="muted">{detail.summary}</p>{/if}
+    {#if detail}
+      <div class="reading">
+        <LessonBlocks blocks={detail.blocks} />
       </div>
-      {#if detail.can_edit && !ui.demoMode}
-        <a
-          class="button ghost"
-          data-testid="lesson-edit"
-          href={hrefFor(`${lessonPath(course, lesson)}/edit`)}
-          onclick={(event) => followLink(event, `${lessonPath(course, lesson)}/edit`)}
-        >
-          <Icon name="edit" size={18} /><span>{t("lessons.edit")}</span>
-        </a>
-      {/if}
-    </header>
 
-    <LessonBlocks blocks={detail.blocks} />
+      <section class="lesson-pass" aria-labelledby="lesson-pass-heading" data-testid="lesson-pass">
+        <h2 id="lesson-pass-heading" class="field-label">{t("lessons.passHeading")}</h2>
 
-    <section class="lesson-pass" aria-labelledby="lesson-pass-heading" data-testid="lesson-pass">
-      <h2 id="lesson-pass-heading" class="field-label">{t("lessons.passHeading")}</h2>
+        {#if detail.progress.completed}
+          <p class="lesson-done" role="status" data-testid="lesson-done">
+            <Icon name="check" size={18} />
+            {t("lessons.completed")}
+            {#if detail.progress.best_score !== null}
+              · {t("lessons.bestScore", { score: Math.round(detail.progress.best_score) })}
+            {/if}
+          </p>
+        {/if}
 
-      {#if detail.progress.completed}
-        <p class="lesson-done" role="status" data-testid="lesson-done">
-          <Icon name="check" size={18} />
-          {t("lessons.completed")}
-          {#if detail.progress.best_score !== null}
-            · {t("lessons.bestScore", { score: Math.round(detail.progress.best_score) })}
+        {#if condition?.type === "score"}
+          <p>
+            {condition.min_bpm
+              ? t("lessons.passScoreBpm", {
+                  score: condition.min_score ?? 0,
+                  bpm: condition.min_bpm,
+                })
+              : t("lessons.passScore", { score: condition.min_score ?? 0 })}
+          </p>
+        {:else if condition?.type === "wait"}
+          <p>{t("lessons.passWait")}</p>
+        {:else}
+          <p class="muted">{t("lessons.passNone")}</p>
+        {/if}
+
+        {#if !condition}
+          {#if !detail.progress.completed}
+            <button
+              class="primary"
+              data-testid="lesson-complete"
+              disabled={busy}
+              onclick={() => run(() => reportLessonProgress(course, lesson, { completed: true }))}
+            >
+              <Icon name="check" size={18} /><span>{t("lessons.markDone")}</span>
+            </button>
           {/if}
-        </p>
-      {/if}
-
-      {#if condition?.type === "score"}
-        <p>
-          {condition.min_bpm
-            ? t("lessons.passScoreBpm", { score: condition.min_score ?? 0, bpm: condition.min_bpm })
-            : t("lessons.passScore", { score: condition.min_score ?? 0 })}
-        </p>
-      {:else if condition?.type === "wait"}
-        <p>{t("lessons.passWait")}</p>
-      {:else}
-        <p class="muted">{t("lessons.passNone")}</p>
-      {/if}
-
-      {#if !condition}
-        {#if !detail.progress.completed}
+        {:else if condition.song}
+          <p class="muted">{t("lessons.checkHelp")}</p>
           <button
             class="primary"
-            data-testid="lesson-complete"
+            data-testid="lesson-check"
             disabled={busy}
-            onclick={() => run(() => reportLessonProgress(course, lesson, { completed: true }))}
+            onclick={() => run(() => checkLesson(course, lesson))}
           >
-            <Icon name="check" size={18} /><span>{t("lessons.markDone")}</span>
+            <Icon name="refresh" size={18} /><span>{t("lessons.check")}</span>
           </button>
-        {/if}
-      {:else if condition.song}
-        <p class="muted">{t("lessons.checkHelp")}</p>
-        <button
-          class="primary"
-          data-testid="lesson-check"
-          disabled={busy}
-          onclick={() => run(() => checkLesson(course, lesson))}
-        >
-          <Icon name="refresh" size={18} /><span>{t("lessons.check")}</span>
-        </button>
-      {:else if condition.type === "wait"}
-        <button
-          class="primary"
-          data-testid="lesson-report-wait"
-          disabled={busy}
-          onclick={() => run(() => reportLessonProgress(course, lesson, { wait_completed: true }))}
-        >
-          <Icon name="check" size={18} /><span>{t("lessons.reportWait")}</span>
-        </button>
-      {:else}
-        <form class="lesson-report" onsubmit={report}>
-          <label class="tool-field">
-            <span>{t("lessons.reportScore")}</span>
-            <input
-              type="number"
-              min="0"
-              max="100"
-              step="1"
-              bind:value={score}
-              data-testid="lesson-score"
-            />
-          </label>
-          {#if condition.min_bpm}
+        {:else if condition.type === "wait"}
+          <button
+            class="primary"
+            data-testid="lesson-report-wait"
+            disabled={busy}
+            onclick={() =>
+              run(() => reportLessonProgress(course, lesson, { wait_completed: true }))}
+          >
+            <Icon name="check" size={18} /><span>{t("lessons.reportWait")}</span>
+          </button>
+        {:else}
+          <form class="lesson-report" onsubmit={report}>
             <label class="tool-field">
-              <span>{t("lessons.reportBpm")}</span>
+              <span>{t("lessons.reportScore")}</span>
               <input
                 type="number"
-                min="1"
-                max="400"
+                min="0"
+                max="100"
                 step="1"
-                bind:value={bpm}
-                data-testid="lesson-bpm"
+                bind:value={score}
+                data-testid="lesson-score"
               />
             </label>
-          {/if}
-          <button
-            class="primary"
-            type="submit"
-            disabled={busy || score === null}
-            data-testid="lesson-report"
-          >
-            <span>{t("lessons.report")}</span>
-          </button>
-        </form>
-      {/if}
+            {#if condition.min_bpm}
+              <label class="tool-field">
+                <span>{t("lessons.reportBpm")}</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="400"
+                  step="1"
+                  bind:value={bpm}
+                  data-testid="lesson-bpm"
+                />
+              </label>
+            {/if}
+            <button
+              class="primary"
+              type="submit"
+              disabled={busy || score === null}
+              data-testid="lesson-report"
+            >
+              <span>{t("lessons.report")}</span>
+            </button>
+          </form>
+        {/if}
 
-      {#if playable}
-        <div class="lesson-report" data-testid="lesson-play">
-          {#if songs.length}
-            <label class="tool-field">
-              <span>{t("lessonRun.pick")}</span>
-              <select bind:value={picked} onchange={pick} data-testid="lesson-song-pick">
-                <option value="">{t("lessonRun.pickPlaceholder")}</option>
-                {#each songs as item (item.id)}
-                  <option value={item.id}
-                    >{item.artist ? `${item.title} · ${item.artist}` : item.title}</option
-                  >
-                {/each}
-              </select>
-            </label>
-          {/if}
-          <button
-            type="button"
-            data-testid="lesson-import"
-            onclick={() => openAddForLesson({ course, lesson })}
-          >
-            <Icon name="upload" size={18} /><span>{t("lessonRun.import")}</span>
-          </button>
-          {#if picked}
+        {#if playable}
+          <div class="lesson-report" data-testid="lesson-play">
+            {#if songs.length}
+              <label class="tool-field">
+                <span>{t("lessonRun.pick")}</span>
+                <select bind:value={picked} onchange={pick} data-testid="lesson-song-pick">
+                  <option value="">{t("lessonRun.pickPlaceholder")}</option>
+                  {#each songs as item (item.id)}
+                    <option value={item.id}
+                      >{item.artist ? `${item.title} · ${item.artist}` : item.title}</option
+                    >
+                  {/each}
+                </select>
+              </label>
+            {/if}
+            <button
+              type="button"
+              data-testid="lesson-import"
+              onclick={() => openAddForLesson({ course, lesson })}
+            >
+              <Icon name="upload" size={18} /><span>{t("lessonRun.import")}</span>
+            </button>
+            {#if picked}
+              <a
+                class="button"
+                data-testid="lesson-play-link"
+                href={hrefFor(`/songs/${encodeURIComponent(picked)}`) +
+                  lessonQuery({ course, lesson })}
+                onclick={(event) => followLink(event, lessonSongPath(picked, { course, lesson }))}
+              >
+                <Icon name="play" size={18} /><span>{t("lessonRun.play")}</span>
+              </a>
+            {/if}
+          </div>
+        {/if}
+
+        {#if outcome === "missed"}
+          <p class="notice" role="status" data-testid="lesson-missed">{t("lessons.notYet")}</p>
+        {/if}
+        {#if outcome === "passed"}
+          <p class="notice" role="status" data-testid="lesson-passed">{t("lessons.passed")}</p>
+        {/if}
+      </section>
+
+      {#if detail.progress.completed}
+        <nav class="lesson-next">
+          {#if detail.next_lesson_id}
+            <a
+              class="button primary"
+              data-testid="lesson-next"
+              href={hrefFor(lessonPath(course, detail.next_lesson_id))}
+              onclick={(event) => followLink(event, lessonPath(course, detail!.next_lesson_id!))}
+            >
+              <span>{t("lessons.next")}</span><Icon name="forward" size={18} />
+            </a>
+          {:else}
             <a
               class="button"
-              data-testid="lesson-play-link"
-              href={hrefFor(`/songs/${encodeURIComponent(picked)}`) +
-                lessonQuery({ course, lesson })}
-              onclick={(event) => followLink(event, lessonSongPath(picked, { course, lesson }))}
+              href={hrefFor(coursePath(course))}
+              onclick={(event) => followLink(event, coursePath(course))}
             >
-              <Icon name="play" size={18} /><span>{t("lessonRun.play")}</span>
+              <span>{t("lessons.backToCourse")}</span>
             </a>
           {/if}
-        </div>
+        </nav>
       {/if}
-
-      {#if outcome === "missed"}
-        <p class="notice" role="status" data-testid="lesson-missed">{t("lessons.notYet")}</p>
-      {/if}
-      {#if outcome === "passed"}
-        <p class="notice" role="status" data-testid="lesson-passed">{t("lessons.passed")}</p>
-      {/if}
-    </section>
-
-    {#if detail.progress.completed}
-      <nav class="lesson-next">
-        {#if detail.next_lesson_id}
-          <a
-            class="button primary"
-            data-testid="lesson-next"
-            href={hrefFor(lessonPath(course, detail.next_lesson_id))}
-            onclick={(event) => followLink(event, lessonPath(course, detail!.next_lesson_id!))}
-          >
-            <span>{t("lessons.next")}</span><Icon name="forward" size={18} />
-          </a>
-        {:else}
-          <a
-            class="button"
-            href={hrefFor(coursePath(course))}
-            onclick={(event) => followLink(event, coursePath(course))}
-          >
-            <span>{t("lessons.backToCourse")}</span>
-          </a>
-        {/if}
-      </nav>
     {/if}
-  {/if}
-</article>
+  </article>
+</Page>
+
+<style>
+  .reading {
+    max-width: var(--page-narrow);
+  }
+</style>
