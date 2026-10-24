@@ -435,7 +435,8 @@
       "signIn": "YouTube asked for a sign-in or a bot check, so the audio could not be downloaded. The tab was saved; upload an mp3 instead.",
       "unavailable": "That video is unavailable, private, or removed, so its audio could not be downloaded. The tab was saved; upload an mp3 instead.",
       "geoBlocked": "That video is blocked in this server's country, so its audio could not be downloaded. The tab was saved; upload an mp3 instead.",
-      "outdated": "yt-dlp could not read YouTube's page, which usually means yt-dlp is out of date. The tab was saved; update yt-dlp or upload an mp3 instead."
+      "outdated": "yt-dlp could not read YouTube's page, which usually means yt-dlp is out of date. The tab was saved; update yt-dlp or upload an mp3 instead.",
+      "notYoutube": "Paste a YouTube video link."
     },
     "export": {
       "notTab": "Only tabs export as MusicXML.",
@@ -1669,5 +1670,12 @@
       "other": "Other"
     },
     "noWorker": "Stem separation needs the job worker with Demucs installed. See the self-hosting guide."
+  },
+  "youtubeAudio": {
+    "label": "Add audio from a YouTube link",
+    "placeholder": "https://www.youtube.com/watch?v=…",
+    "submit": "Download audio",
+    "working": "Downloading the audio…",
+    "timeout": "The download took too long. Try again later."
   }
 }
