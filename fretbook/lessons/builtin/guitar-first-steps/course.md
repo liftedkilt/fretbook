@@ -1,8 +1,11 @@
 ---
 title: Guitar first steps
 track: guitar
-summary: Hold the guitar, play your first chords, and get a steady strum going. Original lessons written for Fretbook.
+summary: From holding the guitar to your first full song: strings, notes, open chords, strumming and power chords. Original lessons written for Fretbook.
 levels:
   - basics: Basics
-  - chords: First chords
+  - notes: First notes
+  - chords: Open chords
+  - rhythm: Strumming and changes
+  - songs: Your first songs
 ---
