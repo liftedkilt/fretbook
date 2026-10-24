@@ -24,7 +24,7 @@ from fretbook.score.fingering import assign_frets
 from fretbook.score.instruments import InstrumentPreset, get_preset
 from fretbook.score.model import Note, ScoreDocument, Track, TrackBar
 
-ENGINE_ENV = "FRETBOOK_AUDIVERIS"
+ENGINE_ENV = "FRETBOOK_AUDIVERIS"  # documented in config.ENV_VARS
 TIMEOUT_SECONDS = 900
 SUFFIXES = (".pdf", ".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".gif", ".webp")
 _CANDIDATES = ("audiveris", "Audiveris", "/opt/audiveris/bin/Audiveris")
@@ -35,7 +35,7 @@ Recognizer = Callable[[Path, Path, Progress], Path]
 
 def find_engine() -> str | None:
     """The Audiveris launcher: ``FRETBOOK_AUDIVERIS``, else ``audiveris`` on the PATH, else the package's own path."""
-    configured = os.environ.get(ENGINE_ENV, "").strip()
+    configured = os.environ.get("FRETBOOK_AUDIVERIS", "").strip()
     if configured:
         return configured if shutil.which(configured) else None
     for name in _CANDIDATES:
@@ -54,9 +54,7 @@ def run_audiveris(source: Path, out_dir: Path, progress: Progress) -> Path:
     """Recognise ``source`` and return the MusicXML Audiveris exported into ``out_dir``."""
     engine = find_engine()
     if engine is None:
-        raise ImportError(
-            "Audiveris is not installed on this worker, so sheet music cannot be read", "omr.unavailable"
-        )
+        raise ImportError("Audiveris is not installed on this worker, so sheet music cannot be read", "omr.unavailable")
     progress("Reading the sheet music", "import.omrReading")
     command = [engine, "-batch", "-export", "-output", str(out_dir), str(source)]
     try:
@@ -188,17 +186,17 @@ def _finger(
         groups.append(group)
         owners.append(owner)
     fingering = assign_frets(groups, list(preset.tuning_midi))
-    placed: dict[tuple[int, int, int], dict[int, tuple[int, int, int]]] = {}
+    placed: dict[tuple[int, int, int], dict[int, tuple[int, int]]] = {}
     last: dict[tuple[int, int], tuple[int, int]] = {}
     for index, placements in enumerate(fingering.groups):
         for item in placements:
             bar, voice, beat, slot = owners[index][item.source]
             note = track_bars[bar].voices[voice].beats[beat].notes[slot]
-            position = (item.string, item.fret)
+            spot = (item.string, item.fret)
             if note.tie and (voice, item.pitch) in last:
-                position = last[(voice, item.pitch)]
-            last[(voice, item.pitch)] = position
-            placed.setdefault((bar, voice, beat), {})[slot] = (*position, item.pitch)
+                spot = last[(voice, item.pitch)]
+            last[(voice, item.pitch)] = spot
+            placed.setdefault((bar, voice, beat), {})[slot] = spot
     for bar, voice, beat in pitches:
         target = track_bars[bar].voices[voice].beats[beat]
         kept = placed.get((bar, voice, beat), {})
@@ -208,4 +206,3 @@ def _finger(
             if slot in kept
         ]
     return len(fingering.shifted), len(fingering.dropped)
-

@@ -287,10 +287,10 @@ def test_file_imports(tmp_path: Path) -> None:
         assert job["status"] == "done", job
         assert job["result"]["content_kind"] == "chords"
 
-        unknown = client.post("/api/imports/file", files={"file": ("song.pdf", b"%PDF", "application/pdf")})
+        unknown = client.post("/api/imports/file", files={"file": ("song.dat", b"%PDF", "application/pdf")})
         assert unknown.status_code == 400
         assert unknown.json()["detail"]["key"] == "import.noFileImporter"
-        assert not list((tmp_path / "inbox").glob("*song.pdf"))
+        assert not list((tmp_path / "inbox").glob("*song.dat"))
 
         bad = client.post("/api/imports", json={"url": "https://example.com/nope"})
         assert bad.status_code == 400

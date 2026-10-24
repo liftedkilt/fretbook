@@ -7,6 +7,19 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
     && apt-get install -y --no-install-recommends python3 python3-pip python3-venv ffmpeg ca-certificates tesseract-ocr \
     && rm -rf /var/lib/apt/lists/*
+# Optional: sheet music (PDF/image) import runs Audiveris, a Java program that adds about 300 MB to the image. Build with
+#   docker build -f Dockerfile.worker --build-arg AUDIVERIS_DEB_URL=<url of the Ubuntu 22.04 .deb from
+#   https://github.com/Audiveris/audiveris/releases> -t fretbook-worker .
+# Without it the worker does not claim the import.omr job and the feature stays off.
+ARG AUDIVERIS_DEB_URL=
+RUN if [ -n "$AUDIVERIS_DEB_URL" ]; then \
+        apt-get update \
+        && apt-get install -y --no-install-recommends curl \
+        && curl -fsSL -o /tmp/audiveris.deb "$AUDIVERIS_DEB_URL" \
+        && apt-get install -y --no-install-recommends /tmp/audiveris.deb \
+        && rm -f /tmp/audiveris.deb \
+        && rm -rf /var/lib/apt/lists/*; \
+    fi
 WORKDIR /app
 COPY requirements.txt requirements-vision.txt requirements-stems.txt ./
 RUN python3 -m venv /opt/venv \

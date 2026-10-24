@@ -137,6 +137,15 @@ def _import_error(exc: Exception) -> Exception:
     return api_error(400, "import.failed", str(exc))
 
 
+def import_job_kind(ctx: AppContext, importer_kind: str) -> str:
+    """The job kind that runs an import. Sheet music needs Audiveris, which only a worker carries."""
+    if importer_kind != "omr":
+        return "import.file"
+    if "import.omr" not in ctx.jobs.live_worker_kinds():
+        raise api_error(409, "omr.noWorker", "reading sheet music needs a worker that has Audiveris; none is running")
+    return "import.omr"
+
+
 async def _spool(file: UploadFile, dest: Path, limit: int) -> int:
     """Copy an upload to ``dest`` in chunks, stopping at ``limit`` bytes."""
     size = 0
@@ -615,15 +624,16 @@ async def import_file(
     filename = file.filename or "upload"
     request = ImportRequest(owner_id=user.user_id, filename=filename, kind=kind)
     try:
-        resolve_importer(request)
+        importer = resolve_importer(request)
     except ImportError as exc:
         raise _import_error(exc) from exc
+    job_kind = import_job_kind(ctx, importer.kind)
     # A unique name per upload: two files called song.xml must not overwrite each other in the inbox.
     path = ctx.settings.inbox_dir / f"{uuid.uuid4().hex}-{_safe_name(filename)}"
     await _spool(file, path, ctx.settings.max_upload_bytes)
     job_id = ctx.jobs.enqueue(
         user.user_id,
-        "import.file",
+        job_kind,
         {"path": str(path), "filename": filename, "kind": kind, "prefer": _prefer(ctx, user)},
     )
     return _json({"job_id": job_id}, status_code=202)

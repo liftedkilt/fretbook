@@ -17,7 +17,7 @@ from fastapi.responses import JSONResponse
 
 from fretbook.api.deps import context, principal
 from fretbook.api.errors import api_error
-from fretbook.api.routes import _prefer, _safe_name, _spool
+from fretbook.api.routes import _prefer, _safe_name, _spool, import_job_kind
 from fretbook.api.schemas import AUTH_RESPONSES, JobAccepted
 from fretbook.auth.base import Principal
 from fretbook.context import AppContext
@@ -156,15 +156,11 @@ def _from_text(text: str, ctx: AppContext, user: Principal) -> JSONResponse:
 
 
 def _queue_file(ctx: AppContext, user: Principal, path: Path, filename: str, kind: str) -> JSONResponse:
-    job_kind = "import.file"
-    if kind == "omr":
-        # Sheet music needs Audiveris, which only a worker carries (see fretbook.importers.omr).
-        if "import.omr" not in ctx.jobs.live_worker_kinds():
-            path.unlink(missing_ok=True)
-            raise api_error(
-                409, "omr.noWorker", "reading sheet music needs a worker that has Audiveris; none is running"
-            )
-        job_kind = "import.omr"
+    try:
+        job_kind = import_job_kind(ctx, kind)
+    except Exception:
+        path.unlink(missing_ok=True)
+        raise
     job_id = ctx.jobs.enqueue(
         user.user_id,
         job_kind,

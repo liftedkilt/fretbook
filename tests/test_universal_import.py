@@ -91,6 +91,18 @@ def test_files_are_recognised_by_content_whatever_they_are_called(tmp_path: Path
         assert not list((tmp_path / "inbox").iterdir())
 
 
+def test_sheet_music_needs_a_worker_with_audiveris(tmp_path: Path) -> None:
+    with _client(tmp_path) as client:
+        for name, content in {
+            "scan.pdf": b"%PDF-1.4 ...",
+            "photo.png": b"\x89PNG\r\n\x1a\n" + b"\x00" * 16,
+        }.items():
+            refused = _auto(client, files={"file": (name, content, "application/octet-stream")})
+            assert refused.status_code == 409, name
+            assert refused.json()["detail"]["key"] == "omr.noWorker", name
+        assert not list((tmp_path / "inbox").iterdir())
+
+
 def test_audio_file_becomes_a_song_with_audio_and_a_blank_tab(tmp_path: Path) -> None:
     with _client(tmp_path) as client:
         # The name and the client's content type lie; the bytes say WAV.
@@ -110,8 +122,6 @@ def test_audio_file_becomes_a_song_with_audio_and_a_blank_tab(tmp_path: Path) ->
 def test_unsupported_and_unknown_files_are_refused_and_cleaned_up(tmp_path: Path) -> None:
     with _client(tmp_path) as client:
         cases = {
-            "scan.pdf": (b"%PDF-1.4 ...", "import.notYetSupported"),
-            "photo.png": (b"\x89PNG\r\n\x1a\n" + b"\x00" * 16, "import.notYetSupported"),
             "backup.zip": (_zipped("manifest.json"), "import.isLibraryArchive"),
             "blob.bin": (b"\x00\x01\x02" * 100, "import.noFileImporter"),
             "essay.dat": (b"Dear diary, nothing musical happened today.", "import.noFileImporter"),

@@ -17,7 +17,7 @@ and works out what it is from the *content*, not the file name. The other ways i
 | Chords over lyrics (pasted) | Converted to ChordPro. |
 | Fretbook JSON | Fretbook's own format, also what a library archive holds. |
 | Audio | Becomes a song with a blank tab and the audio attached, ready for tapping sync or typing the tab. |
-| PDF and images | Recognised, but not importable yet; the message says so. |
+| PDF and images (sheet music) | Standard notation read by optical music recognition on a worker that has Audiveris, see [Sheet music](#sheet-music). |
 
 Drop several files, a folder or a `.zip` archive at once. You get per-file progress and duplicate detection (**skip**,
 **replace** or **keep both**).
@@ -44,6 +44,22 @@ most 5); and the download is capped by size (`FRETBOOK_FETCH_MAX_BYTES`) and tim
 
 If YouTube refuses the audio download (common from datacenter addresses), the tab is still saved and you can upload an
 mp3 on the song page. See [Keeping yt-dlp working](ytdlp.md).
+
+## Sheet music
+
+Drop a PDF or a photo or scan of standard notation (`.pdf`, `.png`, `.jpg`, `.tif`, `.bmp`, `.gif`) and Fretbook turns
+it into a tab for your default instrument: [Audiveris](https://github.com/Audiveris/audiveris) reads the page into
+MusicXML, then Fretbook chooses a string and fret for every note so the hand moves as little as possible (the same
+fingering step as [MIDI](#midi)). Written guitar and bass notes are moved down an octave to where they sound, unless
+the clef already says so.
+
+- **Optional, and worker only.** Audiveris is a large Java program, so it is not in the main image. Build the
+  [job worker](../self-hosting/worker.md#sheet-music-recognition) with it and run the worker; without one, a PDF or
+  image is refused with "needs a worker with Audiveris".
+- **It is a draft.** Recognition makes mistakes (missed accidentals, wrong rhythms, merged staves), so the song is saved
+  marked as needing review, with a warning, and notes the instrument cannot play are reported. Check it against the
+  page. Sharp, upright scans of printed music work best; one page at a time is fastest.
+- Several staves or parts become several tracks, all on the one instrument.
 
 ## Paste tab
 
