@@ -582,6 +582,9 @@
       "badPreset": "That instrument is not known.",
       "badTuning": "The tuning has a note that is out of range.",
       "invalid": "That conversion is not possible."
+    },
+    "offline": {
+      "unavailable": "You are offline and this is not saved on this device."
     }
   },
   "ui": {
@@ -1431,5 +1434,25 @@
       "chordCount": "Enter {min} to {max} chords.",
       "outOfRange": "A note falls outside this instrument's range."
     }
+  },
+  "offline": {
+    "indicator": "Offline",
+    "indicatorHint": "Songs and setlists saved on this device still work. Edits are sent when you are back online.",
+    "make": "Make available offline",
+    "saved": "Available offline",
+    "working": "Saving…",
+    "makeHint": "Keep this on the device so it opens with no network",
+    "removeHint": "Remove the copy kept on this device",
+    "failed": "Could not remove it. Try again.",
+    "saveFailed": "Could not save it for offline use. Check your connection and try again.",
+    "queued": {
+      "one": "{count} edit is waiting to sync.",
+      "other": "{count} edits are waiting to sync."
+    },
+    "syncNow": "Sync now",
+    "conflict": "“{title}” was changed somewhere else, so your offline edits were not saved.",
+    "syncFailed": "Your offline edits to “{title}” could not be saved: {message}",
+    "keepMine": "Keep my edits",
+    "keepTheirs": "Use the other version"
   }
 }

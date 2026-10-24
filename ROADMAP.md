@@ -41,7 +41,6 @@ Features that use the microphone to hear the instrument, in the order to build t
 
 ### Playing live
 
-- Offline use as an installable web app, so a setlist works with no network.
 - Turning pages and starting playback hands-free with a Bluetooth page-turner pedal.
 
 ### Other
