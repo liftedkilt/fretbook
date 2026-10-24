@@ -141,6 +141,54 @@ export class Seeder {
     return { id: await this.waitForJob(accepted.job_id), title };
   }
 
+  /** A two-beat guitar tab: a C major chord, then a G major chord (`chords-played.wav` strums both). */
+  async chordTab(): Promise<SeededSong> {
+    const title = "Two Chords";
+    const beat = (position: number, frets: number[]) => ({
+      position,
+      duration: 1920,
+      // Strings are numbered from the highest (0 = high E); a null fret is not played.
+      notes: frets.flatMap((fret, string) => (fret < 0 ? [] : [{ string, fret }])),
+    });
+    const document = {
+      version: 1,
+      bpm: 60,
+      bars: [{ signature: [4, 4] }],
+      sync: { video_id: null, points: [], anchors: {} },
+      tracks: [
+        {
+          id: "trk_guitar",
+          name: "Guitar",
+          instrument: "guitar",
+          capo: 0,
+          tuning_midi: [64, 59, 55, 50, 45, 40],
+          preferred: true,
+          bars: [
+            {
+              voices: [
+                {
+                  beats: [beat(0, [0, 1, 0, 2, 3, -1]), beat(1920, [3, 0, 0, 0, 2, 3])],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const accepted = await this.ok<{ job_id: string }>(
+      await this.request.post("/api/imports/file", {
+        multipart: {
+          file: {
+            name: "two-chords.json",
+            mimeType: "application/json",
+            buffer: Buffer.from(JSON.stringify({ title, content_kind: "tab", document })),
+          },
+        },
+      }),
+    );
+    return { id: await this.waitForJob(accepted.job_id), title };
+  }
+
   async list(): Promise<SongBody[]> {
     return (await this.ok<{ items: SongBody[] }>(await this.request.get("/api/songs?limit=200")))
       .items;
