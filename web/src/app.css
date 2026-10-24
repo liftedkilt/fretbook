@@ -1078,7 +1078,7 @@ textarea {
   }
 
   .shell-library .content {
-    padding-bottom: calc(110px + var(--safe-b));
+    padding-bottom: calc(150px + var(--safe-b));
   }
 
   .tabbar {
@@ -1088,7 +1088,7 @@ textarea {
     bottom: calc(10px + var(--safe-b));
     z-index: 30;
     display: grid;
-    grid-template-columns: 1fr 1fr auto 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr auto 1fr 1fr;
     align-items: center;
     height: 64px;
     padding: 0 10px;
@@ -1098,6 +1098,10 @@ textarea {
     box-shadow: var(--shadow-lg);
     backdrop-filter: blur(24px) saturate(1.7);
     -webkit-backdrop-filter: blur(24px) saturate(1.7);
+  }
+
+  .tabbar.no-add {
+    grid-template-columns: repeat(4, 1fr);
   }
 
   .tab-item {
@@ -5001,4 +5005,54 @@ kbd {
 
 .chords-page.stage .chord-paper {
   line-height: 1.6;
+}
+
+/* Phones: the star stays on the artwork; edit, setlist and delete sit in a row under the card. */
+@media (max-width: 767px) {
+  .chips {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+  }
+
+  .song-card {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: 6px;
+    align-content: start;
+  }
+
+  .song-card > .song-link {
+    grid-column: 1 / -1;
+  }
+
+  .song-card > .song-actions {
+    display: contents;
+  }
+
+  .song-card .song-actions .icon-button,
+  .song-card:not(:hover):not(:focus-within) .song-actions.starred > :not(.song-star) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
+    height: 44px;
+    min-height: 44px;
+    margin-top: 0.5rem;
+  }
+
+  .song-card .song-actions .song-star {
+    position: absolute;
+    z-index: 3;
+    top: 6px;
+    right: 6px;
+    width: 44px;
+    min-width: 44px;
+    margin-top: 0;
+  }
+
+  .song-card .song-actions,
+  .song-card:not(:hover):not(:focus-within) .song-actions.starred {
+    opacity: 1;
+  }
 }
