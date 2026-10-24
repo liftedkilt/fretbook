@@ -261,10 +261,18 @@
             {#each stats.exercises as exercise (exercise.kind)}
               <li>
                 <a
-                  href={hrefFor("/tools/trainer")}
-                  onclick={(event) => followLink(event, "/tools/trainer")}
+                  href={hrefFor(exercise.kind === "rhythm" ? "/tools/rhythm" : "/tools/trainer")}
+                  onclick={(event) =>
+                    followLink(
+                      event,
+                      exercise.kind === "rhythm" ? "/tools/rhythm" : "/tools/trainer",
+                    )}
                 >
-                  <strong>{t(KIND_NAMES[exercise.kind].labelKey)}</strong>
+                  <strong
+                    >{exercise.kind === "rhythm"
+                      ? t("rhythm.toolTitle")
+                      : t(KIND_NAMES[exercise.kind].labelKey)}</strong
+                  >
                 </a>
                 <span class="muted meta">
                   {formatDuration(exercise.total_seconds)}
