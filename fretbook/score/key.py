@@ -1,5 +1,7 @@
 """The musical key of a song: parsed from a name, or detected from a score's notes.
 
+A chord sheet without a ``{key}`` directive gets one from its chords instead (:func:`chords_key`).
+
 Detection is the Krumhansl-Schmuckler algorithm: the duration-weighted histogram of the pitch classes in the
 preferred track is correlated with the Krumhansl-Kessler major and minor key profiles at all twelve rotations, and
 the best of the 24 wins. A key is written ``C``, ``F#`` or ``Bb`` for major and with an ``m`` for minor
@@ -14,7 +16,7 @@ import re
 from fretbook.chords import chordpro as chordpro_text
 from fretbook.score.model import ScoreDocument, preferred_track
 
-VERSION = 1
+VERSION = 2
 """Bump when detection changes, so :meth:`SongRepository.refresh_keys` redoes every song."""
 
 _MAJOR_NAMES = ("C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B")
@@ -95,7 +97,75 @@ def detect_key(document: ScoreDocument) -> str | None:
     return best_key(histogram) if notes >= MIN_NOTES else None
 
 
+_CHORD_ROOT = re.compile(r"^\(?([A-G])([#b]?)(.*?)(?:/[A-G][#b]?)?\)?$")
+_MAJOR_SCALE = (0, 2, 4, 5, 7, 9, 11)
+_MINOR_SCALE = (0, 2, 3, 5, 7, 8, 10, 11)
+"""Natural minor plus the raised seventh of the harmonic minor, which the dominant chord uses."""
+MIN_CHORDS = 3
+"""Fewer chords than this say too little to name a key."""
+_ENDS_BONUS = 2.0
+"""What the first and the last chord each add to the key they sound like the home of."""
+
+
+def _chord_triad(chord: str) -> tuple[int, bool, frozenset[int]] | None:
+    """``(root, minor, pitch classes)`` of a chord's triad, ignoring extensions and the slash bass."""
+    match = _CHORD_ROOT.match(chord)
+    if not match:
+        return None
+    letter, accidental, quality = match.groups()
+    root = (_SEMITONES[letter] + {"#": 1, "b": -1, "": 0}[accidental]) % 12
+    lowered = quality.lower()
+    diminished = lowered.startswith(("dim", "\u00b0", "\u00f8")) or "b5" in lowered
+    minor = not quality.startswith(("maj", "M")) and lowered.startswith(("m", "dim", "\u00b0", "\u00f8"))
+    third = () if lowered.startswith("sus") else (3 if minor else 4,)
+    fifth = 6 if diminished else 8 if lowered.startswith(("aug", "+")) else 7
+    return root, minor, frozenset((root + step) % 12 for step in (0, *third, fifth))
+
+
+def chords_key(chords: list[str]) -> str | None:
+    """The key a list of chords (in order) belongs to, or ``None`` when there are too few to tell.
+
+    Each of the 24 keys scores one point per chord whose notes are all in its scale. A chord that is the key's tonic
+    (the major chord of a major key, the minor chord of a minor one) adds a point more, and the first and last chords
+    add a bonus when they are the tonic. That last part is what tells a major key from its relative minor, which
+    share every chord. A tie between keys gives no key.
+    """
+    triads = [triad for triad in map(_chord_triad, chords) if triad is not None]
+    if len(triads) < MIN_CHORDS or len({(root, minor) for root, minor, _ in triads}) < 2:
+        return None
+    scored: list[tuple[float, str]] = []
+    for names, scale, minor_key in ((_MAJOR_NAMES, _MAJOR_SCALE, False), (_MINOR_NAMES, _MINOR_SCALE, True)):
+        for tonic in range(12):
+            notes = {(tonic + step) % 12 for step in scale}
+            score = 0.0
+            for root, minor, pitches in triads:
+                if pitches <= notes:
+                    score += 1.0
+                if root == tonic and minor == minor_key:
+                    score += 1.0
+            for root, minor, _ in (triads[0], triads[-1]):
+                if root == tonic and minor == minor_key:
+                    score += _ENDS_BONUS
+            scored.append((score, names[tonic]))
+    scored.sort(key=lambda item: -item[0])
+    if scored[0][0] == scored[1][0]:
+        return None
+    return scored[0][1]
+
+
 def chordpro_key(chordpro: str) -> str | None:
-    """The key a chord sheet declares with ``{key: ...}``, if it is one we know."""
-    declared = chordpro_text.metadata(chordpro).get("key", "")
-    return parse_key(declared) if declared else None
+    """The key a chord sheet declares with ``{key: ...}``, else the one its chords point to.
+
+    The chords are taken as sounding after the sheet's ``{capo}``, as a tab's notes are.
+    """
+    meta = chordpro_text.metadata(chordpro)
+    declared = meta.get("key", "")
+    if declared:
+        return parse_key(declared)
+    capo = re.match(r"\d+", meta.get("capo", ""))
+    found = chords_key(chordpro_text.chords(chordpro))
+    if found is None or not capo or not int(capo.group()) % 12:
+        return found
+    shift = int(capo.group()) % 12
+    names = _MINOR_NAMES if found.endswith("m") else _MAJOR_NAMES
+    return names[(names.index(found) + shift) % 12]

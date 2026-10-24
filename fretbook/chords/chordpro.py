@@ -127,6 +127,16 @@ def metadata(text: str) -> dict[str, str]:
     return found
 
 
+def chords(text: str) -> list[str]:
+    """Every chord marked in a sheet, in order: the ``[Am]`` markers of lyric lines, not directives or section names."""
+    found: list[str] = []
+    for line in text.splitlines():
+        if _DIRECTIVE.match(line) or _SECTION.match(line):
+            continue
+        found.extend(token for token in _INLINE_CHORD.findall(line) if is_chord(token))
+    return found
+
+
 def lyrics(text: str) -> str:
     """The words of a sheet: chord markers, directives and blank lines removed, for the library search index."""
     kept = []
