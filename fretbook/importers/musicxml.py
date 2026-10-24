@@ -83,6 +83,8 @@ class _Event:
     notes: list[Note] = field(default_factory=list)
     grace: str | None = None
     tuplet: int | None = None
+    pitches: list[int] = field(default_factory=list)
+    """MIDI pitches of notes that have no string/fret (read only with ``pitched=True``)."""
 
 
 @dataclass
@@ -94,6 +96,11 @@ class _Part:
     track_bars: list[TrackBar]
     opening_tempo: float | None
     has_tab: bool
+    pitches: dict[tuple[int, int, int], list[int]] = field(default_factory=dict)
+    """Pitches of the notes without string/fret, by ``(bar, voice, beat)``; each has a placeholder in the beat."""
+    clef: tuple[str, int] | None = None
+    """The first clef's sign and octave change, as written (``("G", 0)`` for a plain treble clef)."""
+    has_pitches: bool = False
 
 
 MAX_MXL_BYTES = 50 * 1024 * 1024
@@ -146,6 +153,25 @@ def _timewise_to_partwise(root: ET.Element) -> ET.Element:
     return partwise
 
 
+def read_score(path: Path, *, pitched: bool = False) -> tuple[str, str, list[_Part]]:
+    """The title, the artist and the parts of a MusicXML file (plain or compressed).
+
+    ``pitched`` also keeps notes that have only a pitch (see :func:`_read_part`).
+    """
+    try:
+        root = ET.parse(_open_score(path)).getroot()
+    except ET.ParseError as exc:
+        raise ImportError("MusicXML file could not be parsed", "musicxml.parse") from exc
+    if _local(root.tag) == "score-timewise":
+        root = _timewise_to_partwise(root)
+    if _local(root.tag) != "score-partwise":
+        raise ImportError("expected a MusicXML score-partwise document", "musicxml.notMusicXml")
+    title, artist = _credits(root)
+    names = _part_names(root)
+    parts = [_read_part(part, names, index, pitched=pitched) for index, part in enumerate(_children(root, "part"))]
+    return title, artist, parts
+
+
 class MusicXmlImporter:
     kind = "musicxml"
 
@@ -157,17 +183,7 @@ class MusicXmlImporter:
         if request.file_path is None:
             raise ImportError("MusicXML import needs a file", "import.needsFile")
         progress("Reading MusicXML", "import.readingFile")
-        try:
-            root = ET.parse(_open_score(request.file_path)).getroot()
-        except ET.ParseError as exc:
-            raise ImportError("MusicXML file could not be parsed", "musicxml.parse") from exc
-        if _local(root.tag) == "score-timewise":
-            root = _timewise_to_partwise(root)
-        if _local(root.tag) != "score-partwise":
-            raise ImportError("expected a MusicXML score-partwise document", "musicxml.notMusicXml")
-        title, artist = _credits(root)
-        names = _part_names(root)
-        parts = [_read_part(part, names, index) for index, part in enumerate(_children(root, "part"))]
+        title, artist, parts = read_score(request.file_path)
         tab_parts = [part for part in parts if part.has_tab]
         if not tab_parts:
             raise ImportError("this MusicXML file has no tablature string/fret data", "musicxml.noTab")
@@ -241,8 +257,12 @@ def _guess_tuning(strings: int) -> list[int]:
     return [64 - 5 * index for index in range(strings)]
 
 
-def _read_part(part: ET.Element, names: dict[str, str], index: int) -> _Part:
+def _read_part(part: ET.Element, names: dict[str, str], index: int, *, pitched: bool = False) -> _Part:
+    """One part's bars and notes. With ``pitched``, notes that carry only a pitch (standard notation, such as
+    optical music recognition returns) are kept as placeholder notes and their pitches returned in ``_Part.pitches``."""
     divisions = 1
+    clef: tuple[str, int] | None = None
+    pitches: dict[tuple[int, int, int], list[int]] = {}
     signature = (4, 4)
     tuning_by_line: dict[int, int] = {}
     capo = 0
@@ -268,6 +288,9 @@ def _read_part(part: ET.Element, names: dict[str, str], index: int) -> _Part:
                 if time is not None and _text(_child(time, "beats")) and _text(_child(time, "beat-type")):
                     beats_text = _text(_child(time, "beats")).split("+")[0]
                     signature = (int(beats_text), _int(_child(time, "beat-type"), 4))
+                first_clef = _child(element, "clef")
+                if clef is None and first_clef is not None and _text(_child(first_clef, "sign")):
+                    clef = (_text(_child(first_clef, "sign")).upper(), _int(_child(first_clef, "clef-octave-change")))
                 for details in _children(element, "staff-details"):
                     lines = _children(details, "staff-tuning")
                     if lines:
@@ -320,9 +343,13 @@ def _read_part(part: ET.Element, names: dict[str, str], index: int) -> _Part:
                     continue
                 voice_id = _text(_child(element, "voice")) or "1"
                 note = _note(element)
+                pitch = _pitch(element) if note is None and pitched and not grace else None
                 if note is not None:
                     has_tab = True
                     highest_string = max(highest_string, note.string + 1)
+                elif pitch is not None:
+                    ties = [tie.attrib.get("type") for tie in _children(element, "tie")]
+                    note = Note(string=0, fret=0, tie="stop" in ties)
                 key = start * 2 + (1 if not grace else 0)
                 event = voices[voice_id].get(key)
                 if event is None:
@@ -336,12 +363,18 @@ def _read_part(part: ET.Element, names: dict[str, str], index: int) -> _Part:
                     voices[voice_id][key] = event
                 if note is not None:
                     event.notes.append(note)
+                    if pitch is not None:
+                        event.pitches.append(pitch)
         if tempo is not None:
             if measure_index == 0:
                 opening_tempo = tempo
             else:
                 bar_fields["tempo"] = tempo
         bars.append(Bar(signature=signature, **bar_fields))
+        for voice_index, (_voice, events) in enumerate(sorted(voices.items())):
+            for beat_index, (_key, event) in enumerate(sorted(events.items())):
+                if event.pitches:
+                    pitches[(measure_index, voice_index, beat_index)] = event.pitches
         track_bars.append(
             TrackBar(
                 voices=[
@@ -380,6 +413,9 @@ def _read_part(part: ET.Element, names: dict[str, str], index: int) -> _Part:
         track_bars=track_bars or [TrackBar()],
         opening_tempo=opening_tempo,
         has_tab=has_tab,
+        pitches=pitches,
+        clef=clef,
+        has_pitches=bool(pitches),
     )
 
 
@@ -517,6 +553,17 @@ def _tuplet(element: ET.Element) -> int | None:
     modification = _child(element, "time-modification")
     actual = _int(_child(modification, "actual-notes"))
     return actual if 2 <= actual <= 16 else None
+
+
+def _pitch(element: ET.Element) -> int | None:
+    """The sounding MIDI pitch of a pitched note, or ``None`` for a rest, an unpitched note or a bad pitch."""
+    pitch = _child(element, "pitch")
+    step = _text(_child(pitch, "step")).upper()
+    if pitch is None or step not in _STEP:
+        return None
+    octave = _int(_child(pitch, "octave"), 4)
+    value = _midi(step, round(float(_text(_child(pitch, "alter")) or 0)), octave)
+    return value if 0 <= value <= 127 else None
 
 
 def _note(element: ET.Element) -> Note | None:

@@ -11,6 +11,7 @@ from fretbook.importers.fretbook_json import FretbookJsonImporter
 from fretbook.importers.guitarpro import GuitarProImporter
 from fretbook.importers.midi import MidiImporter
 from fretbook.importers.musicxml import MusicXmlImporter
+from fretbook.importers.omr import OmrImporter
 from fretbook.importers.songsterr import SongsterrImporter
 from fretbook.importers.youtube_frames import YouTubeFrameImporter
 
@@ -24,6 +25,7 @@ def default_importers() -> list[Importer]:
         ChordProImporter(),
         GuitarProImporter(),
         MidiImporter(),
+        OmrImporter(),
         AudioOnlyImporter(),
         YouTubeFrameImporter(),
     ]
@@ -40,10 +42,8 @@ _IMPORTER_FOR = {
     sniff.ASCII_TAB: "ascii-tab",
     sniff.MIDI: "midi",
     sniff.AUDIO: "audio",
-}
-_NOT_YET = {
-    sniff.PDF: "PDF",
-    sniff.IMAGE: "image",
+    sniff.PDF: "omr",
+    sniff.IMAGE: "omr",
 }
 
 
@@ -53,12 +53,6 @@ def refuse_by_content(kind: str | None) -> None:
         raise ImportError(
             "This is a Fretbook library backup. Restore it from Settings, Library backup.",
             "import.isLibraryArchive",
-        )
-    if kind in _NOT_YET:
-        raise ImportError(
-            f"{_NOT_YET[kind]} files are recognised but cannot be imported yet.",
-            "import.notYetSupported",
-            format=_NOT_YET[kind],
         )
 
 

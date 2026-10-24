@@ -19,6 +19,7 @@ from collections.abc import Sequence
 from fretbook.audio.stems import available as stems_available
 from fretbook.config import Settings
 from fretbook.db.migrate import migrate
+from fretbook.importers.omr import available as omr_available
 from fretbook.jobs.handlers import register_handlers
 from fretbook.jobs.registry import KINDS, register_kinds
 from fretbook.jobs.runner import JobRunner
@@ -93,6 +94,9 @@ def main(argv: Sequence[str] | None = None) -> None:
             # Without Demucs the kind would be advertised but could never run; leave it to a worker that can.
             kinds.remove(STEMS_KIND)
             logger.warning("Demucs is not installed, so this worker does not claim %s", STEMS_KIND)
+    if "import.omr" in kinds and not args.kinds and not omr_available():
+        kinds.remove("import.omr")
+        logger.warning("Audiveris is not installed, so this worker does not claim import.omr")
     unknown = [k for k in kinds if k not in runner._handlers]
     if unknown:
         raise SystemExit(f"unknown job kind(s): {', '.join(unknown)}")

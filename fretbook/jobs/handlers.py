@@ -50,6 +50,9 @@ def register_handlers(
     def file_import(job: dict[str, Any], progress: Progress) -> dict[str, Any]:
         return _import_file(job, progress, songs, media)
 
+    def omr_import(job: dict[str, Any], progress: Progress) -> dict[str, Any]:
+        return _import_file(job, progress, songs, media, kind="omr")
+
     def youtube(job: dict[str, Any], progress: Progress) -> dict[str, Any]:
         payload = job["payload"]
         local = payload.get("frames_dir") or payload.get("video_path")
@@ -79,6 +82,8 @@ def register_handlers(
     runner.register("import.url", link)
     runner.register("import.file", file_import)
     runner.register("import.youtube_frames", youtube)
+    # Sheet music needs Audiveris, which only the worker image carries.
+    runner.register("import.omr", omr_import, worker_only=True)
     register_autosync(runner, songs, media)
     register_stems(runner, songs, media)
     register_youtube_audio(runner, songs, media)
@@ -165,14 +170,16 @@ def _youtube_names(video_id: str, fetcher: SafeFetcher) -> tuple[str, str]:
     return title[:200], artist.removesuffix(" - Topic").strip()[:200]
 
 
-def _import_file(job: dict[str, Any], progress: Progress, songs: SongRepository, media: MediaStore) -> dict[str, Any]:
+def _import_file(
+    job: dict[str, Any], progress: Progress, songs: SongRepository, media: MediaStore, *, kind: str | None = None
+) -> dict[str, Any]:
     payload = job["payload"]
     path = Path(payload["path"])
     request = ImportRequest(
         owner_id=job["owner_id"],
         filename=payload.get("filename") or path.name,
         file_path=path,
-        kind=payload.get("kind"),
+        kind=kind or payload.get("kind"),
         options=_options(payload),
     )
     result = resolve_importer(request).import_score(request, progress)
