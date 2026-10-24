@@ -547,3 +547,19 @@ def test_backup_round_trip_keeps_rhythm_runs(tmp_path: Path) -> None:
             with zipfile.ZipFile(io.BytesIO(again)) as zf:
                 (kept,) = json.loads(zf.read("manifest.json"))["practice"]["exercises"]
             assert (kept["pattern"], kept["bpm"], kept["mean_error_ms"]) == ("gallop", 70, 9.5)
+
+
+def test_stats_list_recent_rhythm_runs_with_song_titles(client: TestClient) -> None:
+    song_id = _song(client, "My Own Riff")
+    _exercise(client, kind="rhythm", rounds=8, correct=8, score=100, pattern="eighths", bpm=80, mean_error_ms=4.0)
+    _exercise(client, kind="rhythm", rounds=8, correct=6, score=75, pattern=f"song:{song_id}:3", bpm=90)
+    _exercise(client, kind="rhythm", rounds=8, correct=6, score=75, pattern="song:gone:5", bpm=90)
+    _exercise(client, kind="chord", rounds=5, correct=5, score=100)
+    runs = client.get(f"/api/practice/stats?today={_day()}").json()["rhythm_runs"]
+    assert len(runs) == 3
+    by_pattern = {run["pattern"]: run for run in runs}
+    assert by_pattern["eighths"]["song_title"] is None
+    assert by_pattern[f"song:{song_id}:3"]["song_title"] == "My Own Riff"
+    assert by_pattern[f"song:{song_id}:3"]["bar"] == 3
+    assert by_pattern["song:gone:5"]["song_title"] is None and by_pattern["song:gone:5"]["bar"] == 5
+    assert by_pattern["eighths"]["mean_error_ms"] == 4.0

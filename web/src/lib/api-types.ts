@@ -3011,6 +3011,40 @@ export interface components {
              */
             weekly_summary: boolean;
         };
+        /** PracticeRhythmRun */
+        PracticeRhythmRun: {
+            /** Bar */
+            bar?: number | null;
+            /** Bpm */
+            bpm?: number | null;
+            /** Correct */
+            correct: number;
+            /** Day */
+            day: string;
+            /** Duration Seconds */
+            duration_seconds: number;
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "fretboard" | "interval" | "chord" | "rhythm";
+            /** Mean Error Ms */
+            mean_error_ms?: number | null;
+            /** Pattern */
+            pattern?: string | null;
+            /** Rounds */
+            rounds: number;
+            /** Score */
+            score: number | null;
+            /** Song Id */
+            song_id?: string | null;
+            /** Song Title */
+            song_title?: string | null;
+            /** Started At */
+            started_at: string;
+        };
         /** PracticeSession */
         PracticeSession: {
             /** Completed */
@@ -3127,6 +3161,11 @@ export interface components {
             longest_streak: number;
             /** Recent */
             recent: components["schemas"]["PracticeSongStats"][];
+            /**
+             * Rhythm Runs
+             * @default []
+             */
+            rhythm_runs: components["schemas"]["PracticeRhythmRun"][];
             /** Songs Practised */
             songs_practised: number;
             /** Stale */
@@ -3949,6 +3988,7 @@ export type PracticeExerciseBody = components['schemas']['PracticeExerciseBody']
 export type PracticeExerciseStats = components['schemas']['PracticeExerciseStats'];
 export type PracticeGoal = components['schemas']['PracticeGoal'];
 export type PracticeGoalBody = components['schemas']['PracticeGoalBody'];
+export type PracticeRhythmRun = components['schemas']['PracticeRhythmRun'];
 export type PracticeSession = components['schemas']['PracticeSession'];
 export type PracticeSessionBody = components['schemas']['PracticeSessionBody'];
 export type PracticeSongStats = components['schemas']['PracticeSongStats'];

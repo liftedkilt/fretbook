@@ -1243,7 +1243,17 @@
     "durationSeconds": "{count}s",
     "durationMinutes": "{count}m",
     "durationHours": "{hours}h {minutes}m",
-    "exercises": "Trainer games"
+    "exercises": "Trainer games",
+    "rhythmRuns": {
+      "heading": "Recent rhythm runs",
+      "songBar": "{title}, bar {bar}",
+      "songGone": "Song bar {bar}",
+      "hitRate": "{percent}% hit",
+      "tempo": "{bpm} BPM",
+      "meanError": "{ms} ms avg",
+      "early": "early",
+      "late": "late"
+    }
   },
   "difficulty": {
     "heading": "Difficulty",

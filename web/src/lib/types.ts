@@ -521,6 +521,12 @@ export interface PracticeExerciseStats {
   best_score: number | null;
 }
 
+export interface PracticeRhythmRun extends PracticeExerciseDraft {
+  song_id?: string | null;
+  song_title?: string | null;
+  bar?: number | null;
+}
+
 export interface PracticeStats {
   today: string;
   goal: PracticeGoal;
@@ -535,6 +541,7 @@ export interface PracticeStats {
   best_scores: PracticeSongStats[];
   stale: PracticeSongStats[];
   exercises: PracticeExerciseStats[];
+  rhythm_runs?: PracticeRhythmRun[];
 }
 
 export interface SongPractice {

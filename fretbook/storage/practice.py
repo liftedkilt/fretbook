@@ -28,6 +28,7 @@ HEATMAP_DAYS = 365
 STALE_AFTER_DAYS = 14
 LIST_LIMIT = 8
 HISTORY_LIMIT = 50
+RHYTHM_RUN_LIMIT = 20
 
 
 @dataclass
@@ -192,7 +193,8 @@ class PracticeRepository:
                     (owner_id,),
                 )
             ]
-        return {**_dashboard(goal, per_day, songs, today), "exercises": exercises}
+            rhythm_runs = _rhythm_runs(conn, owner_id)
+        return {**_dashboard(goal, per_day, songs, today), "exercises": exercises, "rhythm_runs": rhythm_runs}
 
     def recommendations(self, owner_id: str, today: date) -> dict[str, Any]:
         """Songs to stretch to, loops to revisit and songs due for review, as of the player's ``today``."""
@@ -373,6 +375,30 @@ def _exercise_dict(row: sqlite3.Row) -> dict[str, Any]:
         "bpm": row["bpm"],
         "mean_error_ms": row["mean_error_ms"],
     }
+
+
+def _rhythm_runs(conn: sqlite3.Connection, owner_id: str) -> list[dict[str, Any]]:
+    """The latest rhythm runs, newest first; a ``song:<id>:<bar>`` pattern also names its song (if still there)."""
+    runs: list[dict[str, Any]] = []
+    for row in conn.execute(
+        "SELECT * FROM practice_exercises WHERE owner_id = ? AND kind = 'rhythm' ORDER BY started_at DESC, id LIMIT ?",
+        (owner_id, RHYTHM_RUN_LIMIT),
+    ):
+        run = _exercise_dict(row)
+        run["song_id"] = None
+        run["song_title"] = None
+        run["bar"] = None
+        parts = (run["pattern"] or "").split(":")
+        if len(parts) == 3 and parts[0] == "song" and parts[2].isdigit():
+            song = conn.execute(
+                "SELECT title FROM songs WHERE id = ? AND owner_id = ?", (parts[1], owner_id)
+            ).fetchone()
+            run["bar"] = int(parts[2])
+            if song is not None:
+                run["song_id"] = parts[1]
+                run["song_title"] = song["title"]
+        runs.append(run)
+    return runs
 
 
 def _goal(conn: sqlite3.Connection, owner_id: str) -> dict[str, Any]:

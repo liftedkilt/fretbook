@@ -14,7 +14,8 @@
   import { formatDuration } from "../lib/practiceText";
   import { followLink, hrefFor } from "../lib/router.svelte";
   import { KIND_NAMES } from "../lib/trainer/store";
-  import type { PracticeSongStats, PracticeStats } from "../lib/types";
+  import { PATTERNS } from "../lib/rhythm/patterns";
+  import type { PracticeRhythmRun, PracticeSongStats, PracticeStats } from "../lib/types";
 
   const RADIUS = 52;
 
@@ -89,6 +90,35 @@
   }
 
   const songPath = (id: string) => `/songs/${id}`;
+
+  function runName(run: PracticeRhythmRun): string {
+    const builtIn = PATTERNS.find((pattern) => pattern.id === run.pattern);
+    if (builtIn) return t(builtIn.labelKey);
+    if (run.bar != null) {
+      return run.song_title
+        ? t("practiceLog.rhythmRuns.songBar", { title: run.song_title, bar: run.bar })
+        : t("practiceLog.rhythmRuns.songGone", { bar: run.bar });
+    }
+    return t("rhythm.toolTitle");
+  }
+
+  function runDetail(run: PracticeRhythmRun): string {
+    const parts = [
+      t("practiceLog.rhythmRuns.hitRate", {
+        percent: run.rounds ? Math.round((run.correct / run.rounds) * 100) : 0,
+      }),
+    ];
+    if (run.bpm != null) parts.push(t("practiceLog.rhythmRuns.tempo", { bpm: run.bpm }));
+    if (run.mean_error_ms != null) {
+      const ms = Math.round(Math.abs(run.mean_error_ms));
+      parts.push(
+        ms === 0
+          ? t("practiceLog.rhythmRuns.meanError", { ms })
+          : `${t("practiceLog.rhythmRuns.meanError", { ms })} ${t(run.mean_error_ms > 0 ? "practiceLog.rhythmRuns.late" : "practiceLog.rhythmRuns.early")}`,
+      );
+    }
+    return parts.join(" · ");
+  }
 </script>
 
 <section class="practice-page" data-testid="practice-view">
@@ -278,6 +308,27 @@
                   {formatDuration(exercise.total_seconds)}
                   {#if exercise.best_score !== null}· {Math.round(exercise.best_score)}%{/if}
                 </span>
+              </li>
+            {/each}
+          </ul>
+        </div>
+      {/if}
+      {#if stats.rhythm_runs?.length}
+        <div class="card" data-testid="practice-list-rhythm-runs">
+          <h2>{t("practiceLog.rhythmRuns.heading")}</h2>
+          <ul class="song-list">
+            {#each stats.rhythm_runs as run, index (index)}
+              <li>
+                {#if run.song_id}
+                  <a
+                    href={hrefFor(songPath(run.song_id))}
+                    onclick={(e) => followLink(e, songPath(run.song_id!))}
+                    ><strong>{runName(run)}</strong></a
+                  >
+                {:else}
+                  <strong>{runName(run)}</strong>
+                {/if}
+                <span class="muted meta">{runDetail(run)}</span>
               </li>
             {/each}
           </ul>

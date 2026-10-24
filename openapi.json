@@ -3588,6 +3588,133 @@
         "title": "PracticeGoalBody",
         "type": "object"
       },
+      "PracticeRhythmRun": {
+        "properties": {
+          "bar": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bar"
+          },
+          "bpm": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bpm"
+          },
+          "correct": {
+            "title": "Correct",
+            "type": "integer"
+          },
+          "day": {
+            "title": "Day",
+            "type": "string"
+          },
+          "duration_seconds": {
+            "title": "Duration Seconds",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "fretboard",
+              "interval",
+              "chord",
+              "rhythm"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "mean_error_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mean Error Ms"
+          },
+          "pattern": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pattern"
+          },
+          "rounds": {
+            "title": "Rounds",
+            "type": "integer"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "song_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Song Id"
+          },
+          "song_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Song Title"
+          },
+          "started_at": {
+            "title": "Started At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "started_at",
+          "day",
+          "duration_seconds",
+          "rounds",
+          "correct",
+          "score"
+        ],
+        "title": "PracticeRhythmRun",
+        "type": "object"
+      },
       "PracticeSession": {
         "properties": {
           "completed": {
@@ -3908,6 +4035,14 @@
               "$ref": "#/components/schemas/PracticeSongStats"
             },
             "title": "Recent",
+            "type": "array"
+          },
+          "rhythm_runs": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PracticeRhythmRun"
+            },
+            "title": "Rhythm Runs",
             "type": "array"
           },
           "songs_practised": {
