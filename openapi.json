@@ -727,6 +727,40 @@
         "title": "Body_import_library_api_library_import_post",
         "type": "object"
       },
+      "Body_import_midi_api_imports_midi_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          },
+          "options": {
+            "default": "{}",
+            "maxLength": 20000,
+            "title": "Options",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_import_midi_api_imports_midi_post",
+        "type": "object"
+      },
+      "Body_inspect_midi_api_imports_midi_inspect_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_inspect_midi_api_imports_midi_inspect_post",
+        "type": "object"
+      },
       "Body_upload_audio_api_songs__song_id__audio_post": {
         "properties": {
           "file": {
@@ -1573,6 +1607,117 @@
           "worker_kinds"
         ],
         "title": "Meta",
+        "type": "object"
+      },
+      "MidiInspection": {
+        "properties": {
+          "bpm": {
+            "title": "Bpm",
+            "type": "number"
+          },
+          "drum_notes": {
+            "title": "Drum Notes",
+            "type": "integer"
+          },
+          "signature": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Signature",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "tracks": {
+            "items": {
+              "$ref": "#/components/schemas/MidiTrackInfo"
+            },
+            "title": "Tracks",
+            "type": "array"
+          }
+        },
+        "required": [
+          "title",
+          "bpm",
+          "signature",
+          "drum_notes",
+          "tracks"
+        ],
+        "title": "MidiInspection",
+        "type": "object"
+      },
+      "MidiTrackInfo": {
+        "properties": {
+          "channel": {
+            "title": "Channel",
+            "type": "integer"
+          },
+          "highest": {
+            "title": "Highest",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "in_range": {
+            "title": "In Range",
+            "type": "boolean"
+          },
+          "lowest": {
+            "title": "Lowest",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "notes": {
+            "title": "Notes",
+            "type": "integer"
+          },
+          "program": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Program"
+          },
+          "selected": {
+            "title": "Selected",
+            "type": "boolean"
+          },
+          "suggested_preset": {
+            "title": "Suggested Preset",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "channel",
+          "program",
+          "notes",
+          "lowest",
+          "highest",
+          "in_range",
+          "suggested_preset",
+          "selected"
+        ],
+        "title": "MidiTrackInfo",
         "type": "object"
       },
       "Note": {
@@ -4271,6 +4416,190 @@
           }
         },
         "summary": "Import File",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
+    "/api/imports/midi": {
+      "post": {
+        "description": "Queue the import of a MIDI file with the chosen parts, instruments and grid.\n\n`options` is a JSON object (see `MidiImportOptions`). Frets are assigned automatically from the instrument's\ntuning and the capo, keeping the hand close to where it was.",
+        "operationId": "import_midi_api_imports_midi_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_midi_api_imports_midi_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Import Midi",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
+    "/api/imports/midi/inspect": {
+      "post": {
+        "description": "List the parts of a MIDI file (name, channel, notes, pitch range, suggested instrument) without saving it.",
+        "operationId": "inspect_midi_api_imports_midi_inspect_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_inspect_midi_api_imports_midi_inspect_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MidiInspection"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Inspect Midi",
         "tags": [
           "imports"
         ]
@@ -7674,6 +8003,100 @@
           }
         },
         "summary": "Export Json",
+        "tags": [
+          "songs"
+        ]
+      }
+    },
+    "/api/songs/{song_id}/export.mid": {
+      "get": {
+        "description": "Download a tab as a Standard MIDI File, with repeats expanded. Chord sheets cannot be exported.",
+        "operationId": "export_midi_api_songs__song_id__export_mid_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "song_id",
+            "required": true,
+            "schema": {
+              "title": "Song Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "audio/midi": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "A Standard MIDI File for a tab, as an attachment."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Export Midi",
         "tags": [
           "songs"
         ]

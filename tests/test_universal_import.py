@@ -110,7 +110,6 @@ def test_audio_file_becomes_a_song_with_audio_and_a_blank_tab(tmp_path: Path) ->
 def test_unsupported_and_unknown_files_are_refused_and_cleaned_up(tmp_path: Path) -> None:
     with _client(tmp_path) as client:
         cases = {
-            "riff.mid": (b"MThd\x00\x00\x00\x06\x00\x01\x00\x01\x01\xe0", "import.notYetSupported"),
             "scan.pdf": (b"%PDF-1.4 ...", "import.notYetSupported"),
             "photo.png": (b"\x89PNG\r\n\x1a\n" + b"\x00" * 16, "import.notYetSupported"),
             "backup.zip": (_zipped("manifest.json"), "import.isLibraryArchive"),

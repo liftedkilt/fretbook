@@ -217,6 +217,7 @@
     "upload": "Upload audio",
     "exportJson": "Export JSON",
     "exportMusicXml": "Export MusicXML",
+    "exportMidi": "Export MIDI",
     "exportPdf": "Export PDF",
     "exportPdfTrack": "Export PDF ({name})",
     "exportingPdf": "Preparing PDF…",
@@ -467,7 +468,7 @@
       "unknownKind": "Unknown importer: {kind}.",
       "notUrl": "{kind} is not a link import.",
       "noUrlImporter": "No importer matches this link. Songsterr links work today; YouTube frame import is not available yet.",
-      "noFileImporter": "Couldn't recognise this. Fretbook reads Guitar Pro, MusicXML, ChordPro and chords over lyrics, ASCII tab, Fretbook JSON, and audio files.",
+      "noFileImporter": "Couldn't recognise this. Fretbook reads Guitar Pro, MusicXML, ChordPro and chords over lyrics, ASCII tab, MIDI, Fretbook JSON, and audio files.",
       "noPreview": "This link has no track list to choose from.",
       "guitarProInBrowser": "Guitar Pro files are read in the browser. Use the import button in Fretbook.",
       "guitarProUnavailable": "Guitar Pro import is not available on this server. Import the file from the browser instead.",
@@ -551,6 +552,20 @@
     },
     "practice": {
       "badDay": "That date is not valid."
+    },
+    "midi": {
+      "parse": "This MIDI file could not be read.",
+      "type2": "MIDI files with independent sequences (type 2) are not supported.",
+      "tooLarge": "This MIDI file is too large (the limit is 8 MB).",
+      "tooLong": "This MIDI file is longer than {limit} bars.",
+      "noTracks": "This MIDI file has no guitar or bass notes to import.",
+      "noSuchTrack": "This MIDI file has no part {track}.",
+      "badPreset": "Unknown instrument: {preset}.",
+      "badGrid": "Pick a quarter, eighth, sixteenth or thirty-second note grid.",
+      "badCapo": "The capo must be between 0 and 24.",
+      "badOptions": "The MIDI import choices are not valid.",
+      "shifted": "{count} note(s) on \"{track}\" are outside the instrument's range and were moved by octaves.",
+      "dropped": "{count} chord(s) on \"{track}\" cannot be fingered in one position and lost some notes."
     }
   },
   "ui": {
@@ -585,7 +600,7 @@
     "browse": "Choose a file",
     "submit": "Add",
     "empty": "Add a file, some text, or a link first.",
-    "supported": "Fretbook reads Guitar Pro, MusicXML, ChordPro, ASCII tab, Fretbook JSON and audio files, and links to Songsterr, YouTube, direct files, or pages with a tab.",
+    "supported": "Fretbook reads Guitar Pro, MusicXML, ChordPro, ASCII tab, MIDI, Fretbook JSON and audio files, and links to Songsterr, YouTube, direct files, or pages with a tab.",
     "mode": "Add anything",
     "modeHint": "Drop a file, paste text or a link"
   },
@@ -1072,5 +1087,24 @@
     "noShape": "No shape for this tuning",
     "capoNote": "Capo {fret}: shapes are shown as you finger them, and the strum sounds {fret} frets higher.",
     "pdfCapo": "Capo {fret}"
+  },
+  "midi": {
+    "heading": "Choose the parts to import",
+    "hint": "\"{title}\" has no strings or frets. Pick the parts and the instrument for each, and Fretbook will place the notes.",
+    "untitled": "This MIDI file",
+    "noParts": "No parts with notes were found in this file.",
+    "partSummary": "{notes} notes · {range} · channel {channel}",
+    "outOfRange": "mostly outside the range of a guitar or bass",
+    "instrumentFor": "Instrument for {name}",
+    "drumsSkipped": "Drum parts are skipped.",
+    "grid": "Snap notes to",
+    "grid4": "Quarter notes",
+    "grid8": "Eighth notes",
+    "grid16": "Sixteenth notes",
+    "grid32": "Thirty-second notes",
+    "capo": "Capo",
+    "gridHint": "Frets are chosen automatically to keep your hand close to where it was. Triplets snap to the nearest position on the grid.",
+    "import": "Import selected parts",
+    "cancel": "Cancel"
   }
 }
