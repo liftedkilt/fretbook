@@ -7,6 +7,7 @@
   import EditorView from "./components/EditorView.svelte";
   import Icon from "./components/Icon.svelte";
   import LibraryView from "./components/LibraryView.svelte";
+  import OfflineStatus from "./components/OfflineStatus.svelte";
   import PracticeView from "./components/PracticeView.svelte";
   import SetlistPlayView from "./components/SetlistPlayView.svelte";
   import SetlistsView from "./components/SetlistsView.svelte";
@@ -17,6 +18,7 @@
   import StandaloneTunerView from "./components/StandaloneTunerView.svelte";
   import ToolsView from "./components/ToolsView.svelte";
   import TunerSheet from "./components/TunerSheet.svelte";
+  import { isOfflineError } from "./lib/api";
   import { t } from "./lib/i18n.svelte";
   import { followLink, hrefFor, navigate, routePath } from "./lib/router.svelte";
   import {
@@ -56,12 +58,13 @@
   const activeSong = $derived(edit?.[1] ?? play?.[1] ?? "");
 
   $effect(() => {
-    loadMeta().catch((err: unknown) => {
+    // Offline is not an error: the banner above says so, and what is saved on the device still opens.
+    const show = (err: unknown) => {
+      if (isOfflineError(err)) return;
       ui.error = err instanceof Error ? err.message : t("error.generic");
-    });
-    refreshSongs().catch((err: unknown) => {
-      ui.error = err instanceof Error ? err.message : t("error.generic");
-    });
+    };
+    loadMeta().catch(show);
+    refreshSongs().catch(show);
   });
 
   // Scroll to the top when the page changes, as a full navigation would.
@@ -257,6 +260,7 @@
   </header>
 
   <main class="content">
+    <OfflineStatus />
     {#if ui.error}<p class="alert" role="alert"><Icon name="alert" size={18} />{ui.error}</p>{/if}
     {#if isLibrary}
       <LibraryView />

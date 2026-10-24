@@ -571,6 +571,9 @@
       "badOptions": "The MIDI import choices are not valid.",
       "shifted": "{count} note(s) on \"{track}\" are outside the instrument's range and were moved by octaves.",
       "dropped": "{count} chord(s) on \"{track}\" cannot be fingered in one position and lost some notes."
+    },
+    "offline": {
+      "unavailable": "You are offline and this is not saved on this device."
     }
   },
   "ui": {
@@ -1149,5 +1152,25 @@
     "gridHint": "Frets are chosen automatically to keep your hand close to where it was. Triplets snap to the nearest position on the grid.",
     "import": "Import selected parts",
     "cancel": "Cancel"
+  },
+  "offline": {
+    "indicator": "Offline",
+    "indicatorHint": "Songs and setlists saved on this device still work. Edits are sent when you are back online.",
+    "make": "Make available offline",
+    "saved": "Available offline",
+    "working": "Saving…",
+    "makeHint": "Keep this on the device so it opens with no network",
+    "removeHint": "Remove the copy kept on this device",
+    "failed": "Could not remove it. Try again.",
+    "saveFailed": "Could not save it for offline use. Check your connection and try again.",
+    "queued": {
+      "one": "{count} edit is waiting to sync.",
+      "other": "{count} edits are waiting to sync."
+    },
+    "syncNow": "Sync now",
+    "conflict": "“{title}” was changed somewhere else, so your offline edits were not saved.",
+    "syncFailed": "Your offline edits to “{title}” could not be saved: {message}",
+    "keepMine": "Keep my edits",
+    "keepTheirs": "Use the other version"
   }
 }

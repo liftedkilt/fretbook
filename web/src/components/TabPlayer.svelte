@@ -9,6 +9,7 @@
   import Icon from "./Icon.svelte";
   import LoopPanel from "./LoopPanel.svelte";
   import Menu from "./Menu.svelte";
+  import OfflineToggle from "./OfflineToggle.svelte";
   import PracticePanel from "./PracticePanel.svelte";
   import ScorePanel from "./ScorePanel.svelte";
   import ScoreResults from "./ScoreResults.svelte";
@@ -1160,6 +1161,7 @@
         {/if}
       </div>
       <div class="hero-actions">
+        <OfflineToggle kind="song" id={song.id} title={song.title} />
         <div
           class="segmented"
           role="group"
