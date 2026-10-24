@@ -130,6 +130,24 @@ jobs:
       - name: Configuration reference matches fretbook/config.py
         run: python3 scripts/gen_config_docs.py --check
 
+  package:
+    # The wheel installs the `fretbook-cli` console script and carries migrations and other data files.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install build
+      - run: python -m build --wheel
+      - run: python scripts/check_wheel.py dist/*.whl
+      - name: Installed console script runs
+        run: |
+          python -m venv /tmp/wheel-venv
+          /tmp/wheel-venv/bin/pip install dist/*.whl
+          /tmp/wheel-venv/bin/fretbook-cli --help
+
   docs:
     # The documentation site must build without warnings (broken links, missing pages or images).
     runs-on: ubuntu-latest
@@ -244,7 +262,7 @@ jobs:
     # `needs` so the required check keeps covering it without editing the
     # branch-protection settings.
     if: always()
-    needs: [backend, frontend, openapi, repo-checks, pr-title, ui-only, e2e, audit]
+    needs: [backend, frontend, openapi, repo-checks, package, pr-title, ui-only, e2e, audit]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

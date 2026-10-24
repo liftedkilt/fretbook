@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "fretbook"
 version = "0.1.3"
@@ -5,9 +9,28 @@ description = "Self-hosted tabs and sheet music for bass and guitar."
 license = "MIT"
 requires-python = ">=3.12"
 readme = "README.md"
+dynamic = ["dependencies"]
 
 [project.scripts]
 fretbook-cli = "fretbook.cli:main"
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+[tool.setuptools.packages.find]
+# Only the server package: `web`, `songs`, `scripts`, `tests` and `docs` are not Python packages.
+include = ["fretbook*"]
+
+[tool.setuptools.package-data]
+# Migrations, demo song, built-in lessons, and the build outputs the Docker image copies in
+# (`fretbook/static` from the web build, `fretbook/gp/gp-to-document.mjs` from `npm run build:gp-cli`).
+fretbook = [
+    "db/migrations/*.sql",
+    "demo/*",
+    "lessons/builtin/**/*.md",
+    "static/**/*",
+    "gp/*.mjs",
+]
 
 [project.optional-dependencies]
 vision = [
