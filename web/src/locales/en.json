@@ -1805,5 +1805,9 @@
       "nextSong": "Next song in the setlist",
       "previousSong": "Previous song in the setlist"
     }
+  },
+  "fullscreen": {
+    "enter": "Full screen",
+    "exit": "Exit full screen"
   }
 }

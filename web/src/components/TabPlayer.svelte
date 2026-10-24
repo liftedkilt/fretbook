@@ -11,6 +11,7 @@
   import Menu from "./Menu.svelte";
   import SetlistPicker from "./SetlistPicker.svelte";
   import OfflineToggle from "./OfflineToggle.svelte";
+  import FullscreenToggle from "./FullscreenToggle.svelte";
   import PracticePanel from "./PracticePanel.svelte";
   import StemMixer from "./StemMixer.svelte";
   import AutoSyncSheet from "./AutoSyncSheet.svelte";
@@ -1307,6 +1308,7 @@
       </div>
       <div class="hero-actions">
         <OfflineToggle kind="song" id={song.id} title={song.title} compact />
+        <FullscreenToggle placement="header" />
         <div
           class="segmented"
           role="group"
@@ -1784,6 +1786,7 @@
         >
           <Icon name="sliders" size={18} />
         </button>
+        <FullscreenToggle placement="dock" />
       </div>
     </div>
   </div>
