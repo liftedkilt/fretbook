@@ -556,6 +556,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/practice/recommendations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Practice Recommendations
+         * @description What to practise next: songs a little above the recent level, weak loops, and songs due for review.
+         */
+        get: operations["practice_recommendations_api_practice_recommendations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/practice/sessions": {
         parameters: {
             query?: never;
@@ -662,7 +682,8 @@ export interface paths {
          * List Songs
          * @description One page of the caller's songs. Summaries omit the score and ChordPro text.
          *
-         *     `sort` defaults to the last edit, newest first; `opened` puts never-opened songs last.
+         *     `sort` defaults to the last edit, newest first; `opened` puts never-opened songs last, and `difficulty`
+         *     (easiest first) puts chord sheets, which have no level, last.
          */
         get: operations["list_songs_api_songs_get"];
         put?: never;
@@ -1447,6 +1468,21 @@ export interface components {
             name: string;
         };
         /**
+         * DifficultyFactor
+         * @description One reason for a track's level.
+         */
+        DifficultyFactor: {
+            /**
+             * Key
+             * @enum {string}
+             */
+            key: "density" | "shifts" | "stretch" | "techniques" | "chords" | "rhythm";
+            /** Measure */
+            measure: number;
+            /** Value */
+            value: number;
+        };
+        /**
          * ErrorBody
          * @description Error response. ``detail`` is ``{key, message, params}``.
          * @example {
@@ -1964,6 +2000,22 @@ export interface components {
             /** Url */
             url: string;
         };
+        /** Recommendations */
+        Recommendations: {
+            /** Level */
+            level: number | null;
+            /**
+             * Level Basis
+             * @enum {string}
+             */
+            level_basis: "scored" | "practised" | "none";
+            /** Review */
+            review: components["schemas"]["ReviewSong"][];
+            /** Revisit */
+            revisit: components["schemas"]["RevisitLoop"][];
+            /** Stretch */
+            stretch: components["schemas"]["SuggestedSong"][];
+        };
         /** RenameSetlistBody */
         RenameSetlistBody: {
             /** Name */
@@ -1973,6 +2025,54 @@ export interface components {
         ReplaceEntriesBody: {
             /** Entries */
             entries: components["schemas"]["SetlistEntryBody"][];
+        };
+        /** ReviewSong */
+        ReviewSong: {
+            /** Artist */
+            artist: string;
+            /**
+             * Content Kind
+             * @enum {string}
+             */
+            content_kind: "tab" | "chords";
+            /** Difficulty */
+            difficulty: number | null;
+            /** Interval Days */
+            interval_days: number;
+            /** Last Day */
+            last_day: string;
+            /** Song Id */
+            song_id: string;
+            /** Title */
+            title: string;
+        };
+        /** RevisitLoop */
+        RevisitLoop: {
+            /** Artist */
+            artist: string;
+            /** Attempts */
+            attempts: number;
+            /**
+             * Content Kind
+             * @enum {string}
+             */
+            content_kind: "tab" | "chords";
+            /** Difficulty */
+            difficulty: number | null;
+            /** Last Day */
+            last_day: string;
+            /** Loop End */
+            loop_end: number;
+            /** Loop Name */
+            loop_name: string;
+            /** Loop Start */
+            loop_start: number;
+            /** Score */
+            score: number;
+            /** Song Id */
+            song_id: string;
+            /** Title */
+            title: string;
         };
         /** ScoreDocument */
         ScoreDocument: {
@@ -2103,6 +2203,10 @@ export interface components {
             content_kind: "tab" | "chords";
             /** Created At */
             created_at: string;
+            /** Difficulty */
+            difficulty: number | null;
+            /** Difficulty Tracks */
+            difficulty_tracks: components["schemas"]["TrackDifficulty"][];
             document: components["schemas"]["ScoreDocument"] | null;
             /** Duration */
             duration: number | null;
@@ -2236,6 +2340,8 @@ export interface components {
              * @enum {string}
              */
             content_kind: "tab" | "chords";
+            /** Difficulty */
+            difficulty: number | null;
             /** Duration */
             duration: number | null;
             /** Favourite */
@@ -2271,6 +2377,22 @@ export interface components {
         SongTags: {
             /** Tags */
             tags: string[];
+        };
+        /** SuggestedSong */
+        SuggestedSong: {
+            /** Artist */
+            artist: string;
+            /**
+             * Content Kind
+             * @enum {string}
+             */
+            content_kind: "tab" | "chords";
+            /** Difficulty */
+            difficulty: number | null;
+            /** Song Id */
+            song_id: string;
+            /** Title */
+            title: string;
         };
         /** SyncBody */
         SyncBody: {
@@ -2360,6 +2482,17 @@ export interface components {
             };
             /** Voices */
             voices?: components["schemas"]["Voice"][];
+        };
+        /** TrackDifficulty */
+        TrackDifficulty: {
+            /** Factors */
+            factors: components["schemas"]["DifficultyFactor"][];
+            /** Level */
+            level: number;
+            /** Name */
+            name: string;
+            /** Track Id */
+            track_id: string;
         };
         /** UpdateSongBody */
         UpdateSongBody: {
@@ -2452,6 +2585,7 @@ export type ConvertResult = components['schemas']['ConvertResult'];
 export type CreateSetlistBody = components['schemas']['CreateSetlistBody'];
 export type CreateSongBody = components['schemas']['CreateSongBody'];
 export type CreateTokenBody = components['schemas']['CreateTokenBody'];
+export type DifficultyFactor = components['schemas']['DifficultyFactor'];
 export type ErrorBody = components['schemas']['ErrorBody'];
 export type ErrorDetail = components['schemas']['ErrorDetail'];
 export type Favourite = components['schemas']['Favourite'];
@@ -2479,8 +2613,11 @@ export type PracticeSongStats = components['schemas']['PracticeSongStats'];
 export type PracticeStats = components['schemas']['PracticeStats'];
 export type PracticeWeek = components['schemas']['PracticeWeek'];
 export type PreviewBody = components['schemas']['PreviewBody'];
+export type Recommendations = components['schemas']['Recommendations'];
 export type RenameSetlistBody = components['schemas']['RenameSetlistBody'];
 export type ReplaceEntriesBody = components['schemas']['ReplaceEntriesBody'];
+export type ReviewSong = components['schemas']['ReviewSong'];
+export type RevisitLoop = components['schemas']['RevisitLoop'];
 export type ScoreDocument = components['schemas']['ScoreDocument'];
 export type SessionsEnded = components['schemas']['SessionsEnded'];
 export type SetlistDetail = components['schemas']['SetlistDetail'];
@@ -2498,12 +2635,14 @@ export type SongsMoved = components['schemas']['SongsMoved'];
 export type SongsterrTrackChoice = components['schemas']['SongsterrTrackChoice'];
 export type SongSummary = components['schemas']['SongSummary'];
 export type SongTags = components['schemas']['SongTags'];
+export type SuggestedSong = components['schemas']['SuggestedSong'];
 export type SyncBody = components['schemas']['SyncBody'];
 export type SyncMap = components['schemas']['SyncMap'];
 export type TagCount = components['schemas']['TagCount'];
 export type TagsAdded = components['schemas']['TagsAdded'];
 export type Track = components['schemas']['Track'];
 export type TrackBar = components['schemas']['TrackBar'];
+export type TrackDifficulty = components['schemas']['TrackDifficulty'];
 export type UpdateSongBody = components['schemas']['UpdateSongBody'];
 export type ValidationBody = components['schemas']['ValidationBody'];
 export type ValidationIssue = components['schemas']['ValidationIssue'];
@@ -4723,6 +4862,83 @@ export interface operations {
             };
         };
     };
+    practice_recommendations_api_practice_recommendations_get: {
+        parameters: {
+            query?: {
+                /** @description The player's local date, YYYY-MM-DD. */
+                today?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Recommendations"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
     record_session_api_practice_sessions_post: {
         parameters: {
             query?: never;
@@ -5424,6 +5640,10 @@ export interface operations {
         parameters: {
             query?: {
                 cursor?: string;
+                /** @description Tabs at or below this level (1 to 10). */
+                difficulty_max?: number | null;
+                /** @description Tabs at or above this level (1 to 10). */
+                difficulty_min?: number | null;
                 /** @description Only starred songs. */
                 favourite?: boolean;
                 instrument?: "all" | "bass" | "electric" | "acoustic" | "chords";
@@ -5432,7 +5652,7 @@ export interface operations {
                 order?: ("asc" | "desc") | null;
                 /** @description Words matched as prefixes against title and artist. */
                 q?: string;
-                sort?: "title" | "artist" | "added" | "updated" | "opened";
+                sort?: "title" | "artist" | "added" | "updated" | "opened" | "difficulty";
                 /** @description Repeat to require several tags; a song needs all of them. */
                 tag?: string[];
             };

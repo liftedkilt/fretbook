@@ -206,8 +206,32 @@ class SongSummary(BaseModel):
     duration: float | None
     updated_at: str
     favourite: bool
+    # Estimated difficulty of the preferred track, 1 to 10. Null for chord sheets. Always present in the JSON.
+    difficulty: float | None
     # The caller's tags for this song, sorted A to Z ignoring case.
     tags: list[str]
+
+
+DifficultyFactorKey = Literal["density", "shifts", "stretch", "techniques", "chords", "rhythm"]
+
+
+class DifficultyFactor(BaseModel):
+    """One reason for a track's level."""
+
+    key: DifficultyFactorKey
+    value: float
+    """0 to 1: how much this adds to the level."""
+    measure: float
+    """The number behind it: notes per second (`density`), shifts per bar (`shifts`), frets (`stretch`), share of
+    notes (`techniques`), chord changes per minute (`chords`) or share of beats (`rhythm`)."""
+
+
+class TrackDifficulty(BaseModel):
+    track_id: str
+    name: str
+    level: float
+    """1 to 10."""
+    factors: list[DifficultyFactor]
 
 
 class LibraryCounts(BaseModel):
@@ -255,6 +279,8 @@ class SongDetail(SongSummary):
     created_at: str
     audio_url: str | None
     preferred_track_id: str
+    difficulty_tracks: list[TrackDifficulty]
+    # Why each track got its level; empty for chord sheets.
 
 
 class SongExport(BaseModel):

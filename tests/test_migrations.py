@@ -581,6 +581,41 @@ def verify_v11(conn: sqlite3.Connection) -> None:
     assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
 
 
+def seed_v12(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        INSERT INTO users (id, external_subject, display_name, created_at)
+        VALUES ('user-v12', 'sub-v12', 'User V12', '2026-01-12T00:00:00Z')
+        """
+    )
+    conn.execute(
+        """
+        INSERT INTO songs (
+            id, owner_id, slug, title, artist, content_kind, source_kind, source_ref,
+            revision, bpm, measure_count, track_count, string_count, preferred_instrument,
+            preferred_track_id, has_sync, duration, document, chordpro, created_at, updated_at
+        ) VALUES (
+            'song-v12', 'user-v12', 'song-v12', 'V12 Title', 'V12 Artist', 'chords', 'manual', '{}',
+            1, 0.0, 0, 0, 0, '', '', 0, NULL, NULL, '[C]Hello', '2026-01-12T00:00:00Z', '2026-01-12T00:00:00Z'
+        )
+        """
+    )
+    conn.commit()
+
+
+def verify_v12(conn: sqlite3.Connection) -> None:
+    row = conn.execute(
+        "SELECT difficulty, difficulty_detail, difficulty_version FROM songs WHERE id = 'song-v12'"
+    ).fetchone()
+    assert tuple(row) == (None, None, None)
+    conn.execute(
+        "UPDATE songs SET difficulty = 4.5, difficulty_detail = '[]', difficulty_version = 1 WHERE id = 'song-v12'"
+    )
+    assert conn.execute("SELECT difficulty FROM songs WHERE id = 'song-v12'").fetchone()[0] == 4.5
+    conn.rollback()
+    assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+
+
 SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.Connection], None]]] = {
     1: (seed_v1, verify_v1),
     2: (seed_v2, verify_v2),
@@ -593,6 +628,7 @@ SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.C
     9: (seed_v9, verify_v9),
     10: (seed_v10, verify_v10),
     11: (seed_v11, verify_v11),
+    12: (seed_v12, verify_v12),
 }
 
 
