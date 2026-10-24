@@ -9,22 +9,39 @@ test("work through a built-in course: lessons unlock, progress is kept, and cont
   await expect(page.getByTestId("course-card-guitar-first-steps")).toBeVisible();
   await expect(page.getByTestId("course-card-bass-first-steps")).toBeVisible();
   await expect(page.getByTestId("course-card-guitar-first-steps")).toContainText(
-    "0 of 4 lessons done",
+    "0 of 20 lessons done",
   );
 
   await page.getByTestId("course-card-guitar-first-steps").click();
-  await expect(page.getByTestId("lesson-row-02-e-minor-and-a-minor")).toContainText(
+  await expect(page.getByTestId("lesson-row-02-the-open-strings")).toContainText(
     "Finish the lesson before this one",
   );
 
   await page.getByTestId("course-continue").click();
-  await expect(page.getByRole("heading", { name: "The open strings" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Holding and tuning" })).toBeVisible();
   await expect(page.getByTestId("lesson-fretboard")).toBeVisible();
-  await page.getByTestId("lesson-complete").click();
+  await expect(page.getByTestId("lesson-exercise")).toBeVisible();
+  await page.getByTestId("lesson-report-wait").click();
   await expect(page.getByTestId("lesson-passed")).toBeVisible();
-
-  // The lesson that unlocked has a chord diagram, an exercise link and a score to report.
   await page.getByTestId("lesson-next").click();
+  await expect(page.getByRole("heading", { name: "The open strings" })).toBeVisible();
+
+  // Finish the lessons up to the first chords through the API, then open the chords lesson.
+  for (const id of [
+    "02-the-open-strings",
+    "03-reading-tab",
+    "04-counting-the-beat",
+    "05-notes-on-the-high-strings",
+    "06-notes-on-the-low-strings",
+    "07-ode-to-joy",
+    "08-a-first-riff",
+  ]) {
+    const done = await page.request.post(`/api/courses/guitar-first-steps/lessons/${id}/progress`, {
+      data: { wait_completed: true, score: 100, bpm: 200 },
+    });
+    expect(done.ok()).toBe(true);
+  }
+  await page.goto("/lessons/guitar-first-steps/09-em-and-am");
   await expect(page.getByRole("heading", { name: "Em and Am" })).toBeVisible();
   await expect(page.getByTestId("lesson-chord")).toHaveCount(2);
   await expect(page.getByTestId("lesson-exercise")).toBeVisible();
@@ -38,15 +55,15 @@ test("work through a built-in course: lessons unlock, progress is kept, and cont
 
   // Leave a lesson half-read and the home page offers to continue from it.
   await page.getByTestId("lesson-next").click();
-  await expect(page.getByRole("heading", { name: "A steady strum" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "E and A major" })).toBeVisible();
   await page.goto("/lessons");
-  await expect(page.getByTestId("lessons-continue")).toContainText("A steady strum");
+  await expect(page.getByTestId("lessons-continue")).toContainText("E and A major");
   await expect(page.getByTestId("course-card-guitar-first-steps")).toContainText(
-    "2 of 4 lessons done",
+    "9 of 20 lessons done",
   );
 
   // Progress survives a reload, and a locked lesson cannot be opened by its address.
-  await page.goto("/lessons/guitar-first-steps/04-a-chord-song-of-your-own");
+  await page.goto("/lessons/guitar-first-steps/12-c-and-d-minor");
   await expect(page.getByTestId("lesson-locked")).toBeVisible();
 
   // An address that is not a lesson page says so.
@@ -54,7 +71,7 @@ test("work through a built-in course: lessons unlock, progress is kept, and cont
   await expect(page.getByText("That page is not in the book.")).toBeVisible();
 
   // The exercise link opens the preset drill.
-  await page.goto("/lessons/guitar-first-steps/02-e-minor-and-a-minor");
+  await page.goto("/lessons/guitar-first-steps/09-em-and-am");
   await page.getByTestId("lesson-exercise").click();
   await expect(page).toHaveURL(/\/tools\/exercises\?preset=openChordChanges$/);
   await expect(page.getByTestId("exercise-preset-openChordChanges")).toHaveAttribute(

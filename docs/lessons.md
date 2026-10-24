@@ -4,6 +4,15 @@ Fretbook teaches with **courses**: ordered lessons grouped into levels, with pre
 
 This page is the format reference. To *use* the lessons, open **Lessons** in the sidebar (on a phone: **Tools → Lessons**). See [Learning a song](guides/lessons.md) for how lessons fit with the practice tools.
 
+## The built-in courses
+
+Fretbook ships two beginner courses. Every lesson has a pass condition and a generated exercise, and every song or tune in them is original or in the public domain ("Ode to Joy", "When the Saints Go Marching In", "Greensleeves").
+
+| Course | Lessons | Covers |
+| --- | --- | --- |
+| **Guitar first steps** | 20 | Holding and tuning, the open strings, reading tab and rhythm, notes on the first three strings, a riff, the open chords (Em, Am, E, A, D, G, C, Dm), strumming, chord changes, power chords, and three songs. |
+| **Bass first steps** | 15 | Tuning and plucking, tab and rhythm, notes on the E and A strings, roots, fifths and octaves, grooves, a walking line, and a first tune. |
+
 ## Where lessons live
 
 ```text

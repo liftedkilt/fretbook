@@ -158,6 +158,21 @@ def test_the_built_in_courses_are_valid() -> None:
     assert {entry.course.track for entry in catalog.courses.values()} == {"guitar", "bass"}
 
 
+def test_the_starter_courses_are_complete() -> None:
+    catalog = LessonCatalog(BUILTIN_DIR, Path("/nonexistent")).load()
+    sizes = {course_id: len(entry.lessons) for course_id, entry in catalog.courses.items()}
+    assert sizes["guitar-first-steps"] >= 20
+    assert sizes["bass-first-steps"] >= 15
+    for entry in catalog.courses.values():
+        levels = {level for level, _title in entry.course.levels}
+        for item in entry.lessons:
+            kinds = {block.kind for block in item.lesson.blocks}
+            assert item.lesson.pass_condition is not None, f"{item.lesson.id} has no pass condition"
+            assert "exercise" in kinds, f"{item.lesson.id} has no exercise"
+            assert item.level in levels
+            assert item.lesson.summary
+
+
 # -- the catalogue ------------------------------------------------------------------------------------------
 
 

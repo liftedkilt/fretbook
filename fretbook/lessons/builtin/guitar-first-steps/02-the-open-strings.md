@@ -1,6 +1,6 @@
 ---
 title: The open strings
-summary: Name the six strings and find the notes on the neck.
+summary: Name the six strings and play them one after another.
 level: basics
 order: 2
 ---
@@ -13,15 +13,20 @@ notes: E A D G B E
 Pluck each string slowly with your thumb or a pick and say its name out loud. Then play this up-and-down pattern, one note per beat at about 60 beats per minute:
 
 ```fretbook:tab
-e|-----------------------0---|
-B|-------------------0-----0-|
-G|---------------0-----------|
-D|-----------0---------------|
-A|-------0-------------------|
-E|---0-----------------------|
+e|-----------0-----------|
+B|---------0---0---------|
+G|-------0-------0-------|
+D|-----0-----------0-----|
+A|---0---------------0---|
+E|-0-------------------0-|
 ```
 
-When you can name all six strings without looking, play it through in wait mode on a tab of your choice.
+When you can name all six strings without looking, play along in wait mode on a tab of your choice.
+
+```fretbook:exercise
+preset: spiderWarmUp
+title: Open-string warm-up
+```
 
 ```fretbook:pass
 type: wait
