@@ -181,6 +181,17 @@ describe("RhythmTrainerView", () => {
       screen.getByTestId(`rhythm-cell-${i}`).getAttribute("data-state"),
     );
     expect(states).toEqual(Array(8).fill("hit"));
+    expect(screen.getByTestId("rhythm-bar").getAttribute("aria-label")).toContain("Bar 2");
+
+    // A finished run is logged under a short, locale-free name however long the title is.
+    await fireEvent.input(screen.getByTestId("rhythm-bpm"), { target: { value: "240" } });
+    await fireEvent.change(screen.getByTestId("rhythm-bars"), { target: { value: "2" } });
+    await fireEvent.click(screen.getByTestId("rhythm-start"));
+    vi.advanceTimersByTime(10000);
+    await tick();
+    expect(api.recordPracticeExercise).toHaveBeenCalledWith(
+      expect.objectContaining({ pattern: "song:a:2", mean_error_ms: null, correct: 0 }),
+    );
   });
 
   it("says so when the song cannot be loaded", async () => {
