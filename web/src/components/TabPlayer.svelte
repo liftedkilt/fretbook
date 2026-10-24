@@ -17,6 +17,7 @@
   import ScorePanel from "./ScorePanel.svelte";
   import ScoreResults from "./ScoreResults.svelte";
   import ShortcutHelp from "./ShortcutHelp.svelte";
+  import ListenPanel from "./ListenPanel.svelte";
   import WaitPanel from "./WaitPanel.svelte";
   import { ApiError, patchSync, recordPracticeSession, uploadAudio } from "../lib/api";
   import { AudioMedia } from "../lib/alphatab/audioHandler";
@@ -34,9 +35,16 @@
   } from "../lib/fretboard";
   import { gemKey, highwayStarts, timeAtBarPosition, type GemState } from "../lib/highway";
   import { instrumentLabel } from "../lib/instruments";
-  import { describeProblem, ListenError, startListening } from "../lib/listen";
+  import {
+    describeProblem,
+    ListenError,
+    startListening,
+    type ListenOptions,
+    type ListenSession,
+  } from "../lib/listen";
   import { pitchClassName } from "../lib/listen/chordTones";
   import { getLocalCalibration } from "../lib/listen/calibration";
+  import { getSavedChannel, getSavedDevice } from "../lib/listen/devicePrefs";
   import {
     bleedSuspected,
     buildScoredSteps,
@@ -144,6 +152,21 @@
   let waitGrades = $state<Record<string, GemState>>({});
   let waitRun: WaitRun | null = null;
   let waitFlash = 0;
+  // The input chosen in the listen panel, shared by wait mode and the scored play-along.
+  const savedDevice = getSavedDevice();
+  let listenDevice = $state(savedDevice);
+  let listenChannel = $state(getSavedChannel(savedDevice));
+  let listenLevel = $state(0);
+  let listenSession = $state<ListenSession | null>(null);
+
+  function listenWithInput(options: ListenOptions): Promise<ListenSession> {
+    return startListening({
+      ...options,
+      deviceId: listenDevice || undefined,
+      channel: listenChannel,
+      onLevel: ({ peak }) => (listenLevel = peak),
+    });
+  }
 
   // Scored play-along: the music keeps playing and every note of the chosen track is graded.
   let scoreOn = $state(false);
@@ -845,7 +868,7 @@
     waitGrades = {};
     const run = new WaitRun({
       steps: waitSteps,
-      listen: startListening,
+      listen: listenWithInput,
       match: { anyOctave: practice.wait.anyOctave },
       hintSeconds: practice.wait.hintSeconds,
       onWait: (step) => {
@@ -886,6 +909,7 @@
       return;
     }
     waitRun = run;
+    listenSession = run.listening;
     waitOn = true;
     waitHits = 0;
     waitState = "idle";
@@ -897,6 +921,8 @@
     window.clearTimeout(waitFlash);
     waitRun?.stop();
     waitRun = null;
+    listenSession = null;
+    listenLevel = 0;
     waitOn = false;
     waitState = "idle";
     waitStep = null;
@@ -941,7 +967,7 @@
     const run: ScoredRun = new ScoredRun({
       steps: scoredSteps,
       barCount,
-      listen: startListening,
+      listen: listenWithInput,
       songTime: songNow,
       rate: () => rate,
       latencySeconds: (latency ?? 0) / 1000,
@@ -1401,6 +1427,16 @@
           }}
           ontoggle={toggleWait}
         />
+        {#if !song.has_audio}
+          <ListenPanel
+            session={listenSession}
+            deviceId={listenDevice}
+            channel={listenChannel}
+            level={listenLevel}
+            onDevice={(next) => (listenDevice = next)}
+            onChannel={(next) => (listenChannel = next)}
+          />
+        {/if}
         <ScorePanel
           on={scoreOn}
           summary={scoreSummary}

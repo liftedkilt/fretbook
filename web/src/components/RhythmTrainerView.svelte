@@ -1,8 +1,10 @@
 <script lang="ts">
   import Icon from "./Icon.svelte";
+  import ListenPanel from "./ListenPanel.svelte";
   import { Clicker } from "../lib/clicker";
   import { t } from "../lib/i18n.svelte";
   import { getLocalCalibration } from "../lib/listen/calibration";
+  import { getSavedChannel, getSavedDevice } from "../lib/listen/devicePrefs";
   import { describeProblem, ListenError, startListening } from "../lib/listen/input";
   import type { ListenSession } from "../lib/listen/input";
   import { clampBpm, MAX_BPM, MIN_BPM } from "../lib/metronome";
@@ -45,6 +47,11 @@
   let bpm = $state(saved.bpm);
   let bars = $state(saved.bars);
   let useMic = $state(false);
+  const savedDevice = getSavedDevice();
+  let micDevice = $state(savedDevice);
+  let micChannel = $state(getSavedChannel(savedDevice));
+  let micLevel = $state(0);
+  let micSession = $state<ListenSession | null>(null);
 
   let running = $state(false);
   let position = $state<RunPosition | null>(null);
@@ -103,6 +110,9 @@
     if (useMic) {
       try {
         session = await startListening({
+          deviceId: micDevice || undefined,
+          channel: micChannel,
+          onLevel: ({ peak }) => (micLevel = peak),
           onPitch: (event) => {
             if (!event.onset || event.onsetTime === null || !session) return;
             const ago = session.currentTime - event.onsetTime;
@@ -114,6 +124,7 @@
         return;
       }
     }
+    micSession = session;
     const latency = useMic ? getLocalCalibration("default", "default") : null;
     run = new RhythmRun({
       pattern,
@@ -141,6 +152,8 @@
     run = null;
     const finished = session;
     session = null;
+    micSession = null;
+    micLevel = 0;
     void finished?.stop().catch(() => undefined);
   }
 
@@ -252,6 +265,16 @@
         ? t("rhythm.noCalibration")
         : t("rhythm.calibrated", { ms: Math.round(calibration) })}
     </p>
+  {/if}
+  {#if useMic}
+    <ListenPanel
+      session={micSession}
+      deviceId={micDevice}
+      channel={micChannel}
+      level={micLevel}
+      onDevice={(next) => (micDevice = next)}
+      onChannel={(next) => (micChannel = next)}
+    />
   {/if}
   {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
 

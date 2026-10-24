@@ -2,7 +2,9 @@
   import { onDestroy, untrack } from "svelte";
   import Fretboard from "./Fretboard.svelte";
   import Icon from "./Icon.svelte";
+  import ListenPanel from "./ListenPanel.svelte";
   import { recordPracticeExercise } from "../lib/api";
+  import { getSavedChannel, getSavedDevice } from "../lib/listen/devicePrefs";
   import { ListenError, describeProblem, startListening, type ListenSession } from "../lib/listen";
   import type { ChromaEvent, PitchEvent } from "../lib/listen";
   import { t } from "../lib/i18n.svelte";
@@ -85,6 +87,11 @@
   let playing = $state(false);
 
   let listener: ListenSession | null = null;
+  const savedDevice = getSavedDevice();
+  let micDevice = $state(savedDevice);
+  let micChannel = $state(getSavedChannel(savedDevice));
+  let micLevel = $state(0);
+  let micSession = $state<ListenSession | null>(null);
   let problem = $state("");
   const stable = new StableNote(3);
   const chordMatcher = new ChordAnswerMatcher();
@@ -123,6 +130,8 @@
   async function stopListening() {
     const current = listener;
     listener = null;
+    micSession = null;
+    micLevel = 0;
     stable.reset();
     chordMatcher.listen(null);
     await current?.stop().catch(() => undefined);
@@ -137,7 +146,14 @@
     problem = "";
     if (usesMic) {
       try {
-        listener = await startListening({ onPitch, onChroma });
+        listener = await startListening({
+          deviceId: micDevice || undefined,
+          channel: micChannel,
+          onPitch,
+          onChroma,
+          onLevel: ({ peak }) => (micLevel = peak),
+        });
+        micSession = listener;
         listener.setChroma(kind === "chord");
       } catch (error) {
         problem = describeProblem(error instanceof ListenError ? error.problem : "other");
@@ -442,6 +458,17 @@
     <button class="button" data-testid="trainer-start" onclick={start}>
       <Icon name="play" size={18} />{t("trainer.start")}
     </button>
+  {/if}
+
+  {#if usesMic && phase !== "done"}
+    <ListenPanel
+      session={micSession}
+      deviceId={micDevice}
+      channel={micChannel}
+      level={micLevel}
+      onDevice={(next) => (micDevice = next)}
+      onChannel={(next) => (micChannel = next)}
+    />
   {/if}
 
   {#if phase === "running"}

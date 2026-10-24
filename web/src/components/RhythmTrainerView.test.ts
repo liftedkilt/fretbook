@@ -3,6 +3,12 @@ import { tick } from "svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import RhythmTrainerView from "./RhythmTrainerView.svelte";
+import { startListening } from "../lib/listen/input";
+
+vi.mock("../lib/listen/input", async (original) => ({
+  ...(await original<typeof import("../lib/listen/input")>()),
+  startListening: vi.fn(),
+}));
 
 class FakeAudioContext {
   currentTime = 0;
@@ -79,6 +85,25 @@ describe("RhythmTrainerView", () => {
     await tick();
     expect(screen.getByTestId("rhythm-verdict").getAttribute("data-tendency")).toBe("none");
     expect((screen.getByTestId("rhythm-pad") as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("shows the listen panel with the microphone and opens the chosen input", async () => {
+    localStorage.setItem("fretbook.listen.device", "scarlett");
+    let onLevel: ((level: { rms: number; peak: number }) => void) | undefined;
+    vi.mocked(startListening).mockImplementationOnce(async (options) => {
+      onLevel = options.onLevel;
+      return { channelCount: 1, currentTime: 0, stop: vi.fn(async () => undefined) } as never;
+    });
+    render(RhythmTrainerView);
+    expect(screen.queryByTestId("listen-panel")).toBeNull();
+    await fireEvent.click(screen.getByTestId("rhythm-mic"));
+    expect(screen.getByTestId("listen-panel")).toBeInTheDocument();
+    await fireEvent.click(screen.getByTestId("rhythm-start"));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(startListening).toHaveBeenCalledWith(expect.objectContaining({ deviceId: "scarlett" }));
+    onLevel?.({ rms: 1, peak: 1 });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(screen.getByTestId("listen-meter")).toHaveAttribute("aria-valuenow", "100");
   });
 
   it("explains that the microphone needs calibration", async () => {

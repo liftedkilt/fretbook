@@ -8,7 +8,8 @@ let options: { onChroma?: (event: unknown) => void } = {};
 const stopSession = vi.fn(async () => {});
 const startListening = vi.fn();
 
-vi.mock("../lib/listen/input", () => ({
+vi.mock("../lib/listen/input", async (original) => ({
+  ...(await original<typeof import("../lib/listen/input")>()),
   ListenError: class ListenError extends Error {
     constructor(readonly problem: string) {
       super(problem);
@@ -48,6 +49,25 @@ describe("ChordWait", () => {
         stop: stopSession,
       };
     });
+  });
+
+  it("opens the chosen input and shows the level meter", async () => {
+    localStorage.clear();
+    localStorage.setItem("fretbook.listen.device", "scarlett");
+    localStorage.setItem("fretbook.listen.channels", JSON.stringify({ scarlett: 1 }));
+    setup();
+    await fireEvent.click(screen.getByTestId("chord-wait-toggle"));
+    await tick();
+    expect(startListening).toHaveBeenCalledWith(
+      expect.objectContaining({ deviceId: "scarlett", channel: 1 }),
+    );
+    expect(screen.getByTestId("listen-meter")).toHaveAttribute("aria-valuenow", "0");
+    (options as { onLevel?: (level: { rms: number; peak: number }) => void }).onLevel?.({
+      rms: 1,
+      peak: 1,
+    });
+    await tick();
+    expect(screen.getByTestId("listen-meter")).toHaveAttribute("aria-valuenow", "100");
   });
 
   it("says when a sheet has no chords", () => {
