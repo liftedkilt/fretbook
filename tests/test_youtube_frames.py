@@ -1,12 +1,17 @@
 """Spike for issue #6: synthetic on-screen tabs, no OpenCV and no network."""
 
+import json
 import shutil
 import subprocess
+import sys
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
-from fretbook.importers.base import ImportRequest, silent_progress
+from fretbook.audio.ytdlp_health import update_dir
+from fretbook.config import Settings
+from fretbook.importers.base import ImportError, ImportRequest, silent_progress
 from fretbook.importers.tab_synth import bundled_font, evaluate, liberation_font, pieces, render_case
 from fretbook.importers.tab_vision import (
     GrayImage,
@@ -218,3 +223,93 @@ def _shift(image: GrayImage, dy: int) -> GrayImage:
 
 def _tab(notes: list[TabNote], *, bars: int, time: float) -> RecognizedTab:
     return RecognizedTab(notes=notes, region=(0, 0, 10, 10), string_count=4, bar_count=bars, confidence=1, time=time)
+
+
+FAKE_VIDEO_MAIN = """
+import json, os, sys
+from pathlib import Path
+
+Path(os.environ["FAKE_YTDLP_ARGV"]).write_text(json.dumps(sys.argv[1:]))
+if "--cookies" in sys.argv:
+    Path(os.environ["FAKE_YTDLP_COOKIES"]).write_text(Path(sys.argv[sys.argv.index("--cookies") + 1]).read_text())
+message = os.environ.get("FAKE_YTDLP_ERROR")
+if message:
+    print("ERROR: [youtube] abc: " + message)
+    sys.exit(1)
+Path(sys.argv[sys.argv.index("-o") + 1]).write_bytes(b"mp4")
+"""
+_WATCH_URL = "https://www.youtube.com/watch?v=abcdefghijk"
+
+
+@pytest.fixture
+def fake_ytdlp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Settings:
+    settings = replace(Settings.for_tests(tmp_path / "data"))
+    package = update_dir(settings) / "yt_dlp"
+    package.mkdir(parents=True)
+    (package / "__init__.py").write_text("")
+    (package / "__main__.py").write_text(FAKE_VIDEO_MAIN)
+    info = update_dir(settings) / "yt_dlp-2999.01.01.dist-info"
+    info.mkdir()
+    (info / "METADATA").write_text("Name: yt-dlp\nVersion: 2999.01.01\n")
+    monkeypatch.setenv("FAKE_YTDLP_ARGV", str(tmp_path / "argv.json"))
+    monkeypatch.setenv("FAKE_YTDLP_COOKIES", str(tmp_path / "cookies-seen.txt"))
+    return settings
+
+
+def test_video_download_uses_the_updated_copy_and_cookies(fake_ytdlp: Settings, tmp_path: Path) -> None:
+    jar = tmp_path / "cookies.txt"
+    jar.write_text("# Netscape HTTP Cookie File\n")
+    settings = replace(fake_ytdlp, ytdlp_cookies=jar)
+    dest = tmp_path / "out" / "clip.mp4"
+    result = YouTubeFrameImporter().download_video(_WATCH_URL, dest, lambda *_: None, settings=settings)
+    assert result.read_bytes() == b"mp4"
+    argv = json.loads((tmp_path / "argv.json").read_text())
+    assert argv[argv.index("--cookies") + 1].endswith("clip.cookies.txt")
+    assert (tmp_path / "cookies-seen.txt").read_text() == jar.read_text()
+    assert not list(dest.parent.glob("*.cookies.txt"))
+
+
+@pytest.mark.parametrize(
+    ("message", "key"),
+    [
+        ("Sign in to confirm you’re not a bot", "import.videoSignIn"),
+        ("Video unavailable", "import.videoUnavailable"),
+        ("The uploader has not made this video available in your country", "import.videoGeoBlocked"),
+        ("Unable to extract initial data", "import.videoOutdated"),
+        ("something else broke", "import.videoFailed"),
+    ],
+)
+def test_video_download_failures_are_classified(
+    fake_ytdlp: Settings, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, message: str, key: str
+) -> None:
+    monkeypatch.setenv("FAKE_YTDLP_ERROR", message)
+    with pytest.raises(ImportError) as caught:
+        YouTubeFrameImporter().download_video(_WATCH_URL, tmp_path / "clip.mp4", lambda *_: None, settings=fake_ytdlp)
+    assert caught.value.key == key
+
+
+def test_video_download_timeout_has_its_own_key(
+    fake_ytdlp: Settings, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("fretbook.audio.ytdlp.subprocess.Popen", _hang)
+    with pytest.raises(ImportError) as caught:
+        YouTubeFrameImporter().download_video(
+            _WATCH_URL, tmp_path / "clip.mp4", lambda *_: None, settings=fake_ytdlp, timeout_seconds=1
+        )
+    assert caught.value.key == "import.videoTimeout"
+
+
+_REAL_POPEN = subprocess.Popen
+
+
+def _hang(command: list[str], **kwargs: object):
+    return _REAL_POPEN([sys.executable, "-c", "import time; time.sleep(30)"], **kwargs)
+
+
+def test_video_failure_keys_exist_in_both_locales() -> None:
+    from fretbook.importers.youtube_frames import _VIDEO_FAILURES
+
+    for locale in ("en", "pt-BR"):
+        catalog = json.loads((Path(__file__).parents[1] / "web/src/locales" / f"{locale}.json").read_text())
+        for key in (*_VIDEO_FAILURES.values(), "import.videoFailed"):
+            assert key.split(".")[1] in catalog["errors"]["import"], (locale, key)

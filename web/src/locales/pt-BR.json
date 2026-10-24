@@ -384,7 +384,8 @@
     "convertingAudio": "Convertendo para mp3",
     "ready": "Pronto",
     "skippedDuplicate": "Duplicata ignorada",
-    "noFrettedTracks": "Este arquivo não tem faixas de cordas."
+    "noFrettedTracks": "Este arquivo não tem faixas de cordas.",
+    "downloadingVideo": "Baixando o vídeo"
   },
   "error": {
     "generic": "Algo deu errado."
@@ -510,7 +511,13 @@
       "zipPathTraversal": "O arquivo contém um nome de arquivo inseguro.",
       "zipSymlinkNotAllowed": "O arquivo contém links simbólicos, o que não é permitido.",
       "zipTooLarge": "O arquivo é grande demais quando descompactado.",
-      "zipTooManyFiles": "O arquivo contém arquivos demais."
+      "zipTooManyFiles": "O arquivo contém arquivos demais.",
+      "videoFailed": "Não foi possível baixar o vídeo. Envie o vídeo ou uma pasta de quadros.",
+      "videoTimeout": "O download do vídeo levou mais de {seconds} segundos. Envie o vídeo ou uma pasta de quadros.",
+      "videoSignIn": "O YouTube pediu login ou uma verificação anti-robô, então o vídeo não pôde ser baixado. Envie o vídeo ou uma pasta de quadros.",
+      "videoUnavailable": "Esse vídeo está indisponível, privado ou foi removido, então não pôde ser baixado. Envie o vídeo ou uma pasta de quadros.",
+      "videoGeoBlocked": "Esse vídeo está bloqueado no país deste servidor, então não pôde ser baixado. Envie o vídeo ou uma pasta de quadros.",
+      "videoOutdated": "O yt-dlp não conseguiu ler a página do YouTube, o que geralmente significa que ele está desatualizado. Atualize o yt-dlp ou envie o vídeo ou uma pasta de quadros."
     },
     "songs": {
       "badCursor": "Essa página da biblioteca não é mais válida. Recarregue a lista."

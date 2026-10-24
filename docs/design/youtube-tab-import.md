@@ -31,7 +31,7 @@ watch URL
 
 ### 1. Download
 
-Same tool Songsterr audio already uses (`fretbook/audio/ytdlp.py`), but it keeps a video instead of extracting an mp3. `video_download_command` builds a yt-dlp argv (no shell string): no playlist, 720p mp4 when YouTube offers one, output path as its own argument. The job runs it with the same timeout as audio downloads.
+Same tool Songsterr audio already uses (`fretbook/audio/ytdlp.py`), but it keeps a video instead of extracting an mp3. `video_download_command` builds a yt-dlp argv (no shell string): no playlist, 720p mp4 when YouTube offers one, output path as its own argument. The job runs it with the same timeout as audio downloads. `download_video` also takes the same `Settings` as audio: it runs the updated yt-dlp from `$FRETBOOK_DATA_DIR/ytdlp`, passes a private copy of `FRETBOOK_YTDLP_COOKIES`, and turns failures into `errors.import.video*` keys that suggest uploading a video or frames.
 
 720p is enough. Fret digits at 1080p cost the vision model extra tokens and do not help the line detector. The download is best-effort. YouTube often refuses datacenter addresses, which this app already treats as "tab saved, upload the file yourself" for audio. The frame importer should do the same: accept a local video or a folder of frames when yt-dlp fails. That path is what the spike implements (`frames_dir` or `video_path` on the job payload).
 
