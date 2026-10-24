@@ -52,7 +52,7 @@ volume for each, for example to play along without the bass or to solo the guita
 
 With a worker that has [Audiveris](https://github.com/Audiveris/audiveris), dropping a PDF or an image of standard
 notation into **Add** reads it into a tab draft (`import.omr`, see [Importing](../guides/importing.md#sheet-music)).
-It is optional because Audiveris is Java and adds about 300 MB to the image. Build the worker with the Ubuntu 22.04
+It is optional because Audiveris is Java and adds about 200 MB to the image. Build the worker with the Ubuntu 22.04
 package from the [releases page](https://github.com/Audiveris/audiveris/releases):
 
 ```sh

@@ -629,7 +629,7 @@
     },
     "omr": {
       "noWorker": "Ler partituras precisa de um worker com o Audiveris, e nenhum está em execução. Veja Hospedagem própria, O worker de tarefas.",
-      "unavailable": "O Audiveris não está instalado neste worker, então não é possível ler partituras.",
+      "unavailable": "O Audiveris não está disponível neste servidor, então não é possível ler partituras. Ele roda em um worker de tarefas; veja Hospedagem própria, O worker de tarefas.",
       "timeout": "A leitura da partitura demorou demais.",
       "noMusic": "Nenhuma música foi reconhecida neste arquivo. Tente uma digitalização mais nítida ou uma única página.",
       "review": "O reconhecimento de partituras pode errar. Confira esta tablatura com a página antes de confiar nela."

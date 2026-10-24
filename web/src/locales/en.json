@@ -629,7 +629,7 @@
     },
     "omr": {
       "noWorker": "Reading sheet music needs a worker with Audiveris, and none is running. See Self-hosting, The job worker.",
-      "unavailable": "Audiveris is not installed on this worker, so sheet music cannot be read.",
+      "unavailable": "Audiveris is not available on this server, so sheet music cannot be read. It runs on a job worker; see Self-hosting, The job worker.",
       "timeout": "Reading the sheet music took too long.",
       "noMusic": "No music could be recognised in this file. Try a sharper scan or a single page.",
       "review": "Sheet music recognition can be wrong. Check this tab against the page before you rely on it."

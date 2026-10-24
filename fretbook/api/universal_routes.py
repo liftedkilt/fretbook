@@ -17,7 +17,7 @@ from fastapi.responses import JSONResponse
 
 from fretbook.api.deps import context, principal
 from fretbook.api.errors import api_error
-from fretbook.api.routes import _prefer, _safe_name, _spool, import_job_kind
+from fretbook.api.routes import _prefer, _safe_name, _spool, bulk_job_kind, import_job_kind
 from fretbook.api.schemas import AUTH_RESPONSES, JobAccepted
 from fretbook.auth.base import Principal
 from fretbook.context import AppContext
@@ -110,7 +110,7 @@ async def _from_file(file: UploadFile, ctx: AppContext, user: Principal) -> JSON
             for item in extracted:
                 job_id = ctx.jobs.enqueue(
                     user.user_id,
-                    "import.file",
+                    bulk_job_kind(ctx, item.path, item.filename),
                     {
                         "path": str(item.path),
                         "filename": item.filename,
