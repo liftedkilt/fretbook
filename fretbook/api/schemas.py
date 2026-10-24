@@ -263,6 +263,11 @@ class TagsAdded(BaseModel):
     updated: int
 
 
+class TagsChanged(BaseModel):
+    updated: int
+    """How many songs had the tag."""
+
+
 class Favourite(BaseModel):
     favourite: bool
 

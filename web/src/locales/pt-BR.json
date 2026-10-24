@@ -403,6 +403,10 @@
       "crossOrigin": "Pedidos de outros sites não são permitidos.",
       "invalid": "Alguns campos não são válidos."
     },
+    "tag": {
+      "notFound": "Essa tag não está em nenhuma das suas músicas.",
+      "nameEmpty": "O novo nome da tag não pode ficar vazio."
+    },
     "song": {
       "notFound": "Essa música não está na sua biblioteca.",
       "conflict": "Esta música foi alterada em outro lugar depois que você a abriu.",
@@ -781,6 +785,30 @@
       "other": "Etiqueta “{tag}” adicionada a {count} músicas."
     },
     "clearFilters": "Limpar filtros de etiqueta"
+  },
+  "manageTags": {
+    "open": "Gerenciar tags",
+    "title": "Gerenciar tags",
+    "hint": "As mudanças valem para todas as músicas da sua biblioteca.",
+    "empty": "Ainda não há tags.",
+    "list": "Tags",
+    "songs": {
+      "one": "{count} música",
+      "other": "{count} músicas"
+    },
+    "newName": "Novo nome para {tag}",
+    "rename": "Renomear",
+    "renameOrMerge": "Renomear ou mesclar {tag}",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "mergeHint": "Já existe uma tag com esse nome: as duas serão mescladas.",
+    "delete": "Excluir",
+    "deleteTag": "Excluir {tag}",
+    "confirmDelete": "Remover “{tag}” de {count} músicas?",
+    "confirm": "Remover tag",
+    "renamed": "“{tag}” renomeada para “{name}” em {count} músicas.",
+    "deleted": "“{tag}” removida de {count} músicas.",
+    "close": "Fechar"
   },
   "wait": {
     "title": "Modo espera",

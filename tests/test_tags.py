@@ -228,3 +228,79 @@ def test_restore_cleans_hostile_tags_and_reads_old_archives(tmp_path: Path) -> N
         old = _restore(client, archive({}))
         assert old["result"]["imported"] == 1
         assert client.get("/api/songs").json()["items"][0]["tags"] == []
+
+
+def _revision(client: TestClient, song_id: str) -> tuple[int, str]:
+    song = client.get(f"/api/songs/{song_id}").json()
+    return song["revision"], song["updated_at"]
+
+
+def _counts(client: TestClient) -> dict[str, int]:
+    return {item["tag"]: item["count"] for item in client.get("/api/tags").json()}
+
+
+def test_rename_tag_everywhere_leaves_the_revision_alone(client: TestClient) -> None:
+    one, two = _tab(client, "One")["id"], _tab(client, "Two")["id"]
+    _tag(client, one, "Warmup", "Jazz")
+    _tag(client, two, "warmup")
+    before = _revision(client, one)
+
+    response = client.patch("/api/tags/WARMUP", json={"name": "  Warm   up "})
+    assert response.status_code == 200, response.text
+    assert response.json() == {"updated": 2}
+    assert client.get(f"/api/songs/{one}").json()["tags"] == ["Jazz", "Warm up"]
+    assert client.get(f"/api/songs/{two}").json()["tags"] == ["Warm up"]
+    assert _revision(client, one) == before
+    assert _titles(client, tag=["warm up"]) == ["One", "Two"]
+
+
+def test_rename_only_changes_case(client: TestClient) -> None:
+    song = _tab(client, "One")["id"]
+    _tag(client, song, "jazz")
+    assert client.patch("/api/tags/jazz", json={"name": "Jazz"}).json() == {"updated": 1}
+    assert _counts(client) == {"Jazz": 1}
+
+
+def test_merge_keeps_one_tag_per_song(client: TestClient) -> None:
+    both, only_old, only_new = (_tab(client, name)["id"] for name in ("Both", "Old", "New"))
+    _tag(client, both, "rock", "Rock n Roll")
+    _tag(client, only_old, "rock")
+    _tag(client, only_new, "rock n roll")
+
+    response = client.patch("/api/tags/rock", json={"name": "ROCK N ROLL"})
+    assert response.json() == {"updated": 2}
+    assert _counts(client) == {"ROCK N ROLL": 3}
+    assert client.get(f"/api/songs/{both}").json()["tags"] == ["ROCK N ROLL"]
+    assert _titles(client, tag=["rock"]) == []
+
+
+def test_rename_validates_and_reports_unknown_tags(client: TestClient) -> None:
+    song = _tab(client, "One")["id"]
+    _tag(client, song, "jazz")
+    assert client.patch("/api/tags/jazz", json={"name": "   "}).status_code == 422
+    missing = client.patch("/api/tags/blues", json={"name": "x"})
+    assert missing.status_code == 404
+    assert missing.json()["detail"]["key"] == "tag.notFound"
+    assert client.get(f"/api/songs/{song}").json()["tags"] == ["jazz"]
+
+
+def test_delete_tag_from_every_song(client: TestClient) -> None:
+    one, two = _tab(client, "One")["id"], _tab(client, "Two")["id"]
+    _tag(client, one, "Old", "keep")
+    _tag(client, two, "old")
+    before = _revision(client, one)
+
+    response = client.delete("/api/tags/OLD")
+    assert response.status_code == 200, response.text
+    assert response.json() == {"updated": 2}
+    assert _counts(client) == {"keep": 1}
+    assert _revision(client, one) == before
+    assert client.delete("/api/tags/old").status_code == 404
+
+
+def test_tag_changes_with_a_slash_in_the_name(client: TestClient) -> None:
+    song = _tab(client, "One")["id"]
+    _tag(client, song, "a/b")
+    assert client.patch("/api/tags/a%2Fb", json={"name": "c/d"}).status_code == 200
+    assert _counts(client) == {"c/d": 1}
+    assert client.delete("/api/tags/c%2Fd").status_code == 200
