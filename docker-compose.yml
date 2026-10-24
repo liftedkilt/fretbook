@@ -33,5 +33,29 @@ services:
       retries: 5
       start_period: 15s
 
+  # Optional GPU job worker: docker compose --profile worker up
+  # Needs the NVIDIA Container Toolkit. It must share the database file and data
+  # volume with the web container (same host, or a host that mounts the same volume).
+  worker:
+    profiles: ["worker"]
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    image: fretbook-worker
+    volumes:
+      - fretbook-data:/data
+      - ./songs:/songs:ro
+    depends_on:
+      fretbook:
+        condition: service_healthy
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+
 volumes:
   fretbook-data:

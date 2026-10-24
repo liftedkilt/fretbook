@@ -971,5 +971,8 @@
     "highestSpeed": "Highest speed: {speed}%",
     "reset": "Reset",
     "selectLoop": "Saved loops…"
+  },
+  "job": {
+    "echo": "Echoing the job"
   }
 }
