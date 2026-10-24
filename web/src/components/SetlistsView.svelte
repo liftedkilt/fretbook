@@ -140,6 +140,7 @@
     color: inherit;
     text-decoration: none;
     min-width: 0;
+    min-height: 44px;
   }
   .setlist-link strong {
     overflow: hidden;

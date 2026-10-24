@@ -1,7 +1,20 @@
 import { alphaTab } from "@coderline/alphatab-vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { svelteTesting } from "@testing-library/svelte/vite";
-import { defineConfig } from "vitest/config";
+import { defineConfig, type ProxyOptions } from "vitest/config";
+
+// The API refuses a write whose Origin host is not the Host header. The dev
+// proxy must keep the browser's host, or every save from `npm run dev` is a 403.
+const apiProxy: ProxyOptions = {
+  target: "http://127.0.0.1:8137",
+  changeOrigin: false,
+  configure(proxy) {
+    proxy.on("proxyReq", (proxyReq, req) => {
+      const host = req.headers.host;
+      if (host) proxyReq.setHeader("host", host);
+    });
+  },
+};
 
 export default defineConfig({
   plugins: [svelte(), alphaTab(), svelteTesting()],
@@ -14,8 +27,8 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      "/api": "http://127.0.0.1:8137",
-      "/auth": "http://127.0.0.1:8137",
+      "/api": apiProxy,
+      "/auth": apiProxy,
     },
   },
   test: {

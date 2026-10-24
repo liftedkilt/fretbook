@@ -41,7 +41,8 @@
 
   /** A bar's colour runs from green (all notes) to red (none). */
   function heat(value: number | null): string {
-    return value === null ? "transparent" : `hsl(${Math.round(value * 120)} 65% 42%)`;
+    // Stay dark enough that the white bar numbers clear AA on yellow as well as green.
+    return value === null ? "transparent" : `hsl(${Math.round(value * 120)} 62% 30%)`;
   }
 </script>
 
@@ -154,7 +155,7 @@
     letter-spacing: 4px;
   }
   .score-stars span {
-    color: var(--line-strong);
+    color: var(--text-3);
   }
   .score-stars span.lit {
     color: var(--warn);

@@ -19,6 +19,10 @@
   --surface-3: #282533;
   --line: rgba(255, 255, 255, 0.07);
   --line-strong: rgba(255, 255, 255, 0.13);
+  /* Aliases used by the tools pages. */
+  --border: var(--line-strong);
+  --radius: var(--r-md);
+  --radius-lg: var(--r-lg);
   --text: #f4f1ec;
   --text-2: #bab4c4;
   --text-3: #9893a5;
@@ -45,7 +49,7 @@
   --paper: #fbf8f2;
   --paper-ink: #1d1a17;
   --paper-dim: #7a6f62;
-  --paper-chord: #d14a24;
+  --paper-chord: #c4451e;
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 8px 24px -8px rgba(0, 0, 0, 0.55);
@@ -977,6 +981,7 @@ textarea {
   max-width: 1320px;
   margin-left: auto;
   margin-right: auto;
+  min-width: 0;
 }
 
 .tabbar {
@@ -1857,10 +1862,19 @@ textarea {
   margin-top: 0.25rem;
 }
 
+.song-page,
+.song-header,
+.song-hero {
+  min-width: 0;
+}
+
 .hero-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
+  min-width: 0;
+  max-width: 100%;
 }
 
 @media (max-width: 860px) {
@@ -1875,7 +1889,7 @@ textarea {
 
 @media (max-width: 560px) {
   .song-hero {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     justify-items: start;
   }
 
@@ -2165,7 +2179,7 @@ textarea {
 
 .scrubber {
   position: relative;
-  height: 20px;
+  height: 44px;
   display: flex;
   align-items: center;
 }
@@ -2186,12 +2200,15 @@ textarea {
   appearance: none;
   -webkit-appearance: none;
   width: 100%;
-  height: 6px;
-  min-height: 0;
+  height: 44px;
+  min-height: 44px;
   padding: 0;
   border: 0;
   border-radius: 999px;
-  background: linear-gradient(
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 6px;
+  background-image: linear-gradient(
     90deg,
     var(--accent) 0 var(--fill),
     var(--surface-3) var(--fill) 100%
@@ -2312,12 +2329,13 @@ textarea {
   }
 
   .dock-bar {
-    grid-template-columns: auto 1fr;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
-      "progress progress"
-      "transport tools";
-    gap: 6px 8px;
-    padding: 10px 10px 8px;
+      "progress"
+      "transport"
+      "tools";
+    gap: 2px 8px;
+    padding: 8px 10px 8px;
     border-radius: 22px;
   }
 
@@ -2328,11 +2346,13 @@ textarea {
 
   .dock-transport {
     grid-area: transport;
+    justify-content: center;
   }
 
   .dock-tools {
     grid-area: tools;
-    justify-content: flex-end;
+    justify-content: center;
+    flex-wrap: wrap;
   }
 
   .dock-select select {
@@ -2346,11 +2366,11 @@ textarea {
   }
 
   :root {
-    --dock-space: calc(140px + var(--safe-b));
+    --dock-space: calc(196px + var(--safe-b));
   }
 
   .player-page {
-    padding-bottom: calc(190px + var(--safe-b));
+    padding-bottom: calc(230px + var(--safe-b));
   }
 
   /* Short enough to fit between the top bar and the dock once scrolled into view. */
@@ -4287,7 +4307,7 @@ kbd {
 .metronome-tempo-name {
   font-size: 1.1rem;
   font-weight: 600;
-  color: var(--accent);
+  color: var(--accent-text);
   margin-top: 0.25rem;
 }
 
@@ -4441,6 +4461,7 @@ kbd {
   flex-direction: column;
   align-items: center;
   width: 9rem;
+  max-width: 100%;
   padding: 0.5rem 0.3rem;
   border: 1px solid var(--line);
   border-radius: var(--r-md);
@@ -4461,8 +4482,11 @@ kbd {
 
 .chord-card-controls {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 0.1rem;
+  max-width: 100%;
 }
 
 .chord-card-controls .icon-button {

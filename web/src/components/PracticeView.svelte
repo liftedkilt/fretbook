@@ -258,12 +258,17 @@
     gap: 1rem;
     max-width: 960px;
     margin: 0 auto;
+    min-width: 0;
+  }
+  .practice-page > * {
+    min-width: 0;
   }
   .card {
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: var(--r-md);
     padding: 1rem 1.15rem;
+    min-width: 0;
   }
   h2 {
     font-size: 0.95rem;
@@ -273,7 +278,8 @@
   .top {
     display: grid;
     gap: 1rem;
-    grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+    min-width: 0;
+    grid-template-columns: repeat(auto-fit, minmax(min(17rem, 100%), 1fr));
   }
   .ring-card {
     display: flex;
@@ -336,6 +342,7 @@
     display: flex;
     gap: 0.5rem;
     align-items: center;
+    min-height: 44px;
     font-size: 0.9rem;
   }
   .stats-card {
@@ -363,6 +370,8 @@
   .heatmap {
     display: flex;
     gap: 3px;
+    min-width: 0;
+    max-width: 100%;
     overflow-x: auto;
     padding-bottom: 0.25rem;
   }
@@ -395,7 +404,8 @@
   .lists {
     display: grid;
     gap: 1rem;
-    grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+    min-width: 0;
+    grid-template-columns: repeat(auto-fit, minmax(min(17rem, 100%), 1fr));
   }
   .song-list {
     list-style: none;
@@ -408,13 +418,15 @@
     display: flex;
     justify-content: space-between;
     gap: 0.75rem;
-    align-items: baseline;
+    align-items: center;
+    min-height: 44px;
   }
   .song-list a {
     display: flex;
     gap: 0.5rem;
-    align-items: baseline;
+    align-items: center;
     min-width: 0;
+    min-height: 44px;
     color: inherit;
     text-decoration: none;
   }
