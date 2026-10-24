@@ -19,7 +19,8 @@
   import ShortcutHelp from "./ShortcutHelp.svelte";
   import ListenPanel from "./ListenPanel.svelte";
   import WaitPanel from "./WaitPanel.svelte";
-  import { ApiError, patchSync, recordPracticeSession, uploadAudio } from "../lib/api";
+  import { ApiError, getSong, patchSync, recordPracticeSession, uploadAudio } from "../lib/api";
+  import YouTubeAudio from "./YouTubeAudio.svelte";
   import { AudioMedia } from "../lib/alphatab/audioHandler";
   import { preferredTrack, scoreToAlphaTex } from "../lib/alphatex";
   import { Clicker } from "../lib/clicker";
@@ -1123,6 +1124,10 @@
     }
   }
 
+  async function onYouTubeAudio() {
+    song = (await getSong(song.id)) as TabSong;
+  }
+
   let exporting = $state(false);
   let panelOpen = $state(false);
   const loopStyle = $derived(
@@ -1514,6 +1519,9 @@
               }}
             />
           </label>
+        </div>
+        <div class="panel-group panel-inline">
+          <YouTubeAudio songId={song.id} ondone={onYouTubeAudio} />
         </div>
       </section>
     {/if}

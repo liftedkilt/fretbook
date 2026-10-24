@@ -758,6 +758,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/songs/{song_id}/audio/youtube": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Youtube Audio
+         * @description Queue a download of a YouTube video's audio, which replaces the song's audio (and its stems).
+         *
+         *     Poll the job; when it is done, read the song again to get the new ``audio_url``.
+         */
+        post: operations["start_youtube_audio_api_songs__song_id__audio_youtube_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/songs/{song_id}/autosync": {
         parameters: {
             query?: never;
@@ -2747,6 +2769,11 @@ export interface components {
             /** Beats */
             beats?: components["schemas"]["Beat"][];
         };
+        /** YouTubeAudioRequest */
+        YouTubeAudioRequest: {
+            /** Url */
+            url: string;
+        };
         /**
          * YtDlpStatus
          * @description The yt-dlp that downloads audio. ``stale`` means its release is more than 30 days old.
@@ -2867,6 +2894,7 @@ export type UpdateSongBody = components['schemas']['UpdateSongBody'];
 export type ValidationBody = components['schemas']['ValidationBody'];
 export type ValidationIssue = components['schemas']['ValidationIssue'];
 export type Voice = components['schemas']['Voice'];
+export type YouTubeAudioRequest = components['schemas']['YouTubeAudioRequest'];
 export type YtDlpStatus = components['schemas']['YtDlpStatus'];
 export type $defs = Record<string, never>;
 export interface operations {
@@ -6436,6 +6464,86 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SongDetail"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    start_youtube_audio_api_songs__song_id__audio_youtube_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                song_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["YouTubeAudioRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAccepted"];
                 };
             };
             /** @description Keyed error. `detail` is {key, message, params}. */
