@@ -6,7 +6,7 @@ import { PDFDocument } from "pdf-lib";
 import { describe, expect, it } from "vitest";
 
 import type { Beat, ScoreDocument, Track } from "../types";
-import { paginate } from "./layout";
+import { paginate, snapSystems } from "./layout";
 import { contentHeight, renderChordSheetPdf, renderTrackPdf, type TrackPdf } from "./pdf";
 
 const bravura = new Uint8Array(
@@ -148,6 +148,8 @@ function assertPage(result: TrackPdf, plain: string, curves: number, title: stri
   expect(plain.split(title).length - 1).toBeGreaterThanOrEqual(result.pageCount);
   expect(result.pageCount).toBeGreaterThan(1);
   expect(result.systems.length).toBeGreaterThan(1);
+  // No system is taller than a page, so nothing may be shrunk (issue #117).
+  expect(result.pages.map((page) => page.scale)).toEqual(result.pages.map(() => 1));
   for (const system of result.systems) {
     const hits = result.pages.filter(
       (page) => system.y >= page.top - 2 && system.y + system.height <= page.bottom + 2,
@@ -180,6 +182,42 @@ describe("paginate", () => {
     );
     expect(withLabel).toHaveLength(1);
     expect(withLabel[0].items).toHaveLength(2);
+  });
+
+  it("keeps systems apart when alphaTab reports them a little below their chunks", () => {
+    const chunks = [0, 200, 400, 600].map((y) => ({ y, height: 200 }));
+    // As alphaTab 1.8 reports them: every system after the first 10 px low.
+    const reported = chunks.map((chunk, index) => ({
+      y: chunk.y + (index ? 10 : 0),
+      height: chunk.height,
+    }));
+    // Unsnapped, the last three systems glue into one block and are shrunk.
+    expect(paginate(chunks, reported, 500).at(-1)?.scale).toBeLessThan(1);
+    const systems = snapSystems(chunks, reported);
+    expect(systems).toEqual(chunks);
+    const pages = paginate(chunks, systems, 500);
+    expect(pages.map((page) => [page.top, page.bottom])).toEqual([
+      [0, 400],
+      [400, 800],
+    ]);
+    expect(pages.every((page) => page.scale === 1)).toBe(true);
+
+    // A system split over two chunks keeps both, and one with no chunk keeps its bounds.
+    expect(
+      snapSystems(
+        [
+          { y: 0, height: 100 },
+          { y: 100, height: 100 },
+        ],
+        [
+          { y: 5, height: 200 },
+          { y: 500, height: 50 },
+        ],
+      ),
+    ).toEqual([
+      { y: 0, height: 200 },
+      { y: 500, height: 50 },
+    ]);
   });
 });
 
