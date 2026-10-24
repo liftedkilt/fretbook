@@ -75,6 +75,7 @@
     refresh: "M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8M21 3v5h-5",
     headphones:
       "M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3",
+    graduation: "M22 10 12 5 2 10l10 5 10-5ZM22 10v6M6 12.5V17c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5",
     bluetooth: "m7 7 10 10-5 5V2l5 5L7 17",
   };
 
@@ -87,6 +88,10 @@
     size = 20,
     class: className = "",
   }: { name: string; size?: number; class?: string } = $props();
+
+  $effect(() => {
+    if (import.meta.env.DEV && !(name in PATHS)) console.warn(`Icon: unknown name "${name}"`);
+  });
 </script>
 
 <svg

@@ -142,7 +142,7 @@
               aria-label={t("speedTrainer.deleteLoop")}
               title={t("speedTrainer.deleteLoop")}
             >
-              <Icon name="x" size={14} />
+              <Icon name="close" size={14} />
             </button>
           </div>
         {/each}

@@ -63,7 +63,7 @@
       titleKey: "lessons.toolTitle",
       descKey: "lessons.toolDescription",
       openKey: "lessons.openTool",
-      icon: "class",
+      icon: "graduation",
       path: "/lessons",
       testId: "tool-card-lessons",
     },
