@@ -70,6 +70,7 @@
   import { ScoredRun } from "../lib/listen/scoredRun";
   import { buildWaitSteps, stepIndexAt, type WaitStep } from "../lib/listen/wait";
   import { WaitRun } from "../lib/listen/waitRun";
+  import { waitFocus } from "../lib/listen/waitFretboard";
   import { followPlayed, playedBars } from "../lib/playback";
   import { parseLessonParam } from "../lib/lessonRun";
   import { IdleWatch, PracticeTimer, WAIT_IDLE_MS } from "../lib/practiceLog";
@@ -167,6 +168,8 @@
   let waitHits = $state(0);
   let waitStep = $state<WaitStep | null>(null);
   let waitHint = $state(false);
+  // The step just hit, kept for the 400 ms the fretboard shows it green.
+  let waitHitStep = $state<WaitStep | null>(null);
   let waitError = $state("");
   let waitGrades = $state<Record<string, GemState>>({});
   let waitRun: WaitRun | null = null;
@@ -225,6 +228,10 @@
   const waitSteps = $derived(buildWaitSteps(document_, track, { chords: practice.wait.chords }));
   const scoredSteps = $derived(buildScoredSteps(document_, track, song.has_audio));
   const fretEvents = $derived(practice.fretboard.on ? buildFretEvents(document_, track) : []);
+  // While wait mode is on, the fretboard shows the note being waited on instead of the playhead.
+  const waitMarks = $derived(
+    waitOn ? waitFocus(waitState === "hit" ? waitHitStep : waitStep, waitState, waitHint) : null,
+  );
   const fretFocus = $derived(focusAt(fretEvents, currentMeasure, currentPosition));
 
   function staveProfile(notation: boolean): alphaTab.StaveProfile {
@@ -966,6 +973,7 @@
         player.api?.pause();
         window.clearTimeout(waitFlash);
         waitStep = step;
+        waitHitStep = null;
         waitHint = false;
         waitState = "waiting";
         currentSeconds = timeAtBarPosition(
@@ -983,6 +991,7 @@
           [gemKey(step.bar, step.position)]: wasHit ? "hit" : "missed",
         };
         waitHint = false;
+        waitHitStep = wasHit ? step : null;
         waitStep = null;
         waitState = "hit";
         window.clearTimeout(waitFlash);
@@ -1017,6 +1026,7 @@
     waitOn = false;
     waitState = "idle";
     waitStep = null;
+    waitHitStep = null;
     waitHint = false;
     waitGrades = {};
     applyPractice();
@@ -1493,14 +1503,20 @@
     </div>
   </div>
 
-  {#if practice.fretboard.on}
-    <div class="fretboard-wrap" data-testid="player-fretboard">
+  {#if practice.fretboard.on || waitOn}
+    <div
+      class="fretboard-wrap"
+      data-testid="player-fretboard"
+      role={waitOn ? "group" : undefined}
+      aria-label={waitOn ? t("waitMode.fretboard") : undefined}
+    >
       <Fretboard
         tuning={track.tuning_midi}
         capo={track.capo}
         frets={fretCount(track)}
-        current={fretFocus.current}
-        next={fretFocus.next}
+        current={waitOn ? (waitMarks?.notes ?? []) : fretFocus.current}
+        next={waitOn ? [] : fretFocus.next}
+        tone={waitMarks?.tone}
         label={practice.fretboard.label}
         root={practice.fretboard.root ?? defaultRoot(track.tuning_midi)}
         leftHanded={practice.fretboard.leftHanded}

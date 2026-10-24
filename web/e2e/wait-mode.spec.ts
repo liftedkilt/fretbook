@@ -34,6 +34,9 @@ test("the cursor waits on each note until it is played, then the song finishes",
   await expect(status).toHaveAttribute("data-state", "waiting");
   await expect(status).toContainText("Play E1");
   await expect(page.getByTestId("player-score")).toHaveAttribute("data-wait", "waiting");
+  // The expected string and fret are lit on the fretboard (E1 is the open low string of the bass).
+  await expect(page.getByTestId("fretboard-now")).toHaveCount(1);
+  await expect(page.getByTestId("fretboard-summary")).toContainText("fret 0");
 
   // It only moves on when a note is played, one step at a time, and ends after the last one.
   await expect(status).toHaveAttribute("data-hits", "8", { timeout: 50_000 });

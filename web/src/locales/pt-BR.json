@@ -871,6 +871,9 @@
     "done": "Pronto: {hits} de {total} notas tocadas.",
     "hit": "Nota certa"
   },
+  "waitMode": {
+    "fretboard": "Onde tocar a nota esperada"
+  },
   "bulk": {
     "title": "Importação em lote",
     "dropHint": "Solte uma pasta, vários arquivos ou um arquivo .zip",
