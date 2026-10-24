@@ -189,6 +189,62 @@ export class Seeder {
     return { id: await this.waitForJob(accepted.job_id), title };
   }
 
+  /** A guitar tab whose first bar has a tempo, a section name, and let ring. */
+  async effectLabelTab(): Promise<SeededSong> {
+    const title = "Label Spacing";
+    const chord = (position: number, frets: number[]) => ({
+      position,
+      duration: 960,
+      notes: frets.map((fret, string) => ({ string, fret, let_ring: true })),
+    });
+    const bar = () => ({
+      voices: [
+        {
+          beats: [
+            chord(0, [1, 0, 2, 3]),
+            chord(960, [1, 0, 2, 3]),
+            chord(1920, [0, 0, 2, 3]),
+            chord(2880, [0, 0, 2, 3]),
+          ],
+        },
+      ],
+    });
+    const document = {
+      version: 1,
+      bpm: 92,
+      bars: [
+        { signature: [4, 4], section: "Intro" },
+        { signature: [4, 4] },
+        { signature: [4, 4] },
+        { signature: [4, 4], section: "Verse" },
+      ],
+      sync: { video_id: null, points: [], anchors: {} },
+      tracks: [
+        {
+          id: "trk_guitar",
+          name: "Steel Guitar",
+          instrument: "electric-guitar",
+          capo: 0,
+          tuning_midi: [64, 59, 55, 50, 45, 40],
+          preferred: true,
+          bars: [bar(), bar(), bar(), bar()],
+        },
+      ],
+    };
+    const accepted = await this.ok<{ job_id: string }>(
+      await this.request.post("/api/imports/file", {
+        multipart: {
+          file: {
+            name: "label-spacing.json",
+            mimeType: "application/json",
+            buffer: Buffer.from(JSON.stringify({ title, content_kind: "tab", document })),
+          },
+        },
+      }),
+    );
+    return { id: await this.waitForJob(accepted.job_id), title };
+  }
+
   async list(): Promise<SongBody[]> {
     return (await this.ok<{ items: SongBody[] }>(await this.request.get("/api/songs?limit=200")))
       .items;

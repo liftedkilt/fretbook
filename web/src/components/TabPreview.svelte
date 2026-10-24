@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { separateEffectBands } from "../lib/alphatab/display";
   import { preferredTrack, trackToAlphaTex } from "../lib/alphatex";
   import { t } from "../lib/i18n.svelte";
   import type { ScoreDocument } from "../lib/types";
@@ -25,6 +26,7 @@
         settings.core.logLevel = alphaTab.LogLevel.Warning;
         settings.player.playerMode = alphaTab.PlayerMode.Disabled;
         settings.display.staveProfile = alphaTab.StaveProfile.Tab;
+        separateEffectBands(settings);
         const api = new alphaTab.AlphaTabApi(element, settings);
         instance = api;
         api.tex(source);
