@@ -62,6 +62,7 @@ nav:
       - Practice exercises: guides/exercises.md
       - Watched inbox folder: guides/inbox.md
       - Keeping yt-dlp working: guides/ytdlp.md
+      - AI assistant settings: guides/ai-settings.md
       - Scripts and the command line: guides/cli.md
       - Demo library and demo mode: guides/demo.md
   - Reference:

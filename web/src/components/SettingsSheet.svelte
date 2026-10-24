@@ -1,5 +1,7 @@
 <script lang="ts">
   import ApiTokens from "./ApiTokens.svelte";
+  import LlmAdmin from "./LlmAdmin.svelte";
+  import LlmSettings from "./LlmSettings.svelte";
   import { onMount } from "svelte";
 
   import BackupSettings from "./BackupSettings.svelte";
@@ -241,6 +243,9 @@
     </section>
     <PedalSettings />
     {#if !ui.demoMode}<ApiTokens />{/if}
+    {#if !ui.demoMode}<LlmSettings />{/if}
+    <!-- Single-user mode has no admin role: its one user manages the instance. -->
+    {#if !ui.demoMode && (!ui.me?.authenticated || ui.me.role === "admin")}<LlmAdmin />{/if}
 
     <section class="setting setting-stacked" data-testid="calibration-setting">
       <div class="setting-label">

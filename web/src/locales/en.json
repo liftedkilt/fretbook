@@ -669,6 +669,21 @@
     },
     "storage": {
       "quotaExceeded": "Your storage quota is full. Delete something or ask an administrator."
+    },
+    "llm": {
+      "off": "AI features are turned off on this server.",
+      "noAccess": "An administrator has turned off AI features for your account.",
+      "noAdminKey": "The server has no shared API key. Add your own key in settings.",
+      "keyRequired": "Add your own API key in settings to use AI features.",
+      "rateLimited": "Too many AI requests. Try again in {retry_after} seconds.",
+      "quotaDaily": "You have reached your daily limit of {limit} AI generations. Try again tomorrow.",
+      "quotaMonthly": "You have reached your monthly limit of {limit} AI generations.",
+      "quotaSpend": "You have reached your monthly AI spend limit of ${limit}.",
+      "instanceCap": "The server's monthly AI budget is used up. Add your own key in settings or ask an administrator.",
+      "providerError": "The AI provider could not answer. Try again later.",
+      "badProvider": "Unknown AI provider.",
+      "modelRequired": "Choose a model name.",
+      "keyInvalid": "That does not look like an API key."
     }
   },
   "ui": {
@@ -2036,5 +2051,77 @@
       "quota": "Quota per user",
       "unknown": "Unknown"
     }
+  },
+  "llm": {
+    "heading": "AI assistant",
+    "hint": "Used to review auto-generated tabs and write easier versions of a song.",
+    "off": "AI features are turned off on this server.",
+    "using": {
+      "own": "Using your own API key with {model}.",
+      "shared": "Using the server's shared key with {model}.",
+      "local": "Using the server's local model, {model}."
+    },
+    "disabled": "An administrator has turned off AI features for your account.",
+    "needKey": "Add your own API key below to use AI features.",
+    "usage": "Today: {today} · This month: {month}",
+    "keyLabel": "Your API key",
+    "keyPlaceholder": "Paste an API key",
+    "keySaved": "Key saved. Paste a new one to replace it.",
+    "keySave": "Save key",
+    "keyRemove": "Remove key",
+    "keyHint": "Your key is stored encrypted, used only for your own requests, and never shown again.",
+    "removeConfirm": "Remove your saved API key?"
+  },
+  "llmAdmin": {
+    "heading": "AI assistant (administrator)",
+    "hint": "Choose the model provider, the shared key, and who may use it.",
+    "manage": "Manage AI settings",
+    "hide": "Hide",
+    "provider": "Provider",
+    "providers": {
+      "none": "Off",
+      "ollama": "Local (Ollama)",
+      "anthropic": "Anthropic",
+      "openai": "OpenAI-compatible"
+    },
+    "ollamaUrl": "Ollama URL",
+    "baseUrl": "API base URL (optional)",
+    "model": "Model name",
+    "adminKey": "Shared API key",
+    "removeKey": "Remove shared key",
+    "instanceCap": "Monthly spend cap on the shared key, in dollars (optional)",
+    "instanceUsage": "Shared key this month: {cost} over {count} requests (estimated).",
+    "rate": "Requests per minute, per user",
+    "save": "Save",
+    "saved": "Saved",
+    "users": "Users",
+    "mode": "Access for {name}",
+    "modes": {
+      "own_key": "Own key",
+      "shared": "Shared key",
+      "disabled": "No access"
+    },
+    "daily": "Daily limit for {name}",
+    "monthly": "Monthly limit for {name}",
+    "spend": "Monthly spend cap for {name}, in dollars",
+    "noLimit": "No limit",
+    "saveUser": "Save",
+    "userUsage": "{today} today · {month} this month · {cost} this month",
+    "hasOwnKey": "has their own key",
+    "limitsHint": "Columns: access, generations per day, generations per month, dollars per month. A user's own key never counts against these limits.",
+    "log": "Recent usage",
+    "logEmpty": "No requests yet.",
+    "tokens": "{input} in / {output} out",
+    "source": {
+      "shared": "shared key",
+      "own": "own key",
+      "local": "local model"
+    },
+    "notice": {
+      "daily": "{name} has used 80% of their daily limit.",
+      "monthly": "{name} has used 80% of their monthly limit.",
+      "spend": "{name} has used 80% of their monthly spend cap."
+    },
+    "dismiss": "Dismiss"
   }
 }

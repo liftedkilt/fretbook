@@ -32,6 +32,7 @@ one is optional: the defaults give a single-user server on `127.0.0.1:8137`.
 | `FRETBOOK_MAX_RESTORE_BYTES` | 4 GiB | Largest library archive accepted by Settings → Backup and restore. |
 | `FRETBOOK_MAX_RESTORE_UNPACKED_BYTES` | 16 GiB | Largest total size a library archive may unpack to. |
 | `FRETBOOK_LESSONS_DIR` | `$FRETBOOK_DATA_DIR/lessons` | Folder of your own courses and lessons (`<course>/<lesson>.md`), added to the built-in ones. See [Writing lessons](../lessons.md). |
+| `FRETBOOK_SECRET_KEY` | generated | Encrypts the LLM API keys stored in the database. Empty: a random key is created once in `$FRETBOOK_DATA_DIR/secret.key`. Keep it out of backups that sit next to the database. |
 
 ## Importing
 

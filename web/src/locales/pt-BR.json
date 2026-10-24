@@ -669,6 +669,21 @@
     },
     "storage": {
       "quotaExceeded": "Sua cota de armazenamento está cheia. Exclua algo ou fale com um administrador."
+    },
+    "llm": {
+      "off": "Os recursos de IA estão desativados neste servidor.",
+      "noAccess": "Um administrador desativou os recursos de IA para a sua conta.",
+      "noAdminKey": "O servidor não tem chave de API compartilhada. Adicione a sua nas configurações.",
+      "keyRequired": "Adicione sua própria chave de API nas configurações para usar os recursos de IA.",
+      "rateLimited": "Muitas solicitações de IA. Tente novamente em {retry_after} segundos.",
+      "quotaDaily": "Você atingiu o limite diário de {limit} gerações de IA. Tente novamente amanhã.",
+      "quotaMonthly": "Você atingiu o limite mensal de {limit} gerações de IA.",
+      "quotaSpend": "Você atingiu o limite mensal de gastos de IA de US${limit}.",
+      "instanceCap": "O orçamento mensal de IA do servidor acabou. Adicione sua chave nas configurações ou fale com um administrador.",
+      "providerError": "O provedor de IA não conseguiu responder. Tente novamente mais tarde.",
+      "badProvider": "Provedor de IA desconhecido.",
+      "modelRequired": "Escolha um nome de modelo.",
+      "keyInvalid": "Isso não parece uma chave de API."
     }
   },
   "ui": {
@@ -2036,5 +2051,77 @@
       "quota": "Cota por usuário",
       "unknown": "Desconhecido"
     }
+  },
+  "llm": {
+    "heading": "Assistente de IA",
+    "hint": "Usado para revisar tablaturas geradas automaticamente e escrever versões mais fáceis de uma música.",
+    "off": "Os recursos de IA estão desativados neste servidor.",
+    "using": {
+      "own": "Usando sua própria chave de API com {model}.",
+      "shared": "Usando a chave compartilhada do servidor com {model}.",
+      "local": "Usando o modelo local do servidor, {model}."
+    },
+    "disabled": "Um administrador desativou os recursos de IA para a sua conta.",
+    "needKey": "Adicione sua própria chave de API abaixo para usar os recursos de IA.",
+    "usage": "Hoje: {today} · Neste mês: {month}",
+    "keyLabel": "Sua chave de API",
+    "keyPlaceholder": "Cole uma chave de API",
+    "keySaved": "Chave salva. Cole uma nova para substituí-la.",
+    "keySave": "Salvar chave",
+    "keyRemove": "Remover chave",
+    "keyHint": "Sua chave é guardada criptografada, usada só nas suas próprias solicitações e nunca mais exibida.",
+    "removeConfirm": "Remover sua chave de API salva?"
+  },
+  "llmAdmin": {
+    "heading": "Assistente de IA (administrador)",
+    "hint": "Escolha o provedor do modelo, a chave compartilhada e quem pode usá-la.",
+    "manage": "Gerenciar configurações de IA",
+    "hide": "Ocultar",
+    "provider": "Provedor",
+    "providers": {
+      "none": "Desligado",
+      "ollama": "Local (Ollama)",
+      "anthropic": "Anthropic",
+      "openai": "Compatível com OpenAI"
+    },
+    "ollamaUrl": "URL do Ollama",
+    "baseUrl": "URL base da API (opcional)",
+    "model": "Nome do modelo",
+    "adminKey": "Chave de API compartilhada",
+    "removeKey": "Remover chave compartilhada",
+    "instanceCap": "Limite mensal de gastos da chave compartilhada, em dólares (opcional)",
+    "instanceUsage": "Chave compartilhada neste mês: {cost} em {count} solicitações (estimado).",
+    "rate": "Solicitações por minuto, por usuário",
+    "save": "Salvar",
+    "saved": "Salvo",
+    "users": "Usuários",
+    "mode": "Acesso de {name}",
+    "modes": {
+      "own_key": "Chave própria",
+      "shared": "Chave compartilhada",
+      "disabled": "Sem acesso"
+    },
+    "daily": "Limite diário de {name}",
+    "monthly": "Limite mensal de {name}",
+    "spend": "Limite mensal de gastos de {name}, em dólares",
+    "noLimit": "Sem limite",
+    "saveUser": "Salvar",
+    "userUsage": "{today} hoje · {month} neste mês · {cost} neste mês",
+    "hasOwnKey": "tem a própria chave",
+    "limitsHint": "Colunas: acesso, gerações por dia, gerações por mês, dólares por mês. A chave própria de um usuário nunca conta nesses limites.",
+    "log": "Uso recente",
+    "logEmpty": "Nenhuma solicitação ainda.",
+    "tokens": "{input} de entrada / {output} de saída",
+    "source": {
+      "shared": "chave compartilhada",
+      "own": "chave própria",
+      "local": "modelo local"
+    },
+    "notice": {
+      "daily": "{name} usou 80% do limite diário.",
+      "monthly": "{name} usou 80% do limite mensal.",
+      "spend": "{name} usou 80% do limite mensal de gastos."
+    },
+    "dismiss": "Dispensar"
   }
 }
