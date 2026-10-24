@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { ChromaEvent } from "./chroma";
 import type { PitchEvent } from "./engine";
 import type { ListenOptions, ListenSession } from "./input";
 import type { WaitStep } from "./wait";
@@ -28,12 +29,14 @@ const attack = (time: number, midi: number): PitchEvent => ({
 function setup(steps: WaitStep[], hintSeconds = 0) {
   let options!: ListenOptions;
   const expected: (number | null)[] = [];
+  const chroma: boolean[] = [];
   const stopped = vi.fn(async () => undefined);
   const session: ListenSession = {
     sampleRate: 48000,
     channelCount: 1,
     setChannel: () => undefined,
     setExpectedMidi: (midi) => expected.push(midi),
+    setChroma: (on) => chroma.push(on),
     stop: stopped,
   };
   const calls = { wait: [] as number[], hit: [] as number[], hint: [] as number[] };
@@ -48,7 +51,15 @@ function setup(steps: WaitStep[], hintSeconds = 0) {
     onHit: (_, index) => calls.hit.push(index),
     onHint: (_, index) => calls.hint.push(index),
   });
-  return { run, calls, expected, stopped, hear: (event: PitchEvent) => options.onPitch(event) };
+  return {
+    run,
+    calls,
+    expected,
+    chroma,
+    stopped,
+    hear: (event: PitchEvent) => options.onPitch(event),
+    hearChroma: (event: ChromaEvent) => options.onChroma?.(event),
+  };
 }
 
 describe("WaitRun", () => {
@@ -129,5 +140,35 @@ describe("WaitRun", () => {
     run.stop();
     expect(stopped).toHaveBeenCalledOnce();
     expect(run.reach(0)).toBe(false);
+  });
+
+  it("turns the chroma readings on for a chord and off again, and listens to them", async () => {
+    const chord: WaitStep = {
+      ...step(0, 0),
+      kind: "chord",
+      midis: [],
+      pcs: [0, 4, 7],
+    };
+    const { run, calls, expected, chroma, hear, hearChroma } = setup([chord, step(960, 28)]);
+    await run.start();
+    // The clock reads 1 s when the cursor stops on the chord.
+    hear({ ...attack(1, 48), onset: false, onsetTime: null });
+    run.reach(0);
+    expect(chroma.at(-1)).toBe(true);
+    expect(expected.at(-1)).toBeNull();
+    // A single pitch cannot complete a chord.
+    hear(attack(1.1, 48));
+    expect(calls.hit).toEqual([]);
+    const bins = new Array(12).fill(0);
+    for (const pc of [0, 4, 7]) bins[pc] = 1;
+    hearChroma({ time: 0.5, bins, span: 0.17, onset: true, onsetTime: 0.3 });
+    // The strum was before the cursor stopped, so it does not count; one after it does.
+    expect(calls.hit).toEqual([]);
+    hearChroma({ time: 1.5, bins, span: 0.17, onset: true, onsetTime: 1.2 });
+    expect(calls.hit).toEqual([0]);
+    expect(chroma.at(-1)).toBe(false);
+    run.reach(1);
+    expect(chroma.at(-1)).toBe(false);
+    expect(expected.at(-1)).toBe(28);
   });
 });

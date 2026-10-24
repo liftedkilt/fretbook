@@ -29,6 +29,7 @@
   import { gemKey, highwayStarts, timeAtBarPosition, type GemState } from "../lib/highway";
   import { instrumentLabel } from "../lib/instruments";
   import { describeProblem, ListenError, startListening } from "../lib/listen";
+  import { pitchClassName } from "../lib/listen/chordTones";
   import { buildWaitSteps, stepIndexAt, type WaitStep } from "../lib/listen/wait";
   import { WaitRun } from "../lib/listen/waitRun";
   import { followPlayed, playedBars } from "../lib/playback";
@@ -130,7 +131,7 @@
   // Every track is loaded so the synth can play and mix them all; only the chosen one is drawn.
   const tex = $derived(scoreToAlphaTex({ ...document_, bpm: renderBpm }, song.title, song.artist));
   const trackIndex = $derived(Math.max(0, document_.tracks.indexOf(track)));
-  const waitSteps = $derived(buildWaitSteps(document_, track));
+  const waitSteps = $derived(buildWaitSteps(document_, track, { chords: practice.wait.chords }));
   const fretEvents = $derived(practice.fretboard.on ? buildFretEvents(document_, track) : []);
   const fretFocus = $derived(focusAt(fretEvents, currentMeasure, currentPosition));
 
@@ -1184,9 +1185,15 @@
         <Icon name="mic" size={16} />
         <span class="wait-note">
           {#if waitState === "waiting" && waitStep}
-            {waitStep.kind === "dead"
-              ? t("wait.playDead")
-              : t("wait.playNow", { note: midiToName(waitStep.midis[0]) })}
+            {#if waitStep.kind === "dead"}
+              {t("wait.playDead")}
+            {:else if waitStep.kind === "chord"}
+              {t("chordWait.playChord", {
+                notes: (waitStep.pcs ?? []).map((pc) => pitchClassName(pc)).join(" "),
+              })}
+            {:else}
+              {t("wait.playNow", { note: midiToName(waitStep.midis[0]) })}
+            {/if}
           {:else if waitState === "hit"}
             {t("wait.hit")}
           {:else if waitState === "done"}

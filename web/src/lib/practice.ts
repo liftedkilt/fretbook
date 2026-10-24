@@ -57,6 +57,8 @@ export interface PracticeSettings {
     silent: boolean;
     /** Seconds on one beat before the hint shows the string and fret. */
     hintSeconds: number;
+    /** Judge a beat of several notes as a chord by its pitch content, not note by note. */
+    chords: boolean;
   };
   /** The fretboard under the score. */
   fretboard: {
@@ -99,7 +101,7 @@ export function defaultPractice(): PracticeSettings {
     metronome: { on: false, volume: 0.7 },
     countIn: { bars: 0, beforeLoops: false },
     mix: { audio: 1, synth: 1, tracks: {} },
-    wait: { anyOctave: true, silent: false, hintSeconds: 5 },
+    wait: { anyOctave: true, silent: false, hintSeconds: 5, chords: true },
     fretboard: { on: false, label: "names", leftHanded: false, root: null },
     loops: [],
     speedTrainer: defaultSpeedTrainer(),
@@ -146,6 +148,7 @@ export function parsePractice(raw: unknown): PracticeSettings {
   if (isRecord(wait)) {
     result.wait.anyOctave = wait.anyOctave !== false;
     result.wait.silent = wait.silent === true;
+    result.wait.chords = wait.chords !== false;
     const seconds = wait.hintSeconds;
     if (typeof seconds === "number" && Number.isFinite(seconds))
       result.wait.hintSeconds = Math.min(30, Math.max(1, Math.round(seconds)));

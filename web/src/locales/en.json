@@ -971,5 +971,20 @@
     "highestSpeed": "Highest speed: {speed}%",
     "reset": "Reset",
     "selectLoop": "Saved loops…"
+  },
+  "chordWait": {
+    "option": "Check chords by their notes together",
+    "playChord": "Play the chord: {notes}",
+    "title": "Wait for the chord",
+    "about": "Strum the chord that is lit, and the sheet moves on to the next. It listens to the notes together, so one slightly wrong string still counts.",
+    "start": "Wait for me",
+    "stop": "Stop waiting",
+    "listening": "Listening. Strum {chord}.",
+    "playNow": "Play {chord}",
+    "hit": "Right chord",
+    "done": "Done: {hits} of {total} chords played.",
+    "skip": "Skip this chord",
+    "progress": "{hits} of {total} chords",
+    "noChords": "This sheet has no chords to play."
   }
 }

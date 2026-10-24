@@ -2442,6 +2442,13 @@ textarea {
   font-weight: 700;
 }
 
+.chord-segment.chord-active .chord-name {
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  outline: 2px solid var(--accent);
+}
+
 .chord-lyric {
   min-height: 1.3em;
   font-size: 1.04em;
