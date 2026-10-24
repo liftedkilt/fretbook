@@ -130,6 +130,95 @@ def test_pr_title_skipped_outside_pull_requests():
     assert run_pr_title("").returncode == 0
 
 
+def run_ci_ok(needs: dict) -> subprocess.CompletedProcess[str]:
+    env = os.environ.copy()
+    env["NEEDS"] = json.dumps(needs)
+    return subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "check_ci_ok.py")],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env,
+    )
+
+
+def _needs(pr: str, dagger: str, fork: str, **extra: str) -> dict:
+    needs = {
+        "pr-title": {"result": pr},
+        "dagger": {"result": dagger},
+        "dagger-fork": {"result": fork},
+    }
+    for name, result in extra.items():
+        needs[name] = {"result": result}
+    return needs
+
+
+def test_ci_ok_passes_for_a_same_repo_run():
+    result = run_ci_ok(_needs("success", "success", "skipped"))
+    assert result.returncode == 0
+    assert "dagger: success" in result.stdout
+    assert "dagger-fork: skipped" in result.stdout
+
+
+def test_ci_ok_passes_for_a_fork_run():
+    assert run_ci_ok(_needs("success", "skipped", "success")).returncode == 0
+
+
+@pytest.mark.parametrize(
+    "needs",
+    [
+        {},
+        _needs("success", "skipped", "skipped"),
+        _needs("success", "success", "success"),
+        _needs("success", "failure", "skipped"),
+        _needs("success", "cancelled", "skipped"),
+        _needs("failure", "success", "skipped"),
+        _needs("skipped", "success", "skipped"),
+        _needs("success", "success", "failure"),
+    ],
+)
+def test_ci_ok_fails_when_a_required_job_did_not_succeed(needs):
+    result = run_ci_ok(needs)
+    assert result.returncode == 1
+    assert "did not succeed" in result.stderr
+
+
+def test_ci_ok_fails_when_an_extra_job_is_skipped():
+    needs = _needs("success", "success", "skipped", extra="skipped")
+    assert run_ci_ok(needs).returncode == 1
+
+
+def test_ci_ok_refuses_to_pass_without_needs():
+    env = os.environ.copy()
+    env.pop("NEEDS", None)
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "check_ci_ok.py")],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env,
+    )
+    assert result.returncode == 1
+
+
+def test_ci_workflow_keeps_forks_off_the_self_hosted_runner():
+    workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    assert "runs-on: [self-hosted, dagger]" in workflow
+    guard = "github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository"
+    assert guard in workflow
+    assert "github.event.pull_request.head.repo.full_name != github.repository" in workflow
+    assert "cancel-in-progress: true" in workflow
+    assert "group: ci-${{ github.ref }}" in workflow
+    assert "permissions:\n  contents: read\n" in workflow
+    assert "\n  ci-ok:\n" in workflow
+    assert "\n  dagger:\n" in workflow
+    assert "\n  dagger-fork:\n" in workflow
+    assert "dagger call --progress=plain ci" in workflow
+    for name in ("docker.yml", "release.yml", "codeql.yml", "unblock.yml"):
+        assert (ROOT / ".github/workflows" / name).is_file()
+    assert not (ROOT / ".github/workflows" / "dagger.yml").exists()
+
+
 def test_release_please_versions_agree():
     """The files release-please bumps all start from the manifest version."""
     version = json.loads((ROOT / ".release-please-manifest.json").read_text())["."]

@@ -51,7 +51,7 @@ Python 3.12, Node 22, and ffmpeg (only for downloading YouTube audio).
 ./run.sh            # creates .venv, builds the web app, starts on http://127.0.0.1:8137
 ```
 
-For development, see [CONTRIBUTING.md](CONTRIBUTING.md).
+For development, see [CONTRIBUTING.md](CONTRIBUTING.md). The CI checks run locally with `dagger call ci` (Dagger CLI v0.21.11 and Docker).
 
 ## Backup and restore
 
