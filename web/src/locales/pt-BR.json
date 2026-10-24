@@ -1793,6 +1793,9 @@
     "imported": "{courses} cursos e {lessons} aulas importados.",
     "problems": "{count} arquivos de aula têm problemas"
   },
+  "librarySnippet": {
+    "label": "Trecho da letra encontrado"
+  },
   "handsFree": {
     "autoScroll": "Rolagem automática",
     "scrollSlower": "Rolar mais devagar",

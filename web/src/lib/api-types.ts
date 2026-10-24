@@ -3008,6 +3008,8 @@ export interface components {
             has_sync: boolean;
             /** Id */
             id: string;
+            /** Lyrics Snippet */
+            lyrics_snippet: string | null;
             /** Measure Count */
             measure_count: number;
             /** Preferred Instrument */
@@ -3142,6 +3144,8 @@ export interface components {
             has_sync: boolean;
             /** Id */
             id: string;
+            /** Lyrics Snippet */
+            lyrics_snippet: string | null;
             /** Measure Count */
             measure_count: number;
             /** Preferred Instrument */

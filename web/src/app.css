@@ -4103,6 +4103,27 @@ kbd {
   display: none;
 }
 
+/* Why a lyric-only search match was found: the matching words, at most two lines. */
+.song-lyrics {
+  display: -webkit-box;
+  overflow: hidden;
+  margin-top: 0.15rem;
+  color: var(--text-2);
+  font-size: 0.75rem;
+  font-style: italic;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.song-lyrics mark {
+  background: none;
+  color: var(--text);
+  font-style: normal;
+  font-weight: 650;
+}
+
 .song-tag-row {
   display: flex;
   flex-wrap: wrap;

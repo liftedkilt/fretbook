@@ -1793,6 +1793,9 @@
     "imported": "Imported {courses} courses and {lessons} lessons.",
     "problems": "{count} lesson files have problems"
   },
+  "librarySnippet": {
+    "label": "Lyrics match"
+  },
   "handsFree": {
     "autoScroll": "Auto-scroll",
     "scrollSlower": "Scroll slower",

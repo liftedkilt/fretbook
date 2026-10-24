@@ -117,6 +117,39 @@ def test_search_finds_tags_and_follows_tag_changes(client: TestClient) -> None:
     assert _titles(client, q="campfire") == []
 
 
+def _snippets(client: TestClient, q: str) -> dict[str, str | None]:
+    response = client.get("/api/songs", params={"q": q})
+    assert response.status_code == 200, response.text
+    return {item["title"]: item["lyrics_snippet"] for item in response.json()["items"]}
+
+
+def test_lyric_only_matches_carry_a_snippet(client: TestClient) -> None:
+    sheet = {"content_kind": "chords", "title": "Sheet", "artist": "", "chordpro": LYRICS_SHEET}
+    sheet_id = client.post("/api/songs", json=sheet).json()["id"]
+    named = {"content_kind": "chords", "title": "Paradise", "artist": "City Band", "chordpro": LYRICS_SHEET}
+    client.post("/api/songs", json=named)
+    client.put(f"/api/songs/{sheet_id}/tags", json={"tags": ["taken"]})
+
+    # Only the sheet whose title and artist miss the words gets one, with the matched words marked.
+    assert _snippets(client, "paradise city") == {
+        "Sheet": "Take me down to the \x02paradise\x03 \x02city\x03",
+        "Paradise": None,
+    }
+    assert _snippets(client, "band") == {"Paradise": None}
+    # A tag match is not a lyric match, even though the sheet has lyrics.
+    assert _snippets(client, "taken") == {"Sheet": None}
+    # One word in the title and one in the lyrics: the lyric word is shown.
+    assert _snippets(client, "paradise take")["Paradise"] == "\x02Take\x03 me down to the \x02paradise\x03 city"
+    assert all(item["lyrics_snippet"] is None for item in client.get("/api/songs").json()["items"])
+    assert client.get(f"/api/songs/{sheet_id}").json()["lyrics_snippet"] is None
+
+
+def test_snippet_joins_lines_and_drops_marker_characters(client: TestClient) -> None:
+    chordpro = "[C]first line here\n[G]second \x02line\x03 there\n"
+    client.post("/api/songs", json={"content_kind": "chords", "title": "Verse", "artist": "", "chordpro": chordpro})
+    assert _snippets(client, "line") == {"Verse": "first \x02line\x03 here / second \x02line\x03 there"}
+
+
 def test_startup_indexes_lyrics_of_existing_sheets(tmp_path: Path) -> None:
     settings = Settings.for_tests(tmp_path)
     with TestClient(create_app(settings)) as client:

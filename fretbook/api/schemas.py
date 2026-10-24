@@ -219,6 +219,10 @@ class SongSummary(BaseModel):
     difficulty: float | None
     # The caller's tags for this song, sorted A to Z ignoring case.
     tags: list[str]
+    # In a library search that matched this chord sheet through its lyrics and not its title, artist or tags: the
+    # matching words in context. Each matched word sits between U+0002 and U+0003, and lines are joined by " / ".
+    # Null otherwise, and always null outside the song list. Always present in the JSON.
+    lyrics_snippet: str | None
 
 
 DifficultyFactorKey = Literal[
