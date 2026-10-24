@@ -16,6 +16,29 @@ export interface TrackMix {
 
 export type CountInBars = 0 | 1 | 2;
 
+export interface SavedLoop {
+  id: string;
+  name: string;
+  /** 0-based bar index start */
+  a: number;
+  /** 0-based bar index end */
+  b: number;
+  /** Highest speed reached (ratio, e.g. 1.0 = 100%, 0.85 = 85%) */
+  highestSpeed?: number;
+}
+
+export interface SpeedTrainerSettings {
+  enabled: boolean;
+  /** Percentage, e.g. 60 */
+  startPercent: number;
+  /** Percentage, e.g. 100 */
+  targetPercent: number;
+  /** Percentage, e.g. 5 */
+  stepPercent: number;
+  /** Passes per step, e.g. 1 */
+  passesPerStep: number;
+}
+
 export interface PracticeSettings {
   metronome: { on: boolean; volume: number };
   countIn: { bars: CountInBars; beforeLoops: boolean };
@@ -43,6 +66,10 @@ export interface PracticeSettings {
     /** Pitch class the interval labels count from; null means the lowest open string. */
     root: number | null;
   };
+  /** Named A/B loop sections saved for this song. */
+  loops: SavedLoop[];
+  /** Speed trainer settings: raises playback rate after passes. */
+  speedTrainer: SpeedTrainerSettings;
 }
 
 export interface Click {
@@ -57,6 +84,16 @@ export function defaultTrackMix(): TrackMix {
   return { volume: 1, mute: false, solo: false };
 }
 
+export function defaultSpeedTrainer(): SpeedTrainerSettings {
+  return {
+    enabled: false,
+    startPercent: 60,
+    targetPercent: 100,
+    stepPercent: 5,
+    passesPerStep: 1,
+  };
+}
+
 export function defaultPractice(): PracticeSettings {
   return {
     metronome: { on: false, volume: 0.7 },
@@ -64,6 +101,8 @@ export function defaultPractice(): PracticeSettings {
     mix: { audio: 1, synth: 1, tracks: {} },
     wait: { anyOctave: true, silent: false, hintSeconds: 5 },
     fretboard: { on: false, label: "names", leftHanded: false, root: null },
+    loops: [],
+    speedTrainer: defaultSpeedTrainer(),
   };
 }
 
@@ -120,7 +159,100 @@ export function parsePractice(raw: unknown): PracticeSettings {
     if (typeof root === "number" && Number.isInteger(root) && root >= 0 && root < 12)
       result.fretboard.root = root;
   }
+  if (Array.isArray(raw.loops)) {
+    result.loops = raw.loops.flatMap((item, index) => {
+      if (!isRecord(item)) return [];
+      const a = typeof item.a === "number" && Number.isInteger(item.a) && item.a >= 0 ? item.a : 0;
+      const b = typeof item.b === "number" && Number.isInteger(item.b) && item.b >= a ? item.b : a;
+      const id =
+        typeof item.id === "string" && item.id.trim() ? item.id.trim() : `loop-${index + 1}`;
+      const name =
+        typeof item.name === "string" && item.name.trim() ? item.name.trim() : `Loop ${index + 1}`;
+      const highestSpeed =
+        typeof item.highestSpeed === "number" &&
+        Number.isFinite(item.highestSpeed) &&
+        item.highestSpeed > 0
+          ? Math.round(item.highestSpeed * 100) / 100
+          : undefined;
+      return [{ id, name, a, b, ...(highestSpeed !== undefined ? { highestSpeed } : {}) }];
+    });
+  }
+  if (isRecord(raw.speedTrainer)) {
+    result.speedTrainer.enabled = raw.speedTrainer.enabled === true;
+    const start = raw.speedTrainer.startPercent;
+    if (typeof start === "number" && Number.isFinite(start))
+      result.speedTrainer.startPercent = Math.min(300, Math.max(10, Math.round(start)));
+    const target = raw.speedTrainer.targetPercent;
+    if (typeof target === "number" && Number.isFinite(target))
+      result.speedTrainer.targetPercent = Math.min(300, Math.max(10, Math.round(target)));
+    const step = raw.speedTrainer.stepPercent;
+    if (typeof step === "number" && Number.isFinite(step))
+      result.speedTrainer.stepPercent = Math.min(100, Math.max(1, Math.round(step)));
+    const passes = raw.speedTrainer.passesPerStep;
+    if (typeof passes === "number" && Number.isFinite(passes))
+      result.speedTrainer.passesPerStep = Math.min(20, Math.max(1, Math.round(passes)));
+  }
   return result;
+}
+
+/** Next percent speed towards targetPercent by stepPercent. */
+export function calcNextSpeed(
+  currentPercent: number,
+  targetPercent: number,
+  stepPercent: number,
+): number {
+  if (currentPercent >= targetPercent) return targetPercent;
+  return Math.min(targetPercent, currentPercent + Math.max(1, stepPercent));
+}
+
+/** Formats a speed ratio (e.g. 1.0 or 0.85) or percentage into a display string (e.g. "100%", "85%"). */
+export function formatSpeedPercent(speed: number | undefined): string {
+  if (speed == null) return "";
+  const pct = speed <= 3 ? Math.round(speed * 100) : Math.round(speed);
+  return `${pct}%`;
+}
+
+/** Updates a loop's highest speed if the new speed is higher. */
+export function updateLoopHighestSpeed(
+  loops: SavedLoop[],
+  loopId: string,
+  speed: number,
+): { updated: boolean; loops: SavedLoop[] } {
+  let updated = false;
+  const newLoops = loops.map((loop) => {
+    if (loop.id === loopId) {
+      const rounded = Math.round(speed * 100) / 100;
+      if (rounded > (loop.highestSpeed ?? 0)) {
+        updated = true;
+        return { ...loop, highestSpeed: rounded };
+      }
+    }
+    return loop;
+  });
+  return { updated, loops: newLoops };
+}
+
+/**
+ * Record the highest speed reached for a loop to the practice log (dispatches window event until practice log tables exist).
+ */
+export function recordLoopPracticeLog(
+  songId: string,
+  loop: Pick<SavedLoop, "id" | "name">,
+  speed: number,
+): void {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent("fretbook:practice-log-record", {
+        detail: {
+          songId,
+          loopId: loop.id,
+          loopName: loop.name,
+          speed: Math.round(speed * 100) / 100,
+          timestamp: Date.now(),
+        },
+      }),
+    );
+  }
 }
 
 export function loadPractice(songId: string): PracticeSettings {

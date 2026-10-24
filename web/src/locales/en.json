@@ -949,5 +949,27 @@
       "lowG": "Low G",
       "custom": "Custom"
     }
+  },
+  "speedTrainer": {
+    "title": "Speed trainer",
+    "enable": "Speed trainer",
+    "start": "Start",
+    "target": "Target",
+    "step": "Step",
+    "passes": "Passes",
+    "passesPerStep": "Passes per step",
+    "status": "Pass {pass}/{totalPasses} at {speed}% → Target {target}%",
+    "goalReached": "Target reached: {speed}%",
+    "saveLoop": "Save loop",
+    "loopName": "Loop name",
+    "loopNamePlaceholder": "e.g. Solo, Bridge riff",
+    "savedLoops": "Saved loops",
+    "defaultLoopName": "Bars {a}–{b}",
+    "deleteLoop": "Delete loop",
+    "jumpToLoop": "Jump to {name} (bars {a}–{b})",
+    "bestSpeed": "Best: {speed}%",
+    "highestSpeed": "Highest speed: {speed}%",
+    "reset": "Reset",
+    "selectLoop": "Saved loops…"
   }
 }

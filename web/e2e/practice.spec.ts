@@ -134,3 +134,100 @@ test("the recording's volume and the metronome work alongside the audio", async 
   });
   await page.getByTestId("player-play").click();
 });
+
+test("saves named practice loops, jumps to them from the song page, and remembers speed trainer settings", async ({
+  page,
+  seed,
+}) => {
+  const song = await seed.musicXmlTab();
+  await page.goto(`/songs/${song.id}`);
+  await expect(page.getByTestId("player-score").locator("svg").first()).toBeVisible();
+
+  // Open dock drawer panel
+  await page.getByTestId("player-panel-toggle").click();
+  await expect(page.getByTestId("loop-panel")).toBeVisible();
+
+  // Set loop A and B
+  await page.getByTestId("player-loop-a").click();
+  await page.getByTestId("player-next").click();
+  await page.getByTestId("player-next").click();
+  await page.getByTestId("player-loop-b").click();
+
+  await expect(page.getByTestId("current-loop-range")).toBeVisible();
+
+  // Save the loop with name "Solo"
+  await page.getByTestId("save-loop-name").fill("Solo");
+  await page.getByTestId("save-loop-button").click();
+
+  // Verify saved loop appears in drawer panel
+  const savedLoop = page.locator('[data-testid^="saved-loop-"]').first();
+  await expect(savedLoop).toBeVisible();
+  await expect(savedLoop.getByText("Solo")).toBeVisible();
+
+  // Verify saved loop chip appears on the song page hero
+  const heroChip = page.getByTestId("song-saved-loops");
+  await expect(heroChip).toBeVisible();
+  await expect(heroChip.getByText("Solo")).toBeVisible();
+
+  // Clear current loop
+  await page.getByTestId("player-clear-loop").click();
+  await expect(page.getByTestId("current-loop-range")).toBeHidden();
+
+  // Jump to the saved loop from the song page hero chip
+  await heroChip.locator("button").first().click();
+  await expect(page.getByTestId("current-loop-range")).toBeVisible();
+
+  // Configure speed trainer
+  await page.getByTestId("speed-trainer-toggle").click();
+  await expect(page.getByTestId("speed-trainer-controls")).toBeVisible();
+  await page.getByTestId("speed-trainer-start").fill("70");
+  await page.getByTestId("speed-trainer-target").fill("100");
+  await page.getByTestId("speed-trainer-step").fill("10");
+
+  // Reload the page and verify loop and speed trainer settings are remembered
+  await page.reload();
+  await expect(page.getByTestId("player-score").locator("svg").first()).toBeVisible();
+  await expect(page.getByTestId("song-saved-loops")).toBeVisible();
+  await expect(page.getByTestId("song-saved-loops").getByText("Solo")).toBeVisible();
+
+  await page.getByTestId("player-panel-toggle").click();
+  await expect(page.getByTestId("speed-trainer-toggle")).toBeChecked();
+  await expect(page.getByTestId("speed-trainer-start")).toHaveValue("70");
+});
+
+test("speed trainer steps up speed and counts in between passes", async ({ page, seed }) => {
+  const song = await seed.musicXmlTab();
+  await page.goto(`/songs/${song.id}`);
+  await expect(page.getByTestId("player-score").locator("svg").first()).toBeVisible();
+
+  await page.getByTestId("player-panel-toggle").click();
+  // Set loop on bar 0 (one short bar at 240 bpm)
+  await page.getByTestId("player-loop-a").click();
+  await page.getByTestId("player-loop-b").click();
+  await expect(page.getByTestId("current-loop-range")).toHaveText("A1–B1");
+
+  // Save loop
+  await page.getByTestId("save-loop-name").fill("Short loop");
+  await page.getByTestId("save-loop-button").click();
+
+  // Enable speed trainer with start 60%, target 80%, step 20%, 1 pass
+  await page.getByTestId("speed-trainer-toggle").click();
+  await page.getByTestId("speed-trainer-start").fill("60");
+  await page.getByTestId("speed-trainer-target").fill("80");
+  await page.getByTestId("speed-trainer-step").fill("20");
+  await page.getByTestId("speed-trainer-passes").fill("1");
+
+  // Start playback
+  const play = page.getByTestId("player-play");
+  await play.click();
+
+  // Count-in runs before playback
+  await expect(play).toHaveAttribute("data-counting", "true");
+  await expect(play).toHaveAttribute("data-playing", "true", { timeout: 15_000 });
+
+  // After 1 pass (bar 0 loops back), count-in runs again between passes
+  await expect(play).toHaveAttribute("data-counting", "true", { timeout: 15_000 });
+  await expect(page.getByTestId("speed-trainer-status")).toBeVisible();
+
+  await play.click();
+});

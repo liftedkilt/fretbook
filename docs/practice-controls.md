@@ -1,6 +1,6 @@
 # Practice controls
 
-How the song page's metronome, count-in, mixer, and slow-down work, and how to check them by hand.
+How the song page's metronome, count-in, mixer, slow-down, saved loops, and speed trainer work, and how to check them by hand.
 
 ## How it works
 
@@ -8,6 +8,16 @@ How the song page's metronome, count-in, mixer, and slow-down work, and how to c
 - **Recording playback**: the `<audio>` element sets the pace and alphaTab's external-media mode makes no sound of its own. The metronome is a Web Audio click scheduled from the bar starts (`songStarts`, which includes your sync marks), so it stays on the recording's beat. The mixer shows the recording's volume only.
 - **Count-in**: one or two empty bars are clicked in at the tempo and time signature of the bar playback starts on, scaled by the playback speed. With "Before each loop pass" on, a recording pauses at the loop start, counts in, then plays on.
 - **Slowing down**: the speed control sets `playbackRate`, and `preservesPitch` is switched on for the audio element (`webkitPreservesPitch` / `mozPreservesPitch` too where a browser still uses them). The synth slows by changing its tempo, which never changes pitch. No time-stretch library is needed.
+- **Saved loops**:
+  - An A/B range can be set from playback or specified directly in the Practice dock drawer (`LoopPanel`).
+  - Loops can be saved with names (e.g. "Solo", "Bridge riff").
+  - Quick-jump buttons appear in the song page header for fast loop navigation.
+  - Direct linking is supported via the `?loop=<id>` query parameter.
+- **Speed trainer**:
+  - Configurable with Start %, Target %, Step %, and Passes per step.
+  - Automatically increases tempo upon finishing the configured number of passes until the target speed is reached.
+  - Counts in between loop passes (and on initial start) to allow preparing for the next repetition.
+  - Records the highest speed achieved per loop on the loop's settings and dispatches a `fretbook:practice-log-record` window event for integration with the practice log.
 - Settings are stored in `localStorage` per song (`fretbook.practice.<song id>`): per browser, not per account.
 
 ## Manual check: slowed audio keeps its pitch
@@ -26,3 +36,12 @@ Record the browser and version when you report a problem.
 1. Press `M`: clicks sound on every beat, higher on beat 1, in time with the cursor (synth) or the recording.
 2. Press `C` until "2 bars" is selected, then Space: two bars of clicks, then the music.
 3. Open a song with a tempo or time-signature change: the click changes with it.
+
+## Manual check: saved loops and speed trainer
+
+1. Open the Practice drawer (or loop controls) and set Loop A to bar 1 and Loop B to bar 4.
+2. Enter "Intro Riff" in the name field and click "Save loop".
+3. Verify that an "Intro Riff" pill appears in the song page hero header and in the saved loops list in the Practice drawer.
+4. Enable "Speed trainer", set start speed to 60%, target speed to 100%, step to 10%, and passes to 2.
+5. Press Play / Space: verify that playback begins at 60% with count-in clicks, repeats at 60% for pass 2, then automatically ramps to 70% with count-in for pass 3, continuing up to 100%.
+6. Stop playback and check that the highest speed achieved is saved with the loop badge.
