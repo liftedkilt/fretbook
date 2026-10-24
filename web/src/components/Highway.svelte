@@ -236,7 +236,7 @@
         >
       {/if}
     </div>
-    <span aria-live="polite" data-testid="highway-summary">{summary}</span>
+    <span class="visually-hidden" aria-live="polite" data-testid="highway-summary">{summary}</span>
   </figcaption>
 </figure>
 
@@ -267,9 +267,11 @@
     cursor: pointer;
   }
 
+  /* The badges scroll sideways instead of wrapping, so a new chord pill never changes the
+     height. The "Now" readout lives under the fretboard (one place only). */
   .highway-caption {
     display: flex;
-    flex-wrap: wrap;
+    min-height: 2rem;
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
@@ -278,7 +280,10 @@
 
   .highway-badges {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
     gap: 0.4rem;
     align-items: center;
   }

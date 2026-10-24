@@ -237,7 +237,13 @@
     font-size: 11px;
     text-anchor: middle;
   }
+  /* One line, always the same height, so the score doesn't shift as the notes change. */
   figcaption {
     text-align: center;
+    min-height: 1.4em;
+    line-height: 1.4;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 </style>
