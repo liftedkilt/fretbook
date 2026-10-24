@@ -104,6 +104,7 @@
 
   let error = $state("");
   let host = $state<HTMLDivElement | null>(null);
+  let scroller = $state<HTMLDivElement | null>(null);
   let audioEl = $state<HTMLAudioElement | null>(null);
   let stemsActive = false;
   let trackId = $state(untrack(() => song.preferred_track_id || preferredTrack(song.document).id));
@@ -292,9 +293,10 @@
 
   $effect(() => {
     const element = host;
+    const scrollElement = scroller;
     const source = tex;
     const useAudio = song.has_audio;
-    if (!element) return;
+    if (!element || !scrollElement) return;
     const settings = new alphaTab.Settings();
     settings.core.fontDirectory = new URL("font/", document.baseURI).href;
     settings.core.logLevel = alphaTab.LogLevel.Warning;
@@ -307,8 +309,9 @@
     settings.player.enableCursor = true;
     settings.player.enableElementHighlighting = true;
     settings.player.enableUserInteraction = true;
-    settings.player.scrollElement = element;
-    settings.player.scrollOffsetY = 16;
+    settings.player.scrollElement = scrollElement;
+    // Negative: the playing system stops a little below the top edge, not above it.
+    settings.player.scrollOffsetY = -16;
     settings.player.scrollMode = untrack(() => follow)
       ? alphaTab.ScrollMode.Continuous
       : alphaTab.ScrollMode.Off;
@@ -435,8 +438,8 @@
   // Follow scrolls inside the score, so the score itself must sit clear of the
   // floating dock; its scroll-margin-bottom in app.css leaves room for the dock.
   $effect(() => {
-    if (!playing || !follow || !host || ui.playerView === "highway") return;
-    const score = host;
+    if (!playing || !follow || !scroller || ui.playerView === "highway") return;
+    const score = scroller;
     untrack(() => {
       const dock = document.querySelector(".dock-bar")?.getBoundingClientRect();
       const box = score.getBoundingClientRect();
@@ -1390,11 +1393,15 @@
       data-testid="player-score"
       data-hidden={ui.playerView === "highway" ? "true" : undefined}
       data-wait={waitOn ? waitState : undefined}
-      bind:this={host}
+      bind:this={scroller}
       role="region"
       aria-label={t("player.score")}
       tabindex={ui.playerView === "highway" ? -1 : 0}
-    ></div>
+    >
+      <!-- alphaTab's container sits inside the scroller: when they are the same element,
+           follow adds the current scroll offset again and overshoots the bar (issue #118). -->
+      <div bind:this={host}></div>
+    </div>
   </div>
 
   {#if practice.fretboard.on}
