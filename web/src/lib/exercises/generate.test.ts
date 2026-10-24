@@ -1,9 +1,14 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 
 import { parseChord } from "../chords/theory";
 import { PRESET_DRILLS, labelText } from "./presets";
 import {
+  BASS_PATTERNS,
   ExerciseError,
+  RHYTHMS,
+  STRUM_PATTERNS,
   chordSpots,
   generateExercise,
   layout,
@@ -483,5 +488,23 @@ describe("preset drills", () => {
     const text = labelText(label, (key, vars) => (vars ? `${key}:${JSON.stringify(vars)}` : key));
     expect(text).toContain('"scale":"exercises.scales.minor"');
     expect(text.startsWith("exercises.title.scale:")).toBe(true);
+  });
+});
+
+describe("catalog", () => {
+  const english = JSON.parse(
+    readFileSync(new URL("../../locales/en.json", import.meta.url), "utf8"),
+  ).exercises;
+  const keys = (group: Record<string, unknown>) => Object.keys(group).sort();
+
+  it("names every scale, rhythm, strum, bass pattern and preset drill", () => {
+    expect(keys(english.scales)).toEqual([...SCALE_IDS].sort());
+    expect(keys(english.rhythms)).toEqual(Object.keys(RHYTHMS).sort());
+    expect(keys(english.strums)).toEqual(Object.keys(STRUM_PATTERNS).sort());
+    expect(keys(english.bassPatterns)).toEqual([...BASS_PATTERNS].sort());
+    expect(keys(english.presets)).toEqual(PRESET_DRILLS.map((preset) => preset.id).sort());
+    for (const preset of Object.values<Record<string, string>>(english.presets)) {
+      expect(preset.title && preset.description).toBeTruthy();
+    }
   });
 });
