@@ -11,7 +11,7 @@ services:
       FRETBOOK_HOST: "0.0.0.0"
       # Without FRETBOOK_OIDC_ISSUER there is no login: anyone who can reach
       # this port can use the library. Publish it only where that is fine.
-      # To sign in with Pocket ID (see the README):
+      # To sign in with an OIDC provider (see https://liftedkilt.github.io/fretbook/self-hosting/oidc/):
       # FRETBOOK_OIDC_ISSUER: "https://id.example.com"
       # FRETBOOK_OIDC_CLIENT_ID: "..."
       # FRETBOOK_OIDC_REDIRECT_URI: "https://fretbook.example.com/auth/callback"
