@@ -6,6 +6,7 @@
   import { t } from "../lib/i18n.svelte";
   import { coursePath, lessonPath } from "../lib/lessons";
   import { followLink, hrefFor } from "../lib/router.svelte";
+  import { ui } from "../lib/ui.svelte";
 
   let { course, lesson }: { course: string; lesson: string } = $props();
 
@@ -92,7 +93,7 @@
         <h1 class="display hero-title">{detail.title}</h1>
         {#if detail.summary}<p class="muted">{detail.summary}</p>{/if}
       </div>
-      {#if detail.can_edit}
+      {#if detail.can_edit && !ui.demoMode}
         <a
           class="button ghost"
           data-testid="lesson-edit"

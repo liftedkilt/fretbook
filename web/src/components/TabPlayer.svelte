@@ -1343,14 +1343,16 @@
             {t("highway.split")}
           </button>
         </div>
-        <a
-          class="button"
-          data-testid="song-edit-link"
-          href={hrefFor(`/songs/${song.id}/edit`)}
-          onclick={(event) => followLink(event, `/songs/${song.id}/edit`)}
-        >
-          <Icon name="edit" size={18} /><span>{t("player.edit")}</span>
-        </a>
+        {#if !ui.demoMode}
+          <a
+            class="button"
+            data-testid="song-edit-link"
+            href={hrefFor(`/songs/${song.id}/edit`)}
+            onclick={(event) => followLink(event, `/songs/${song.id}/edit`)}
+          >
+            <Icon name="edit" size={18} /><span>{t("player.edit")}</span>
+          </a>
+        {/if}
         <button
           data-testid="song-tuner"
           onclick={() => openTuner({ tuning: track.tuning_midi, capo: track.capo })}
@@ -1359,18 +1361,20 @@
         </button>
         <Menu label={t("player.export")} icon="download" testid="export-menu">
           {#snippet children(close)}
-            <button
-              class="menu-item"
-              data-testid="song-add-to-setlist"
-              role="menuitem"
-              onclick={() => {
-                close();
-                pickerOpen = true;
-              }}
-            >
-              <Icon name="list" size={18} />
-              {t("setlists.addToSetlist")}
-            </button>
+            {#if !ui.demoMode}
+              <button
+                class="menu-item"
+                data-testid="song-add-to-setlist"
+                role="menuitem"
+                onclick={() => {
+                  close();
+                  pickerOpen = true;
+                }}
+              >
+                <Icon name="list" size={18} />
+                {t("setlists.addToSetlist")}
+              </button>
+            {/if}
             <button
               class="menu-item"
               data-testid="export-pdf"
@@ -1496,7 +1500,7 @@
           tracks={song.document.tracks}
           onchange={practiceChanged}
         />
-        {#if song.has_audio}
+        {#if song.has_audio && !ui.demoMode}
           <StemMixer
             songId={song.id}
             {audioEl}
@@ -1541,7 +1545,7 @@
           error={scoreError}
           ontoggle={toggleScore}
         />
-        {#if song.has_audio}
+        {#if song.has_audio && !ui.demoMode}
           <div class="panel-group">
             <h3>{t("player.syncMarks")}</h3>
             <div class="button-row">

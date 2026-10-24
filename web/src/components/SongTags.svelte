@@ -54,53 +54,55 @@
   }
 </script>
 
-<div class="song-tags" data-testid="song-tags">
-  <button
-    class="icon-button glass song-star"
-    class:on={favourite}
-    data-testid="song-favourite"
-    aria-pressed={favourite}
-    aria-label={favourite ? t("tags.unfavourite") : t("tags.favourite")}
-    title={favourite ? t("tags.unfavourite") : t("tags.favourite")}
-    onclick={() => void toggleStar()}
-  >
-    <Icon name={favourite ? "starFilled" : "star"} size={18} />
-  </button>
-  <ul class="tag-list" aria-label={t("tags.heading")}>
-    {#each tags as tag (tag)}
-      <li class="tag-pill" data-testid="song-tag">
-        <Icon name="tag" size={13} />{tag}
-        <button
-          class="tag-remove"
-          data-testid="song-tag-remove"
-          aria-label={t("tags.remove", { tag })}
-          disabled={busy}
-          onclick={() => void save(tags.filter((own) => own !== tag))}
-          ><Icon name="close" size={12} /></button
-        >
-      </li>
-    {/each}
-  </ul>
-  <form
-    class="tag-add"
-    onsubmit={(event) => {
-      event.preventDefault();
-      void add();
-    }}
-  >
-    <input
-      type="text"
-      data-testid="song-tag-input"
-      list="song-tag-suggestions"
-      maxlength="40"
-      bind:value={draft}
-      placeholder={t("tags.addPlaceholder")}
-      aria-label={t("tags.add")}
-    />
-    <datalist id="song-tag-suggestions">
-      {#each suggestions as tag (tag)}<option value={tag}></option>{/each}
-    </datalist>
-    <button type="submit" disabled={busy || !draft.trim()}>{t("tags.add")}</button>
-  </form>
-  {#if error}<p class="alert" role="alert">{error}</p>{/if}
-</div>
+{#if !ui.demoMode || tags.length}
+  <div class="song-tags" data-testid="song-tags">
+    {#if !ui.demoMode}<button
+        class="icon-button glass song-star"
+        class:on={favourite}
+        data-testid="song-favourite"
+        aria-pressed={favourite}
+        aria-label={favourite ? t("tags.unfavourite") : t("tags.favourite")}
+        title={favourite ? t("tags.unfavourite") : t("tags.favourite")}
+        onclick={() => void toggleStar()}
+      >
+        <Icon name={favourite ? "starFilled" : "star"} size={18} />
+      </button>{/if}
+    <ul class="tag-list" aria-label={t("tags.heading")}>
+      {#each tags as tag (tag)}
+        <li class="tag-pill" data-testid="song-tag">
+          <Icon name="tag" size={13} />{tag}
+          {#if !ui.demoMode}<button
+              class="tag-remove"
+              data-testid="song-tag-remove"
+              aria-label={t("tags.remove", { tag })}
+              disabled={busy}
+              onclick={() => void save(tags.filter((own) => own !== tag))}
+              ><Icon name="close" size={12} /></button
+            >{/if}
+        </li>
+      {/each}
+    </ul>
+    {#if !ui.demoMode}<form
+        class="tag-add"
+        onsubmit={(event) => {
+          event.preventDefault();
+          void add();
+        }}
+      >
+        <input
+          type="text"
+          data-testid="song-tag-input"
+          list="song-tag-suggestions"
+          maxlength="40"
+          bind:value={draft}
+          placeholder={t("tags.addPlaceholder")}
+          aria-label={t("tags.add")}
+        />
+        <datalist id="song-tag-suggestions">
+          {#each suggestions as tag (tag)}<option value={tag}></option>{/each}
+        </datalist>
+        <button type="submit" disabled={busy || !draft.trim()}>{t("tags.add")}</button>
+      </form>{/if}
+    {#if error}<p class="alert" role="alert">{error}</p>{/if}
+  </div>
+{/if}

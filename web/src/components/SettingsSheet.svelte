@@ -240,7 +240,7 @@
       </div>
     </section>
     <PedalSettings />
-    <ApiTokens />
+    {#if !ui.demoMode}<ApiTokens />{/if}
 
     <section class="setting setting-stacked" data-testid="calibration-setting">
       <div class="setting-label">
@@ -304,7 +304,7 @@
       </div>
     </section>
 
-    <BackupSettings />
+    {#if !ui.demoMode}<BackupSettings />{/if}
     {#if ui.version}
       <section class="setting" data-testid="about-setting">
         <div class="setting-label">

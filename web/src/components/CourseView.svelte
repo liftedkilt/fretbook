@@ -5,6 +5,7 @@
   import { t } from "../lib/i18n.svelte";
   import { coursePath, lessonPath, trackLabelKey } from "../lib/lessons";
   import { followLink, hrefFor, navigate } from "../lib/router.svelte";
+  import { ui } from "../lib/ui.svelte";
 
   let { id }: { id: string } = $props();
 
@@ -94,7 +95,7 @@
       {/if}
     </div>
 
-    {#if canEdit}
+    {#if canEdit && !ui.demoMode}
       <div class="lesson-admin" data-testid="course-admin">
         <a
           class="button"
