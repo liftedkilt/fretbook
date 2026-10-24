@@ -84,6 +84,17 @@ export class WaitRun {
     this.passed = (first < 0 ? this.options.steps.length : first) - 1;
   }
 
+  /**
+   * The player clicked a beat of the score at `tick`: drop the current wait and carry on from
+   * there. Stops on that beat when it is a step of the track. Returns true when it did.
+   */
+  reposition(tick: number): boolean {
+    this.seek(tick);
+    const index = this.passed + 1;
+    if (this.options.steps[index]?.tick !== tick) return false;
+    return this.reach(index);
+  }
+
   /** Let the player past the current step without a note. */
   skip(): void {
     if (this.current < 0) return;

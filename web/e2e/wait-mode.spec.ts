@@ -81,3 +81,28 @@ test("wait mode stays inside the loop range", async ({ page, seed }) => {
   await expect(status).not.toHaveAttribute("data-state", "done");
   await expect(page.getByTestId("player-status")).toHaveAttribute("data-measure", "2");
 });
+
+test("clicking a later bar on the score moves the wait to that bar's note", async ({
+  page,
+  seed,
+}) => {
+  const song = await seed.musicXmlTab();
+  await page.goto(`/songs/${song.id}`);
+  const score = page.getByTestId("player-score");
+  await expect(score.locator("svg").first()).toBeVisible();
+
+  await page.getByTestId("player-panel-toggle").click();
+  await page.getByTestId("wait-silent").check();
+  await page.getByTestId("wait-toggle").click();
+  await page.getByTestId("player-play").click();
+  const status = page.getByTestId("wait-status");
+  await expect(status).toHaveAttribute("data-state", "waiting");
+  await expect(status).toContainText("Play E1");
+
+  // Bar 3 holds A1. alphaTab maps a click to the beat under the pointer.
+  await page.getByTestId("player-panel-toggle").click();
+  await score.scrollIntoViewIfNeeded();
+  // Bar 3 spans about x 378 to 445 of the score at the default viewport; click its note.
+  await score.click({ position: { x: 396, y: 190 } });
+  await expect(status).toContainText("Play A1");
+});
