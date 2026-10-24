@@ -1304,6 +1304,10 @@
     </div>
   {/if}
 
+  <p class="visually-hidden" role="status" data-testid="player-announcer">
+    {countingIn ? t("player.countingIn") : playing ? t("player.playing") : t("player.paused")}
+  </p>
+
   <div class="dock">
     {#if panelOpen}
       <section class="dock-panel" aria-label={t("player.syncPanel")}>
