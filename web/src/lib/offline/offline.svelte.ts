@@ -1,5 +1,7 @@
 import { ApiError, getSong, isOfflineError, noteRebase, putSong } from "../api";
+import type { SongDetail } from "../types";
 import { dropEdit, markEdit, queue, reloadQueue } from "./queueState.svelte";
+import type { QueuedEdit } from "./queue";
 import {
   emptyRegistry,
   readRegistry,
@@ -103,6 +105,20 @@ export async function refreshSaved(): Promise<void> {
 
 // --- edits made offline -----------------------------------------------------------------------------------------
 
+/**
+ * True when the server already holds what the edit says. That happens when a send reached the server but its answer
+ * was lost (the connection dropped as it came back): the retry is then refused as a conflict with itself.
+ */
+function alreadySaved(latest: SongDetail, body: QueuedEdit["body"]): boolean {
+  return (
+    latest.title === body.title &&
+    latest.artist === body.artist &&
+    (body.chordpro === undefined || latest.chordpro === body.chordpro) &&
+    (body.document === undefined ||
+      JSON.stringify(latest.document) === JSON.stringify(body.document))
+  );
+}
+
 /** Send queued edits in the order they were made. Stops at the first sign of no network. */
 export async function flushQueue(): Promise<void> {
   if (offline.syncing) return;
@@ -117,6 +133,18 @@ export async function flushQueue(): Promise<void> {
       } catch (error) {
         if (isOfflineError(error)) break;
         if (!(error instanceof ApiError)) break;
+        if (error.status === 409) {
+          try {
+            const latest = await getSong(edit.songId);
+            if (alreadySaved(latest, edit.body)) {
+              noteRebase(edit.songId, edit.body.revision, latest.revision);
+              dropEdit(edit.songId);
+              continue;
+            }
+          } catch {
+            break;
+          }
+        }
         markEdit(edit.songId, error.status === 409 ? "conflict" : "failed", error.message);
       }
     }

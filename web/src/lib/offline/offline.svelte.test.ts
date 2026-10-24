@@ -164,6 +164,13 @@ describe("flushQueue", () => {
   });
 
   it("surfaces a conflict, carries on with the rest, and does not resend the conflicted edit", async () => {
+    api.getSong.mockResolvedValue({
+      id: "a",
+      title: "Someone else",
+      artist: "",
+      chordpro: "y",
+      revision: 9,
+    });
     queueEdit(edit("a"));
     queueEdit(edit("b"));
     api.putSong.mockImplementation(async (id: string) => {
@@ -175,6 +182,29 @@ describe("flushQueue", () => {
     api.putSong.mockClear();
     await flushQueue();
     expect(api.putSong).not.toHaveBeenCalled();
+  });
+
+  it("treats a conflict with its own earlier send as done", async () => {
+    queueEdit(edit("a", 4));
+    api.putSong.mockRejectedValue(new ApiError(409, "changed", "song.conflict"));
+    api.getSong.mockResolvedValue({
+      id: "a",
+      title: "Song a",
+      artist: "",
+      chordpro: "x",
+      revision: 5,
+    });
+    await flushQueue();
+    expect(queue.edits).toEqual([]);
+    expect(api.noteRebase).toHaveBeenCalledWith("a", 4, 5);
+  });
+
+  it("keeps the edit when it cannot tell, because the song could not be fetched", async () => {
+    queueEdit(edit("a", 4));
+    api.putSong.mockRejectedValue(new ApiError(409, "changed", "song.conflict"));
+    api.getSong.mockRejectedValue(new TypeError("Failed to fetch"));
+    await flushQueue();
+    expect(queue.edits[0].state).toBe("pending");
   });
 
   it("marks other refusals as failed, and gives up quietly on an unexpected error", async () => {
