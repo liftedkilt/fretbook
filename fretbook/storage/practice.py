@@ -18,7 +18,7 @@ from fretbook.db.migrate import utcnow
 from fretbook.recommend import LEVEL_DAYS, LOOP_DAYS, build
 
 MODES = ("free", "wait", "scored")
-EXERCISE_KINDS = ("fretboard", "interval", "chord")
+EXERCISE_KINDS = ("fretboard", "interval", "chord", "rhythm")
 MIN_SECONDS = 1
 MAX_SECONDS = 6 * 3600
 MAX_SPEED = 4.0
@@ -57,6 +57,10 @@ class ExerciseInput:
     score: float | None = None
     started_at: str | None = None
     id: str | None = None
+    pattern: str | None = None
+    """Rhythm runs: the built-in pattern id, or the song whose bars were drilled."""
+    bpm: int | None = None
+    mean_error_ms: float | None = None
 
 
 class UnknownSong(Exception):
@@ -317,8 +321,8 @@ def _insert_exercise(conn: sqlite3.Connection, owner_id: str, new_id: str, item:
     conn.execute(
         """
         INSERT INTO practice_exercises (id, owner_id, kind, started_at, day, duration_seconds,
-                                        rounds, correct, score)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                        rounds, correct, score, pattern, bpm, mean_error_ms)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             new_id,
@@ -330,6 +334,9 @@ def _insert_exercise(conn: sqlite3.Connection, owner_id: str, new_id: str, item:
             rounds,
             max(0, min(rounds, item.correct)),
             item.score,
+            item.pattern[:120] if item.pattern else None,
+            item.bpm,
+            item.mean_error_ms,
         ),
     )
 
@@ -362,6 +369,9 @@ def _exercise_dict(row: sqlite3.Row) -> dict[str, Any]:
         "rounds": row["rounds"],
         "correct": row["correct"],
         "score": row["score"],
+        "pattern": row["pattern"],
+        "bpm": row["bpm"],
+        "mean_error_ms": row["mean_error_ms"],
     }
 
 
