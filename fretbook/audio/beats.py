@@ -22,7 +22,9 @@ HOP = 256  # 11.6 ms per envelope frame
 MAX_SECONDS = 20 * 60
 BANDS = 32
 LOW_HZ = 250
-FRAME_OFFSET = 0.028
+PAD = FRAME
+"""Silence put in front of the samples, so that an onset at the very first sample has a frame to peak in."""
+FRAME_OFFSET = 0.028 - PAD / SAMPLE_RATE
 """Seconds added to a frame's start time to get the time of the onset that peaks in it (measured on clicks)."""
 
 Floats = NDArray[np.float64]
@@ -112,6 +114,7 @@ def onset_envelope(samples: Floats, sample_rate: int = SAMPLE_RATE) -> Envelope:
     frame_seconds = HOP / sample_rate
     if samples.size < FRAME * 2:
         return Envelope(np.zeros(0), np.zeros(0), frame_seconds)
+    samples = np.concatenate([np.zeros(PAD), samples])
     window = np.hanning(FRAME)
     count = 1 + (samples.size - FRAME) // HOP
     index = np.arange(FRAME)[None, :] + HOP * np.arange(count)[:, None]

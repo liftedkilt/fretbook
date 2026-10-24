@@ -339,7 +339,15 @@ def _lookup(catalog: dict, key: str) -> object:
 
 
 _KEY = re.compile(r'"([a-z]+\.[a-zA-Z]+)"')
-_ERROR_CALLS = ("api_error(", "ImportError(", "Notice(", "AudioDownloadError(", "_json_error(", "error_key=")
+_ERROR_CALLS = (
+    "api_error(",
+    "ImportError(",
+    "Notice(",
+    "AudioDownloadError(",
+    "AudioDecodeError(",
+    "_json_error(",
+    "error_key=",
+)
 
 
 def _call_span(source: str, start: int) -> str:

@@ -10,7 +10,18 @@ from __future__ import annotations
 import numpy as np
 
 from fretbook.audio.beats import SAMPLE_RATE, Floats
-from fretbook.score.model import TICKS_PER_QUARTER, ScoreDocument, preferred_track
+from fretbook.score.model import (
+    TICKS_PER_QUARTER,
+    Bar,
+    Beat,
+    Note,
+    ScoreDocument,
+    Track,
+    TrackBar,
+    Voice,
+    played_bar_seconds,
+    preferred_track,
+)
 from fretbook.score.playback import played_bars
 
 
@@ -80,3 +91,50 @@ def _tone(midi: int, sample_rate: int) -> Floats:
     frequency = 440 * 2 ** ((midi - 69) / 12)
     wave = np.sin(2 * np.pi * frequency * t) + 0.4 * np.sin(4 * np.pi * frequency * t)
     return 0.35 * wave * np.exp(-6 * t) * np.minimum(1, t / 0.003)
+
+
+def build_document(
+    signatures: list[tuple[int, int]],
+    *,
+    bpm: float = 100,
+    tempos: dict[int, float] | None = None,
+    repeat: tuple[int, int, int] | None = None,
+) -> ScoreDocument:
+    """A bass line over ``signatures``: a note on every quarter (or eighth, in x/8), stepping through a riff.
+
+    ``tempos`` maps a bar index to a tempo change; ``repeat`` is ``(first bar, last bar, times)``.
+    """
+    riff = [0, 0, 3, 5, 3, 0, 5, 7]
+    bars: list[Bar] = []
+    track_bars: list[TrackBar] = []
+    count = 0
+    for index, (numerator, denominator) in enumerate(signatures):
+        bar = Bar(signature=(numerator, denominator), tempo=(tempos or {}).get(index) if index else None)
+        if repeat and index == repeat[0]:
+            bar.repeat_start = True
+        if repeat and index == repeat[1]:
+            bar.repeat_end = repeat[2]
+        bars.append(bar)
+        step = 4 * TICKS_PER_QUARTER // denominator
+        beats = []
+        for slot in range(numerator):
+            fret = riff[count % len(riff)]
+            count += 1
+            beats.append(Beat(position=slot * step, duration=step, notes=[Note(string=3, fret=fret)]))
+        track_bars.append(TrackBar(voices=[Voice(beats=beats)]))
+    track = Track(id="t1", name="Bass", instrument="bass", tuning_midi=[28, 33, 38, 43], bars=track_bars)
+    return ScoreDocument(bpm=bpm, bars=bars, tracks=[track])
+
+
+def bar_starts_for(document: ScoreDocument, *, lead_in: float = 0.0, drift: float = 0.0) -> list[float]:
+    """Audio time of every played bar start (plus the end) at the score's own tempo, after ``lead_in`` seconds.
+
+    ``drift`` slows or speeds the whole performance by up to that fraction, as a slow sine over the song.
+    """
+    starts = [lead_in]
+    lengths = played_bar_seconds(document)
+    total = sum(lengths)
+    for length in lengths:
+        progress = (starts[-1] - lead_in) / total
+        starts.append(starts[-1] + length * (1 + drift * np.sin(2 * np.pi * progress)))
+    return starts

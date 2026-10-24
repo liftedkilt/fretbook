@@ -298,10 +298,28 @@ class SongExport(BaseModel):
     chordpro: str | None = None
 
 
+class AutoSyncProposal(BaseModel):
+    """Bar marks estimated from the audio. Nothing is saved until the anchors go to ``PATCH /api/songs/{id}/sync``."""
+
+    anchors: dict[str, float]
+    """Played bar index to seconds in the audio, as the song's own ``sync.anchors``."""
+    confidence: dict[str, float]
+    """0 to 1 for each anchor."""
+    overall: float
+    tempo_bpm: float
+    """Quarter notes per minute measured in the audio."""
+    beat_count: int
+    audio_seconds: float
+    low_confidence: list[int]
+    """Played bars whose mark is worth checking."""
+
+
 class JobResult(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     song_id: str | None = None
+    autosync: AutoSyncProposal | None = None
+    """Auto-sync jobs only."""
     slug: str | None = None
     content_kind: ContentKind | None = None
     warnings: list[ErrorDetail] = Field(default_factory=list)
