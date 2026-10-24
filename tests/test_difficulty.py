@@ -203,21 +203,96 @@ def test_the_level_is_stored_on_create_update_and_sync(client: TestClient) -> No
     assert client.get(f"/api/songs/{medium['id']}").json()["difficulty"] == faster["difficulty"]
 
 
-def test_a_chord_sheet_has_no_level(client: TestClient) -> None:
-    sheet = client.post("/api/songs", json={"content_kind": "chords", "title": "Chords", "chordpro": "[C]Hi"}).json()
+def _sheet(client: TestClient, title: str, chordpro: str) -> dict:
+    return client.post("/api/songs", json={"content_kind": "chords", "title": title, "chordpro": chordpro}).json()
+
+
+EASY_SHEET = "{title: Easy}\n[G]Hello [C]there\n[G]Hello [D]again\n[G]Hello [C]there\n[G]Hello [D]again\n"
+HARD_SHEET = "\n".join(
+    [
+        "[F#m7b5]Words [B7b9]words [Em9]words [A13]words [Dmaj7]words",
+        "[Bm7]Words [G#dim7]words [C#m7]words [F#7#9]words [Bbmaj7]words",
+        "[Ebm9]Words [Ab13]words [Dbmaj9]words [Gb6]words [Cm7b5]words",
+    ]
+)
+
+
+def test_a_chord_sheet_without_chords_has_no_level(client: TestClient) -> None:
+    sheet = _sheet(client, "Lyrics", "{title: Lyrics}\nJust words\n{comment: [Chorus]}")
     assert sheet["difficulty"] is None
     assert sheet["difficulty_tracks"] == []
+
+
+def test_a_chord_sheet_is_rated_from_its_chords(client: TestClient) -> None:
+    easy = _sheet(client, "Easy", EASY_SHEET)
+    hard = _sheet(client, "Hard", HARD_SHEET)
+    assert 1 <= easy["difficulty"] <= 3
+    assert hard["difficulty"] >= 8
+    track = easy["difficulty_tracks"][0]
+    assert track["track_id"] == "chords"
+    assert [item["key"] for item in track["factors"]] == list(difficulty.CHORD_FACTORS)
+    measure = {item["key"]: item["measure"] for item in track["factors"]}
+    assert measure["vocabulary"] == 3
+    assert measure["barres"] == 0
+    assert measure["extensions"] == 0
+    assert measure["changes"] == 1.75, "seven changes over four lines, counting the one into the next line"
+    assert track["level"] == easy["difficulty"]
+
+
+def test_editing_a_chord_sheet_re_rates_it(client: TestClient) -> None:
+    sheet = _sheet(client, "Sheet", EASY_SHEET)
+    edited = client.put(
+        f"/api/songs/{sheet['id']}",
+        json={"title": "Sheet", "chordpro": HARD_SHEET, "revision": sheet["revision"]},
+    )
+    assert edited.status_code == 200, edited.text
+    assert edited.json()["difficulty"] > sheet["difficulty"]
+
+
+def test_barres_and_extensions_are_told_apart() -> None:
+    assert not difficulty.chord_is_barre("G", "")
+    assert not difficulty.chord_is_barre("E", "m7")
+    assert not difficulty.chord_is_barre("A", "5")
+    assert difficulty.chord_is_barre("F", "")
+    assert difficulty.chord_is_barre("B", "m")
+    assert not difficulty.chord_is_extended("maj7")
+    assert not difficulty.chord_is_extended("sus4")
+    assert difficulty.chord_is_extended("9")
+    assert difficulty.chord_is_extended("dim7")
+    assert difficulty.chord_is_extended("add9")
+
+
+def test_chordpro_estimate_ignores_directives_annotations_and_slash_basses() -> None:
+    sheet = (
+        "{define: Am base-fret 1 frets x 0 2 2 1 0}\n# [Bm] in a comment\n{comment: [Dm]}\n"
+        "[*Intro][C]la [C/G]la [Am]la\n"
+    )
+    result = difficulty.estimate_chordpro(sheet)[0]
+    measure = {item.key: item.measure for item in result.factors}
+    assert measure["vocabulary"] == 2, "C and C/G are the same shape; the directives and the annotation are not chords"
+    assert measure["changes"] == 1.0, "C to C/G is not a change, C to Am is"
+    assert difficulty.estimate_chordpro("no chords here") == []
+
+
+def test_chord_sheets_sort_and_filter_with_tabs(client: TestClient) -> None:
+    hard = _sheet(client, "Hard", HARD_SHEET)
+    easy = _sheet(client, "Easy", EASY_SHEET)
+    lyrics = _sheet(client, "Lyrics", "words")
+    ascending = client.get("/api/songs", params={"sort": "difficulty"}).json()["items"]
+    assert [item["id"] for item in ascending] == [easy["id"], hard["id"], lyrics["id"]]
+    only_hard = client.get("/api/songs", params={"difficulty_min": 8}).json()
+    assert [item["id"] for item in only_hard["items"]] == [hard["id"]]
 
 
 def test_sort_and_filter_by_difficulty(client: TestClient) -> None:
     hard = _tab(client, "Hard", _hard())
     easy = client.post("/api/songs", json={"title": "Easy"}).json()
-    sheet = client.post("/api/songs", json={"content_kind": "chords", "title": "Chords", "chordpro": "[C]Hi"}).json()
+    sheet = _sheet(client, "Lyrics", "Hi")
 
     ascending = client.get("/api/songs", params={"sort": "difficulty"}).json()["items"]
     assert [item["id"] for item in ascending] == [easy["id"], hard["id"], sheet["id"]]
     descending = client.get("/api/songs", params={"sort": "difficulty", "order": "desc"}).json()["items"]
-    assert [item["id"] for item in descending] == [hard["id"], easy["id"], sheet["id"]], "chord sheets stay last"
+    assert [item["id"] for item in descending] == [hard["id"], easy["id"], sheet["id"]], "unrated songs stay last"
 
     level = round(hard["difficulty"])
     only_hard = client.get("/api/songs", params={"difficulty_min": level}).json()
@@ -233,7 +308,7 @@ def test_start_up_fills_in_songs_without_a_level(tmp_path: Path) -> None:
     settings = replace(Settings.for_tests(tmp_path / "a"))
     with TestClient(create_app(settings)) as first:
         song = _tab(first, "Hard", _hard())
-        sheet = first.post("/api/songs", json={"content_kind": "chords", "title": "C", "chordpro": "[C]Hi"}).json()
+        sheet = _sheet(first, "C", EASY_SHEET)
     with closing(sqlite3.connect(settings.database_path)) as conn, conn:
         conn.execute("UPDATE songs SET difficulty = NULL, difficulty_detail = NULL, difficulty_version = NULL")
         conn.execute("UPDATE songs SET revision = 7, updated_at = 'old' WHERE id = ?", (song["id"],))
@@ -242,7 +317,9 @@ def test_start_up_fills_in_songs_without_a_level(tmp_path: Path) -> None:
         assert again["difficulty"] == song["difficulty"]
         assert again["difficulty_tracks"] == song["difficulty_tracks"]
         assert (again["revision"], again["updated_at"]) == (7, "old"), "a backfill does not count as an edit"
-        assert second.get(f"/api/songs/{sheet['id']}").json()["difficulty"] is None
+        restored = second.get(f"/api/songs/{sheet['id']}").json()
+        assert restored["difficulty"] == sheet["difficulty"]
+        assert restored["difficulty_tracks"] == sheet["difficulty_tracks"]
     with closing(sqlite3.connect(settings.database_path)) as conn, conn:
         conn.execute("UPDATE songs SET difficulty = 9.9, difficulty_version = 0 WHERE id = ?", (song["id"],))
     with TestClient(create_app(settings)) as third:

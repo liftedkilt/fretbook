@@ -48,6 +48,10 @@ export const FACTOR_NAME_KEYS: Record<DifficultyFactorKey, string> = {
   techniques: "difficulty.name.techniques",
   chords: "difficulty.name.chords",
   rhythm: "difficulty.name.rhythm",
+  vocabulary: "difficulty.name.vocabulary",
+  barres: "difficulty.name.barres",
+  extensions: "difficulty.name.extensions",
+  changes: "difficulty.name.changes",
 };
 
 /** The locale key and parameters that word a factor's measurement, e.g. "5.2 notes per second". */
@@ -64,6 +68,10 @@ export function factorText(factor: DifficultyFactor): {
     techniques: String(Math.round(factor.measure * 100)),
     chords: number(0),
     rhythm: String(Math.round(factor.measure * 100)),
+    vocabulary: number(0),
+    barres: number(0),
+    extensions: number(0),
+    changes: number(1),
   };
   return { key: `difficulty.factor.${key}`, params: { value: params[key] } };
 }

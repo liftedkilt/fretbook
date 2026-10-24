@@ -60,7 +60,7 @@ describe("explanations", () => {
   });
 
   it("names every factor", () => {
-    expect(Object.keys(FACTOR_NAME_KEYS)).toHaveLength(6);
+    expect(Object.keys(FACTOR_NAME_KEYS)).toHaveLength(10);
     for (const [key, name] of Object.entries(FACTOR_NAME_KEYS))
       expect(name).toBe(`difficulty.name.${key}`);
   });
@@ -71,6 +71,8 @@ describe("explanations", () => {
       params: { value: "5.3" },
     });
     expect(factorText(factor("shifts", 0.4, 2)).params.value).toBe("2");
+    expect(factorText(factor("vocabulary", 0.4, 7)).params.value).toBe("7");
+    expect(factorText(factor("changes", 0.4, 1.75)).params.value).toBe("1.8");
     expect(factorText(factor("stretch", 0.4, 6)).params.value).toBe("6");
     expect(factorText(factor("techniques", 0.4, 0.236)).params.value).toBe("24");
     expect(factorText(factor("chords", 0.4, 17.6)).params.value).toBe("18");

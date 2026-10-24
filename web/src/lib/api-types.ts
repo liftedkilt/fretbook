@@ -700,7 +700,7 @@ export interface paths {
          * @description One page of the caller's songs. Summaries omit the score and ChordPro text.
          *
          *     `sort` defaults to the last edit, newest first; `opened` puts never-opened songs last, and `difficulty`
-         *     (easiest first) puts chord sheets, which have no level, last.
+         *     (easiest first) puts songs without a level (chord sheets with no chords) last.
          */
         get: operations["list_songs_api_songs_get"];
         put?: never;
@@ -1588,7 +1588,7 @@ export interface components {
              * Key
              * @enum {string}
              */
-            key: "density" | "shifts" | "stretch" | "techniques" | "chords" | "rhythm";
+            key: "density" | "shifts" | "stretch" | "techniques" | "chords" | "rhythm" | "vocabulary" | "barres" | "extensions" | "changes";
             /** Measure */
             measure: number;
             /** Value */
@@ -5938,9 +5938,9 @@ export interface operations {
         parameters: {
             query?: {
                 cursor?: string;
-                /** @description Tabs at or below this level (1 to 10). */
+                /** @description Songs at or below this level (1 to 10). */
                 difficulty_max?: number | null;
-                /** @description Tabs at or above this level (1 to 10). */
+                /** @description Songs at or above this level (1 to 10). */
                 difficulty_min?: number | null;
                 /** @description Only starred songs. */
                 favourite?: boolean;

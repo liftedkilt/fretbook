@@ -1142,6 +1142,7 @@
   "difficulty": {
     "heading": "Difficulty",
     "intro": "Estimated from the notes in the score: how fast they come, how far the hand moves, how wide the stretches are, which techniques are used, how often chords change and how tricky the rhythm is.",
+    "introChords": "Estimated from the chords in the sheet: how many different chords it uses, how many are barre or extended chords, and how often the chord changes from line to line.",
     "level": "Level {level}",
     "levelOf": "{level} of 10",
     "share": "{percent} % of the maximum for this factor",
@@ -1157,7 +1158,11 @@
       "stretch": "Stretch",
       "techniques": "Techniques",
       "chords": "Chord changes",
-      "rhythm": "Rhythm"
+      "rhythm": "Rhythm",
+      "vocabulary": "Different chords",
+      "barres": "Barre chords",
+      "extensions": "Extended chords",
+      "changes": "Chord changes"
     },
     "factor": {
       "density": "{value} notes a second in the busiest bars",
@@ -1165,7 +1170,11 @@
       "stretch": "up to {value} frets apart in a chord",
       "techniques": "{value} % of notes use bends, slides, hammer-ons and the like",
       "chords": "{value} chord changes a minute",
-      "rhythm": "{value} % of beats are tuplets or off the sixteenth-note grid"
+      "rhythm": "{value} % of beats are tuplets or off the sixteenth-note grid",
+      "vocabulary": "{value} different chords",
+      "barres": "{value} barre chords",
+      "extensions": "{value} extended chords (ninths, diminished, added notes and the like)",
+      "changes": "{value} chord changes per line"
     },
     "recs": {
       "heading": "What to practise next",

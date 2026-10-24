@@ -1213,7 +1213,11 @@
               "stretch",
               "techniques",
               "chords",
-              "rhythm"
+              "rhythm",
+              "vocabulary",
+              "barres",
+              "extensions",
+              "changes"
             ],
             "title": "Key",
             "type": "string"
@@ -7969,7 +7973,7 @@
     },
     "/api/songs": {
       "get": {
-        "description": "One page of the caller's songs. Summaries omit the score and ChordPro text.\n\n`sort` defaults to the last edit, newest first; `opened` puts never-opened songs last, and `difficulty`\n(easiest first) puts chord sheets, which have no level, last.",
+        "description": "One page of the caller's songs. Summaries omit the score and ChordPro text.\n\n`sort` defaults to the last edit, newest first; `opened` puts never-opened songs last, and `difficulty`\n(easiest first) puts songs without a level (chord sheets with no chords) last.",
         "operationId": "list_songs_api_songs_get",
         "parameters": [
           {
@@ -8071,7 +8075,7 @@
             }
           },
           {
-            "description": "Tabs at or above this level (1 to 10).",
+            "description": "Songs at or above this level (1 to 10).",
             "in": "query",
             "name": "difficulty_min",
             "required": false,
@@ -8086,12 +8090,12 @@
                   "type": "null"
                 }
               ],
-              "description": "Tabs at or above this level (1 to 10).",
+              "description": "Songs at or above this level (1 to 10).",
               "title": "Difficulty Min"
             }
           },
           {
-            "description": "Tabs at or below this level (1 to 10).",
+            "description": "Songs at or below this level (1 to 10).",
             "in": "query",
             "name": "difficulty_max",
             "required": false,
@@ -8106,7 +8110,7 @@
                   "type": "null"
                 }
               ],
-              "description": "Tabs at or below this level (1 to 10).",
+              "description": "Songs at or below this level (1 to 10).",
               "title": "Difficulty Max"
             }
           },

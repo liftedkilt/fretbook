@@ -119,6 +119,16 @@ def difficulty_fields(document: ScoreDocument) -> dict[str, Any]:
     }
 
 
+def chord_difficulty_fields(chordpro: str) -> dict[str, Any]:
+    """The stored difficulty columns for a chord sheet; the level is ``None`` when it has no chords."""
+    tracks = difficulty_estimate.estimate_chordpro(chordpro)
+    return {
+        "difficulty": tracks[0].level if tracks else None,
+        "difficulty_detail": json.dumps([asdict(track) for track in tracks]) if tracks else None,
+        "difficulty_version": difficulty_estimate.VERSION,
+    }
+
+
 def _content_fields(document: ScoreDocument | None, chordpro: str | None) -> dict[str, Any]:
     if document is not None:
         return {
@@ -130,7 +140,13 @@ def _content_fields(document: ScoreDocument | None, chordpro: str | None) -> dic
         }
     if chordpro is None:
         raise ValueError("a song needs a score document or ChordPro text")
-    return {**_EMPTY_SUMMARY, "content_kind": "chords", "document": None, "chordpro": chordpro}
+    return {
+        **_EMPTY_SUMMARY,
+        **chord_difficulty_fields(chordpro),
+        "content_kind": "chords",
+        "document": None,
+        "chordpro": chordpro,
+    }
 
 
 class SongRepository:
@@ -676,7 +692,7 @@ class SongRepository:
         return self.get_song(owner_id, song_id)
 
     def refresh_difficulty(self) -> int:
-        """Estimate the difficulty of every tab that has none, or one from an older estimate. Returns the count.
+        """Estimate the difficulty of every song that has none, or one from an older estimate. Returns the count.
 
         Songs saved before the estimate existed, and every song after its algorithm changes, are filled in here at
         start-up. Rows are updated without touching ``updated_at`` or ``revision``: the score did not change.
@@ -686,8 +702,8 @@ class SongRepository:
             with self._session() as conn:
                 rows = conn.execute(
                     """
-                    SELECT id, document FROM songs
-                    WHERE content_kind = 'tab' AND (difficulty_version IS NULL OR difficulty_version != ?)
+                    SELECT id, document, chordpro FROM songs
+                    WHERE (difficulty_version IS NULL OR difficulty_version != ?)
                     LIMIT 100
                     """,
                     (difficulty_estimate.VERSION,),
@@ -697,7 +713,11 @@ class SongRepository:
             with self._session(immediate=True) as conn:
                 for row in rows:
                     try:
-                        fields = difficulty_fields(ScoreDocument.model_validate_json(row["document"]))
+                        fields = (
+                            difficulty_fields(ScoreDocument.model_validate_json(row["document"]))
+                            if row["document"] is not None
+                            else chord_difficulty_fields(row["chordpro"] or "")
+                        )
                     except ValueError:
                         # A score that no longer validates keeps no level; the version stops it being retried.
                         fields = {"difficulty": None, "difficulty_detail": None}

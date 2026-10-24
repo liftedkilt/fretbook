@@ -33,6 +33,35 @@ describe("DifficultyPanel", () => {
     expect(rows[1]).toHaveTextContent("Nothing here is demanding.");
   });
 
+  it("explains a chord sheet by its chords", () => {
+    const tracks: TrackDifficulty[] = [
+      {
+        track_id: "chords",
+        name: "Chords",
+        level: 5.4,
+        factors: [
+          { key: "vocabulary", value: 0.5, measure: 7 },
+          { key: "barres", value: 0.4, measure: 2 },
+          { key: "extensions", value: 0, measure: 0 },
+          { key: "changes", value: 0.3, measure: 1.75 },
+        ],
+      },
+    ];
+    render(DifficultyPanel, { tracks, preferredId: "chords", chords: true });
+    expect(screen.getByTestId("difficulty-summary")).toHaveTextContent("5 of 10");
+    expect(screen.getByTestId("song-difficulty-panel")).toHaveTextContent(
+      "Estimated from the chords",
+    );
+    expect(screen.getByTestId("difficulty-factor-vocabulary")).toHaveTextContent(
+      "7 different chords",
+    );
+    expect(screen.getByTestId("difficulty-factor-barres")).toHaveTextContent("2 barre chords");
+    expect(screen.getByTestId("difficulty-factor-changes")).toHaveTextContent(
+      "1.8 chord changes per line",
+    );
+    expect(screen.queryByTestId("difficulty-factor-extensions")).toBeNull();
+  });
+
   it("renders nothing for a song without tracks", () => {
     render(DifficultyPanel, { tracks: [], preferredId: "" });
     expect(screen.queryByTestId("song-difficulty-panel")).toBeNull();
