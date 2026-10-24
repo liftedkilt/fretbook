@@ -47,6 +47,11 @@ class ArchiveSummary:
     missing_media: int
 
 
+def _own_key(song: dict[str, Any]) -> str:
+    """The key a person set; a detected one is worked out again on restore."""
+    return "" if song["key_detected"] else song["key"] or ""
+
+
 def _media_suffix(filename: str) -> str:
     suffix = Path(filename).suffix.lower()[:12]
     return suffix if re.fullmatch(r"\.[a-z0-9]+", suffix or "") else ".bin"
@@ -132,6 +137,13 @@ def write_archive(
                 "media": files,
                 "tags": song["tags"],
                 "favourite": song["favourite"],
+                "metadata": {
+                    "key": _own_key(song),
+                    "genre": song["genre"],
+                    "album": song["album"],
+                    "year": song["year"],
+                    "notes": song["notes"],
+                },
             }
             if owner_id is None:
                 entry["owner_id"] = row["owner_id"]

@@ -481,7 +481,8 @@
       "practiceDropped": "Não foi possível restaurar {count} sessões de prática.",
       "exercisesDropped": "Não foi possível restaurar {count} jogos do treinador.",
       "practiceGoalFailed": "Não foi possível restaurar a meta diária de prática.",
-      "lessonProgressDropped": "Não foi possível restaurar {count} resultados de lições."
+      "lessonProgressDropped": "Não foi possível restaurar {count} resultados de lições.",
+      "metadataFailed": "Não foi possível restaurar os detalhes de {title}."
     },
     "import": {
       "failed": "A importação falhou.",
@@ -649,6 +650,17 @@
     },
     "demo": {
       "readOnly": "Esta é uma demonstração somente leitura, então a biblioteca não pode ser alterada."
+    },
+    "metadata": {
+      "invalid": "Alguns desses detalhes não são válidos.",
+      "lookupDisabled": "A busca online está desativada neste servidor.",
+      "lookupFailed": "Não foi possível acessar o serviço de metadados.",
+      "notFound": "Nenhuma gravação correspondente foi encontrada."
+    },
+    "cover": {
+      "notImage": "Envie uma imagem PNG, JPEG ou WebP.",
+      "none": "Esta música não tem capa.",
+      "missing": "O arquivo da capa está ausente."
     }
   },
   "ui": {
@@ -1878,5 +1890,39 @@
     "pick": "Pratique em uma música",
     "pickPlaceholder": "Escolha uma música…",
     "play": "Abrir no player"
+  },
+  "metadata": {
+    "heading": "Detalhes",
+    "edit": "Editar detalhes",
+    "editTitle": "Detalhes da música",
+    "key": "Tom",
+    "keyAuto": "Automático (pela partitura)",
+    "keyAutoNone": "Automático (nenhum encontrado)",
+    "keyMajor": "{note} maior",
+    "keyMinor": "{note} menor",
+    "keyDetected": "{key}, detectado pela partitura",
+    "genre": "Gênero",
+    "genreHint": "Por exemplo, Blues ou Rock.",
+    "album": "Álbum",
+    "year": "Ano",
+    "notes": "Anotações",
+    "notesHint": "Suas próprias anotações. Markdown funciona: **negrito**, *itálico*, listas e links.",
+    "notesEmpty": "Nenhuma anotação ainda.",
+    "empty": "Nenhum detalhe ainda.",
+    "cover": "Capa",
+    "coverAlt": "Capa de {title}",
+    "coverUpload": "Enviar imagem",
+    "coverRemove": "Remover capa",
+    "coverHint": "PNG, JPEG ou WebP, até 5 MB. Sem uma, o app desenha uma capa.",
+    "lookup": "Buscar online",
+    "lookupHint": "Envia o artista e o título ao MusicBrainz e ao Cover Art Archive para preencher álbum, ano e capa vazios.",
+    "lookupDone": "Preenchido pelo MusicBrainz.",
+    "save": "Salvar",
+    "saving": "Salvando…",
+    "cancel": "Cancelar",
+    "filters": "Tom e gênero",
+    "filterKey": "Tom",
+    "filterGenre": "Gênero",
+    "filterAny": "Qualquer"
   }
 }

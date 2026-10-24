@@ -15,6 +15,7 @@ from fretbook.config import Settings
 from fretbook.db.connection import session
 from fretbook.db.migrate import utcnow
 from fretbook.score import difficulty as difficulty_estimate
+from fretbook.score import key as key_detect
 from fretbook.score.instruments import DEFAULT_PRESET, get_preset, is_preset
 from fretbook.score.model import (
     Bar,
@@ -42,6 +43,10 @@ _EMPTY_SUMMARY: dict[str, Any] = {
     "difficulty_version": None,
 }
 
+# The text and number fields a person fills in on a song (PATCH /api/songs/{id}/metadata).
+METADATA_TEXT_LIMITS = {"genre": 80, "album": 200, "notes": 20000}
+YEAR_RANGE = (1000, 2999)
+
 
 # ORDER BY fragments per sort key. Missing values (no artist, never opened) sort last either way.
 _SORTS: dict[str, tuple[str, str]] = {
@@ -52,6 +57,13 @@ _SORTS: dict[str, tuple[str, str]] = {
     "opened": ("(s.last_opened_at IS NULL) ASC, s.last_opened_at {dir}", "desc"),
     "difficulty": ("(s.difficulty IS NULL) ASC, s.difficulty {dir}, s.title COLLATE NOCASE ASC", "asc"),
 }
+
+# The key the library shows: the one a person set, else the one detected.
+_KEY_SQL = "COALESCE(NULLIF(s.musical_key, ''), s.detected_key)"
+_COVER_COLUMN = (
+    "(SELECT m.id FROM media m WHERE m.song_id = s.id AND m.kind = 'cover' "
+    "ORDER BY m.created_at DESC LIMIT 1) AS cover_id"
+)
 
 # Library filters. These mirror ``instrumentFamily`` in web/src/lib/instruments.ts.
 _BASS = "lower(s.preferred_instrument) LIKE '%bass%'"
@@ -69,7 +81,7 @@ _FILTERS: dict[str, str] = {
 _SUMMARY_COLUMNS = (
     "s.id, s.slug, s.title, s.artist, s.content_kind, s.source_kind, s.revision, s.bpm, s.measure_count, "
     "s.track_count, s.string_count, s.preferred_instrument, s.has_sync, s.duration, s.updated_at, s.favourite, "
-    "s.difficulty"
+    "s.difficulty, s.musical_key, s.detected_key, s.genre, s.album, s.year"
 )
 # The song's tags as a JSON array, sorted, so a page of songs needs no query per song.
 _TAGS_COLUMN = (
@@ -135,11 +147,18 @@ def chord_difficulty_fields(chordpro: str) -> dict[str, Any]:
     }
 
 
+def key_fields(document: ScoreDocument | None, chordpro: str | None) -> dict[str, Any]:
+    """The stored detected-key columns: from a score's notes, or from a chord sheet's ``{key}`` directive."""
+    detected = key_detect.detect_key(document) if document is not None else key_detect.chordpro_key(chordpro or "")
+    return {"detected_key": detected, "key_version": key_detect.VERSION}
+
+
 def _content_fields(document: ScoreDocument | None, chordpro: str | None) -> dict[str, Any]:
     if document is not None:
         return {
             **summary_fields(document),
             **difficulty_fields(document),
+            **key_fields(document, None),
             "content_kind": "tab",
             "document": document.model_dump_json(),
             "chordpro": None,
@@ -149,6 +168,7 @@ def _content_fields(document: ScoreDocument | None, chordpro: str | None) -> dic
     return {
         **_EMPTY_SUMMARY,
         **chord_difficulty_fields(chordpro),
+        **key_fields(None, chordpro),
         "content_kind": "chords",
         "document": None,
         "chordpro": chordpro,
@@ -319,6 +339,8 @@ class SongRepository:
         favourite: bool = False,
         difficulty_min: int | None = None,
         difficulty_max: int | None = None,
+        key: str | None = None,
+        genre: str | None = None,
         limit: int = 50,
         offset: int = 0,
     ) -> dict[str, Any]:
@@ -327,8 +349,9 @@ class SongRepository:
         ``q`` is matched as word prefixes against title, artist, chord-sheet lyrics and tags. ``tags`` keeps songs
         that have every one of them, and ``favourite`` only starred songs. ``difficulty_min`` and
         ``difficulty_max`` keep tabs whose level, rounded to 1..10, is in range; chord sheets have none and are
-        left out. Summaries come from explicit columns so the score and ChordPro text are never read. The counts
-        ignore the search, tags and favourites.
+        left out. ``key`` keeps songs in that key (the one set, else the detected one) and ``genre`` songs with
+        that genre, ignoring case. Summaries come from explicit columns so the score and ChordPro text are never
+        read. The counts ignore the search, tags and favourites.
         """
         sort_sql, default_order = _SORTS[sort]
         direction = "DESC" if (order or default_order) == "desc" else "ASC"
@@ -356,12 +379,18 @@ class SongRepository:
         if difficulty_max is not None:
             where.append("round(s.difficulty) <= ?")
             params.append(difficulty_max)
+        if key:
+            where.append(f"{_KEY_SQL} = ?")
+            params.append(key)
+        if genre:
+            where.append("s.genre = ? COLLATE NOCASE")
+            params.append(genre)
         clause = " AND ".join(where)
         with self._session() as conn:
             total = conn.execute(f"SELECT count(*) FROM songs s WHERE {clause}", params).fetchone()[0]
             rows = conn.execute(
                 f"""
-                SELECT {_SUMMARY_COLUMNS}, {_TAGS_COLUMN},
+                SELECT {_SUMMARY_COLUMNS}, {_TAGS_COLUMN}, {_COVER_COLUMN},
                        (SELECT m.id FROM media m
                         WHERE m.song_id = s.id AND m.kind = 'audio'
                         ORDER BY m.created_at DESC LIMIT 1) AS audio_id
@@ -400,7 +429,7 @@ class SongRepository:
         with self._session() as conn:
             row = conn.execute(
                 f"""
-                SELECT s.*, {_TAGS_COLUMN},
+                SELECT s.*, {_TAGS_COLUMN}, {_COVER_COLUMN},
                        (SELECT m.id FROM media m
                         WHERE m.song_id = s.id AND m.kind = 'audio'
                         ORDER BY m.created_at DESC LIMIT 1) AS audio_id
@@ -514,8 +543,8 @@ class SongRepository:
                             id, owner_id, slug, title, artist, content_kind, source_kind, source_ref,
                             bpm, measure_count, track_count, string_count, preferred_instrument,
                             preferred_track_id, has_sync, duration, document, chordpro, created_at, updated_at,
-                            difficulty, difficulty_detail, difficulty_version
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            difficulty, difficulty_detail, difficulty_version, detected_key, key_version
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         (
                             song_id,
@@ -541,6 +570,8 @@ class SongRepository:
                             fields["difficulty"],
                             fields["difficulty_detail"],
                             fields["difficulty_version"],
+                            fields["detected_key"],
+                            fields["key_version"],
                         ),
                     )
                     _index_lyrics(conn, song_id, fields["chordpro"])
@@ -639,6 +670,8 @@ class SongRepository:
             "difficulty = ?",
             "difficulty_detail = ?",
             "difficulty_version = ?",
+            "detected_key = ?",
+            "key_version = ?",
             "revision = revision + 1",
         ]
         values: list[Any] = [
@@ -659,6 +692,8 @@ class SongRepository:
             fields["difficulty"],
             fields["difficulty_detail"],
             fields["difficulty_version"],
+            fields["detected_key"],
+            fields["key_version"],
         ]
         if source_ref is not None:
             assignments.append("source_ref = ?")
@@ -774,6 +809,73 @@ class SongRepository:
                 for row in rows:
                     _index_lyrics(conn, row["id"], row["chordpro"])
             done += len(rows)
+
+    def refresh_keys(self) -> int:
+        """Detect the key of every song that has not been looked at, or was by an older detection. Returns the count.
+
+        Like :meth:`refresh_difficulty`, rows are updated without touching ``updated_at`` or ``revision``.
+        """
+        done = 0
+        while True:
+            with self._session() as conn:
+                rows = conn.execute(
+                    "SELECT id, document, chordpro FROM songs WHERE key_version IS NULL OR key_version != ? LIMIT 100",
+                    (key_detect.VERSION,),
+                ).fetchall()
+            if not rows:
+                return done
+            with self._session(immediate=True) as conn:
+                for row in rows:
+                    try:
+                        document = ScoreDocument.model_validate_json(row["document"]) if row["document"] else None
+                        fields = key_fields(document, row["chordpro"])
+                    except ValueError:
+                        fields = {"detected_key": None, "key_version": key_detect.VERSION}
+                    conn.execute(
+                        "UPDATE songs SET detected_key = ?, key_version = ? WHERE id = ?",
+                        (fields["detected_key"], fields["key_version"], row["id"]),
+                    )
+            done += len(rows)
+
+    # --- metadata ------------------------------------------------------------
+
+    def set_metadata(self, owner_id: str, song_id: str, changes: dict[str, Any]) -> bool:
+        """Set the given metadata fields (``key``, ``genre``, ``album``, ``year``, ``notes``); others stay as they are.
+
+        Values must already be valid (see ``metadata_routes``). Like tags, this leaves ``revision`` and
+        ``updated_at`` alone, so it never conflicts with the editor. Returns whether the song is the owner's.
+        """
+        columns = {"key": "musical_key", "genre": "genre", "album": "album", "year": "year", "notes": "notes"}
+        assignments = [f"{columns[name]} = ?" for name in changes]
+        with self._session() as conn:
+            if not assignments:
+                return (
+                    conn.execute("SELECT 1 FROM songs WHERE owner_id = ? AND id = ?", (owner_id, song_id)).fetchone()
+                    is not None
+                )
+            cursor = conn.execute(
+                f"UPDATE songs SET {', '.join(assignments)} WHERE owner_id = ? AND id = ?",  # noqa: S608 - fixed names
+                (*changes.values(), owner_id, song_id),
+            )
+            return cursor.rowcount > 0
+
+    def facets(self, owner_id: str) -> dict[str, list[dict[str, Any]]]:
+        """The keys and genres in the owner's library with their song counts, most used first."""
+        with self._session() as conn:
+            keys = conn.execute(
+                f"SELECT {_KEY_SQL} AS name, count(*) AS count FROM songs s "  # noqa: S608 - fixed SQL
+                f"WHERE s.owner_id = ? AND {_KEY_SQL} IS NOT NULL GROUP BY name ORDER BY count DESC, name",
+                (owner_id,),
+            ).fetchall()
+            genres = conn.execute(
+                "SELECT min(genre) AS name, count(*) AS count FROM songs WHERE owner_id = ? AND genre != '' "
+                "GROUP BY lower(genre) ORDER BY count DESC, lower(genre)",
+                (owner_id,),
+            ).fetchall()
+        return {
+            "keys": [{"name": row["name"], "count": row["count"]} for row in keys],
+            "genres": [{"name": row["name"], "count": row["count"]} for row in genres],
+        }
 
     # --- tags and favourites -----------------------------------------------
     # These leave ``revision`` and ``updated_at`` alone, like ``mark_opened``: an open editor can still save.
@@ -965,6 +1067,12 @@ def _summary(row: sqlite3.Row) -> dict[str, Any]:
         "favourite": bool(row["favourite"]),
         "difficulty": row["difficulty"],
         "tags": json.loads(row["tags_json"] or "[]"),
+        "key": row["musical_key"] or row["detected_key"],
+        "key_detected": not row["musical_key"] and row["detected_key"] is not None,
+        "genre": row["genre"],
+        "album": row["album"],
+        "year": row["year"],
+        "cover_url": f"api/songs/{row['id']}/cover?v={row['cover_id']}" if row["cover_id"] else None,
         "lyrics_snippet": None,
     }
 
@@ -977,5 +1085,6 @@ def _detail(row: sqlite3.Row) -> dict[str, Any]:
     payload["created_at"] = row["created_at"]
     payload["audio_url"] = _audio_url(row)
     payload["preferred_track_id"] = row["preferred_track_id"]
+    payload["notes"] = row["notes"]
     payload["difficulty_tracks"] = json.loads(row["difficulty_detail"] or "[]")
     return payload

@@ -109,6 +109,8 @@ class Meta(BaseModel):
     """Job kinds that a separate worker process is claiming right now. Hide features whose kind is missing."""
     demo_mode: bool
     """A read-only public demo (``FRETBOOK_DEMO_MODE``): hide the controls that change the library."""
+    metadata_lookup: bool
+    """Online lookup of album, year and cover art is on (``FRETBOOK_METADATA_LOOKUP``); show its button."""
 
 
 class Settings(BaseModel):
@@ -219,6 +221,18 @@ class SongSummary(BaseModel):
     difficulty: float | None
     # The caller's tags for this song, sorted A to Z ignoring case.
     tags: list[str]
+    # The song's key (`C`, `F#`, `Am`, `Bbm`): the one the caller set, else the one detected from the score's notes
+    # or a chord sheet's `{key}`. Null when neither is known. Always present in the JSON.
+    key: str | None
+    # True when `key` was detected and not set by the caller.
+    key_detected: bool
+    # Empty strings when not set; `year` is null.
+    genre: str
+    album: str
+    year: int | None
+    # Where the uploaded or looked-up cover art is served from, relative to the app root, or null when the song has
+    # none (the app draws a generated cover). Always present in the JSON.
+    cover_url: str | None
     # In a library search that matched this chord sheet through its lyrics and not its title, artist or tags: the
     # matching words in context. Each matched word sits between U+0002 and U+0003, and lines are joined by " / ".
     # Null otherwise, and always null outside the song list. Always present in the JSON.
@@ -293,7 +307,21 @@ class SongPage(BaseModel):
     counts: LibraryCounts
 
 
+class FacetCount(BaseModel):
+    name: str
+    count: int
+
+
+class LibraryFacets(BaseModel):
+    """The keys and genres in the caller's library, most used first."""
+
+    keys: list[FacetCount]
+    genres: list[FacetCount]
+
+
 class SongDetail(SongSummary):
+    # Personal notes as Markdown; empty when none.
+    notes: str
     source_ref: dict[str, Any]
     # A tab has a document and a null chordpro; a chord sheet is the opposite. Both keys are present.
     document: ScoreDocument | None

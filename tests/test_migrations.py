@@ -766,6 +766,40 @@ def verify_v17(conn: sqlite3.Connection) -> None:
     assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
 
 
+def seed_v18(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        INSERT INTO users (id, external_subject, display_name, created_at)
+        VALUES ('user-v18', 'sub-v18', 'User V18', '2026-01-18T00:00:00Z')
+        """
+    )
+    conn.execute(
+        """
+        INSERT INTO songs (
+            id, owner_id, slug, title, artist, content_kind, source_kind, source_ref,
+            revision, bpm, measure_count, track_count, string_count, preferred_instrument,
+            preferred_track_id, has_sync, duration, document, chordpro, created_at, updated_at
+        ) VALUES (
+            'song-v18', 'user-v18', 'song-v18', 'V18 Title', 'V18 Artist', 'chords', 'manual', '{}',
+            1, 0.0, 0, 0, 0, '', '', 0, NULL, NULL, '{key: G}[G]Hello', '2026-01-18T00:00:00Z', '2026-01-18T00:00:00Z'
+        )
+        """
+    )
+    conn.commit()
+
+
+def verify_v18(conn: sqlite3.Connection) -> None:
+    row = conn.execute(
+        "SELECT musical_key, detected_key, key_version, genre, album, year, notes FROM songs WHERE id = 'song-v18'"
+    ).fetchone()
+    # Existing songs start with no metadata; a NULL key_version is what start-up detection looks for.
+    assert tuple(row) == ("", None, None, "", "", None, "")
+    conn.execute("UPDATE songs SET musical_key = 'Am', genre = 'Blues', year = 1999 WHERE id = 'song-v18'")
+    assert conn.execute("SELECT year FROM songs WHERE id = 'song-v18'").fetchone()[0] == 1999
+    conn.rollback()
+    assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+
+
 SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.Connection], None]]] = {
     1: (seed_v1, verify_v1),
     2: (seed_v2, verify_v2),
@@ -784,6 +818,7 @@ SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.C
     15: (seed_v15, verify_v15),
     16: (seed_v16, verify_v16),
     17: (seed_v17, verify_v17),
+    18: (seed_v18, verify_v18),
 }
 
 

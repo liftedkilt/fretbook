@@ -113,7 +113,8 @@ class SafeFetcher:
     def _too_large(self) -> ImportError:
         return ImportError("the download is too large", "import.fetchTooLarge", limit=self.max_bytes)
 
-    def fetch(self, url: str) -> Fetched:
+    def fetch(self, url: str, headers: dict[str, str] | None = None) -> Fetched:
+        """Download ``url``. ``headers`` are sent on every hop, over the defaults."""
         deadline = time.monotonic() + self.timeout
         current = url
         with httpx.Client(transport=self._transport, timeout=self.timeout, follow_redirects=False) as client:
@@ -125,6 +126,7 @@ class SafeFetcher:
                     "User-Agent": USER_AGENT,
                     "Accept": "*/*",
                     "Host": urlsplit(current).netloc.rsplit("@", 1)[-1],
+                    **(headers or {}),
                 }
                 extensions = {"sni_hostname": host} if pinned.scheme == "https" else {}
                 try:

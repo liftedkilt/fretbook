@@ -24,6 +24,7 @@ from fretbook.api.bulk_routes import router as bulk_router
 from fretbook.api.calibration_routes import router as calibration_router
 from fretbook.api.demo_routes import router as demo_router
 from fretbook.api.lesson_routes import router as lesson_router
+from fretbook.api.metadata_routes import router as metadata_router
 from fretbook.api.middleware import BodyLimitMiddleware, SameOriginMiddleware
 from fretbook.api.midi_routes import router as midi_router
 from fretbook.api.practice_routes import router as practice_router
@@ -148,6 +149,11 @@ def create_app(
     users = UserStore(settings)
     media = MediaStore(settings)
     jobs = JobRunner(settings)
+    fetcher = fetcher or SafeFetcher(
+        allow_private=settings.allow_private_urls,
+        max_bytes=settings.fetch_max_bytes,
+        timeout=settings.fetch_timeout_seconds,
+    )
     register_handlers(jobs, songs, media, fetcher)
     register_restore_handler(jobs, songs, media)
     register_kinds(jobs)
@@ -160,6 +166,7 @@ def create_app(
         jobs=jobs,
         users=users,
         auth=build_auth(settings, users, transport=oidc_transport),
+        fetcher=fetcher,
     )
 
     resetter = DemoResetter(ctx)
@@ -175,6 +182,9 @@ def create_app(
         filled = songs.refresh_difficulty()
         if filled:
             logger.info("estimated the difficulty of %s song(s)", filled)
+        detected = songs.refresh_keys()
+        if detected:
+            logger.info("looked for the key of %s song(s)", detected)
         indexed = songs.refresh_lyrics()
         if indexed:
             logger.info("indexed the lyrics of %s chord sheet(s)", indexed)
@@ -289,6 +299,7 @@ def create_app(
     app.include_router(retune_router)
     app.include_router(universal_router)
     app.include_router(tag_router)
+    app.include_router(metadata_router)
     app.include_router(bulk_router)
     app.include_router(token_router)
     app.include_router(calibration_router)

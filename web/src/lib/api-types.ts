@@ -683,6 +683,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/library/facets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Library Facets
+         * @description The keys and genres in the caller's library with how many songs have each, for the library filters.
+         */
+        get: operations["library_facets_api_library_facets_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/library/import": {
         parameters: {
             query?: never;
@@ -1099,6 +1119,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/songs/{song_id}/cover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download Cover */
+        get: operations["download_cover_api_songs__song_id__cover_get"];
+        put?: never;
+        /**
+         * Upload Cover
+         * @description Replace the song's cover art with a PNG, JPEG or WebP image of at most 5 MB. SVG is refused.
+         */
+        post: operations["upload_cover_api_songs__song_id__cover_post"];
+        /**
+         * Delete Cover
+         * @description Remove the uploaded cover art; the song goes back to its generated cover.
+         */
+        delete: operations["delete_cover_api_songs__song_id__cover_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/songs/{song_id}/export.cho": {
         parameters: {
             query?: never;
@@ -1187,6 +1232,49 @@ export interface paths {
          */
         put: operations["set_favourite_api_songs__song_id__favourite_put"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/songs/{song_id}/metadata": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Metadata
+         * @description Set the song's key, genre, year, album and notes. Leaves the revision alone, so it never conflicts.
+         */
+        patch: operations["update_metadata_api_songs__song_id__metadata_patch"];
+        trace?: never;
+    };
+    "/api/songs/{song_id}/metadata/lookup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Lookup Metadata
+         * @description Fill in the album, year and cover art from MusicBrainz and the Cover Art Archive, by artist and title.
+         *
+         *     Only empty fields are filled; what the caller set stays. A 404 `metadata.lookupDisabled` means
+         *     `FRETBOOK_METADATA_LOOKUP` is off, and `metadata.notFound` that nothing matched.
+         */
+        post: operations["lookup_metadata_api_songs__song_id__metadata_lookup_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1773,6 +1861,11 @@ export interface components {
             /** File */
             file: string;
         };
+        /** Body_upload_cover_api_songs__song_id__cover_post */
+        Body_upload_cover_api_songs__song_id__cover_post: {
+            /** File */
+            file: string;
+        };
         /** BulkImportAccepted */
         BulkImportAccepted: {
             /** Batch Id */
@@ -2065,6 +2158,13 @@ export interface components {
             params?: {
                 [key: string]: unknown;
             };
+        };
+        /** FacetCount */
+        FacetCount: {
+            /** Count */
+            count: number;
+            /** Name */
+            name: string;
         };
         /** Favourite */
         Favourite: {
@@ -2413,6 +2513,16 @@ export interface components {
             favourites: number;
         };
         /**
+         * LibraryFacets
+         * @description The keys and genres in the caller's library, most used first.
+         */
+        LibraryFacets: {
+            /** Genres */
+            genres: components["schemas"]["FacetCount"][];
+            /** Keys */
+            keys: components["schemas"]["FacetCount"][];
+        };
+        /**
          * Me
          * @description The caller. In single-user mode this is the ``local`` user and ``authenticated`` is false.
          *
@@ -2452,6 +2562,8 @@ export interface components {
             exporters: string[];
             /** Instruments */
             instruments: components["schemas"]["InstrumentPreset"][];
+            /** Metadata Lookup */
+            metadata_lookup: boolean;
             /** Name */
             name: string;
             /** Tagline */
@@ -2461,6 +2573,22 @@ export interface components {
             /** Worker Kinds */
             worker_kinds: string[];
             ytdlp: components["schemas"]["YtDlpStatus"];
+        };
+        /**
+         * MetadataBody
+         * @description Fields left out stay as they are. Send an empty string (or `null` for `year`) to clear one.
+         */
+        MetadataBody: {
+            /** Album */
+            album?: string | null;
+            /** Genre */
+            genre?: string | null;
+            /** Key */
+            key?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /** Year */
+            year?: number | null;
         };
         /** MidiInspection */
         MidiInspection: {
@@ -2985,6 +3113,8 @@ export interface components {
         };
         /** SongDetail */
         SongDetail: {
+            /** Album */
+            album: string;
             /** Artist */
             artist: string;
             /** Audio Url */
@@ -2998,6 +3128,8 @@ export interface components {
              * @enum {string}
              */
             content_kind: "tab" | "chords";
+            /** Cover Url */
+            cover_url: string | null;
             /** Created At */
             created_at: string;
             /** Difficulty */
@@ -3009,16 +3141,24 @@ export interface components {
             duration: number | null;
             /** Favourite */
             favourite: boolean;
+            /** Genre */
+            genre: string;
             /** Has Audio */
             has_audio: boolean;
             /** Has Sync */
             has_sync: boolean;
             /** Id */
             id: string;
+            /** Key */
+            key: string | null;
+            /** Key Detected */
+            key_detected: boolean;
             /** Lyrics Snippet */
             lyrics_snippet: string | null;
             /** Measure Count */
             measure_count: number;
+            /** Notes */
+            notes: string;
             /** Preferred Instrument */
             preferred_instrument: string;
             /** Preferred Track Id */
@@ -3043,6 +3183,8 @@ export interface components {
             track_count: number;
             /** Updated At */
             updated_at: string;
+            /** Year */
+            year: number | null;
         };
         /**
          * SongExport
@@ -3130,6 +3272,8 @@ export interface components {
         };
         /** SongSummary */
         SongSummary: {
+            /** Album */
+            album: string;
             /** Artist */
             artist: string;
             /** Bpm */
@@ -3139,18 +3283,26 @@ export interface components {
              * @enum {string}
              */
             content_kind: "tab" | "chords";
+            /** Cover Url */
+            cover_url: string | null;
             /** Difficulty */
             difficulty: number | null;
             /** Duration */
             duration: number | null;
             /** Favourite */
             favourite: boolean;
+            /** Genre */
+            genre: string;
             /** Has Audio */
             has_audio: boolean;
             /** Has Sync */
             has_sync: boolean;
             /** Id */
             id: string;
+            /** Key */
+            key: string | null;
+            /** Key Detected */
+            key_detected: boolean;
             /** Lyrics Snippet */
             lyrics_snippet: string | null;
             /** Measure Count */
@@ -3173,6 +3325,8 @@ export interface components {
             track_count: number;
             /** Updated At */
             updated_at: string;
+            /** Year */
+            year: number | null;
         };
         /** SongTags */
         SongTags: {
@@ -3429,6 +3583,7 @@ export type BodyImportMidiApiImportsMidiPost = components['schemas']['Body_impor
 export type BodyImportPackApiLessonsImportPost = components['schemas']['Body_import_pack_api_lessons_import_post'];
 export type BodyInspectMidiApiImportsMidiInspectPost = components['schemas']['Body_inspect_midi_api_imports_midi_inspect_post'];
 export type BodyUploadAudioApiSongsSongIdAudioPost = components['schemas']['Body_upload_audio_api_songs__song_id__audio_post'];
+export type BodyUploadCoverApiSongsSongIdCoverPost = components['schemas']['Body_upload_cover_api_songs__song_id__cover_post'];
 export type BulkImportAccepted = components['schemas']['BulkImportAccepted'];
 export type BulkImportJobItem = components['schemas']['BulkImportJobItem'];
 export type ConvertBody = components['schemas']['ConvertBody'];
@@ -3447,6 +3602,7 @@ export type DemoSongInfo = components['schemas']['DemoSongInfo'];
 export type DifficultyFactor = components['schemas']['DifficultyFactor'];
 export type ErrorBody = components['schemas']['ErrorBody'];
 export type ErrorDetail = components['schemas']['ErrorDetail'];
+export type FacetCount = components['schemas']['FacetCount'];
 export type Favourite = components['schemas']['Favourite'];
 export type FavouriteBody = components['schemas']['FavouriteBody'];
 export type Health = components['schemas']['Health'];
@@ -3470,8 +3626,10 @@ export type LessonSource = components['schemas']['LessonSource'];
 export type LessonSummary = components['schemas']['LessonSummary'];
 export type LessonTextBody = components['schemas']['LessonTextBody'];
 export type LibraryCounts = components['schemas']['LibraryCounts'];
+export type LibraryFacets = components['schemas']['LibraryFacets'];
 export type Me = components['schemas']['Me'];
 export type Meta = components['schemas']['Meta'];
+export type MetadataBody = components['schemas']['MetadataBody'];
 export type MidiInspection = components['schemas']['MidiInspection'];
 export type MidiTrackInfo = components['schemas']['MidiTrackInfo'];
 export type Note = components['schemas']['Note'];
@@ -6592,6 +6750,80 @@ export interface operations {
             };
         };
     };
+    library_facets_api_library_facets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryFacets"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
     import_library_api_library_import_post: {
         parameters: {
             query?: never;
@@ -8160,7 +8392,11 @@ export interface operations {
                 difficulty_min?: number | null;
                 /** @description Only starred songs. */
                 favourite?: boolean;
+                /** @description Only songs with this genre, ignoring case. */
+                genre?: string | null;
                 instrument?: "all" | "bass" | "electric" | "acoustic" | "chords";
+                /** @description Only songs in this key, as in `key` of a song. */
+                key?: string | null;
                 limit?: number;
                 /** @description Defaults to the natural order of `sort`. */
                 order?: ("asc" | "desc") | null;
@@ -8946,6 +9182,240 @@ export interface operations {
             };
         };
     };
+    download_cover_api_songs__song_id__cover_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                song_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The song's cover image. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/jpeg": string;
+                    "image/png": string;
+                    "image/webp": string;
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    upload_cover_api_songs__song_id__cover_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                song_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_cover_api_songs__song_id__cover_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SongDetail"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    delete_cover_api_songs__song_id__cover_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                song_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SongDetail"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
     export_chordpro_api_songs__song_id__export_cho_get: {
         parameters: {
             query?: never;
@@ -9272,6 +9742,162 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Favourite"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    update_metadata_api_songs__song_id__metadata_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                song_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MetadataBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SongDetail"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    lookup_metadata_api_songs__song_id__metadata_lookup_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                song_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SongDetail"];
                 };
             };
             /** @description Keyed error. `detail` is {key, message, params}. */
