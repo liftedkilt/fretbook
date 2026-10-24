@@ -4630,3 +4630,241 @@ kbd {
   flex: 1;
   font-weight: 600;
 }
+
+/* ----------------------------------------------------------------- lessons */
+
+.lessons-page,
+.course-page,
+.lesson-page,
+.lesson-editor {
+  display: grid;
+  gap: 1.25rem;
+  align-content: start;
+  max-width: 62rem;
+}
+
+.lesson-resume {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 14px;
+  border: 1px solid var(--line-strong);
+  text-decoration: none;
+  color: inherit;
+}
+
+.lesson-resume span {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.lesson-admin {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.lesson-admin .disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.lesson-problems code {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.course-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+}
+
+.course-card {
+  display: grid;
+  gap: 0.5rem;
+  height: 100%;
+  padding: 1rem 1.1rem;
+  border-radius: 14px;
+  border: 1px solid var(--line-strong);
+  text-decoration: none;
+  color: inherit;
+}
+
+.course-card.locked {
+  opacity: 0.75;
+}
+
+.course-card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.course-card progress,
+.course-summary progress {
+  width: 100%;
+}
+
+.course-summary {
+  display: grid;
+  gap: 0.6rem;
+  max-width: 28rem;
+}
+
+.lesson-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.lesson-row {
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+}
+
+.lesson-row.locked {
+  opacity: 0.65;
+}
+
+.lesson-row-link,
+.lesson-row.locked {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.75rem 1rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.lesson-row-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+}
+
+.lesson-row.completed .lesson-row-icon {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.lesson-row-text {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.lesson-prose {
+  line-height: 1.6;
+  max-width: 46rem;
+}
+
+.lesson-prose pre,
+.lesson-tab {
+  overflow-x: auto;
+  padding: 0.8rem 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+}
+
+.lesson-blocks {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.lesson-chord,
+.lesson-fretboard,
+.lesson-media {
+  margin: 0;
+}
+
+.lesson-chord {
+  width: 8rem;
+  text-align: center;
+}
+
+.lesson-fretboard {
+  overflow-x: auto;
+}
+
+.lesson-media video,
+.lesson-media audio {
+  width: 100%;
+  max-width: 40rem;
+}
+
+.lesson-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: fit-content;
+  padding: 0.55rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  color: inherit;
+  text-decoration: none;
+}
+
+.lesson-pass {
+  display: grid;
+  gap: 0.8rem;
+  padding: 1rem 1.2rem;
+  border-radius: 14px;
+  border: 1px solid var(--line-strong);
+  max-width: 46rem;
+}
+
+.lesson-report {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.8rem;
+}
+
+.lesson-done {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+}
+
+.lesson-editor-panes {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.lesson-editor-panes.single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.lesson-source {
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.lesson-preview {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 860px) {
+  .lesson-editor-panes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

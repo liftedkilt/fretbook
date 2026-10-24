@@ -10,10 +10,17 @@ import type {
   BulkImportAccepted as ContractBulkImportAccepted,
   ConvertBody,
   ConvertReport,
+  CourseDetail,
+  CourseList,
   ErrorDetail,
   ImportPreview as ContractImportPreview,
   Job as ContractJob,
   JobAccepted,
+  LessonDetail,
+  LessonPreview,
+  LessonPackResult,
+  LessonProgressResult,
+  LessonSource,
   MidiInspection,
   Me as ContractMe,
   Meta as ContractMeta,
@@ -765,4 +772,80 @@ export function signOutUser(id: string): Promise<SessionsEnded> {
 /** Moves the single-user library into the signed-in admin's own. */
 export function adoptLocal(): Promise<SongsMoved> {
   return request("/api/admin/adopt-local", { method: "POST" });
+}
+
+export function listCourses(): Promise<CourseList> {
+  return request<CourseList>("/api/courses");
+}
+
+export function getCourse(id: string): Promise<CourseDetail> {
+  return request<CourseDetail>(`/api/courses/${id}`);
+}
+
+export function getLesson(course: string, lesson: string): Promise<LessonDetail> {
+  return request<LessonDetail>(`/api/courses/${course}/lessons/${lesson}`);
+}
+
+/** Remember the lesson as the one to "continue" with. Best effort: it must never block reading. */
+export function openLesson(course: string, lesson: string): Promise<void> {
+  return request(`/api/courses/${course}/lessons/${lesson}/open`, { method: "POST" });
+}
+
+export function reportLessonProgress(
+  course: string,
+  lesson: string,
+  body: { score?: number; bpm?: number; wait_completed?: boolean; completed?: boolean },
+): Promise<LessonProgressResult> {
+  return request<LessonProgressResult>(
+    `/api/courses/${course}/lessons/${lesson}/progress`,
+    json("POST", body),
+  );
+}
+
+/** Look in the practice log for a run of the lesson's song that meets its pass condition. */
+export function checkLesson(course: string, lesson: string): Promise<LessonProgressResult> {
+  return request<LessonProgressResult>(`/api/courses/${course}/lessons/${lesson}/check`, {
+    method: "POST",
+  });
+}
+
+export function previewLesson(text: string): Promise<LessonPreview> {
+  return request<LessonPreview>("/api/lessons/preview", json("POST", { text }));
+}
+
+export function getLessonSource(course: string, lesson: string): Promise<LessonSource> {
+  return request<LessonSource>(`/api/courses/${course}/lessons/${lesson}/source`);
+}
+
+export function saveLessonSource(
+  course: string,
+  lesson: string,
+  text: string,
+): Promise<LessonSource> {
+  return request<LessonSource>(
+    `/api/courses/${course}/lessons/${lesson}/source`,
+    json("PUT", { text }),
+  );
+}
+
+export function deleteLesson(course: string, lesson: string): Promise<void> {
+  return request(`/api/courses/${course}/lessons/${lesson}`, { method: "DELETE" });
+}
+
+export function getCourseSource(course: string): Promise<LessonSource> {
+  return request<LessonSource>(`/api/courses/${course}/source`);
+}
+
+export function saveCourseSource(course: string, text: string): Promise<LessonSource> {
+  return request<LessonSource>(`/api/courses/${course}/source`, json("PUT", { text }));
+}
+
+export function deleteCourse(course: string): Promise<void> {
+  return request(`/api/courses/${course}`, { method: "DELETE" });
+}
+
+export function importLessonPack(file: File): Promise<LessonPackResult> {
+  const data = new FormData();
+  data.append("file", file);
+  return request<LessonPackResult>("/api/lessons/import", { method: "POST", body: data });
 }

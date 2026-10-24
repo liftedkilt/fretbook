@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import Icon from "./Icon.svelte";
   import TabPreview from "./TabPreview.svelte";
   import { ApiError, importDocument } from "../lib/api";
@@ -12,7 +13,7 @@
     type Range,
     type Rhythm,
   } from "../lib/exercises/generate";
-  import { PRESET_DRILLS, labelText, type PresetDrill } from "../lib/exercises/presets";
+  import { PRESET_DRILLS, labelText, presetById, type PresetDrill } from "../lib/exercises/presets";
   import { CAGED_SHAPES, NOTE_NAMES, type CagedShape } from "../lib/exercises/theory";
   import { t, tOr } from "../lib/i18n.svelte";
   import { followLink, hrefFor, navigate } from "../lib/router.svelte";
@@ -136,6 +137,13 @@
       cycles = next.cycles;
     }
   }
+
+  // A lesson links here with ?preset=<id> to open one of the preset drills.
+  onMount(() => {
+    const id = new URLSearchParams(location.search).get("preset");
+    const drill = id ? presetById(id) : undefined;
+    if (drill) apply(drill);
+  });
 
   function edited() {
     activePreset = null;

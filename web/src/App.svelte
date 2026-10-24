@@ -7,6 +7,10 @@
   import EditorView from "./components/EditorView.svelte";
   import ExercisesView from "./components/ExercisesView.svelte";
   import Icon from "./components/Icon.svelte";
+  import CourseView from "./components/CourseView.svelte";
+  import LessonEditor from "./components/LessonEditor.svelte";
+  import LessonsView from "./components/LessonsView.svelte";
+  import LessonView from "./components/LessonView.svelte";
   import LibraryView from "./components/LibraryView.svelte";
   import OfflineStatus from "./components/OfflineStatus.svelte";
   import PracticeView from "./components/PracticeView.svelte";
@@ -40,6 +44,14 @@
   const setlistPlay = $derived(path.match(/^\/setlists\/([^/]+)\/play(?:\/([^/]+))?\/?$/));
   const setlistPage = $derived(path.match(/^\/setlists\/([^/]+)\/?$/));
   const isSetlists = $derived(path === "/setlists" || path === "/setlists/");
+  const isLessons = $derived(path === "/lessons" || path === "/lessons/");
+  const isLessonsActive = $derived(path.startsWith("/lessons"));
+  const courseNew = $derived(path === "/lessons/new" || path === "/lessons/new/");
+  const courseEdit = $derived(path.match(/^\/lessons\/([^/]+)\/edit\/?$/));
+  const lessonNew = $derived(path.match(/^\/lessons\/([^/]+)\/new\/?$/));
+  const lessonEdit = $derived(path.match(/^\/lessons\/([^/]+)\/([^/]+)\/edit\/?$/));
+  const lessonPage = $derived(path.match(/^\/lessons\/([^/]+)\/([^/]+)\/?$/));
+  const coursePage = $derived(path.match(/^\/lessons\/([^/]+)\/?$/));
   const isPractice = $derived(path === "/practice" || path === "/practice/");
   const isTools = $derived(path === "/tools" || path === "/tools/");
   const isToolsTuner = $derived(path === "/tools/tuner" || path === "/tools/tuner/");
@@ -85,7 +97,10 @@
   }
 </script>
 
-<div class="shell" class:shell-library={isLibrary || isTools || isSetlists || isPractice}>
+<div
+  class="shell"
+  class:shell-library={isLibrary || isTools || isSetlists || isPractice || isLessons}
+>
   <aside class="sidebar">
     <a class="brand" href={hrefFor("/")} onclick={(event) => followLink(event, "/")}>
       <img src="favicon.svg" alt={t("app.title")} width="36" height="36" />
@@ -141,6 +156,17 @@
       title={t("practiceLog.nav")}
     >
       <Icon name="clock" size={19} /><span class="rail-hide">{t("practiceLog.nav")}</span>
+    </a>
+
+    <a
+      class="side-link"
+      data-testid="nav-lessons"
+      href={hrefFor("/lessons")}
+      aria-current={isLessonsActive ? "page" : undefined}
+      onclick={(event) => followLink(event, "/lessons")}
+      title={t("lessons.nav")}
+    >
+      <Icon name="class" size={19} /><span class="rail-hide">{t("lessons.nav")}</span>
     </a>
 
     <a
@@ -290,6 +316,20 @@
       <p class="muted">{t("app.loading")}</p>
     {:else if isPractice}
       <PracticeView />
+    {:else if isLessons}
+      <LessonsView />
+    {:else if courseNew}
+      <LessonEditor kind="course" />
+    {:else if courseEdit}
+      <LessonEditor kind="course" course={courseEdit[1]} />
+    {:else if lessonNew}
+      <LessonEditor kind="lesson" course={lessonNew[1]} />
+    {:else if lessonEdit}
+      <LessonEditor kind="lesson" course={lessonEdit[1]} lesson={lessonEdit[2]} />
+    {:else if lessonPage}
+      <LessonView course={lessonPage[1]} lesson={lessonPage[2]} />
+    {:else if coursePage}
+      <CourseView id={coursePage[1]} />
     {:else if isSetlists}
       <SetlistsView />
     {:else if setlistPlay}
@@ -311,7 +351,7 @@
     {/if}
   </main>
 
-  {#if isLibrary || isTools || isSetlists || isPractice}
+  {#if isLibrary || isTools || isSetlists || isPractice || isLessons}
     <nav class="tabbar" aria-label={t("nav.main")}>
       <a
         class="tab-item"

@@ -1634,20 +1634,6 @@ export interface components {
             /** Tuplet */
             tuplet?: number | null;
         };
-        /** BlockModel */
-        BlockModel: {
-            /**
-             * Kind
-             * @enum {string}
-             */
-            kind: "markdown" | "chord" | "fretboard" | "song" | "tab" | "exercise" | "media" | "pass";
-            /** Params */
-            params: {
-                [key: string]: string;
-            };
-            /** Text */
-            text: string;
-        };
         /** Body_import_auto_api_imports_auto_post */
         Body_import_auto_api_imports_auto_post: {
             /** File */
@@ -1801,7 +1787,7 @@ export interface components {
             /** Lesson Count */
             lesson_count: number;
             /** Levels */
-            levels: components["schemas"]["LevelModel"][];
+            levels: components["schemas"]["CourseLevel"][];
             /** Locked */
             locked: boolean;
             /** Next Lesson Id */
@@ -1823,6 +1809,15 @@ export interface components {
              */
             track: "guitar" | "bass";
         };
+        /** CourseLevel */
+        CourseLevel: {
+            /** Id */
+            id: string;
+            /** Lessons */
+            lessons: components["schemas"]["LessonSummary"][];
+            /** Title */
+            title: string;
+        };
         /** CourseList */
         CourseList: {
             /** Can Edit */
@@ -1831,7 +1826,7 @@ export interface components {
             courses: components["schemas"]["CourseSummary"][];
             /** Problems */
             problems: string[];
-            resume: components["schemas"]["Resume"] | null;
+            resume: components["schemas"]["LessonResume"] | null;
         };
         /** CourseSummary */
         CourseSummary: {
@@ -2131,10 +2126,24 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** LessonBlock */
+        LessonBlock: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "markdown" | "chord" | "fretboard" | "song" | "tab" | "exercise" | "media" | "pass";
+            /** Params */
+            params: {
+                [key: string]: string;
+            };
+            /** Text */
+            text: string;
+        };
         /** LessonDetail */
         LessonDetail: {
             /** Blocks */
-            blocks: components["schemas"]["BlockModel"][];
+            blocks: components["schemas"]["LessonBlock"][];
             /** Can Edit */
             can_edit: boolean;
             /** Course Id */
@@ -2145,8 +2154,8 @@ export interface components {
             id: string;
             /** Next Lesson Id */
             next_lesson_id: string | null;
-            pass_condition: components["schemas"]["PassConditionModel"] | null;
-            progress: components["schemas"]["ProgressModel"];
+            pass_condition: components["schemas"]["LessonPassCondition"] | null;
+            progress: components["schemas"]["LessonProgress"];
             /**
              * Source
              * @enum {string}
@@ -2162,15 +2171,95 @@ export interface components {
             /** Title */
             title: string;
         };
+        /** LessonPackResult */
+        LessonPackResult: {
+            /** Courses */
+            courses: number;
+            /** Lessons */
+            lessons: number;
+        };
+        /** LessonPassCondition */
+        LessonPassCondition: {
+            /** Min Bpm */
+            min_bpm: number | null;
+            /** Min Score */
+            min_score: number | null;
+            /** Song */
+            song: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "score" | "wait";
+        };
         /** LessonPreview */
         LessonPreview: {
             /** Blocks */
-            blocks: components["schemas"]["BlockModel"][];
-            pass_condition: components["schemas"]["PassConditionModel"] | null;
+            blocks: components["schemas"]["LessonBlock"][];
+            pass_condition: components["schemas"]["LessonPassCondition"] | null;
             /** Summary */
             summary: string;
             /** Title */
             title: string;
+        };
+        /** LessonProgress */
+        LessonProgress: {
+            /** Attempts */
+            attempts: number;
+            /** Best Bpm */
+            best_bpm: number | null;
+            /** Best Score */
+            best_score: number | null;
+            /** Completed */
+            completed: boolean;
+            /** Completed At */
+            completed_at: string | null;
+        };
+        /** LessonProgressBody */
+        LessonProgressBody: {
+            /** Bpm */
+            bpm?: number | null;
+            /**
+             * Completed
+             * @default false
+             */
+            completed: boolean;
+            /** Score */
+            score?: number | null;
+            /**
+             * Wait Completed
+             * @default false
+             */
+            wait_completed: boolean;
+        };
+        /** LessonProgressResult */
+        LessonProgressResult: {
+            /** Next Lesson Id */
+            next_lesson_id: string | null;
+            /** Passed */
+            passed: boolean;
+            progress: components["schemas"]["LessonProgress"];
+        };
+        /** LessonResume */
+        LessonResume: {
+            /** Course Id */
+            course_id: string;
+            /** Course Title */
+            course_title: string;
+            /** Lesson Id */
+            lesson_id: string;
+            /** Lesson Title */
+            lesson_title: string;
+        };
+        /** LessonSource */
+        LessonSource: {
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "builtin" | "user";
+            /** Text */
+            text: string;
         };
         /** LessonSummary */
         LessonSummary: {
@@ -2195,14 +2284,10 @@ export interface components {
             /** Title */
             title: string;
         };
-        /** LevelModel */
-        LevelModel: {
-            /** Id */
-            id: string;
-            /** Lessons */
-            lessons: components["schemas"]["LessonSummary"][];
-            /** Title */
-            title: string;
+        /** LessonTextBody */
+        LessonTextBody: {
+            /** Text */
+            text: string;
         };
         /**
          * LibraryCounts
@@ -2365,27 +2450,6 @@ export interface components {
              * @default false
              */
             vibrato: boolean;
-        };
-        /** PackResult */
-        PackResult: {
-            /** Courses */
-            courses: number;
-            /** Lessons */
-            lessons: number;
-        };
-        /** PassConditionModel */
-        PassConditionModel: {
-            /** Min Bpm */
-            min_bpm: number | null;
-            /** Min Score */
-            min_score: number | null;
-            /** Song */
-            song: string;
-            /**
-             * Type
-             * @enum {string}
-             */
-            type: "score" | "wait";
         };
         /** PracticeDay */
         PracticeDay: {
@@ -2614,44 +2678,6 @@ export interface components {
             /** Url */
             url: string;
         };
-        /** ProgressBody */
-        ProgressBody: {
-            /** Bpm */
-            bpm?: number | null;
-            /**
-             * Completed
-             * @default false
-             */
-            completed: boolean;
-            /** Score */
-            score?: number | null;
-            /**
-             * Wait Completed
-             * @default false
-             */
-            wait_completed: boolean;
-        };
-        /** ProgressModel */
-        ProgressModel: {
-            /** Attempts */
-            attempts: number;
-            /** Best Bpm */
-            best_bpm: number | null;
-            /** Best Score */
-            best_score: number | null;
-            /** Completed */
-            completed: boolean;
-            /** Completed At */
-            completed_at: string | null;
-        };
-        /** ProgressResult */
-        ProgressResult: {
-            /** Next Lesson Id */
-            next_lesson_id: string | null;
-            /** Passed */
-            passed: boolean;
-            progress: components["schemas"]["ProgressModel"];
-        };
         /** Recommendations */
         Recommendations: {
             /** Level */
@@ -2682,17 +2708,6 @@ export interface components {
         ReplaceEntriesBody: {
             /** Entries */
             entries: components["schemas"]["SetlistEntryBody"][];
-        };
-        /** Resume */
-        Resume: {
-            /** Course Id */
-            course_id: string;
-            /** Course Title */
-            course_title: string;
-            /** Lesson Id */
-            lesson_id: string;
-            /** Lesson Title */
-            lesson_title: string;
         };
         /** ReviewSong */
         ReviewSong: {
@@ -3046,16 +3061,6 @@ export interface components {
             /** Tags */
             tags: string[];
         };
-        /** SourceModel */
-        SourceModel: {
-            /**
-             * Source
-             * @enum {string}
-             */
-            source: "builtin" | "user";
-            /** Text */
-            text: string;
-        };
         /**
          * Stem
          * @description One separated part of a song's recording.
@@ -3164,11 +3169,6 @@ export interface components {
         TagsChanged: {
             /** Updated */
             updated: number;
-        };
-        /** TextBody */
-        TextBody: {
-            /** Text */
-            text: string;
         };
         /** Track */
         Track: {
@@ -3298,7 +3298,6 @@ export type AutoImportAccepted = components['schemas']['AutoImportAccepted'];
 export type AutoSyncProposal = components['schemas']['AutoSyncProposal'];
 export type Bar = components['schemas']['Bar'];
 export type Beat = components['schemas']['Beat'];
-export type BlockModel = components['schemas']['BlockModel'];
 export type BodyImportAutoApiImportsAutoPost = components['schemas']['Body_import_auto_api_imports_auto_post'];
 export type BodyImportBulkApiImportsBulkPost = components['schemas']['Body_import_bulk_api_imports_bulk_post'];
 export type BodyImportFileApiImportsFilePost = components['schemas']['Body_import_file_api_imports_file_post'];
@@ -3313,6 +3312,7 @@ export type ConvertBody = components['schemas']['ConvertBody'];
 export type ConvertReport = components['schemas']['ConvertReport'];
 export type ConvertResult = components['schemas']['ConvertResult'];
 export type CourseDetail = components['schemas']['CourseDetail'];
+export type CourseLevel = components['schemas']['CourseLevel'];
 export type CourseList = components['schemas']['CourseList'];
 export type CourseSummary = components['schemas']['CourseSummary'];
 export type CreateSetlistBody = components['schemas']['CreateSetlistBody'];
@@ -3331,18 +3331,24 @@ export type InstrumentPreset = components['schemas']['InstrumentPreset'];
 export type Job = components['schemas']['Job'];
 export type JobAccepted = components['schemas']['JobAccepted'];
 export type JobResult = components['schemas']['JobResult'];
+export type LessonBlock = components['schemas']['LessonBlock'];
 export type LessonDetail = components['schemas']['LessonDetail'];
+export type LessonPackResult = components['schemas']['LessonPackResult'];
+export type LessonPassCondition = components['schemas']['LessonPassCondition'];
 export type LessonPreview = components['schemas']['LessonPreview'];
+export type LessonProgress = components['schemas']['LessonProgress'];
+export type LessonProgressBody = components['schemas']['LessonProgressBody'];
+export type LessonProgressResult = components['schemas']['LessonProgressResult'];
+export type LessonResume = components['schemas']['LessonResume'];
+export type LessonSource = components['schemas']['LessonSource'];
 export type LessonSummary = components['schemas']['LessonSummary'];
-export type LevelModel = components['schemas']['LevelModel'];
+export type LessonTextBody = components['schemas']['LessonTextBody'];
 export type LibraryCounts = components['schemas']['LibraryCounts'];
 export type Me = components['schemas']['Me'];
 export type Meta = components['schemas']['Meta'];
 export type MidiInspection = components['schemas']['MidiInspection'];
 export type MidiTrackInfo = components['schemas']['MidiTrackInfo'];
 export type Note = components['schemas']['Note'];
-export type PackResult = components['schemas']['PackResult'];
-export type PassConditionModel = components['schemas']['PassConditionModel'];
 export type PracticeDay = components['schemas']['PracticeDay'];
 export type PracticeExercise = components['schemas']['PracticeExercise'];
 export type PracticeExerciseBody = components['schemas']['PracticeExerciseBody'];
@@ -3355,14 +3361,10 @@ export type PracticeSongStats = components['schemas']['PracticeSongStats'];
 export type PracticeStats = components['schemas']['PracticeStats'];
 export type PracticeWeek = components['schemas']['PracticeWeek'];
 export type PreviewBody = components['schemas']['PreviewBody'];
-export type ProgressBody = components['schemas']['ProgressBody'];
-export type ProgressModel = components['schemas']['ProgressModel'];
-export type ProgressResult = components['schemas']['ProgressResult'];
 export type Recommendations = components['schemas']['Recommendations'];
 export type RenameSetlistBody = components['schemas']['RenameSetlistBody'];
 export type RenameTagBody = components['schemas']['RenameTagBody'];
 export type ReplaceEntriesBody = components['schemas']['ReplaceEntriesBody'];
-export type Resume = components['schemas']['Resume'];
 export type ReviewSong = components['schemas']['ReviewSong'];
 export type RevisitLoop = components['schemas']['RevisitLoop'];
 export type ScoreDocument = components['schemas']['ScoreDocument'];
@@ -3382,7 +3384,6 @@ export type SongsMoved = components['schemas']['SongsMoved'];
 export type SongsterrTrackChoice = components['schemas']['SongsterrTrackChoice'];
 export type SongSummary = components['schemas']['SongSummary'];
 export type SongTags = components['schemas']['SongTags'];
-export type SourceModel = components['schemas']['SourceModel'];
 export type Stem = components['schemas']['Stem'];
 export type StemList = components['schemas']['StemList'];
 export type StemRequest = components['schemas']['StemRequest'];
@@ -3392,7 +3393,6 @@ export type SyncMap = components['schemas']['SyncMap'];
 export type TagCount = components['schemas']['TagCount'];
 export type TagsAdded = components['schemas']['TagsAdded'];
 export type TagsChanged = components['schemas']['TagsChanged'];
-export type TextBody = components['schemas']['TextBody'];
 export type Track = components['schemas']['Track'];
 export type TrackBar = components['schemas']['TrackBar'];
 export type TrackDifficulty = components['schemas']['TrackDifficulty'];
@@ -4132,7 +4132,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProgressResult"];
+                    "application/json": components["schemas"]["LessonProgressResult"];
                 };
             };
             /** @description Keyed error. `detail` is {key, message, params}. */
@@ -4278,7 +4278,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ProgressBody"];
+                "application/json": components["schemas"]["LessonProgressBody"];
             };
         };
         responses: {
@@ -4288,7 +4288,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProgressResult"];
+                    "application/json": components["schemas"]["LessonProgressResult"];
                 };
             };
             /** @description Keyed error. `detail` is {key, message, params}. */
@@ -4365,7 +4365,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SourceModel"];
+                    "application/json": components["schemas"]["LessonSource"];
                 };
             };
             /** @description Keyed error. `detail` is {key, message, params}. */
@@ -4436,7 +4436,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["TextBody"];
+                "application/json": components["schemas"]["LessonTextBody"];
             };
         };
         responses: {
@@ -4446,7 +4446,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SourceModel"];
+                    "application/json": components["schemas"]["LessonSource"];
                 };
             };
             /** @description Keyed error. `detail` is {key, message, params}. */
@@ -4522,7 +4522,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SourceModel"];
+                    "application/json": components["schemas"]["LessonSource"];
                 };
             };
             /** @description Keyed error. `detail` is {key, message, params}. */
@@ -4592,7 +4592,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["TextBody"];
+                "application/json": components["schemas"]["LessonTextBody"];
             };
         };
         responses: {
@@ -4602,7 +4602,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SourceModel"];
+                    "application/json": components["schemas"]["LessonSource"];
                 };
             };
             /** @description Keyed error. `detail` is {key, message, params}. */
@@ -5778,7 +5778,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PackResult"];
+                    "application/json": components["schemas"]["LessonPackResult"];
                 };
             };
             /** @description Keyed error. `detail` is {key, message, params}. */
@@ -5846,7 +5846,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["TextBody"];
+                "application/json": components["schemas"]["LessonTextBody"];
             };
         };
         responses: {

@@ -48,7 +48,7 @@ Track = Literal["guitar", "bass"]
 MAX_PACK_BYTES = 10 * 1024 * 1024
 
 
-class PassConditionModel(BaseModel):
+class LessonPassCondition(BaseModel):
     type: Literal["score", "wait"]
     min_score: float | None
     min_bpm: float | None
@@ -56,7 +56,7 @@ class PassConditionModel(BaseModel):
     """A library song id: the result is read from the practice log. Empty when the player reports it."""
 
 
-class ProgressModel(BaseModel):
+class LessonProgress(BaseModel):
     completed: bool
     completed_at: str | None
     attempts: int
@@ -74,7 +74,7 @@ class LessonSummary(BaseModel):
     requires: list[str]
 
 
-class LevelModel(BaseModel):
+class CourseLevel(BaseModel):
     id: str
     title: str
     lessons: list[LessonSummary]
@@ -95,10 +95,10 @@ class CourseSummary(BaseModel):
 
 
 class CourseDetail(CourseSummary):
-    levels: list[LevelModel]
+    levels: list[CourseLevel]
 
 
-class Resume(BaseModel):
+class LessonResume(BaseModel):
     course_id: str
     course_title: str
     lesson_id: str
@@ -107,13 +107,13 @@ class Resume(BaseModel):
 
 class CourseList(BaseModel):
     courses: list[CourseSummary]
-    resume: Resume | None
+    resume: LessonResume | None
     can_edit: bool
     problems: list[str]
     """Mistakes found in lesson files, for editors; empty for everyone else."""
 
 
-class BlockModel(BaseModel):
+class LessonBlock(BaseModel):
     kind: Literal["markdown", "chord", "fretboard", "song", "tab", "exercise", "media", "pass"]
     text: str
     params: dict[str, str]
@@ -127,9 +127,9 @@ class LessonDetail(BaseModel):
     summary: str
     status: Status
     source: Source
-    blocks: list[BlockModel]
-    pass_condition: PassConditionModel | None
-    progress: ProgressModel
+    blocks: list[LessonBlock]
+    pass_condition: LessonPassCondition | None
+    progress: LessonProgress
     next_lesson_id: str | None
     can_edit: bool
 
@@ -137,20 +137,20 @@ class LessonDetail(BaseModel):
 class LessonPreview(BaseModel):
     title: str
     summary: str
-    blocks: list[BlockModel]
-    pass_condition: PassConditionModel | None
+    blocks: list[LessonBlock]
+    pass_condition: LessonPassCondition | None
 
 
-class TextBody(BaseModel):
+class LessonTextBody(BaseModel):
     text: str = Field(max_length=MAX_TEXT)
 
 
-class SourceModel(BaseModel):
+class LessonSource(BaseModel):
     text: str
     source: Source
 
 
-class ProgressBody(BaseModel):
+class LessonProgressBody(BaseModel):
     model_config = ConfigDict(allow_inf_nan=False)
 
     score: float | None = Field(default=None, ge=0, le=100)
@@ -160,13 +160,13 @@ class ProgressBody(BaseModel):
     """Mark a lesson that has no pass condition as done."""
 
 
-class ProgressResult(BaseModel):
+class LessonProgressResult(BaseModel):
     passed: bool
-    progress: ProgressModel
+    progress: LessonProgress
     next_lesson_id: str | None
 
 
-class PackResult(BaseModel):
+class LessonPackResult(BaseModel):
     courses: int
     lessons: int
 
@@ -190,10 +190,10 @@ def _repo(ctx: AppContext) -> LessonProgressRepository:
     return LessonProgressRepository(ctx.settings)
 
 
-def _model(progress: Progress | None) -> ProgressModel:
+def _model(progress: Progress | None) -> LessonProgress:
     if progress is None:
-        return ProgressModel(completed=False, completed_at=None, attempts=0, best_score=None, best_bpm=None)
-    return ProgressModel(
+        return LessonProgress(completed=False, completed_at=None, attempts=0, best_score=None, best_bpm=None)
+    return LessonProgress(
         completed=progress.completed_at is not None,
         completed_at=progress.completed_at,
         attempts=progress.attempts,
@@ -202,10 +202,10 @@ def _model(progress: Progress | None) -> ProgressModel:
     )
 
 
-def _condition(condition: PassCondition | None) -> PassConditionModel | None:
+def _condition(condition: PassCondition | None) -> LessonPassCondition | None:
     if condition is None:
         return None
-    return PassConditionModel(
+    return LessonPassCondition(
         type=condition.type,  # type: ignore[arg-type]
         min_score=condition.min_score,
         min_bpm=condition.min_bpm,
@@ -213,8 +213,8 @@ def _condition(condition: PassCondition | None) -> PassConditionModel | None:
     )
 
 
-def _blocks(lesson: Lesson) -> list[BlockModel]:
-    return [BlockModel(kind=b.kind, text=b.text, params=b.params) for b in lesson.blocks]  # type: ignore[arg-type]
+def _blocks(lesson: Lesson) -> list[LessonBlock]:
+    return [LessonBlock(kind=b.kind, text=b.text, params=b.params) for b in lesson.blocks]  # type: ignore[arg-type]
 
 
 def _find_course(catalog: Catalog, course_id: str) -> CourseEntry:
@@ -271,7 +271,7 @@ def list_courses(ctx: AppContext = Depends(context), user: Principal = Depends(p
     resume = None
     if where is not None:
         entry = catalog.courses[where[0]]
-        resume = Resume(
+        resume = LessonResume(
             course_id=where[0],
             course_title=entry.course.title,
             lesson_id=where[1],
@@ -292,11 +292,11 @@ def get_course(course_id: str, ctx: AppContext = Depends(context), user: Princip
     entry = _find_course(catalog, course_id)
     progress = _repo(ctx).all(user.user_id)
     state = unlock.standing(catalog, progress)
-    levels: list[LevelModel] = []
+    levels: list[CourseLevel] = []
     titles = dict(entry.course.levels)
     for item in entry.lessons:
         if not levels or levels[-1].id != item.level:
-            levels.append(LevelModel(id=item.level, title=titles.get(item.level, item.level), lessons=[]))
+            levels.append(CourseLevel(id=item.level, title=titles.get(item.level, item.level), lessons=[]))
         lesson = item.lesson
         levels[-1].lessons.append(
             LessonSummary(
@@ -378,24 +378,24 @@ def _finish(
     score: float | None,
     bpm: float | None,
     passed: bool,
-) -> ProgressResult:
+) -> LessonProgressResult:
     row = _repo(ctx).record(user.user_id, course_id, lesson_id, score=score, bpm=bpm, passed=passed)
     detail, _ = _detail(ctx, user, _catalog(ctx).load(), course_id, lesson_id, refuse_locked=False)
-    return ProgressResult(
+    return LessonProgressResult(
         passed=row.completed_at is not None, progress=_model(row), next_lesson_id=detail.next_lesson_id
     )
 
 
 @router.post(
     "/api/courses/{course_id}/lessons/{lesson_id}/progress",
-    response_model=ProgressResult,
+    response_model=LessonProgressResult,
     tags=["lessons"],
     responses=AUTH_RESPONSES,
 )
 def report_progress(
     course_id: str,
     lesson_id: str,
-    body: ProgressBody,
+    body: LessonProgressBody,
     ctx: AppContext = Depends(context),
     user: Principal = Depends(principal),
 ):
@@ -417,7 +417,7 @@ def report_progress(
 
 @router.post(
     "/api/courses/{course_id}/lessons/{lesson_id}/check",
-    response_model=ProgressResult,
+    response_model=LessonProgressResult,
     tags=["lessons"],
     responses=AUTH_RESPONSES,
 )
@@ -452,7 +452,7 @@ def _invalid(exc: LessonFormatError):
 
 
 @router.post("/api/lessons/preview", response_model=LessonPreview, tags=["lessons"], responses=AUTH_RESPONSES)
-def preview(body: TextBody, _: Principal = Depends(editor)):
+def preview(body: LessonTextBody, _: Principal = Depends(editor)):
     """Parse lesson text exactly as saving would, without saving, for the editor's preview."""
     try:
         lesson = parse_lesson(body.text, "preview")
@@ -468,7 +468,7 @@ def preview(body: TextBody, _: Principal = Depends(editor)):
 
 @router.get(
     "/api/courses/{course_id}/lessons/{lesson_id}/source",
-    response_model=SourceModel,
+    response_model=LessonSource,
     tags=["lessons"],
     responses=AUTH_RESPONSES,
 )
@@ -479,17 +479,21 @@ def get_lesson_source(
         text, source = _catalog(ctx).lesson_text(course_id, lesson_id)
     except UnknownLesson as exc:
         raise api_error(404, "lesson.notFound", "lesson not found") from exc
-    return SourceModel(text=text, source=source)  # type: ignore[arg-type]
+    return LessonSource(text=text, source=source)  # type: ignore[arg-type]
 
 
 @router.put(
     "/api/courses/{course_id}/lessons/{lesson_id}/source",
-    response_model=SourceModel,
+    response_model=LessonSource,
     tags=["lessons"],
     responses=AUTH_RESPONSES,
 )
 def put_lesson_source(
-    course_id: str, lesson_id: str, body: TextBody, ctx: AppContext = Depends(context), _: Principal = Depends(editor)
+    course_id: str,
+    lesson_id: str,
+    body: LessonTextBody,
+    ctx: AppContext = Depends(context),
+    _: Principal = Depends(editor),
 ):
     """Create or replace a lesson. A built-in lesson is overridden by a copy in the lessons folder."""
     try:
@@ -498,7 +502,7 @@ def put_lesson_source(
         raise api_error(404, "course.notFound", "course not found") from exc
     except LessonFormatError as exc:
         raise _invalid(exc) from exc
-    return SourceModel(text=body.text, source="user")
+    return LessonSource(text=body.text, source="user")
 
 
 @router.delete(
@@ -518,25 +522,25 @@ def delete_lesson(course_id: str, lesson_id: str, ctx: AppContext = Depends(cont
     return Response(status_code=204)
 
 
-@router.get("/api/courses/{course_id}/source", response_model=SourceModel, tags=["lessons"], responses=AUTH_RESPONSES)
+@router.get("/api/courses/{course_id}/source", response_model=LessonSource, tags=["lessons"], responses=AUTH_RESPONSES)
 def get_course_source(course_id: str, ctx: AppContext = Depends(context), _: Principal = Depends(editor)):
     try:
         text, source = _catalog(ctx).course_text(course_id)
     except UnknownCourse as exc:
         raise api_error(404, "course.notFound", "course not found") from exc
-    return SourceModel(text=text, source=source)  # type: ignore[arg-type]
+    return LessonSource(text=text, source=source)  # type: ignore[arg-type]
 
 
-@router.put("/api/courses/{course_id}/source", response_model=SourceModel, tags=["lessons"], responses=AUTH_RESPONSES)
+@router.put("/api/courses/{course_id}/source", response_model=LessonSource, tags=["lessons"], responses=AUTH_RESPONSES)
 def put_course_source(
-    course_id: str, body: TextBody, ctx: AppContext = Depends(context), _: Principal = Depends(editor)
+    course_id: str, body: LessonTextBody, ctx: AppContext = Depends(context), _: Principal = Depends(editor)
 ):
     """Create or replace a course's ``course.md`` in the lessons folder."""
     try:
         _catalog(ctx).save_course(course_id, body.text)
     except LessonFormatError as exc:
         raise _invalid(exc) from exc
-    return SourceModel(text=body.text, source="user")
+    return LessonSource(text=body.text, source="user")
 
 
 @router.delete("/api/courses/{course_id}", status_code=204, tags=["lessons"], responses=AUTH_RESPONSES)
@@ -551,7 +555,7 @@ def delete_course(course_id: str, ctx: AppContext = Depends(context), _: Princip
     return Response(status_code=204)
 
 
-@router.post("/api/lessons/import", response_model=PackResult, tags=["lessons"], responses=AUTH_RESPONSES)
+@router.post("/api/lessons/import", response_model=LessonPackResult, tags=["lessons"], responses=AUTH_RESPONSES)
 async def import_pack(file: UploadFile = File(...), ctx: AppContext = Depends(context), _: Principal = Depends(editor)):
     """Add the courses and lessons of a zip pack (``<course>/course.md`` and ``<course>/<lesson>.md``)."""
     data = await file.read(MAX_PACK_BYTES + 1)
@@ -566,4 +570,4 @@ async def import_pack(file: UploadFile = File(...), ctx: AppContext = Depends(co
             raise api_error(400, exc.key, str(exc), **exc.params) from exc
         except PackError as exc:
             raise api_error(400, exc.key, str(exc), **exc.params) from exc
-    return PackResult(courses=courses, lessons=lessons)
+    return LessonPackResult(courses=courses, lessons=lessons)

@@ -84,13 +84,19 @@ class Course:
     """Course ids that must be finished before this course opens."""
 
 
+# Words the app uses in its own lesson addresses (/lessons/new, /lessons/<course>/edit).
+RESERVED_IDS = ("new", "edit")
+
+
 def valid_id(value: str) -> bool:
-    return ID_PATTERN.fullmatch(value) is not None
+    return ID_PATTERN.fullmatch(value) is not None and value not in RESERVED_IDS
 
 
 def _check_id(value: str, what: str, line: int | None = None) -> str:
     if not valid_id(value):
-        raise LessonFormatError(f"{what} {value!r} must be lowercase letters, digits and dashes (at most 64)", line)
+        raise LessonFormatError(
+            f"{what} {value!r} must be lowercase letters, digits and dashes (at most 64), and not new or edit", line
+        )
     return value
 
 

@@ -104,6 +104,9 @@ def test_bad_ids_and_tracks_are_refused() -> None:
         parse_lesson(lesson(), "../etc")
     with pytest.raises(LessonFormatError, match="course id"):
         parse_course(COURSE, "Bad_ID")
+    for reserved in ("new", "edit"):
+        with pytest.raises(LessonFormatError, match="lesson id"):
+            parse_lesson(lesson(), reserved)
     with pytest.raises(LessonFormatError, match="track"):
         parse_course(COURSE.replace("guitar", "banjo"), "c")
     with pytest.raises(LessonFormatError, match="itself"):

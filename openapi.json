@@ -652,42 +652,6 @@
         "title": "Beat",
         "type": "object"
       },
-      "BlockModel": {
-        "properties": {
-          "kind": {
-            "enum": [
-              "markdown",
-              "chord",
-              "fretboard",
-              "song",
-              "tab",
-              "exercise",
-              "media",
-              "pass"
-            ],
-            "title": "Kind",
-            "type": "string"
-          },
-          "params": {
-            "additionalProperties": {
-              "type": "string"
-            },
-            "title": "Params",
-            "type": "object"
-          },
-          "text": {
-            "title": "Text",
-            "type": "string"
-          }
-        },
-        "required": [
-          "kind",
-          "text",
-          "params"
-        ],
-        "title": "BlockModel",
-        "type": "object"
-      },
       "Body_import_auto_api_imports_auto_post": {
         "properties": {
           "file": {
@@ -1137,7 +1101,7 @@
           },
           "levels": {
             "items": {
-              "$ref": "#/components/schemas/LevelModel"
+              "$ref": "#/components/schemas/CourseLevel"
             },
             "title": "Levels",
             "type": "array"
@@ -1205,6 +1169,32 @@
         "title": "CourseDetail",
         "type": "object"
       },
+      "CourseLevel": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "lessons": {
+            "items": {
+              "$ref": "#/components/schemas/LessonSummary"
+            },
+            "title": "Lessons",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "lessons"
+        ],
+        "title": "CourseLevel",
+        "type": "object"
+      },
       "CourseList": {
         "properties": {
           "can_edit": {
@@ -1228,7 +1218,7 @@
           "resume": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/Resume"
+                "$ref": "#/components/schemas/LessonResume"
               },
               {
                 "type": "null"
@@ -2008,11 +1998,47 @@
         "title": "JobResult",
         "type": "object"
       },
+      "LessonBlock": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "markdown",
+              "chord",
+              "fretboard",
+              "song",
+              "tab",
+              "exercise",
+              "media",
+              "pass"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "params": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Params",
+            "type": "object"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "text",
+          "params"
+        ],
+        "title": "LessonBlock",
+        "type": "object"
+      },
       "LessonDetail": {
         "properties": {
           "blocks": {
             "items": {
-              "$ref": "#/components/schemas/BlockModel"
+              "$ref": "#/components/schemas/LessonBlock"
             },
             "title": "Blocks",
             "type": "array"
@@ -2047,7 +2073,7 @@
           "pass_condition": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/PassConditionModel"
+                "$ref": "#/components/schemas/LessonPassCondition"
               },
               {
                 "type": "null"
@@ -2055,7 +2081,7 @@
             ]
           },
           "progress": {
-            "$ref": "#/components/schemas/ProgressModel"
+            "$ref": "#/components/schemas/LessonProgress"
           },
           "source": {
             "enum": [
@@ -2100,11 +2126,75 @@
         "title": "LessonDetail",
         "type": "object"
       },
+      "LessonPackResult": {
+        "properties": {
+          "courses": {
+            "title": "Courses",
+            "type": "integer"
+          },
+          "lessons": {
+            "title": "Lessons",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "courses",
+          "lessons"
+        ],
+        "title": "LessonPackResult",
+        "type": "object"
+      },
+      "LessonPassCondition": {
+        "properties": {
+          "min_bpm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Bpm"
+          },
+          "min_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Score"
+          },
+          "song": {
+            "title": "Song",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "score",
+              "wait"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "min_score",
+          "min_bpm",
+          "song"
+        ],
+        "title": "LessonPassCondition",
+        "type": "object"
+      },
       "LessonPreview": {
         "properties": {
           "blocks": {
             "items": {
-              "$ref": "#/components/schemas/BlockModel"
+              "$ref": "#/components/schemas/LessonBlock"
             },
             "title": "Blocks",
             "type": "array"
@@ -2112,7 +2202,7 @@
           "pass_condition": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/PassConditionModel"
+                "$ref": "#/components/schemas/LessonPassCondition"
               },
               {
                 "type": "null"
@@ -2135,6 +2225,181 @@
           "pass_condition"
         ],
         "title": "LessonPreview",
+        "type": "object"
+      },
+      "LessonProgress": {
+        "properties": {
+          "attempts": {
+            "title": "Attempts",
+            "type": "integer"
+          },
+          "best_bpm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Bpm"
+          },
+          "best_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Score"
+          },
+          "completed": {
+            "title": "Completed",
+            "type": "boolean"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          }
+        },
+        "required": [
+          "completed",
+          "completed_at",
+          "attempts",
+          "best_score",
+          "best_bpm"
+        ],
+        "title": "LessonProgress",
+        "type": "object"
+      },
+      "LessonProgressBody": {
+        "properties": {
+          "bpm": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 400.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bpm"
+          },
+          "completed": {
+            "default": false,
+            "title": "Completed",
+            "type": "boolean"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "wait_completed": {
+            "default": false,
+            "title": "Wait Completed",
+            "type": "boolean"
+          }
+        },
+        "title": "LessonProgressBody",
+        "type": "object"
+      },
+      "LessonProgressResult": {
+        "properties": {
+          "next_lesson_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Lesson Id"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "boolean"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/LessonProgress"
+          }
+        },
+        "required": [
+          "passed",
+          "progress",
+          "next_lesson_id"
+        ],
+        "title": "LessonProgressResult",
+        "type": "object"
+      },
+      "LessonResume": {
+        "properties": {
+          "course_id": {
+            "title": "Course Id",
+            "type": "string"
+          },
+          "course_title": {
+            "title": "Course Title",
+            "type": "string"
+          },
+          "lesson_id": {
+            "title": "Lesson Id",
+            "type": "string"
+          },
+          "lesson_title": {
+            "title": "Lesson Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "course_id",
+          "course_title",
+          "lesson_id",
+          "lesson_title"
+        ],
+        "title": "LessonResume",
+        "type": "object"
+      },
+      "LessonSource": {
+        "properties": {
+          "source": {
+            "enum": [
+              "builtin",
+              "user"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "source"
+        ],
+        "title": "LessonSource",
         "type": "object"
       },
       "LessonSummary": {
@@ -2192,30 +2457,18 @@
         "title": "LessonSummary",
         "type": "object"
       },
-      "LevelModel": {
+      "LessonTextBody": {
         "properties": {
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "lessons": {
-            "items": {
-              "$ref": "#/components/schemas/LessonSummary"
-            },
-            "title": "Lessons",
-            "type": "array"
-          },
-          "title": {
-            "title": "Title",
+          "text": {
+            "maxLength": 200000,
+            "title": "Text",
             "type": "string"
           }
         },
         "required": [
-          "id",
-          "title",
-          "lessons"
+          "text"
         ],
-        "title": "LevelModel",
+        "title": "LessonTextBody",
         "type": "object"
       },
       "LibraryCounts": {
@@ -2593,70 +2846,6 @@
           "fret"
         ],
         "title": "Note",
-        "type": "object"
-      },
-      "PackResult": {
-        "properties": {
-          "courses": {
-            "title": "Courses",
-            "type": "integer"
-          },
-          "lessons": {
-            "title": "Lessons",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "courses",
-          "lessons"
-        ],
-        "title": "PackResult",
-        "type": "object"
-      },
-      "PassConditionModel": {
-        "properties": {
-          "min_bpm": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Min Bpm"
-          },
-          "min_score": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Min Score"
-          },
-          "song": {
-            "title": "Song",
-            "type": "string"
-          },
-          "type": {
-            "enum": [
-              "score",
-              "wait"
-            ],
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "type",
-          "min_score",
-          "min_bpm",
-          "song"
-        ],
-        "title": "PassConditionModel",
         "type": "object"
       },
       "PracticeDay": {
@@ -3295,131 +3484,6 @@
         "title": "PreviewBody",
         "type": "object"
       },
-      "ProgressBody": {
-        "properties": {
-          "bpm": {
-            "anyOf": [
-              {
-                "exclusiveMinimum": 0.0,
-                "maximum": 400.0,
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Bpm"
-          },
-          "completed": {
-            "default": false,
-            "title": "Completed",
-            "type": "boolean"
-          },
-          "score": {
-            "anyOf": [
-              {
-                "maximum": 100.0,
-                "minimum": 0.0,
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Score"
-          },
-          "wait_completed": {
-            "default": false,
-            "title": "Wait Completed",
-            "type": "boolean"
-          }
-        },
-        "title": "ProgressBody",
-        "type": "object"
-      },
-      "ProgressModel": {
-        "properties": {
-          "attempts": {
-            "title": "Attempts",
-            "type": "integer"
-          },
-          "best_bpm": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Best Bpm"
-          },
-          "best_score": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Best Score"
-          },
-          "completed": {
-            "title": "Completed",
-            "type": "boolean"
-          },
-          "completed_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Completed At"
-          }
-        },
-        "required": [
-          "completed",
-          "completed_at",
-          "attempts",
-          "best_score",
-          "best_bpm"
-        ],
-        "title": "ProgressModel",
-        "type": "object"
-      },
-      "ProgressResult": {
-        "properties": {
-          "next_lesson_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Next Lesson Id"
-          },
-          "passed": {
-            "title": "Passed",
-            "type": "boolean"
-          },
-          "progress": {
-            "$ref": "#/components/schemas/ProgressModel"
-          }
-        },
-        "required": [
-          "passed",
-          "progress",
-          "next_lesson_id"
-        ],
-        "title": "ProgressResult",
-        "type": "object"
-      },
       "Recommendations": {
         "properties": {
           "level": {
@@ -3518,34 +3582,6 @@
           "entries"
         ],
         "title": "ReplaceEntriesBody",
-        "type": "object"
-      },
-      "Resume": {
-        "properties": {
-          "course_id": {
-            "title": "Course Id",
-            "type": "string"
-          },
-          "course_title": {
-            "title": "Course Title",
-            "type": "string"
-          },
-          "lesson_id": {
-            "title": "Lesson Id",
-            "type": "string"
-          },
-          "lesson_title": {
-            "title": "Lesson Title",
-            "type": "string"
-          }
-        },
-        "required": [
-          "course_id",
-          "course_title",
-          "lesson_id",
-          "lesson_title"
-        ],
-        "title": "Resume",
         "type": "object"
       },
       "ReviewSong": {
@@ -4487,28 +4523,6 @@
         "title": "SongsterrTrackChoice",
         "type": "object"
       },
-      "SourceModel": {
-        "properties": {
-          "source": {
-            "enum": [
-              "builtin",
-              "user"
-            ],
-            "title": "Source",
-            "type": "string"
-          },
-          "text": {
-            "title": "Text",
-            "type": "string"
-          }
-        },
-        "required": [
-          "text",
-          "source"
-        ],
-        "title": "SourceModel",
-        "type": "object"
-      },
       "Stem": {
         "description": "One separated part of a song's recording.",
         "properties": {
@@ -4734,20 +4748,6 @@
           "updated"
         ],
         "title": "TagsChanged",
-        "type": "object"
-      },
-      "TextBody": {
-        "properties": {
-          "text": {
-            "maxLength": 200000,
-            "title": "Text",
-            "type": "string"
-          }
-        },
-        "required": [
-          "text"
-        ],
-        "title": "TextBody",
         "type": "object"
       },
       "Track": {
@@ -5922,7 +5922,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProgressResult"
+                  "$ref": "#/components/schemas/LessonProgressResult"
                 }
               }
             },
@@ -6118,7 +6118,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ProgressBody"
+                "$ref": "#/components/schemas/LessonProgressBody"
               }
             }
           },
@@ -6129,7 +6129,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProgressResult"
+                  "$ref": "#/components/schemas/LessonProgressResult"
                 }
               }
             },
@@ -6230,7 +6230,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SourceModel"
+                  "$ref": "#/components/schemas/LessonSource"
                 }
               }
             },
@@ -6329,7 +6329,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/TextBody"
+                "$ref": "#/components/schemas/LessonTextBody"
               }
             }
           },
@@ -6340,7 +6340,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SourceModel"
+                  "$ref": "#/components/schemas/LessonSource"
                 }
               }
             },
@@ -6432,7 +6432,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SourceModel"
+                  "$ref": "#/components/schemas/LessonSource"
                 }
               }
             },
@@ -6522,7 +6522,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/TextBody"
+                "$ref": "#/components/schemas/LessonTextBody"
               }
             }
           },
@@ -6533,7 +6533,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SourceModel"
+                  "$ref": "#/components/schemas/LessonSource"
                 }
               }
             },
@@ -7940,7 +7940,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PackResult"
+                  "$ref": "#/components/schemas/LessonPackResult"
                 }
               }
             },
@@ -8021,7 +8021,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/TextBody"
+                "$ref": "#/components/schemas/LessonTextBody"
               }
             }
           },
