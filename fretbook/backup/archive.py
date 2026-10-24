@@ -27,6 +27,7 @@ from fretbook import __version__
 from fretbook.config import Settings
 from fretbook.db.connection import session
 from fretbook.db.migrate import utcnow
+from fretbook.storage.lessons import LessonProgressRepository
 from fretbook.storage.media import MediaStore
 from fretbook.storage.practice import PracticeRepository
 from fretbook.storage.repository import SongRepository
@@ -158,6 +159,9 @@ def write_archive(
         ]
         # Additive too. Sessions name their song by archive id; a single user's goal rides along.
         manifest["practice"] = PracticeRepository(settings).export_all(owner_id)
+        # Lesson progress is one person's, so a whole-server archive (which has no single owner) leaves it out.
+        if owner_id:
+            manifest["lessons"] = {"progress": LessonProgressRepository(settings).export_all(owner_id)}
         if users:
             manifest["users"] = users
         archive.writestr(MANIFEST, json.dumps(manifest, ensure_ascii=False, indent=2))

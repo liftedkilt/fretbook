@@ -85,6 +85,170 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/courses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Courses */
+        get: operations["list_courses_api_courses_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/courses/{course_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Course */
+        get: operations["get_course_api_courses__course_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete Course
+         * @description Delete a course from the lessons folder (every lesson in it); a built-in course it overrode comes back.
+         */
+        delete: operations["delete_course_api_courses__course_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/courses/{course_id}/lessons/{lesson_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Lesson */
+        get: operations["get_lesson_api_courses__course_id__lessons__lesson_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete Lesson
+         * @description Delete the lesson's file in the lessons folder; a built-in lesson it overrode comes back.
+         */
+        delete: operations["delete_lesson_api_courses__course_id__lessons__lesson_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/courses/{course_id}/lessons/{lesson_id}/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check Lesson
+         * @description Look in the practice log for a run of the lesson's song that meets its pass condition.
+         */
+        post: operations["check_lesson_api_courses__course_id__lessons__lesson_id__check_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/courses/{course_id}/lessons/{lesson_id}/open": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Open Lesson
+         * @description Remember that the caller opened the lesson, so "continue where you left off" can return to it.
+         */
+        post: operations["open_lesson_api_courses__course_id__lessons__lesson_id__open_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/courses/{course_id}/lessons/{lesson_id}/progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report Progress
+         * @description Report a result the player measured. It completes the lesson when it meets the pass condition.
+         *
+         *     A lesson with no pass condition is completed by sending ``completed: true``. A pass condition that names a
+         *     library song is read from the practice log instead (``/check``), so this refuses to take a result for it.
+         */
+        post: operations["report_progress_api_courses__course_id__lessons__lesson_id__progress_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/courses/{course_id}/lessons/{lesson_id}/source": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Lesson Source */
+        get: operations["get_lesson_source_api_courses__course_id__lessons__lesson_id__source_get"];
+        /**
+         * Put Lesson Source
+         * @description Create or replace a lesson. A built-in lesson is overridden by a copy in the lessons folder.
+         */
+        put: operations["put_lesson_source_api_courses__course_id__lessons__lesson_id__source_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/courses/{course_id}/source": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Course Source */
+        get: operations["get_course_source_api_courses__course_id__source_get"];
+        /**
+         * Put Course Source
+         * @description Create or replace a course's ``course.md`` in the lessons folder.
+         */
+        put: operations["put_course_source_api_courses__course_id__source_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -381,6 +545,46 @@ export interface paths {
          * @description Retry a failed background import.
          */
         post: operations["retry_job_api_jobs__job_id__retry_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lessons/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Pack
+         * @description Add the courses and lessons of a zip pack (``<course>/course.md`` and ``<course>/<lesson>.md``).
+         */
+        post: operations["import_pack_api_lessons_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lessons/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview
+         * @description Parse lesson text exactly as saving would, without saving, for the editor's preview.
+         */
+        post: operations["preview_api_lessons_preview_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1480,6 +1684,11 @@ export interface components {
              */
             options: string;
         };
+        /** Body_import_pack_api_lessons_import_post */
+        Body_import_pack_api_lessons_import_post: {
+            /** File */
+            file: string;
+        };
         /** Body_inspect_midi_api_imports_midi_inspect_post */
         Body_inspect_midi_api_imports_midi_inspect_post: {
             /** File */
@@ -1568,6 +1777,85 @@ export interface components {
             report: components["schemas"]["ConvertReport"];
             song?: components["schemas"]["SongDetail"] | null;
             track: components["schemas"]["Track"];
+        };
+        /** CourseDetail */
+        CourseDetail: {
+            /** Completed Count */
+            completed_count: number;
+            /** Id */
+            id: string;
+            /** Lesson Count */
+            lesson_count: number;
+            /** Levels */
+            levels: components["schemas"]["CourseLevel"][];
+            /** Locked */
+            locked: boolean;
+            /** Next Lesson Id */
+            next_lesson_id: string | null;
+            /** Requires */
+            requires: string[];
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "builtin" | "user";
+            /** Summary */
+            summary: string;
+            /** Title */
+            title: string;
+            /**
+             * Track
+             * @enum {string}
+             */
+            track: "guitar" | "bass";
+        };
+        /** CourseLevel */
+        CourseLevel: {
+            /** Id */
+            id: string;
+            /** Lessons */
+            lessons: components["schemas"]["LessonSummary"][];
+            /** Title */
+            title: string;
+        };
+        /** CourseList */
+        CourseList: {
+            /** Can Edit */
+            can_edit: boolean;
+            /** Courses */
+            courses: components["schemas"]["CourseSummary"][];
+            /** Problems */
+            problems: string[];
+            resume: components["schemas"]["LessonResume"] | null;
+        };
+        /** CourseSummary */
+        CourseSummary: {
+            /** Completed Count */
+            completed_count: number;
+            /** Id */
+            id: string;
+            /** Lesson Count */
+            lesson_count: number;
+            /** Locked */
+            locked: boolean;
+            /** Next Lesson Id */
+            next_lesson_id: string | null;
+            /** Requires */
+            requires: string[];
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "builtin" | "user";
+            /** Summary */
+            summary: string;
+            /** Title */
+            title: string;
+            /**
+             * Track
+             * @enum {string}
+             */
+            track: "guitar" | "bass";
         };
         /** CreateSetlistBody */
         CreateSetlistBody: {
@@ -1837,6 +2125,169 @@ export interface components {
             warnings?: components["schemas"]["ErrorDetail"][];
         } & {
             [key: string]: unknown;
+        };
+        /** LessonBlock */
+        LessonBlock: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "markdown" | "chord" | "fretboard" | "song" | "tab" | "exercise" | "media" | "pass";
+            /** Params */
+            params: {
+                [key: string]: string;
+            };
+            /** Text */
+            text: string;
+        };
+        /** LessonDetail */
+        LessonDetail: {
+            /** Blocks */
+            blocks: components["schemas"]["LessonBlock"][];
+            /** Can Edit */
+            can_edit: boolean;
+            /** Course Id */
+            course_id: string;
+            /** Course Title */
+            course_title: string;
+            /** Id */
+            id: string;
+            /** Next Lesson Id */
+            next_lesson_id: string | null;
+            pass_condition: components["schemas"]["LessonPassCondition"] | null;
+            progress: components["schemas"]["LessonProgress"];
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "builtin" | "user";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "locked" | "available" | "completed";
+            /** Summary */
+            summary: string;
+            /** Title */
+            title: string;
+        };
+        /** LessonPackResult */
+        LessonPackResult: {
+            /** Courses */
+            courses: number;
+            /** Lessons */
+            lessons: number;
+        };
+        /** LessonPassCondition */
+        LessonPassCondition: {
+            /** Min Bpm */
+            min_bpm: number | null;
+            /** Min Score */
+            min_score: number | null;
+            /** Song */
+            song: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "score" | "wait";
+        };
+        /** LessonPreview */
+        LessonPreview: {
+            /** Blocks */
+            blocks: components["schemas"]["LessonBlock"][];
+            pass_condition: components["schemas"]["LessonPassCondition"] | null;
+            /** Summary */
+            summary: string;
+            /** Title */
+            title: string;
+        };
+        /** LessonProgress */
+        LessonProgress: {
+            /** Attempts */
+            attempts: number;
+            /** Best Bpm */
+            best_bpm: number | null;
+            /** Best Score */
+            best_score: number | null;
+            /** Completed */
+            completed: boolean;
+            /** Completed At */
+            completed_at: string | null;
+        };
+        /** LessonProgressBody */
+        LessonProgressBody: {
+            /** Bpm */
+            bpm?: number | null;
+            /**
+             * Completed
+             * @default false
+             */
+            completed: boolean;
+            /** Score */
+            score?: number | null;
+            /**
+             * Wait Completed
+             * @default false
+             */
+            wait_completed: boolean;
+        };
+        /** LessonProgressResult */
+        LessonProgressResult: {
+            /** Next Lesson Id */
+            next_lesson_id: string | null;
+            /** Passed */
+            passed: boolean;
+            progress: components["schemas"]["LessonProgress"];
+        };
+        /** LessonResume */
+        LessonResume: {
+            /** Course Id */
+            course_id: string;
+            /** Course Title */
+            course_title: string;
+            /** Lesson Id */
+            lesson_id: string;
+            /** Lesson Title */
+            lesson_title: string;
+        };
+        /** LessonSource */
+        LessonSource: {
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "builtin" | "user";
+            /** Text */
+            text: string;
+        };
+        /** LessonSummary */
+        LessonSummary: {
+            /** Has Pass Condition */
+            has_pass_condition: boolean;
+            /** Id */
+            id: string;
+            /** Requires */
+            requires: string[];
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "builtin" | "user";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "locked" | "available" | "completed";
+            /** Summary */
+            summary: string;
+            /** Title */
+            title: string;
+        };
+        /** LessonTextBody */
+        LessonTextBody: {
+            /** Text */
+            text: string;
         };
         /**
          * LibraryCounts
@@ -2852,6 +3303,7 @@ export type BodyImportBulkApiImportsBulkPost = components['schemas']['Body_impor
 export type BodyImportFileApiImportsFilePost = components['schemas']['Body_import_file_api_imports_file_post'];
 export type BodyImportLibraryApiLibraryImportPost = components['schemas']['Body_import_library_api_library_import_post'];
 export type BodyImportMidiApiImportsMidiPost = components['schemas']['Body_import_midi_api_imports_midi_post'];
+export type BodyImportPackApiLessonsImportPost = components['schemas']['Body_import_pack_api_lessons_import_post'];
 export type BodyInspectMidiApiImportsMidiInspectPost = components['schemas']['Body_inspect_midi_api_imports_midi_inspect_post'];
 export type BodyUploadAudioApiSongsSongIdAudioPost = components['schemas']['Body_upload_audio_api_songs__song_id__audio_post'];
 export type BulkImportAccepted = components['schemas']['BulkImportAccepted'];
@@ -2859,6 +3311,10 @@ export type BulkImportJobItem = components['schemas']['BulkImportJobItem'];
 export type ConvertBody = components['schemas']['ConvertBody'];
 export type ConvertReport = components['schemas']['ConvertReport'];
 export type ConvertResult = components['schemas']['ConvertResult'];
+export type CourseDetail = components['schemas']['CourseDetail'];
+export type CourseLevel = components['schemas']['CourseLevel'];
+export type CourseList = components['schemas']['CourseList'];
+export type CourseSummary = components['schemas']['CourseSummary'];
 export type CreateSetlistBody = components['schemas']['CreateSetlistBody'];
 export type CreateSongBody = components['schemas']['CreateSongBody'];
 export type CreateTokenBody = components['schemas']['CreateTokenBody'];
@@ -2875,6 +3331,18 @@ export type InstrumentPreset = components['schemas']['InstrumentPreset'];
 export type Job = components['schemas']['Job'];
 export type JobAccepted = components['schemas']['JobAccepted'];
 export type JobResult = components['schemas']['JobResult'];
+export type LessonBlock = components['schemas']['LessonBlock'];
+export type LessonDetail = components['schemas']['LessonDetail'];
+export type LessonPackResult = components['schemas']['LessonPackResult'];
+export type LessonPassCondition = components['schemas']['LessonPassCondition'];
+export type LessonPreview = components['schemas']['LessonPreview'];
+export type LessonProgress = components['schemas']['LessonProgress'];
+export type LessonProgressBody = components['schemas']['LessonProgressBody'];
+export type LessonProgressResult = components['schemas']['LessonProgressResult'];
+export type LessonResume = components['schemas']['LessonResume'];
+export type LessonSource = components['schemas']['LessonSource'];
+export type LessonSummary = components['schemas']['LessonSummary'];
+export type LessonTextBody = components['schemas']['LessonTextBody'];
 export type LibraryCounts = components['schemas']['LibraryCounts'];
 export type Me = components['schemas']['Me'];
 export type Meta = components['schemas']['Meta'];
@@ -3225,6 +3693,929 @@ export interface operations {
             };
             /** @description Keyed error. `detail` is {key, message, params}. `auth.adminOnly`: the caller is not an admin. */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    list_courses_api_courses_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CourseList"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    get_course_api_courses__course_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CourseDetail"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    delete_course_api_courses__course_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    get_lesson_api_courses__course_id__lessons__lesson_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+                lesson_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LessonDetail"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    delete_lesson_api_courses__course_id__lessons__lesson_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+                lesson_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    check_lesson_api_courses__course_id__lessons__lesson_id__check_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+                lesson_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LessonProgressResult"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    open_lesson_api_courses__course_id__lessons__lesson_id__open_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+                lesson_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    report_progress_api_courses__course_id__lessons__lesson_id__progress_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+                lesson_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LessonProgressBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LessonProgressResult"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    get_lesson_source_api_courses__course_id__lessons__lesson_id__source_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+                lesson_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LessonSource"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    put_lesson_source_api_courses__course_id__lessons__lesson_id__source_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+                lesson_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LessonTextBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LessonSource"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    get_course_source_api_courses__course_id__source_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LessonSource"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    put_course_source_api_courses__course_id__source_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LessonTextBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LessonSource"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4310,6 +5701,162 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JobAccepted"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    import_pack_api_lessons_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_pack_api_lessons_import_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LessonPackResult"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    preview_api_lessons_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LessonTextBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LessonPreview"];
                 };
             };
             /** @description Keyed error. `detail` is {key, message, params}. */

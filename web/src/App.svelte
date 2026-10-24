@@ -7,6 +7,7 @@
   import EditorView from "./components/EditorView.svelte";
   import ExercisesView from "./components/ExercisesView.svelte";
   import Icon from "./components/Icon.svelte";
+  import LessonsRoute from "./components/LessonsRoute.svelte";
   import LibraryView from "./components/LibraryView.svelte";
   import OfflineStatus from "./components/OfflineStatus.svelte";
   import PracticeView from "./components/PracticeView.svelte";
@@ -40,6 +41,8 @@
   const setlistPlay = $derived(path.match(/^\/setlists\/([^/]+)\/play(?:\/([^/]+))?\/?$/));
   const setlistPage = $derived(path.match(/^\/setlists\/([^/]+)\/?$/));
   const isSetlists = $derived(path === "/setlists" || path === "/setlists/");
+  const isLessons = $derived(path === "/lessons" || path.startsWith("/lessons/"));
+  const isLessonsHome = $derived(path === "/lessons" || path === "/lessons/");
   const isPractice = $derived(path === "/practice" || path === "/practice/");
   const isTools = $derived(path === "/tools" || path === "/tools/");
   const isToolsTuner = $derived(path === "/tools/tuner" || path === "/tools/tuner/");
@@ -85,7 +88,10 @@
   }
 </script>
 
-<div class="shell" class:shell-library={isLibrary || isTools || isSetlists || isPractice}>
+<div
+  class="shell"
+  class:shell-library={isLibrary || isTools || isSetlists || isPractice || isLessonsHome}
+>
   <aside class="sidebar">
     <a class="brand" href={hrefFor("/")} onclick={(event) => followLink(event, "/")}>
       <img src="favicon.svg" alt={t("app.title")} width="36" height="36" />
@@ -141,6 +147,17 @@
       title={t("practiceLog.nav")}
     >
       <Icon name="clock" size={19} /><span class="rail-hide">{t("practiceLog.nav")}</span>
+    </a>
+
+    <a
+      class="side-link"
+      data-testid="nav-lessons"
+      href={hrefFor("/lessons")}
+      aria-current={isLessons ? "page" : undefined}
+      onclick={(event) => followLink(event, "/lessons")}
+      title={t("lessons.nav")}
+    >
+      <Icon name="class" size={19} /><span class="rail-hide">{t("lessons.nav")}</span>
     </a>
 
     <a
@@ -290,6 +307,8 @@
       <p class="muted">{t("app.loading")}</p>
     {:else if isPractice}
       <PracticeView />
+    {:else if isLessons}
+      <LessonsRoute {path} />
     {:else if isSetlists}
       <SetlistsView />
     {:else if setlistPlay}
@@ -311,7 +330,7 @@
     {/if}
   </main>
 
-  {#if isLibrary || isTools || isSetlists || isPractice}
+  {#if isLibrary || isTools || isSetlists || isPractice || isLessonsHome}
     <nav class="tabbar" aria-label={t("nav.main")}>
       <a
         class="tab-item"

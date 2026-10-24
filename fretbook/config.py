@@ -120,6 +120,15 @@ ENV_VARS: tuple[EnvVar, ...] = (
     ),
     EnvVar("FRETBOOK_INBOX_INTERVAL", "`10`", "Seconds between looks at the inbox folder.", "Importing"),
     EnvVar(
+        "FRETBOOK_LESSONS_DIR",
+        "`$FRETBOOK_DATA_DIR/lessons`",
+        (
+            "Folder of your own courses and lessons (`<course>/<lesson>.md`), added to the built-in ones. See "
+            "[Writing lessons](../lessons.md)."
+        ),
+        "Storage",
+    ),
+    EnvVar(
         "FRETBOOK_ALLOW_PRIVATE_URLS",
         "`false`",
         (
@@ -279,6 +288,8 @@ class Settings:
     inbox_watch_dir: Path | None = None
     inbox_mode: str = "move"
     inbox_interval_seconds: int = 10
+    # FRETBOOK_LESSONS_DIR: the user's own courses; ``lessons_path`` is where they live when unset.
+    lessons_dir: Path | None = None
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -295,6 +306,7 @@ class Settings:
             backups_keep = 5
         watch_raw = os.environ.get("FRETBOOK_INBOX_DIR", "").strip()
         inbox_mode = os.environ.get("FRETBOOK_INBOX_MODE", "").strip().lower() or "move"
+        lessons_raw = os.environ.get("FRETBOOK_LESSONS_DIR", "").strip()
         return cls(
             host=os.environ.get("FRETBOOK_HOST", "127.0.0.1"),
             port=int(os.environ.get("FRETBOOK_PORT", "8137")),
@@ -333,6 +345,7 @@ class Settings:
             inbox_watch_dir=Path(watch_raw).expanduser() if watch_raw else None,
             inbox_mode="library" if inbox_mode == "library" else "move",
             inbox_interval_seconds=max(1, _int("FRETBOOK_INBOX_INTERVAL", 10)),
+            lessons_dir=Path(lessons_raw).expanduser() if lessons_raw else None,
         )
 
     @classmethod
@@ -377,6 +390,10 @@ class Settings:
     @property
     def inbox_dir(self) -> Path:
         return self.data_dir / "inbox"
+
+    @property
+    def lessons_path(self) -> Path:
+        return self.lessons_dir or self.data_dir / "lessons"
 
     @property
     def backups_dir(self) -> Path:

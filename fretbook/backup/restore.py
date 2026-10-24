@@ -25,6 +25,7 @@ from fretbook.config import Settings
 from fretbook.importers.base import Notice
 from fretbook.jobs.runner import JobRunner, Progress
 from fretbook.score.model import ScoreDocument
+from fretbook.storage.lessons import LessonProgressRepository
 from fretbook.storage.media import AUDIO_TYPES, MediaStore
 from fretbook.storage.practice import (
     MAX_DAILY_MINUTES,
@@ -155,6 +156,29 @@ class _Practice(BaseModel):
     goal: _PracticeGoal | None = None
 
 
+_LESSON_ID = r"^[a-z0-9][a-z0-9-]{0,63}$"
+
+
+class _LessonProgress(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    course_id: str = Field(pattern=_LESSON_ID)
+    lesson_id: str = Field(pattern=_LESSON_ID)
+    first_opened_at: str = Field(max_length=40)
+    last_opened_at: str = Field(max_length=40)
+    completed_at: str | None = Field(default=None, max_length=40)
+    attempts: int = Field(default=0, ge=0, le=1_000_000)
+    best_score: float | None = Field(default=None, ge=0, le=100, allow_inf_nan=False)
+    best_bpm: float | None = Field(default=None, gt=0, le=1000, allow_inf_nan=False)
+
+
+class _Lessons(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    progress: list[Any] = Field(default_factory=list, max_length=100_000)
+    """Validated one by one on restore, like practice sessions."""
+
+
 class Manifest(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
@@ -163,6 +187,7 @@ class Manifest(BaseModel):
     songs: list[_Song]
     setlists: list[_Setlist] = Field(default_factory=list, max_length=100_000)
     practice: _Practice = Field(default_factory=_Practice)
+    lessons: _Lessons = Field(default_factory=_Lessons)
 
 
 def _unsafe(name: str) -> bool:
@@ -282,14 +307,37 @@ def restore_archive(
     sessions, exercises = _restore_practice(
         PracticeRepository(settings), owner_id, manifest.practice, song_ids, warnings
     )
+    lesson_progress = _restore_lesson_progress(LessonProgressRepository(settings), owner_id, manifest.lessons, warnings)
     progress("Ready", "import.ready")
     return {
         **counts,
+        "lesson_progress": lesson_progress,
         "setlists": setlists,
         "practice_sessions": sessions,
         "practice_exercises": exercises,
         "warnings": [warning.as_dict() for warning in warnings],
     }
+
+
+def _restore_lesson_progress(
+    repo: LessonProgressRepository, owner_id: str, lessons: _Lessons, warnings: list[Notice]
+) -> int:
+    """Put back lesson progress; rows the user already has are left alone, so restoring twice adds nothing."""
+    added = dropped = 0
+    for raw in lessons.progress:
+        try:
+            added += repo.restore(owner_id, _LessonProgress.model_validate(raw).model_dump())
+        except (ValueError, ValidationError, TypeError, sqlite3.Error):
+            dropped += 1
+    if dropped:
+        warnings.append(
+            Notice(
+                "backup.lessonProgressDropped",
+                f"{dropped} lesson results could not be put back",
+                {"count": dropped},
+            )
+        )
+    return added
 
 
 def _restore_practice(

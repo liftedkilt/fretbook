@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from "svelte";
   import Icon from "./Icon.svelte";
   import TabPreview from "./TabPreview.svelte";
   import { ApiError, importDocument } from "../lib/api";
@@ -12,7 +13,7 @@
     type Range,
     type Rhythm,
   } from "../lib/exercises/generate";
-  import { PRESET_DRILLS, labelText, type PresetDrill } from "../lib/exercises/presets";
+  import { PRESET_DRILLS, labelText, presetById, type PresetDrill } from "../lib/exercises/presets";
   import { CAGED_SHAPES, NOTE_NAMES, type CagedShape } from "../lib/exercises/theory";
   import { t, tOr } from "../lib/i18n.svelte";
   import { followLink, hrefFor, navigate } from "../lib/router.svelte";
@@ -136,6 +137,24 @@
       cycles = next.cycles;
     }
   }
+
+  // A lesson links here with ?preset=<id>. Wait for the instrument list, then switch to an instrument the drill
+  // is written for (a guitar drill on a bass would otherwise stay hidden) and load it.
+  let pendingDrill = $state<PresetDrill | undefined>(
+    presetById(new URLSearchParams(location.search).get("preset") ?? ""),
+  );
+  $effect(() => {
+    const drill = pendingDrill;
+    if (!drill || ui.presets.length === 0) return;
+    untrack(() => {
+      if (drill.family !== "any" && preset?.family !== drill.family) {
+        const match = ui.presets.find((item) => item.family === drill.family);
+        if (match) instrumentId = match.id;
+      }
+      apply(drill);
+    });
+    pendingDrill = undefined;
+  });
 
   function edited() {
     activePreset = null;
