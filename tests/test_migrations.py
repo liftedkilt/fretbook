@@ -616,6 +616,34 @@ def verify_v12(conn: sqlite3.Connection) -> None:
     assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
 
 
+def seed_v13(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        INSERT INTO users (id, external_subject, display_name, created_at)
+        VALUES ('user-v13', 'sub-v13', 'User V13', '2026-01-13T00:00:00Z')
+        """
+    )
+    conn.commit()
+
+
+def verify_v13(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        "INSERT INTO practice_exercises (id, owner_id, kind, started_at, day, duration_seconds) "
+        "VALUES ('e1', 'user-v13', 'interval', '2026-01-13T10:00:00+00:00', '2026-01-13', 90)"
+    )
+    row = conn.execute("SELECT rounds, correct, score FROM practice_exercises WHERE id = 'e1'").fetchone()
+    assert (row["rounds"], row["correct"], row["score"]) == (0, 0, None)
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute(
+            "INSERT INTO practice_exercises (id, owner_id, kind, started_at, day, duration_seconds) "
+            "VALUES ('e2', 'user-v13', 'bogus', '2026-01-13T10:00:00+00:00', '2026-01-13', 90)"
+        )
+    conn.execute("DELETE FROM users WHERE id = 'user-v13'")
+    assert conn.execute("SELECT count(*) FROM practice_exercises").fetchone()[0] == 0
+    conn.rollback()
+    assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+
+
 SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.Connection], None]]] = {
     1: (seed_v1, verify_v1),
     2: (seed_v2, verify_v2),
@@ -629,6 +657,7 @@ SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.C
     10: (seed_v10, verify_v10),
     11: (seed_v11, verify_v11),
     12: (seed_v12, verify_v12),
+    13: (seed_v13, verify_v13),
 }
 
 

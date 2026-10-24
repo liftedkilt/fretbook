@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/svelte";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/svelte";
+import { describe, expect, it, vi } from "vitest";
 
 import Fretboard from "./Fretboard.svelte";
 
@@ -64,5 +64,18 @@ describe("Fretboard", () => {
     render(Fretboard, { props: { tuning: BASS, capo: 2 } });
     expect(screen.getByTestId("fretboard-capo").textContent).toContain("2");
     expect(screen.getByTestId("fretboard-summary").textContent).toBe("Waiting for the first note");
+  });
+
+  it("reports the tapped note when it is given a handler, and has no tap targets otherwise", async () => {
+    const onselect = vi.fn();
+    const { unmount } = render(Fretboard, { props: { tuning: BASS, frets: 12, onselect } });
+    await fireEvent.click(screen.getByTestId("fret-tap-2-5"));
+    expect(onselect).toHaveBeenCalledWith({ string: 2, fret: 5 });
+    await fireEvent.keyDown(screen.getByTestId("fret-tap-0-0"), { key: "Enter" });
+    expect(onselect).toHaveBeenLastCalledWith({ string: 0, fret: 0 });
+    expect(screen.queryByTestId("fret-tap-3-12")).not.toBeNull();
+    unmount();
+    render(Fretboard, { props: { tuning: BASS } });
+    expect(screen.queryByTestId("fret-tap-0-0")).toBeNull();
   });
 });

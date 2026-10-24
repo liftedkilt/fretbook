@@ -13,6 +13,7 @@
   } from "../lib/practiceLog";
   import { formatDuration } from "../lib/practiceText";
   import { followLink, hrefFor } from "../lib/router.svelte";
+  import { KIND_NAMES } from "../lib/trainer/store";
   import type { PracticeSongStats, PracticeStats } from "../lib/types";
 
   const RADIUS = 52;
@@ -43,7 +44,9 @@
   const weeks = $derived(
     stats ? heatmapWeeks(stats.heatmap, stats.today, stats.goal.daily_minutes) : [],
   );
-  const empty = $derived(stats !== null && stats.songs_practised === 0);
+  const empty = $derived(
+    stats !== null && stats.songs_practised === 0 && stats.exercises.length === 0,
+  );
 
   async function saveGoal(event: SubmitEvent) {
     event.preventDefault();
@@ -251,6 +254,27 @@
           </div>
         {/if}
       {/each}
+      {#if stats.exercises.length}
+        <div class="card" data-testid="practice-list-exercises">
+          <h2>{t("practiceLog.exercises")}</h2>
+          <ul class="song-list">
+            {#each stats.exercises as exercise (exercise.kind)}
+              <li>
+                <a
+                  href={hrefFor("/tools/trainer")}
+                  onclick={(event) => followLink(event, "/tools/trainer")}
+                >
+                  <strong>{t(KIND_NAMES[exercise.kind].labelKey)}</strong>
+                </a>
+                <span class="muted meta">
+                  {formatDuration(exercise.total_seconds)}
+                  {#if exercise.best_score !== null}· {Math.round(exercise.best_score)}%{/if}
+                </span>
+              </li>
+            {/each}
+          </ul>
+        </div>
+      {/if}
     </div>
   {/if}
 </section>

@@ -17,6 +17,7 @@ import type {
   MidiInspection,
   Me as ContractMe,
   Meta as ContractMeta,
+  PracticeExerciseBody as ContractPracticeExerciseBody,
   PracticeGoal as ContractPracticeGoal,
   PracticeSession as ContractPracticeSession,
   PracticeSessionBody as ContractPracticeSessionBody,
@@ -53,6 +54,7 @@ import type {
   Keyed,
   Me,
   Meta,
+  PracticeExerciseDraft,
   PracticeGoal,
   PracticeSession,
   PracticeSessionDraft,
@@ -95,6 +97,7 @@ type _matchesContract = [
   AssertAssignable<ContractSongPractice, SongPractice>,
   // The draft is what the browser sends, so it must fit the request body.
   AssertAssignable<PracticeSessionDraft, ContractPracticeSessionBody>,
+  AssertAssignable<PracticeExerciseDraft, ContractPracticeExerciseBody>,
 ];
 
 // Score documents and jobs are parsed as the contract types, then viewed through
@@ -456,6 +459,15 @@ export async function recordPracticeSession(
       ...json("POST", session),
       keepalive,
     });
+  } catch {
+    /* the log is a convenience */
+  }
+}
+
+/** Add a finished trainer game to the practice log. Best effort, like `recordPracticeSession`. */
+export async function recordPracticeExercise(exercise: PracticeExerciseDraft): Promise<void> {
+  try {
+    await request("/api/practice/exercises", json("POST", exercise));
   } catch {
     /* the log is a convenience */
   }

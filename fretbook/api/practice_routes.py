@@ -18,6 +18,7 @@ from fretbook.storage.practice import (
     MAX_SECONDS,
     MAX_SPEED,
     MIN_SECONDS,
+    ExerciseInput,
     PracticeRepository,
     SessionInput,
     UnknownSong,
@@ -27,6 +28,7 @@ from fretbook.storage.practice import (
 router = APIRouter()
 
 PracticeMode = Literal["free", "wait", "scored"]
+ExerciseKind = Literal["fretboard", "interval", "chord"]
 # Browsers are up to a day ahead or behind UTC; two days of slack covers that and a slow clock.
 DAY_SLACK = timedelta(days=2)
 
@@ -51,6 +53,40 @@ class PracticeSessionBody(BaseModel):
     mode: PracticeMode = "free"
     score: float | None = Field(default=None, ge=0, le=100)
     """Percent of notes hit, for ``scored`` sessions."""
+
+
+class PracticeExerciseBody(BaseModel):
+    model_config = ConfigDict(allow_inf_nan=False)
+
+    kind: ExerciseKind
+    """Which trainer: finding notes on the fretboard, naming intervals, or naming chord qualities."""
+    day: str = Field(min_length=10, max_length=10)
+    """The player's local date, ``YYYY-MM-DD``."""
+    duration_seconds: int = Field(ge=MIN_SECONDS, le=MAX_SECONDS)
+    started_at: str | None = Field(default=None, max_length=40)
+    rounds: int = Field(default=0, ge=0, le=10_000)
+    correct: int = Field(default=0, ge=0, le=10_000)
+    score: float | None = Field(default=None, ge=0, le=100)
+    """Percent of rounds answered correctly."""
+
+
+class PracticeExercise(BaseModel):
+    id: str
+    kind: ExerciseKind
+    started_at: str
+    day: str
+    duration_seconds: int
+    rounds: int
+    correct: int
+    score: float | None
+
+
+class PracticeExerciseStats(BaseModel):
+    kind: ExerciseKind
+    session_count: int
+    total_seconds: int
+    last_day: str
+    best_score: float | None
 
 
 class PracticeSession(BaseModel):
@@ -123,6 +159,8 @@ class PracticeStats(BaseModel):
     best_scores: list[PracticeSongStats]
     stale: list[PracticeSongStats]
     """Songs practised before, but not in the last two weeks, longest ago first."""
+    exercises: list[PracticeExerciseStats]
+    """Trainer games played, one row per game; their time is already in the totals above."""
 
 
 class SuggestedSong(BaseModel):
@@ -215,6 +253,30 @@ def record_session(body: PracticeSessionBody, ctx: AppContext = Depends(context)
         )
     except UnknownSong as exc:
         raise api_error(404, "song.notFound", "song not found") from exc
+
+
+@router.post(
+    "/api/practice/exercises",
+    status_code=201,
+    response_model=PracticeExercise,
+    tags=["practice"],
+    responses=AUTH_RESPONSES,
+)
+def record_exercise(
+    body: PracticeExerciseBody, ctx: AppContext = Depends(context), user: Principal = Depends(principal)
+):
+    return _repo(ctx).record_exercise(
+        user.user_id,
+        ExerciseInput(
+            kind=body.kind,
+            day=_day(body.day).isoformat(),
+            duration_seconds=body.duration_seconds,
+            rounds=body.rounds,
+            correct=body.correct,
+            score=body.score,
+            started_at=body.started_at,
+        ),
+    )
 
 
 @router.get("/api/practice/stats", response_model=PracticeStats, tags=["practice"], responses=AUTH_RESPONSES)
