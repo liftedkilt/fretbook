@@ -62,10 +62,24 @@ class UserStore:
                 return user_id
             user_id = row["id"]
             conn.execute(
-                "UPDATE users SET display_name = ?, email = ?, role = ?, last_login_at = ? WHERE id = ?",
+                "UPDATE users SET display_name = ?, email = ?, role = ?, last_login_at = ?, access_revoked_at = NULL"
+                " WHERE id = ?",
                 (display_name, email, role, now, user_id),
             )
             return user_id
+
+    def deny_access(self, subject: str) -> bool:
+        """Record that the provider no longer admits ``subject``; end their sessions and refuse their API tokens.
+
+        Returns whether the subject is a known user. Tokens stay stored, so they work again after a later sign-in.
+        """
+        with self._session(immediate=True) as conn:
+            row = conn.execute("SELECT id FROM users WHERE external_subject = ?", (subject,)).fetchone()
+            if row is None:
+                return False
+            conn.execute("UPDATE users SET access_revoked_at = ? WHERE id = ?", (utcnow(), row["id"]))
+            conn.execute("DELETE FROM sessions WHERE user_id = ?", (row["id"],))
+        return True
 
     def create_session(self, user_id: str, *, token_hash: str, role: str, id_token: str) -> None:
         now = utcnow()
@@ -85,7 +99,7 @@ class UserStore:
                 """
                 SELECT s.user_id, s.role, s.id_token, u.display_name, u.email
                 FROM sessions s JOIN users u ON u.id = s.user_id
-                WHERE s.token_hash = ? AND s.expires_at > ?
+                WHERE s.token_hash = ? AND s.expires_at > ? AND u.access_revoked_at IS NULL
                 """,
                 (token_hash, utcnow()),
             ).fetchone()
@@ -203,7 +217,7 @@ class UserStore:
             return conn.execute("DELETE FROM api_tokens WHERE user_id = ?", (user_id,)).rowcount
 
     def find_token_owner(self, secret: str) -> dict[str, Any] | None:
-        """The owner of a live token, or ``None`` when it is unknown or expired. Records the use."""
+        """The owner of a live token, or ``None`` if it is unknown, expired or its owner lost access. Records use."""
         now = utcnow()
         with self._session() as conn:
             row = conn.execute(
@@ -211,6 +225,7 @@ class UserStore:
                 SELECT t.id, t.last_used_at, u.id AS user_id, u.display_name, u.email, u.role
                 FROM api_tokens t JOIN users u ON u.id = t.user_id
                 WHERE t.token_hash = ? AND (t.expires_at IS NULL OR t.expires_at > ?)
+                  AND u.access_revoked_at IS NULL
                 """,
                 (hash_api_token(secret), now),
             ).fetchone()

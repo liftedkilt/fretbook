@@ -152,6 +152,25 @@ def test_oidc_tokens_belong_to_their_owner_and_keep_roles(tmp_path: Path) -> Non
         assert uma.post("/api/songs", json={"title": "x"}, headers={"Origin": "https://evil.test"}).status_code == 403
 
 
+def test_tokens_are_refused_after_the_owner_leaves_the_group_until_they_return(tmp_path: Path) -> None:
+    provider = MockProvider()
+    app = create_app(_settings(tmp_path), oidc_transport=provider.transport())
+    with TestClient(app) as uma, TestClient(app) as script:
+        sign_in(uma, provider, "uma", ["fretbook_users"])
+        token = _mint(uma)["token"]
+        assert script.get("/api/songs", headers=_bearer(token)).status_code == 200
+
+        # Removed from the provider group: the next sign-in is refused, which suspends session and token.
+        assert sign_in(uma, provider, "uma", ["other"]).status_code == 403
+        refused = script.get("/api/songs", headers=_bearer(token))
+        assert refused.status_code == 401 and refused.json()["detail"]["key"] == "auth.invalidToken"
+        assert uma.get("/api/me").status_code == 401
+
+        # Added back: signing in again restores the token that was kept.
+        sign_in(uma, provider, "uma", ["fretbook_users"])
+        assert script.get("/api/songs", headers=_bearer(token)).status_code == 200
+
+
 def test_admin_lists_and_revokes_another_users_tokens(tmp_path: Path) -> None:
     provider = MockProvider()
     app = create_app(_settings(tmp_path), oidc_transport=provider.transport())

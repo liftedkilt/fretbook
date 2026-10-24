@@ -750,6 +750,22 @@ def verify_v16(conn: sqlite3.Connection) -> None:
     assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
 
 
+def seed_v17(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        INSERT INTO users (id, external_subject, display_name, created_at)
+        VALUES ('user-v17', 'sub-v17', 'User V17', '2026-01-17T00:00:00Z')
+        """
+    )
+    conn.commit()
+
+
+def verify_v17(conn: sqlite3.Connection) -> None:
+    # Existing users keep their access.
+    assert conn.execute("SELECT access_revoked_at FROM users WHERE id = 'user-v17'").fetchone()[0] is None
+    assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+
+
 SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.Connection], None]]] = {
     1: (seed_v1, verify_v1),
     2: (seed_v2, verify_v2),
@@ -767,6 +783,7 @@ SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.C
     14: (seed_v14, verify_v14),
     15: (seed_v15, verify_v15),
     16: (seed_v16, verify_v16),
+    17: (seed_v17, verify_v17),
 }
 
 

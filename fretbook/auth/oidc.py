@@ -11,7 +11,8 @@ confidential clients.
   token (signature from the JWKS, issuer, audience, expiry, nonce), and reads
   the groups claim. Members of ``FRETBOOK_OIDC_ADMIN_GROUP`` are admins, members
   of ``FRETBOOK_OIDC_USER_GROUP`` are users, anyone else is refused. Roles are
-  re-read at every sign-in.
+  re-read at every sign-in, and a refused sign-in by a known user ends their sessions and suspends their API
+  tokens until they are admitted again.
 * The session is server-side: the cookie holds a random token and the database
   its hash. Cookies are ``HttpOnly`` and ``SameSite=Lax``, and ``Secure`` when the
   redirect URI is https.
@@ -222,6 +223,8 @@ class OIDCAuth:
             claims, id_token = await self._exchange(code, str(pending["verifier"]), str(pending["nonce"]))
             role = _role(_groups(claims.get(self.settings.oidc_groups_claim)), self.settings)
             if role is None:
+                # Also ends their sessions and refuses their API tokens, which are otherwise checked only here.
+                self.users.deny_access(str(claims["sub"]))
                 raise SignInError(
                     403, f"Your account is not in the {self.settings.oidc_user_group} group, so it cannot use Fretbook."
                 )
