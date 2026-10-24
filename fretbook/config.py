@@ -86,6 +86,12 @@ ENV_VARS: tuple[EnvVar, ...] = (
         "Storage",
     ),
     EnvVar(
+        "FRETBOOK_USER_QUOTA_MB",
+        "`0` (no limit)",
+        "Most media (audio, stems, covers, kept uploads) one user may store, in MB. Uploads over it are refused.",
+        "Storage",
+    ),
+    EnvVar(
         "FRETBOOK_MAX_RESTORE_BYTES",
         "4 GiB",
         "Largest library archive accepted by Settings → Backup and restore.",
@@ -296,6 +302,7 @@ class Settings:
     ytdlp_auto_update: bool = False
     ytdlp_cookies: Path | None = None
     migration_backups_keep: int = 5
+    user_quota_mb: int = 0
     max_restore_bytes: int = 4 * 1024**3
     max_restore_unpacked_bytes: int = 16 * 1024**3
     allow_private_urls: bool = False
@@ -359,6 +366,7 @@ class Settings:
             ytdlp_auto_update=_flag("FRETBOOK_YTDLP_AUTO_UPDATE", False),
             ytdlp_cookies=Path(cookies).expanduser() if cookies else None,
             migration_backups_keep=backups_keep,
+            user_quota_mb=max(0, _int("FRETBOOK_USER_QUOTA_MB", 0)),
             max_restore_bytes=_int("FRETBOOK_MAX_RESTORE_BYTES", 4 * 1024**3),
             max_restore_unpacked_bytes=_int("FRETBOOK_MAX_RESTORE_UNPACKED_BYTES", 16 * 1024**3),
             allow_private_urls=_flag("FRETBOOK_ALLOW_PRIVATE_URLS", False),

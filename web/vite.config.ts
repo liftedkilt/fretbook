@@ -83,6 +83,7 @@ function fretbookServiceWorker(): Plugin {
 export default defineConfig({
   plugins: [svelte(), alphaTab(), svelteTesting(), fretbookServiceWorker()],
   base: "./",
+  define: { __NODE_VERSION__: JSON.stringify(process.version) },
   build: {
     outDir: "dist",
     emptyOutDir: true,

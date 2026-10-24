@@ -96,6 +96,64 @@ class JobRunner:
             rows = conn.execute(query, params).fetchall()
         return [_job(row) for row in rows]
 
+    # --- administration: every user's jobs, by id alone ---
+
+    def get_any(self, job_id: str) -> dict[str, Any] | None:
+        with self._session() as conn:
+            row = conn.execute("SELECT * FROM jobs WHERE id = ?", (job_id,)).fetchone()
+        return _job(row) if row else None
+
+    def list_all(self, *, status: str | None = None, kind: str | None = None, limit: int = 100) -> list[dict[str, Any]]:
+        query = "SELECT * FROM jobs WHERE 1"
+        params: list[Any] = []
+        for column, value in (("status", status), ("kind", kind)):
+            if value is not None:
+                query += f" AND {column} = ?"
+                params.append(value)
+        query += " ORDER BY created_at DESC LIMIT ?"
+        params.append(limit)
+        with self._session() as conn:
+            rows = conn.execute(query, params).fetchall()
+        return [_job(row) for row in rows]
+
+    def counts(self) -> list[dict[str, Any]]:
+        """Jobs per kind and status."""
+        with self._session() as conn:
+            rows = conn.execute(
+                "SELECT kind, status, COUNT(*) AS n FROM jobs GROUP BY kind, status ORDER BY kind, status"
+            ).fetchall()
+        return [{"kind": row["kind"], "status": row["status"], "count": row["n"]} for row in rows]
+
+    def cancel(self, job_id: str) -> bool:
+        """Stop a job that no worker has claimed yet. Its upload is kept, so it can still be retried."""
+        with self._session(immediate=True) as conn:
+            cursor = conn.execute(
+                """
+                UPDATE jobs SET status = 'error', error = 'cancelled by an administrator',
+                    error_key = 'job.cancelled', error_params = '{}', updated_at = ?
+                WHERE id = ? AND status = 'queued'
+                """,
+                (utcnow(), job_id),
+            )
+            return cursor.rowcount > 0
+
+    def list_workers(self, ttl: int = WORKER_TTL_SECONDS) -> list[dict[str, Any]]:
+        cutoff = (datetime.now(UTC) - timedelta(seconds=ttl)).replace(microsecond=0).isoformat()
+        with self._session() as conn:
+            rows = conn.execute("SELECT * FROM workers ORDER BY started_at").fetchall()
+        return [
+            {
+                "id": row["id"],
+                "kinds": json.loads(row["kinds"]),
+                "host": row["host"],
+                "pid": row["pid"],
+                "started_at": row["started_at"],
+                "heartbeat_at": row["heartbeat_at"],
+                "alive": row["heartbeat_at"] >= cutoff,
+            }
+            for row in rows
+        ]
+
     def retry(self, owner_id: str, job_id: str) -> dict[str, Any] | None:
         job = self.get(owner_id, job_id)
         if job is None:

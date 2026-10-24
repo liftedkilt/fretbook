@@ -16,6 +16,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Redirect
 from starlette.responses import Response
 
 from fretbook import __version__
+from fretbook.api.admin_routes import router as admin_router
 from fretbook.api.ascii_tab_routes import router as ascii_tab_router
 from fretbook.api.autosync_routes import router as autosync_router
 from fretbook.api.backup import RESTORE_PATH
@@ -50,7 +51,7 @@ from fretbook.jobs.handlers import register_handlers
 from fretbook.jobs.registry import register_kinds
 from fretbook.jobs.runner import JobRunner
 from fretbook.score.legacy import legacy_document, load_legacy_dir
-from fretbook.storage.media import MediaStore
+from fretbook.storage.media import MediaStore, QuotaExceeded
 from fretbook.storage.repository import SongRepository
 from fretbook.storage.users import UserStore
 
@@ -280,6 +281,7 @@ def create_app(
     )
     app.state.ctx = ctx
     app.add_exception_handler(RequestValidationError, _validation_error)
+    app.add_exception_handler(QuotaExceeded, _quota_exceeded)
     app.add_middleware(SameOriginMiddleware)
     if settings.demo_mode:
         app.add_middleware(DemoReadOnlyMiddleware)
@@ -307,6 +309,7 @@ def create_app(
     app.include_router(practice_router)
     app.include_router(lesson_router)
     app.include_router(demo_router)
+    app.include_router(admin_router)
     auth_routes = ctx.auth.routes()
     if auth_routes is not None:
         app.include_router(auth_routes)
@@ -342,6 +345,12 @@ def create_app(
         return _index(settings)
 
     return app
+
+
+async def _quota_exceeded(_request: Request, exc: Exception) -> JSONResponse:
+    assert isinstance(exc, QuotaExceeded)
+    detail = {"key": exc.key, "message": str(exc), "params": exc.params}
+    return JSONResponse({"detail": detail}, status_code=413)
 
 
 async def _validation_error(_request: Request, exc: Exception) -> JSONResponse:

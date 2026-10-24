@@ -1,5 +1,10 @@
 import type {
   AdminUser as ContractAdminUser,
+  JobOverview as AdminJobOverview,
+  OrphanReport as AdminOrphanReport,
+  Storage as AdminStorageReport,
+  SystemInfo as AdminSystemInfo,
+  Workers as AdminWorkers,
   ApiToken,
   ApiTokenCreated,
   AsciiTabBody,
@@ -822,6 +827,35 @@ export function revokeUserTokens(id: string): Promise<TokensRevoked> {
 /** Moves the single-user library into the signed-in admin's own. */
 export function adoptLocal(): Promise<SongsMoved> {
   return request("/api/admin/adopt-local", { method: "POST" });
+}
+
+export function getAdminStorage(): Promise<AdminStorageReport> {
+  return request("/api/admin/storage");
+}
+
+/** Deletes media files no song refers to. */
+export function cleanOrphans(): Promise<AdminOrphanReport> {
+  return request("/api/admin/storage/cleanup", { method: "POST" });
+}
+
+export function getAdminJobs(status?: string): Promise<AdminJobOverview> {
+  return request(`/api/admin/jobs${status ? `?status=${encodeURIComponent(status)}` : ""}`);
+}
+
+export function cancelAdminJob(id: string): Promise<JobAccepted> {
+  return request(`/api/admin/jobs/${id}/cancel`, { method: "POST" });
+}
+
+export function retryAdminJob(id: string): Promise<JobAccepted> {
+  return request(`/api/admin/jobs/${id}/retry`, { method: "POST" });
+}
+
+export function getAdminWorkers(): Promise<AdminWorkers> {
+  return request("/api/admin/workers");
+}
+
+export function getAdminSystem(): Promise<AdminSystemInfo> {
+  return request("/api/admin/system");
 }
 
 export function getDemo(): Promise<DemoLibrary> {

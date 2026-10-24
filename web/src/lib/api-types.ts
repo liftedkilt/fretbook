@@ -24,6 +24,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Admin Jobs
+         * @description Job counts per kind and status, and the newest 100 jobs of every user (filter by `status` or `kind`).
+         */
+        get: operations["admin_jobs_api_admin_jobs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/jobs/{job_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Admin Cancel Job
+         * @description Cancel a job still waiting in the queue. A job a worker is already running cannot be stopped.
+         */
+        post: operations["admin_cancel_job_api_admin_jobs__job_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/jobs/{job_id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Admin Retry Job
+         * @description Queue a failed job again, whoever owns it.
+         */
+        post: operations["admin_retry_job_api_admin_jobs__job_id__retry_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/library/export": {
         parameters: {
             query?: never;
@@ -36,6 +96,66 @@ export interface paths {
          * @description Every song of every user, for admins. Restoring it puts all songs in the restoring user's library.
          */
         get: operations["export_everything_api_admin_library_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/storage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Admin Storage
+         * @description Database rows and media bytes per user, and the orphaned media files a cleanup would delete.
+         */
+        get: operations["admin_storage_api_admin_storage_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/storage/cleanup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Admin Storage Cleanup
+         * @description Delete media files no database row refers to, and the folders left empty. Returns what was removed.
+         */
+        post: operations["admin_storage_cleanup_api_admin_storage_cleanup_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/system": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Admin System
+         * @description Version, schema version, yt-dlp and Python versions, disk space and the database size.
+         */
+        get: operations["admin_system_api_admin_system_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -124,6 +244,26 @@ export interface paths {
          * @description Revoke one API token of a user. It stops working at once.
          */
         delete: operations["admin_revoke_user_token_api_admin_users__user_id__tokens__token_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/workers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Admin Workers
+         * @description Separate worker processes and their last heartbeat, and the kinds the web process runs itself.
+         */
+        get: operations["admin_workers_api_admin_workers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1551,6 +1691,44 @@ export interface components {
             /** Tags */
             tags: string[];
         };
+        /** AdminJob */
+        AdminJob: {
+            /** Attempts */
+            attempts: number;
+            /** Created At */
+            created_at: string;
+            /** Error */
+            error: string | null;
+            /** Error Key */
+            error_key: string;
+            /** Error Params */
+            error_params: {
+                [key: string]: unknown;
+            };
+            /** Id */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Label */
+            label: string;
+            /** Owner Id */
+            owner_id: string;
+            /** Owner Name */
+            owner_name: string;
+            /** Progress */
+            progress: string;
+            /** Progress Key */
+            progress_key: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "done" | "error";
+            /** Updated At */
+            updated_at: string;
+            /** Worker Id */
+            worker_id: string;
+        };
         /**
          * AdminUser
          * @description An account as an admin sees it. ``local`` marks the owner of songs from single-user mode.
@@ -2326,6 +2504,25 @@ export interface components {
             /** Job Id */
             job_id: string;
         };
+        /** JobCount */
+        JobCount: {
+            /** Count */
+            count: number;
+            /** Kind */
+            kind: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "done" | "error";
+        };
+        /** JobOverview */
+        JobOverview: {
+            /** Counts */
+            counts: components["schemas"]["JobCount"][];
+            /** Jobs */
+            jobs: components["schemas"]["AdminJob"][];
+        };
         /** JobResult */
         JobResult: {
             autosync?: components["schemas"]["AutoSyncProposal"] | null;
@@ -2702,6 +2899,15 @@ export interface components {
              * @default false
              */
             vibrato: boolean;
+        };
+        /** OrphanReport */
+        OrphanReport: {
+            /** Bytes */
+            bytes: number;
+            /** Empty Dirs */
+            empty_dirs: number;
+            /** Files */
+            files: number;
         };
         /** PracticeDay */
         PracticeDay: {
@@ -3384,6 +3590,12 @@ export interface components {
              */
             model: "htdemucs_6s" | "htdemucs";
         };
+        /** Storage */
+        Storage: {
+            orphans: components["schemas"]["OrphanReport"];
+            /** Users */
+            users: components["schemas"]["UserStorage"][];
+        };
         /** SuggestedSong */
         SuggestedSong: {
             /** Artist */
@@ -3441,6 +3653,27 @@ export interface components {
             points?: (number | null)[];
             /** Video Id */
             video_id?: string | null;
+        };
+        /** SystemInfo */
+        SystemInfo: {
+            /** Commit */
+            commit: string | null;
+            /** Database Bytes */
+            database_bytes: number;
+            /** Disk Free Bytes */
+            disk_free_bytes: number;
+            /** Disk Total Bytes */
+            disk_total_bytes: number;
+            /** Python Version */
+            python_version: string;
+            /** Schema Version */
+            schema_version: number;
+            /** User Quota Mb */
+            user_quota_mb: number;
+            /** Version */
+            version: string;
+            /** Ytdlp Version */
+            ytdlp_version: string | null;
         };
         /** TagCount */
         TagCount: {
@@ -3525,6 +3758,25 @@ export interface components {
             /** Title */
             title: string;
         };
+        /** UserStorage */
+        UserStorage: {
+            /** Db Rows */
+            db_rows: number;
+            /** Display Name */
+            display_name: string;
+            /** Local */
+            local: boolean;
+            /** Media Bytes */
+            media_bytes: number;
+            /** Media Files */
+            media_files: number;
+            /** Quota Bytes */
+            quota_bytes: number | null;
+            /** Song Count */
+            song_count: number;
+            /** User Id */
+            user_id: string;
+        };
         /**
          * ValidationBody
          * @description Request validation failed (HTTP 422). ``detail`` is a list of issues, not a keyed error.
@@ -3549,6 +3801,30 @@ export interface components {
         Voice: {
             /** Beats */
             beats?: components["schemas"]["Beat"][];
+        };
+        /** Worker */
+        Worker: {
+            /** Alive */
+            alive: boolean;
+            /** Heartbeat At */
+            heartbeat_at: string;
+            /** Host */
+            host: string;
+            /** Id */
+            id: string;
+            /** Kinds */
+            kinds: string[];
+            /** Pid */
+            pid: number;
+            /** Started At */
+            started_at: string;
+        };
+        /** Workers */
+        Workers: {
+            /** Local Kinds */
+            local_kinds: string[];
+            /** Workers */
+            workers: components["schemas"]["Worker"][];
         };
         /** YouTubeAudioRequest */
         YouTubeAudioRequest: {
@@ -3581,6 +3857,7 @@ export interface components {
     pathItems: never;
 }
 export type AddTagsBody = components['schemas']['AddTagsBody'];
+export type AdminJob = components['schemas']['AdminJob'];
 export type AdminUser = components['schemas']['AdminUser'];
 export type ApiToken = components['schemas']['ApiToken'];
 export type ApiTokenCreated = components['schemas']['ApiTokenCreated'];
@@ -3630,6 +3907,8 @@ export type ImportUrlBody = components['schemas']['ImportUrlBody'];
 export type InstrumentPreset = components['schemas']['InstrumentPreset'];
 export type Job = components['schemas']['Job'];
 export type JobAccepted = components['schemas']['JobAccepted'];
+export type JobCount = components['schemas']['JobCount'];
+export type JobOverview = components['schemas']['JobOverview'];
 export type JobResult = components['schemas']['JobResult'];
 export type LessonBlock = components['schemas']['LessonBlock'];
 export type LessonDetail = components['schemas']['LessonDetail'];
@@ -3651,6 +3930,7 @@ export type MetadataBody = components['schemas']['MetadataBody'];
 export type MidiInspection = components['schemas']['MidiInspection'];
 export type MidiTrackInfo = components['schemas']['MidiTrackInfo'];
 export type Note = components['schemas']['Note'];
+export type OrphanReport = components['schemas']['OrphanReport'];
 export type PracticeDay = components['schemas']['PracticeDay'];
 export type PracticeExercise = components['schemas']['PracticeExercise'];
 export type PracticeExerciseBody = components['schemas']['PracticeExerciseBody'];
@@ -3689,9 +3969,11 @@ export type SongTags = components['schemas']['SongTags'];
 export type Stem = components['schemas']['Stem'];
 export type StemList = components['schemas']['StemList'];
 export type StemRequest = components['schemas']['StemRequest'];
+export type Storage = components['schemas']['Storage'];
 export type SuggestedSong = components['schemas']['SuggestedSong'];
 export type SyncBody = components['schemas']['SyncBody'];
 export type SyncMap = components['schemas']['SyncMap'];
+export type SystemInfo = components['schemas']['SystemInfo'];
 export type TagCount = components['schemas']['TagCount'];
 export type TagsAdded = components['schemas']['TagsAdded'];
 export type TagsChanged = components['schemas']['TagsChanged'];
@@ -3700,9 +3982,12 @@ export type Track = components['schemas']['Track'];
 export type TrackBar = components['schemas']['TrackBar'];
 export type TrackDifficulty = components['schemas']['TrackDifficulty'];
 export type UpdateSongBody = components['schemas']['UpdateSongBody'];
+export type UserStorage = components['schemas']['UserStorage'];
 export type ValidationBody = components['schemas']['ValidationBody'];
 export type ValidationIssue = components['schemas']['ValidationIssue'];
 export type Voice = components['schemas']['Voice'];
+export type Worker = components['schemas']['Worker'];
+export type Workers = components['schemas']['Workers'];
 export type YouTubeAudioRequest = components['schemas']['YouTubeAudioRequest'];
 export type YtDlpStatus = components['schemas']['YtDlpStatus'];
 export type $defs = Record<string, never>;
@@ -3790,6 +4075,262 @@ export interface operations {
             };
         };
     };
+    admin_jobs_api_admin_jobs_get: {
+        parameters: {
+            query?: {
+                kind?: string | null;
+                status?: ("queued" | "running" | "done" | "error") | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobOverview"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.adminOnly`: the caller is not an admin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    admin_cancel_job_api_admin_jobs__job_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAccepted"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.adminOnly`: the caller is not an admin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    admin_retry_job_api_admin_jobs__job_id__retry_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAccepted"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.adminOnly`: the caller is not an admin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
     export_everything_api_admin_library_export_get: {
         parameters: {
             query?: never;
@@ -3806,6 +4347,255 @@ export interface operations {
                 };
                 content: {
                     "application/zip": string;
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.adminOnly`: the caller is not an admin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    admin_storage_api_admin_storage_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Storage"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.adminOnly`: the caller is not an admin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    admin_storage_cleanup_api_admin_storage_cleanup_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrphanReport"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.adminOnly`: the caller is not an admin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    admin_system_api_admin_system_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemInfo"];
                 };
             };
             /** @description Keyed error. `detail` is {key, message, params}. */
@@ -4229,6 +5019,89 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.adminOnly`: the caller is not an admin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    admin_workers_api_admin_workers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Workers"];
+                };
             };
             /** @description Keyed error. `detail` is {key, message, params}. */
             400: {
