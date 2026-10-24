@@ -35,6 +35,8 @@ import type {
   TagsAdded,
 } from "./api-types";
 import { keyed } from "./i18n.svelte";
+import { dropEdit, queue, queueEdit } from "./offline/queueState.svelte";
+import { refreshSavedSong } from "./offline/store";
 import type { MidiImportOptions } from "./midiImport";
 import { currentPath } from "./router.svelte";
 import { songsPath } from "./songQuery";
@@ -274,8 +276,20 @@ export async function setFavourite(id: string, favourite: boolean): Promise<bool
   return body.favourite;
 }
 
-export function getSong(id: string): Promise<SongDetail> {
-  return view(request<ContractSongDetail>(`/api/songs/${id}`));
+/** The last version of each song this page saw, so an edit made offline can answer with the song it changed. */
+const lastSeen = new Map<string, SongDetail>();
+
+export async function getSong(id: string): Promise<SongDetail> {
+  const song = await view<SongDetail>(request<ContractSongDetail>(`/api/songs/${id}`));
+  lastSeen.set(id, song);
+  return song;
+}
+
+/** A failed fetch (no network) or the service worker's answer for something it never saved. */
+export function isOfflineError(error: unknown): boolean {
+  return (
+    error instanceof TypeError || (error instanceof ApiError && error.key === "offline.unavailable")
+  );
 }
 
 export function createTab(body: {
@@ -302,18 +316,77 @@ export function createChordSheet(body: {
   );
 }
 
-/** Rejected with a 409 `song.conflict` when the song changed since `revision`. */
-export function updateSong(
-  id: string,
-  body: {
-    title: string;
-    artist: string;
-    revision: number;
-    document?: ScoreDocument;
-    chordpro?: string;
-  },
-): Promise<SongDetail> {
-  return view(request<ContractSongDetail>(`/api/songs/${id}`, json("PUT", body)));
+type SongEdit = {
+  title: string;
+  artist: string;
+  revision: number;
+  document?: ScoreDocument;
+  chordpro?: string;
+};
+
+/**
+ * Revisions an open editor may still hold for a song, and the one they became when a queued edit was sent. Without
+ * this the editor's next save would be refused as a conflict with the edit it made itself.
+ */
+const rebased = new Map<string, Map<number, number>>();
+
+export function noteRebase(id: string, from: number, to: number): void {
+  if (from === to) return;
+  const known = rebased.get(id) ?? new Map<number, number>();
+  known.set(from, to);
+  rebased.set(id, known);
+}
+
+function currentRevision(id: string, revision: number): number {
+  const known = rebased.get(id);
+  let next = revision;
+  for (let hops = 0; known?.has(next) && hops < 100; hops += 1) next = known.get(next)!;
+  return next;
+}
+
+/** Send an edit now, with no offline fallback. Rejected with a 409 `song.conflict` when the song changed since `revision`. */
+export async function putSong(id: string, body: SongEdit): Promise<SongDetail> {
+  const saved = await view<SongDetail>(
+    request<ContractSongDetail>(`/api/songs/${id}`, json("PUT", body)),
+  );
+  // Every save carries the whole song, so it replaces an edit still waiting to be sent.
+  if (queue.edits.some((edit) => edit.songId === id)) dropEdit(id);
+  lastSeen.set(id, saved);
+  await refreshSavedSong(saved).catch(() => undefined);
+  return saved;
+}
+
+/**
+ * Save an edit. With no network the edit is queued on this device and answered as the song would look once saved
+ * (same revision); `flushQueue` in `offline/offline.svelte.ts` sends it later under the usual revision rules.
+ * Rejected with a 409 `song.conflict` when the song changed since `revision`.
+ */
+export async function updateSong(id: string, edit: SongEdit): Promise<SongDetail> {
+  const body = { ...edit, revision: currentRevision(id, edit.revision) };
+  try {
+    return await putSong(id, body);
+  } catch (error) {
+    const base = lastSeen.get(id);
+    if (!isOfflineError(error) || !base) throw error;
+    queueEdit({
+      songId: id,
+      title: body.title,
+      body,
+      queuedAt: new Date().toISOString(),
+      state: "pending",
+      message: "",
+    });
+    const queued: SongDetail = {
+      ...base,
+      title: body.title,
+      artist: body.artist,
+      document: body.document ?? base.document,
+      chordpro: body.chordpro ?? base.chordpro,
+    };
+    lastSeen.set(id, queued);
+    await refreshSavedSong(queued).catch(() => undefined);
+    return queued;
+  }
 }
 
 /** A conversion: the track as it would be saved, what changed, and the saved song for `add` and `replace`. */
