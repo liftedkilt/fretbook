@@ -40,4 +40,11 @@ describe("chordSheetSteps", () => {
   it("is empty for a sheet with no chords", () => {
     expect(chordSheetSteps(parse("just words")).steps).toEqual([]);
   });
+
+  it("takes an applied capo in place of the sheet's own", () => {
+    // The Am shape moved down two semitones to Gm still sounds as Am with a capo on 2.
+    const { steps } = chordSheetSteps(parse("[Am]x"), -2, false, 2);
+    expect(steps[0].label).toBe("Gm");
+    expect(steps[0].pcs?.slice().sort((a, b) => a - b)).toEqual([0, 4, 9]);
+  });
 });

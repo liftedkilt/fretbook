@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/svelte";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/svelte";
+import { describe, expect, it, vi } from "vitest";
 
 import CapoSuggestions from "./CapoSuggestions.svelte";
 
@@ -19,6 +19,20 @@ describe("CapoSuggestions", () => {
     render(CapoSuggestions, { props: { chords: ["G", "C", "D", "Em"], capo: 3, flats: false } });
     expect(screen.queryByTestId("capo-option-3")).toBeNull();
     expect(screen.getByTestId("capo-none")).toBeInTheDocument();
+  });
+
+  it("applies a suggestion and offers an undo once one is applied", async () => {
+    const onapply = vi.fn();
+    const onundo = vi.fn();
+    const view = render(CapoSuggestions, {
+      props: { chords: ["Bb", "Eb", "F", "Gm"], capo: 0, flats: false, onapply, onundo },
+    });
+    expect(screen.queryByTestId("capo-undo")).toBeNull();
+    await fireEvent.click(screen.getByTestId("capo-apply-3"));
+    expect(onapply).toHaveBeenCalledWith(3);
+    await view.rerender({ applied: true });
+    await fireEvent.click(screen.getByTestId("capo-undo"));
+    expect(onundo).toHaveBeenCalled();
   });
 
   it("renders nothing without chords", () => {

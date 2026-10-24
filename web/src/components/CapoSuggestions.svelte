@@ -4,7 +4,22 @@
   import { t } from "../lib/i18n.svelte";
 
   // `chords` are the shapes as displayed; a capo already on the sheet sounds that many frets higher.
-  let { chords, capo, flats }: { chords: string[]; capo: number; flats: boolean } = $props();
+  // `applied` is set while a suggestion is in effect; `onapply` puts one on, `onundo` goes back to the sheet's capo.
+  let {
+    chords,
+    capo,
+    flats,
+    applied = false,
+    onapply,
+    onundo,
+  }: {
+    chords: string[];
+    capo: number;
+    flats: boolean;
+    applied?: boolean;
+    onapply?: (capo: number) => void;
+    onundo?: () => void;
+  } = $props();
 
   const options = $derived(
     suggestCapos(
@@ -19,12 +34,25 @@
 {#if chords.length}
   <section class="capo-suggestions no-print" data-testid="capo-suggestions">
     <h2 class="chord-diagrams-title">{t("retune.capoHeading")}</h2>
+    {#if applied}
+      <p class="hint" data-testid="capo-applied">{t("retune.capoApplied", { capo })}</p>
+      <button class="button" data-testid="capo-undo" onclick={() => onundo?.()}>
+        {t("retune.capoUndo")}
+      </button>
+    {/if}
     {#if options.length}
       <p class="hint">{t("retune.capoHint")}</p>
       <ul>
         {#each options as option (option.capo)}
           <li data-testid={`capo-option-${option.capo}`}>
             {t("retune.capoOption", { capo: option.capo, shapes: option.shapes.join(", ") })}
+            {#if onapply}
+              <button
+                class="button"
+                data-testid={`capo-apply-${option.capo}`}
+                onclick={() => onapply(option.capo)}>{t("retune.capoApply")}</button
+              >
+            {/if}
           </li>
         {/each}
       </ul>

@@ -33,6 +33,38 @@ describe("ChordSheetView diagram strip", () => {
     expect(names()).toEqual(["D", "A"]);
   });
 
+  it("applies a capo suggestion to the sheet and diagrams, and undoes it", async () => {
+    render(ChordSheetView, { props: { song: song("[Bb]Hello [Eb]world [F]again [Gm]now") } });
+    expect(names()).toEqual(["Bb", "Eb", "F", "Gm"]);
+    await fireEvent.click(screen.getByTestId("capo-apply-3"));
+    expect(names()).toEqual(["G", "C", "D", "Em"]);
+    expect(screen.getAllByTestId("chord-name").map((node) => node.textContent)).toEqual([
+      "G",
+      "C",
+      "D",
+      "Em",
+    ]);
+    expect(screen.getByTestId("chord-capo")).toBeInTheDocument();
+    expect(screen.getByTestId("capo-applied")).toBeInTheDocument();
+    await fireEvent.click(screen.getByTestId("capo-undo"));
+    expect(names()).toEqual(["Bb", "Eb", "F", "Gm"]);
+    expect(screen.queryByTestId("chord-capo")).toBeNull();
+  });
+
+  it("replaces the sheet's own capo, and keeps following transpose", async () => {
+    // Bb Eb F Gm with capo 1 sound as B E F# G#m; capo 4 turns them into G C D Em.
+    render(ChordSheetView, {
+      props: { song: song("{capo: 1}\n[Bb]Hello [Eb]world [F]again [Gm]now") },
+    });
+    expect(names()).toEqual(["Bb", "Eb", "F", "Gm"]);
+    await fireEvent.click(screen.getByTestId("capo-apply-4"));
+    expect(names()).toEqual(["G", "C", "D", "Em"]);
+    await fireEvent.click(screen.getByTestId("transpose-up"));
+    expect(names()).toEqual(["Ab", "Db", "D#", "Fm"]);
+    await fireEvent.click(screen.getByTestId("capo-undo"));
+    expect(names()).toEqual(["B", "E", "F#", "G#m"]);
+  });
+
   it("is absent when there is nothing to draw", () => {
     render(ChordSheetView, { props: { song: song("Just words\n[N.C.]") } });
     expect(screen.queryByTestId("chord-diagrams")).toBeNull();
