@@ -2296,6 +2296,15 @@ textarea {
     0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
+/* The ⋯ button and its popover only exist on phones; elsewhere the buttons sit inline. */
+.dock-more {
+  display: none;
+}
+
+.dock-secondary {
+  display: contents;
+}
+
 .dock-select {
   position: relative;
   display: inline-flex;
@@ -2385,13 +2394,14 @@ textarea {
   }
 
   .dock-bar {
+    position: relative;
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
       "progress"
       "transport"
       "tools";
-    gap: 2px 8px;
-    padding: 8px 10px 8px;
+    gap: 10px 8px;
+    padding: 10px 10px 8px;
     border-radius: 22px;
   }
 
@@ -2405,10 +2415,53 @@ textarea {
     justify-content: center;
   }
 
+  /* Selects, sync panel and ⋯ share one row; the rest open from the ⋯ above the dock. */
   .dock-tools {
     grid-area: tools;
-    justify-content: center;
-    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .dock-more {
+    display: inline-flex;
+  }
+
+  .dock-secondary {
+    display: none;
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 8px);
+    gap: 4px;
+    padding: 6px;
+    border-radius: 18px;
+    background: var(--glass-solid);
+    border: 1px solid var(--glass-line);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .dock-secondary[data-open] {
+    display: flex;
+  }
+
+  .dock-transport {
+    gap: 16px;
+  }
+
+  /* The fretboard rides just above the dock instead of sliding under it. */
+  .fretboard-wrap {
+    position: sticky;
+    bottom: calc(var(--dock-space) + 8px);
+    z-index: 1;
+    padding: 0.5rem 0.75rem 0.35rem;
+  }
+
+  .fretboard-wrap svg {
+    max-height: 110px;
+  }
+
+  .player-page.has-fretboard .score {
+    height: max(260px, calc(100dvh - 96px - var(--dock-space) - 112px));
+    scroll-margin-bottom: calc(var(--dock-space) + 112px);
   }
 
   .dock-select select {
@@ -2422,11 +2475,11 @@ textarea {
   }
 
   :root {
-    --dock-space: calc(196px + var(--safe-b));
+    --dock-space: calc(212px + var(--safe-b));
   }
 
   .player-page {
-    padding-bottom: calc(230px + var(--safe-b));
+    padding-bottom: calc(246px + var(--safe-b));
   }
 
   /* Short enough to fit between the top bar and the dock once scrolled into view. */
