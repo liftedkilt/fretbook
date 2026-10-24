@@ -401,11 +401,11 @@
   {:else}
     <section class="exercise-result" aria-labelledby="exercise-title">
       <h2 id="exercise-title" class="display" data-testid="exercise-title">{title}</h2>
-      <TabPreview score={result.ok.document} {title} />
+      <TabPreview score={result.ok.document} />
       {#if saveError}<p class="alert" role="alert">{saveError}</p>{/if}
       <div class="exercise-actions">
         <button
-          class="button"
+          class="button primary"
           data-testid="exercise-save"
           disabled={saving}
           onclick={() => void save()}
@@ -416,3 +416,15 @@
     </section>
   {/if}
 </div>
+
+<style>
+  .exercise-result {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+  .exercise-actions {
+    display: flex;
+    justify-content: flex-start;
+  }
+</style>

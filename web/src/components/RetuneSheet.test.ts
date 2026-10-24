@@ -16,7 +16,9 @@ vi.mock("@coderline/alphatab", () => ({
     core = {};
     player = {};
     display = {};
+    notation = { elements: new Map() };
   },
+  NotationElement: { ScoreTitle: 0, ScoreSubTitle: 1, ScoreArtist: 2 },
   LogLevel: { Warning: 0 },
   PlayerMode: { Disabled: 0 },
   StaveProfile: { Tab: 0 },

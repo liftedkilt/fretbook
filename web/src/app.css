@@ -3836,8 +3836,9 @@ kbd {
   max-height: 22rem;
   overflow: auto;
   border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  background: var(--surface);
+  border-radius: var(--r-lg);
+  background: var(--paper);
+  color: var(--paper-ink);
 }
 
 /* ------------------------------------------------------------------- tuner */
@@ -4979,14 +4980,25 @@ kbd {
   max-width: 46rem;
 }
 
-.lesson-prose pre,
-.lesson-tab {
+.lesson-prose pre {
   overflow-x: auto;
   padding: 0.8rem 1rem;
   border-radius: 10px;
   border: 1px solid var(--line-strong);
   font-family: var(--font-mono);
   font-size: 0.9rem;
+}
+
+.lesson-tab {
+  overflow-x: auto;
+  padding: 0.8rem 1rem;
+  border-radius: var(--r-md);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--paper);
+  color: var(--paper-ink);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  box-shadow: var(--shadow-sm);
 }
 
 .lesson-blocks {
