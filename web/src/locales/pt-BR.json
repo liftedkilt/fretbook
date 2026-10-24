@@ -32,6 +32,16 @@
       "one": "{count} sessão encerrada.",
       "other": "{count} sessões encerradas."
     },
+    "tokens": {
+      "one": "{count} token de API",
+      "other": "{count} tokens de API"
+    },
+    "revokeTokens": "Revogar tokens de API",
+    "confirmRevokeTokens": "Revogar todos os tokens de API de {name}? Scripts que os usam param de funcionar imediatamente.",
+    "tokensRevoked": {
+      "one": "{count} token de API revogado.",
+      "other": "{count} tokens de API revogados."
+    },
     "adoptHeading": "Biblioteca do modo de usuário único",
     "adoptHint": {
       "one": "{count} música foi adicionada antes de a entrada ser ativada. Ninguém a vê até que um administrador a mova para uma biblioteca.",

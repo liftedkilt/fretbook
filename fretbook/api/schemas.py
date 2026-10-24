@@ -177,10 +177,16 @@ class AdminUser(BaseModel):
     last_login_at: str | None
     song_count: int
     session_count: int
+    token_count: int
+    """API tokens that still work (not expired)."""
 
 
 class SessionsEnded(BaseModel):
     ended: int
+
+
+class TokensRevoked(BaseModel):
+    revoked: int
 
 
 class SongsMoved(BaseModel):

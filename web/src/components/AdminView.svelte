@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icon from "./Icon.svelte";
-  import { ApiError, adoptLocal, listUsers, signOutUser } from "../lib/api";
+  import { ApiError, adoptLocal, listUsers, revokeUserTokens, signOutUser } from "../lib/api";
   import { t } from "../lib/i18n.svelte";
   import { refreshSongs } from "../lib/ui.svelte";
   import type { AdminUser } from "../lib/types";
@@ -41,6 +41,18 @@
     try {
       const { ended } = await signOutUser(user.id);
       notice = t("admin.signedOut", { count: ended });
+      await refresh();
+    } catch (err) {
+      error = message(err);
+    }
+  }
+
+  async function revokeTokens(user: AdminUser) {
+    if (!confirm(t("admin.confirmRevokeTokens", { name: user.display_name }))) return;
+    error = "";
+    try {
+      const { revoked } = await revokeUserTokens(user.id);
+      notice = t("admin.tokensRevoked", { count: revoked });
       await refresh();
     } catch (err) {
       error = message(err);
@@ -95,11 +107,17 @@
               <td>
                 {when(user.last_login_at)}
                 <div class="muted">{t("admin.sessions", { count: user.session_count })}</div>
+                <div class="muted">{t("admin.tokens", { count: user.token_count })}</div>
               </td>
               <td>
                 {#if user.session_count > 0 && user.id !== self}
                   <button class="ghost" onclick={() => void endSessions(user)}>
                     <Icon name="logout" size={16} />{t("admin.signOut")}
+                  </button>
+                {/if}
+                {#if user.token_count > 0}
+                  <button class="ghost" onclick={() => void revokeTokens(user)}>
+                    <Icon name="trash" size={16} />{t("admin.revokeTokens")}
                   </button>
                 {/if}
               </td>
