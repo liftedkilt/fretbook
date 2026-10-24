@@ -1122,6 +1122,14 @@
           {#if song.has_audio}<span class="pill pill-accent"
               ><Icon name="waveform" size={14} />{t("library.audio")}</span
             >{/if}
+          <button
+            type="button"
+            class="pill pill-button"
+            data-testid="song-retune"
+            onclick={() => (retuneOpen = true)}
+          >
+            <Icon name="sliders" size={14} />{t("retune.open")}
+          </button>
         </div>
         {#if practice.loops.length > 0}
           <div
@@ -1201,9 +1209,6 @@
         >
           <Icon name="edit" size={18} /><span>{t("player.edit")}</span>
         </a>
-        <button data-testid="song-retune" onclick={() => (retuneOpen = true)}>
-          <Icon name="sliders" size={18} /><span>{t("retune.open")}</span>
-        </button>
         <button
           data-testid="song-tuner"
           onclick={() => openTuner({ tuning: track.tuning_midi, capo: track.capo })}
