@@ -73,7 +73,7 @@
         flats,
         diagrams: {
           strings: setup.tuning.strings.length,
-          capo,
+          capoLabel: capo ? t("chordDiagrams.pdfCapo", { fret: capo }) : "",
           chords: entries.flatMap((entry) =>
             entry.voicing ? [{ name: entry.name, voicing: entry.voicing }] : [],
           ),

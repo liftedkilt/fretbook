@@ -295,7 +295,7 @@ describe("renderChordSheetPdf", () => {
     const frets = [null, 3, 2, 0, 1, 0];
     const diagrams = {
       strings: 6,
-      capo: 2,
+      capoLabel: "Capo 2",
       chords: [
         { name: "C", voicing: { frets, baseFret: 1, barre: null, source: "generated" as const } },
         {
@@ -340,7 +340,7 @@ describe("renderChordSheetPdf", () => {
       ...input,
       diagrams: {
         ...diagrams,
-        capo: 0,
+        capoLabel: "",
         chords: Array.from({ length: 80 }, () => diagrams.chords[0]),
       },
     });

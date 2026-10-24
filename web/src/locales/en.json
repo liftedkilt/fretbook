@@ -994,6 +994,7 @@
     "play": "Strum {chord}",
     "fromSong": "From this song",
     "noShape": "No shape for this tuning",
-    "capoNote": "Capo {fret}: shapes are shown as you finger them, and the strum sounds {fret} frets higher."
+    "capoNote": "Capo {fret}: shapes are shown as you finger them, and the strum sounds {fret} frets higher.",
+    "pdfCapo": "Capo {fret}"
   }
 }

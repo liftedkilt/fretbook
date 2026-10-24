@@ -994,6 +994,7 @@
     "play": "Dedilhar {chord}",
     "fromSong": "Desta música",
     "noShape": "Sem posição para esta afinação",
-    "capoNote": "Capotraste {fret}: as posições são mostradas como você as toca, e o som fica {fret} casas mais agudo."
+    "capoNote": "Capotraste {fret}: as posições são mostradas como você as toca, e o som fica {fret} casas mais agudo.",
+    "pdfCapo": "Capotraste {fret}"
   }
 }

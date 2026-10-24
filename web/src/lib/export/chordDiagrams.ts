@@ -9,8 +9,8 @@ import { encodable } from "./svg";
 export interface PdfDiagramInput {
   /** String count of the tuning the voicings are for. */
   strings: number;
-  /** Capo fret (0 for none), printed above the diagrams. */
-  capo: number;
+  /** Capo line printed above the diagrams, already in the reader's language; empty for none. */
+  capoLabel: string;
   chords: { name: string; voicing: Voicing }[];
 }
 

@@ -289,9 +289,9 @@ export async function renderChordSheetPdf(
   const shifted = (chord: string | null) => (chord ? transposeChord(chord, transpose, flats) : "");
   const diagrams = input.diagrams;
   if (diagrams?.chords.length) {
-    if (diagrams.capo > 0) {
+    if (diagrams.capoLabel) {
       add(16, (page, originTop) => {
-        page.drawText(`Capo ${diagrams.capo}`, {
+        page.drawText(encodable(bodyBold, diagrams.capoLabel), {
           x: PDF_PAGE.marginX,
           y: originTop - 11,
           size: 10,
