@@ -65,8 +65,8 @@
   .level {
     margin-left: 0.5rem;
     padding: 0.1rem 0.55rem;
-    border-radius: 999px;
-    border: 1px solid var(--border, currentColor);
+    border-radius: var(--r-pill);
+    border: 1px solid var(--line-strong);
     font-size: 0.8rem;
     font-weight: 600;
   }
@@ -87,7 +87,7 @@
   .bar {
     display: block;
     height: 0.5rem;
-    border-radius: 999px;
+    border-radius: var(--r-pill);
     background: color-mix(in srgb, currentColor 15%, transparent);
     overflow: hidden;
   }

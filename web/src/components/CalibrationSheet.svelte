@@ -354,8 +354,8 @@
             <span
               class="icon"
               style="width: 24px; height: 24px; border-radius: 50%; background: {tapFlash
-                ? 'var(--color-primary, #6366f1)'
-                : 'var(--border, #ccc)'}; transition: background 0.1s ease;"
+                ? 'var(--accent)'
+                : 'var(--line-strong)'}; transition: background 0.1s ease;"
               aria-hidden="true"
             ></span>
             {#if tapFlash}

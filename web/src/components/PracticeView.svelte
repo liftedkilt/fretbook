@@ -469,23 +469,23 @@
   .cell {
     width: 11px;
     height: 11px;
-    border-radius: 3px;
-    background: var(--surface-3);
+    border-radius: var(--r-xs);
+    background: var(--heat-0);
   }
   .cell.future {
     background: transparent;
   }
   .level-1 {
-    background: color-mix(in srgb, var(--accent) 28%, var(--surface-3));
+    background: var(--heat-1);
   }
   .level-2 {
-    background: color-mix(in srgb, var(--accent) 52%, var(--surface-3));
+    background: var(--heat-2);
   }
   .level-3 {
-    background: color-mix(in srgb, var(--accent) 78%, var(--surface-3));
+    background: var(--heat-3);
   }
   .level-4 {
-    background: var(--accent);
+    background: var(--heat-4);
   }
   .lists {
     display: grid;

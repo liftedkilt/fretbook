@@ -131,6 +131,10 @@ The HTTP contract is the committed `openapi.json`. Regenerate it with `python -m
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how the pieces fit together and [ROADMAP.md](ROADMAP.md) for what is planned.
 
+## Design language
+
+UI work follows [docs/design/design-language.md](docs/design/design-language.md): the spacing, radius and type tokens, one button hierarchy, and themed form controls. New chrome uses those tokens. Raw colours, radii and spacing belong in the doc first, then in the tokens.
+
 ## Dependency updates
 
 Dependabot (`.github/dependabot.yml`) checks for updates across Docker base images, GitHub Actions, npm dependencies (`web/`), and Python packages (`requirements.txt`). Updates are grouped weekly to limit PR noise, except `yt-dlp` which checks daily because YouTube frequently breaks older extractors.

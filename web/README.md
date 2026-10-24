@@ -69,6 +69,10 @@ Select elements with `getByTestId(...)`, never by visible text, so tests survive
 
 `e2e/oidc.spec.ts` runs the server in OIDC mode against a stub provider (`e2e/support/oidc-stub.ts`) that signs the browser in as whoever the test names, and checks that two people see separate libraries. On a failure, Playwright keeps a trace, video, and screenshot under `web/test-results/` (`npx playwright show-trace <trace.zip>`); CI uploads them as the `playwright-failures` artifact.
 
+## Design language
+
+Shared colour, type, spacing, radius, buttons and form controls are defined in [docs/design/design-language.md](../docs/design/design-language.md) and implemented in `src/app.css`. Use the tokens (`--sp-*`, `--r-*`, `--fs-*`, and the colour roles) instead of raw values. The `ui-only` label below is for a pull request that stays inside `web/`; a change that also updates the design-language doc does not take that label.
+
 ## The `ui-only` label
 
 Add the GitHub label `ui-only` to a pull request that only changes the frontend. CI then fails if the diff touches anything outside `web/`. That includes `fretbook/`, `tests/`, `openapi.json`, database migrations, and the Dockerfile. Remove the label when the pull request is meant to change the API.
