@@ -27,6 +27,36 @@ test("the synth plays a tab and the cursor moves", async ({ page, seed }) => {
   await expect(play).toHaveAttribute("data-playing", "false");
 });
 
+test("follow keeps the bar being played in view", async ({ page, seed }) => {
+  const song = await seed.longBassTab(40);
+  await page.goto(`/songs/${song.id}`);
+
+  const score = page.getByTestId("player-score");
+  await expect(score.locator("svg").first()).toBeVisible();
+  const status = page.getByTestId("player-status");
+  const play = page.getByTestId("player-play");
+  await expect(play).toBeEnabled();
+  await play.click();
+  await expect(play).toHaveAttribute("data-playing", "true", { timeout: 30_000 });
+
+  // Four bars a system: by bar 9 follow has moved down two systems.
+  await expect
+    .poll(async () => Number(await status.getAttribute("data-measure")), { timeout: 20_000 })
+    .toBeGreaterThanOrEqual(9);
+  // Let the scroll animation settle, then the cursor must sit near the top of the score (issue #118).
+  await page.waitForTimeout(500);
+  const view = await score.boundingBox();
+  const cursor = await score.locator(".at-cursor-beat").boundingBox();
+  expect(await score.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+  expect(view && cursor).toBeTruthy();
+  if (!view || !cursor) return;
+  expect(cursor.y).toBeGreaterThanOrEqual(view.y);
+  expect(cursor.y + cursor.height).toBeLessThanOrEqual(view.y + view.height / 2);
+
+  await play.click();
+  await expect(play).toHaveAttribute("data-playing", "false");
+});
+
 test("the bar buttons move the position", async ({ page, seed }) => {
   const song = await seed.musicXmlTab();
   await page.goto(`/songs/${song.id}`);

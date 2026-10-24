@@ -2,6 +2,7 @@
   import Icon from "./Icon.svelte";
   import SongView from "./SongView.svelte";
   import { getSetlist } from "../lib/api";
+  import { handsFree, isTyping, pedalAction } from "../lib/handsFree.svelte";
   import { t } from "../lib/i18n.svelte";
   import { followLink, hrefFor, navigate } from "../lib/router.svelte";
   import {
@@ -47,6 +48,13 @@
   }
 
   function onKeydown(event: KeyboardEvent) {
+    // A page-turner pedal mapped to "next song" or "previous song".
+    const pedal = isTyping(event.target) ? null : pedalAction(event, handsFree.pedals);
+    if (pedal === "nextSong" || pedal === "previousSong") {
+      event.preventDefault();
+      go(pedal === "nextSong" ? next : previous);
+      return;
+    }
     const step = stepForKey(event);
     if (!step) return;
     event.preventDefault();

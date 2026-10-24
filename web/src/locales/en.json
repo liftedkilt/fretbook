@@ -41,6 +41,16 @@
     "adopted": {
       "one": "Moved {count} song into your library.",
       "other": "Moved {count} songs into your library."
+    },
+    "tokens": {
+      "one": "{count} API token",
+      "other": "{count} API tokens"
+    },
+    "revokeTokens": "Revoke API tokens",
+    "confirmRevokeTokens": "Revoke every API token of {name}? Scripts using them stop working at once.",
+    "tokensRevoked": {
+      "one": "Revoked {count} API token.",
+      "other": "Revoked {count} API tokens."
     }
   },
   "language": {
@@ -384,7 +394,8 @@
     "convertingAudio": "Converting to mp3",
     "ready": "Ready",
     "skippedDuplicate": "Skipped duplicate",
-    "noFrettedTracks": "This file has no fretted tracks."
+    "noFrettedTracks": "This file has no fretted tracks.",
+    "downloadingVideo": "Downloading video"
   },
   "error": {
     "generic": "Something went wrong."
@@ -510,7 +521,13 @@
       "zipPathTraversal": "The archive contains an unsafe file name.",
       "zipSymlinkNotAllowed": "The archive contains symlinks, which are not allowed.",
       "zipTooLarge": "The archive is too large when unpacked.",
-      "zipTooManyFiles": "The archive contains too many files."
+      "zipTooManyFiles": "The archive contains too many files.",
+      "videoFailed": "The video download failed. Upload the video or a folder of frames instead.",
+      "videoTimeout": "The video download took longer than {seconds} seconds. Upload the video or a folder of frames instead.",
+      "videoSignIn": "YouTube asked for a sign-in or a bot check, so the video could not be downloaded. Upload the video or a folder of frames instead.",
+      "videoUnavailable": "That video is unavailable, private, or removed, so it could not be downloaded. Upload the video or a folder of frames instead.",
+      "videoGeoBlocked": "That video is blocked in this server's country, so it could not be downloaded. Upload the video or a folder of frames instead.",
+      "videoOutdated": "yt-dlp could not read YouTube's page, which usually means yt-dlp is out of date. Update yt-dlp, or upload the video or a folder of frames instead."
     },
     "songs": {
       "badCursor": "That page of the library is no longer valid. Reload the list."
@@ -628,6 +645,9 @@
       "packNoCourse": "The course {course} has no course.md.",
       "badPack": "That pack could not be imported.",
       "packTooManyLessons": "That pack has too many lessons (the limit is {limit})."
+    },
+    "demo": {
+      "readOnly": "This is a read-only demo, so the library cannot be changed."
     }
   },
   "ui": {
@@ -1775,5 +1795,65 @@
   },
   "librarySnippet": {
     "label": "Lyrics match"
+  },
+  "handsFree": {
+    "autoScroll": "Auto-scroll",
+    "scrollSlower": "Scroll slower",
+    "scrollFaster": "Scroll faster",
+    "stage": "Stage mode",
+    "pedalTitle": "Page-turner pedal",
+    "pedalHint": "A Bluetooth pedal sends ordinary keys. Choose what each one does in the player and on chord sheets. “Keep” leaves a key to its normal job.",
+    "reset": "Restore defaults",
+    "keys": {
+      "PageDown": "Page Down",
+      "PageUp": "Page Up",
+      "ArrowDown": "Arrow Down",
+      "ArrowUp": "Arrow Up",
+      "ArrowRight": "Arrow Right",
+      "ArrowLeft": "Arrow Left"
+    },
+    "actions": {
+      "default": "Keep",
+      "nextPage": "Next page",
+      "previousPage": "Previous page",
+      "toggle": "Play / pause (auto-scroll on chord sheets)",
+      "loop": "Loop on / off",
+      "nextSong": "Next song in the setlist",
+      "previousSong": "Previous song in the setlist"
+    }
+  },
+  "firstRun": {
+    "title": "Welcome to Fretbook",
+    "subtitle": "Your library is empty. Pick a place to start; you can come back to any of these later.",
+    "importTitle": "Bring in a song",
+    "importBody": "Paste a Songsterr, Ultimate Guitar or YouTube link, drop a Guitar Pro, MusicXML, MIDI or ChordPro file or a whole folder, paste a text tab, or start a blank tab.",
+    "demoTitle": "Try the demo songs",
+    "demoBody": "Three original songs: a bass tab with audio and sync, a guitar tab and a chord sheet. Remove them any time in Settings.",
+    "demoButton": "Add the demo songs",
+    "demoAdding": "Adding…",
+    "instrumentTitle": "Choose your instrument",
+    "instrumentBody": "New tabs, added parts and imports start on this instrument.",
+    "tunerTitle": "Tune up",
+    "tunerBody": "Check your tuning with the microphone before you play.",
+    "tunerButton": "Open the tuner",
+    "courseTitle": "Learn the basics",
+    "courseBody": "A short beginner course for your instrument, with lessons you can play along to.",
+    "courseButton": "Start the beginner course"
+  },
+  "demo": {
+    "heading": "Demo songs",
+    "hint": "Three original songs that come with Fretbook. Removing them never touches your own songs.",
+    "add": "Add the demo songs",
+    "remove": "Remove the demo songs",
+    "confirmRemove": "Remove the demo songs from your library?",
+    "added": {
+      "one": "Added {count} demo song.",
+      "other": "Added {count} demo songs."
+    },
+    "removed": {
+      "one": "Removed {count} demo song.",
+      "other": "Removed {count} demo songs."
+    },
+    "banner": "This is a read-only demo. Look around and play; changes are not saved, and the library resets every night."
   }
 }

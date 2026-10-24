@@ -152,6 +152,44 @@ def test_oidc_tokens_belong_to_their_owner_and_keep_roles(tmp_path: Path) -> Non
         assert uma.post("/api/songs", json={"title": "x"}, headers={"Origin": "https://evil.test"}).status_code == 403
 
 
+def test_admin_lists_and_revokes_another_users_tokens(tmp_path: Path) -> None:
+    provider = MockProvider()
+    app = create_app(_settings(tmp_path), oidc_transport=provider.transport())
+    with TestClient(app) as uma, TestClient(app) as ada, TestClient(app) as script:
+        sign_in(uma, provider, "uma", ["fretbook_users"])
+        sign_in(ada, provider, "ada", ["fretbook_users", "fretbook_admins"])
+        first, second = _mint(uma, "one"), _mint(uma, "two")
+        uma_id = next(row["id"] for row in ada.get("/api/admin/users").json() if row["display_name"] == "Uma")
+        base = f"/api/admin/users/{uma_id}/tokens"
+
+        counts = {row["display_name"]: row["token_count"] for row in ada.get("/api/admin/users").json()}
+        assert counts["Uma"] == 2 and counts["Ada"] == 0
+
+        listed = ada.get(base).json()
+        assert {row["id"] for row in listed} == {first["id"], second["id"]}
+        assert all("token" not in row for row in listed)
+
+        # Only admins, and only for users that exist.
+        assert uma.get(base).json()["detail"]["key"] == "auth.adminOnly"
+        assert uma.delete(base).status_code == 403
+        assert ada.get("/api/admin/users/nobody/tokens").status_code == 404
+        assert ada.delete("/api/admin/users/nobody/tokens").status_code == 404
+        assert ada.delete(f"{base}/missing").status_code == 404
+
+        # One token, then the rest. A revoked token stops working at once.
+        assert script.get("/api/songs", headers=_bearer(first["token"])).status_code == 200
+        assert ada.delete(f"{base}/{first['id']}").status_code == 204
+        assert script.get("/api/songs", headers=_bearer(first["token"])).status_code == 401
+        assert script.get("/api/songs", headers=_bearer(second["token"])).status_code == 200
+        assert ada.delete(base).json() == {"revoked": 1}
+        assert script.get("/api/songs", headers=_bearer(second["token"])).status_code == 401
+        assert ada.get(base).json() == []
+
+        # An admin's own token works on admin routes, as it does elsewhere.
+        admin_token = _mint(ada)["token"]
+        assert script.delete(base, headers=_bearer(admin_token)).status_code == 200
+
+
 # --- fretbook-cli ------------------------------------------------------------
 
 

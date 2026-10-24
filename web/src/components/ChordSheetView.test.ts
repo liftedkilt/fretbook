@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { resetPedals, setPedal, setStage } from "../lib/handsFree.svelte";
 import type { SongDetail } from "../lib/types";
 import ChordSheetView from "./ChordSheetView.svelte";
 
@@ -113,5 +114,59 @@ describe("ChordSheetView diagram strip", () => {
     expect(diagrams.chords).toHaveLength(1);
     expect(diagrams.chords[0].name).toBe("Am7");
     expect(diagrams.chords[0].voicing.frets).toEqual([null, 0, 2, 0, 1, 0]);
+  });
+});
+
+describe("ChordSheetView hands-free", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    resetPedals();
+    setStage(false);
+    window.scrollBy = vi.fn();
+  });
+
+  it("turns the page on a page-turner key and ignores it while typing", async () => {
+    render(ChordSheetView, { props: { song: song("[C]Hello") } });
+    await fireEvent.keyDown(document.body, { key: "PageDown" });
+    expect(window.scrollBy).toHaveBeenCalledWith(
+      expect.objectContaining({ top: expect.any(Number) }),
+    );
+    const top = vi.mocked(window.scrollBy).mock.calls[0][0] as ScrollToOptions;
+    expect(top.top).toBeGreaterThan(0);
+    await fireEvent.keyDown(document.body, { key: "PageUp" });
+    expect((vi.mocked(window.scrollBy).mock.calls[1][0] as ScrollToOptions).top).toBeLessThan(0);
+    const field = document.createElement("input");
+    document.body.append(field);
+    vi.mocked(window.scrollBy).mockClear();
+    await fireEvent.keyDown(field, { key: "PageDown" });
+    expect(window.scrollBy).not.toHaveBeenCalled();
+  });
+
+  it("starts and stops the auto-scroll from the button or a pedal mapped to play", async () => {
+    render(ChordSheetView, { props: { song: song("{duration: 3:00}\n[C]Hello") } });
+    const button = screen.getByTestId("autoscroll");
+    expect(button).toHaveAttribute("aria-pressed", "false");
+    await fireEvent.click(button);
+    expect(button).toHaveAttribute("aria-pressed", "true");
+    await fireEvent.click(button);
+    expect(button).toHaveAttribute("aria-pressed", "false");
+    setPedal("ArrowRight", "toggle");
+    await fireEvent.keyDown(document.body, { key: "ArrowRight" });
+    expect(button).toHaveAttribute("aria-pressed", "true");
+    await fireEvent.click(button);
+  });
+
+  it("changes the scroll speed and switches stage mode", async () => {
+    render(ChordSheetView, { props: { song: song("[C]Hello") } });
+    expect(screen.getByTestId("autoscroll-speed")).toHaveTextContent("1×");
+    await fireEvent.click(screen.getByTestId("autoscroll-faster"));
+    expect(screen.getByTestId("autoscroll-speed")).toHaveTextContent("1.25×");
+    await fireEvent.click(screen.getByTestId("autoscroll-slower"));
+    expect(screen.getByTestId("autoscroll-speed")).toHaveTextContent("1×");
+    const toggle = screen.getByTestId("stage-toggle");
+    await fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+    expect(document.querySelector(".chords-page")).toHaveClass("stage");
+    expect(localStorage.getItem("fretbook.stage")).toBe("1");
   });
 });

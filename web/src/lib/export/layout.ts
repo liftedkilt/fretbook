@@ -43,6 +43,25 @@ function asBox(items: Box[]): Box {
 }
 
 /**
+ * Align each system with the chunks it was painted in.
+ *
+ * alphaTab 1.8 reports every system after the first about 10 px lower than the
+ * chunk that holds it, so its bounds spill into the next chunk and `paginate`
+ * would glue every system together. A system takes the span of the chunks that
+ * lie mostly inside it; one that matches no chunk keeps its own bounds.
+ */
+export function snapSystems(chunks: Box[], systems: Box[]): Box[] {
+  return systems.map((system) => {
+    const owned = chunks.filter((chunk) => {
+      const shared =
+        Math.min(chunk.y + chunk.height, system.y + system.height) - Math.max(chunk.y, system.y);
+      return shared > chunk.height / 2;
+    });
+    return owned.length ? asBox(owned) : system;
+  });
+}
+
+/**
  * Group `items` into pages of at most `contentHeight`.
  * `systems` are the staff rows that must stay intact.
  */

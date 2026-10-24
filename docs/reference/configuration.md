@@ -18,6 +18,7 @@ one is optional: the defaults give a single-user server on `127.0.0.1:8137`.
 | `FRETBOOK_FORWARDED_ALLOW_IPS` | `127.0.0.1` | Proxies allowed to send `X-Forwarded-*`. Set it to your proxy's address, never `*` on a port clients can reach. |
 | `FRETBOOK_STATIC_DIR` | built-in | Serve the web app from another directory. |
 | `FRETBOOK_MAX_UPLOAD_BYTES` | 80 MB | Largest upload and request body. |
+| `FRETBOOK_DEMO_MODE` | `false` | Run a public, read-only demo: no uploads, imports, edits or deletes, and the library is reset to the demo songs at start and every night at 03:00 UTC. For single-user mode. See [Demo library and demo mode](../guides/demo.md). |
 
 ## Storage
 

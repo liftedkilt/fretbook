@@ -130,6 +130,8 @@ export const ui = $state({
   order: initialSort.order,
   presets: [] as InstrumentPreset[],
   ytdlp: null as YtDlpStatus | null,
+  /** A read-only public demo: hide what would change the library. */
+  demoMode: false,
   version: null as string | null,
   commit: null as string | null,
   defaultInstrument: "bass-4",
@@ -257,6 +259,7 @@ export async function loadMeta(): Promise<void> {
   ui.me = me;
   ui.presets = meta.instruments;
   ui.ytdlp = meta.ytdlp;
+  ui.demoMode = meta.demo_mode ?? false;
   ui.version = meta.version;
   ui.commit = meta.commit;
   ui.defaultInstrument = me.settings.default_instrument;

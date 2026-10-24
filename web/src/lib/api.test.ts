@@ -167,6 +167,7 @@ describe("request wrappers", () => {
     ["retryJob", () => api.retryJob("j1"), "POST", "api/jobs/j1/retry"],
     ["listUsers", () => api.listUsers(), "GET", "api/admin/users"],
     ["signOutUser", () => api.signOutUser("u1"), "POST", "api/admin/users/u1/sign-out"],
+    ["revokeUserTokens", () => api.revokeUserTokens("u1"), "DELETE", "api/admin/users/u1/tokens"],
     ["adoptLocal", () => api.adoptLocal(), "POST", "api/admin/adopt-local"],
   ];
 

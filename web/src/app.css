@@ -1666,6 +1666,47 @@ textarea {
   transform: none;
 }
 
+.first-run {
+  max-width: 640px;
+}
+
+.first-run-steps {
+  display: grid;
+  gap: 0.6rem;
+  width: 100%;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.first-run-steps li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.first-run-steps p {
+  margin: 0.15rem 0 0;
+  font-size: 0.88rem;
+}
+
+.first-run-steps li > :last-child {
+  flex: none;
+}
+
+@media (max-width: 560px) {
+  .first-run-steps li {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
 .empty-actions {
   margin-top: 0.4rem;
 }
@@ -4885,4 +4926,15 @@ kbd {
   .lesson-editor-panes {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* Stage mode: only the music and the transport, large, for a dim stage. */
+.chords-page.stage > :not(.chord-paper):not(.float-dock),
+.player-page.stage .song-header,
+.player-page.stage .dock-panel {
+  display: none;
+}
+
+.chords-page.stage .chord-paper {
+  line-height: 1.6;
 }

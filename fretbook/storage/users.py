@@ -110,11 +110,15 @@ class UserStore:
                 """
                 SELECT u.id, u.display_name, u.email, u.role, u.external_subject, u.created_at, u.last_login_at,
                        (SELECT COUNT(*) FROM songs s WHERE s.owner_id = u.id) AS song_count,
-                       (SELECT COUNT(*) FROM sessions x WHERE x.user_id = u.id AND x.expires_at > ?) AS session_count
+                       (SELECT COUNT(*) FROM sessions x WHERE x.user_id = u.id AND x.expires_at > ?) AS session_count,
+                       (
+                           SELECT COUNT(*) FROM api_tokens t
+                           WHERE t.user_id = u.id AND (t.expires_at IS NULL OR t.expires_at > ?)
+                       ) AS token_count
                 FROM users u
                 ORDER BY u.external_subject IS NULL, lower(u.display_name)
                 """,
-                (utcnow(),),
+                (utcnow(), utcnow()),
             ).fetchall()
         return [
             {
@@ -128,6 +132,7 @@ class UserStore:
                 "last_login_at": row["last_login_at"],
                 "song_count": row["song_count"],
                 "session_count": row["session_count"],
+                "token_count": row["token_count"],
             }
             for row in rows
         ]
@@ -191,6 +196,11 @@ class UserStore:
     def revoke_token(self, user_id: str, token_id: str) -> bool:
         with self._session() as conn:
             return conn.execute("DELETE FROM api_tokens WHERE id = ? AND user_id = ?", (token_id, user_id)).rowcount > 0
+
+    def revoke_tokens(self, user_id: str) -> int:
+        """Revoke every token of ``user_id`` and return how many there were."""
+        with self._session() as conn:
+            return conn.execute("DELETE FROM api_tokens WHERE user_id = ?", (user_id,)).rowcount
 
     def find_token_owner(self, secret: str) -> dict[str, Any] | None:
         """The owner of a live token, or ``None`` when it is unknown or expired. Records the use."""

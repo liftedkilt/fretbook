@@ -68,17 +68,17 @@ def download_audio(
     cookies_copy: Path | None = None
     if settings is not None:
         env = subprocess_env(settings)
-        cookies_copy = _stage_cookies(settings, target)
+        cookies_copy = stage_cookies(settings, target)
         if cookies_copy:
             command[3:3] = ["--cookies", str(cookies_copy)]
     try:
-        _run(command, env, target, progress, timeout_seconds)
+        run_ytdlp(command, env, target, progress, timeout_seconds)
     finally:
         if cookies_copy:
             cookies_copy.unlink(missing_ok=True)
 
 
-def _stage_cookies(settings: Settings, target: Path) -> Path | None:
+def stage_cookies(settings: Settings, target: Path) -> Path | None:
     """A private copy of the cookies file, because yt-dlp writes the jar back when it exits."""
     source = settings.ytdlp_cookies
     if source is None:
@@ -92,13 +92,18 @@ def _stage_cookies(settings: Settings, target: Path) -> Path | None:
     return staged
 
 
-def _run(
+def run_ytdlp(
     command: list[str],
     env: dict[str, str] | None,
     target: Path,
     progress: Callable[[str, str], None],
     timeout_seconds: int,
+    *,
+    label: str = "Downloading audio",
+    key: str = "import.downloadingAudio",
 ) -> None:
+    """Run yt-dlp, report its percentage as ``label``, and raise :class:`AudioDownloadError` with a classified key.
+    The video importer shares this and maps the ``audio.*`` keys to its own messages."""
     proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env)
     tail: deque[str] = deque(maxlen=40)
     timed_out = threading.Event()
@@ -118,7 +123,7 @@ def _run(
             match = re.search(r"\[download\]\s+([\d.]+)%", line)
             if match and float(match.group(1)) >= last + 10:
                 last = float(match.group(1))
-                progress(f"Downloading audio {int(last)}%", "import.downloadingAudio")
+                progress(f"{label} {int(last)}%", key)
             elif "[ExtractAudio]" in line:
                 progress("Converting to mp3", "import.convertingAudio")
         code = proc.wait()

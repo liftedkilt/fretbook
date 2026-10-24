@@ -21,6 +21,7 @@ from fretbook.api.schemas import (
     ADMIN_RESPONSES,
     AUTH_RESPONSES,
     AdminUser,
+    ApiToken,
     Health,
     ImportPreview,
     Job,
@@ -33,6 +34,7 @@ from fretbook.api.schemas import (
     SongExport,
     SongPage,
     SongsMoved,
+    TokensRevoked,
 )
 from fretbook.audio.ytdlp_health import status as ytdlp_status
 from fretbook.auth.base import Principal
@@ -189,6 +191,7 @@ def meta(ctx: AppContext = Depends(_ctx), _user: Principal = Depends(_user)) -> 
             "instruments": presets_payload(),
             "ytdlp": asdict(ytdlp_status(ctx.settings)),
             "worker_kinds": ctx.jobs.live_worker_kinds(),
+            "demo_mode": ctx.settings.demo_mode,
         }
     )
 
@@ -802,6 +805,46 @@ def admin_sign_out(user_id: str, ctx: AppContext = Depends(_ctx), _admin: Princi
     if not ctx.users.exists(user_id):
         raise api_error(404, "user.notFound", "user not found")
     return _json({"ended": ctx.users.revoke_sessions(user_id)})
+
+
+@router.get(
+    "/api/admin/users/{user_id}/tokens", response_model=list[ApiToken], tags=["admin"], responses=ADMIN_RESPONSES
+)
+def admin_user_tokens(
+    user_id: str, ctx: AppContext = Depends(_ctx), _admin: Principal = Depends(admin)
+) -> JSONResponse:
+    """A user's API tokens, newest first. Never includes the secrets."""
+    if not ctx.users.exists(user_id):
+        raise api_error(404, "user.notFound", "user not found")
+    return _json(ctx.users.list_tokens(user_id))
+
+
+@router.delete(
+    "/api/admin/users/{user_id}/tokens", response_model=TokensRevoked, tags=["admin"], responses=ADMIN_RESPONSES
+)
+def admin_revoke_user_tokens(
+    user_id: str, ctx: AppContext = Depends(_ctx), _admin: Principal = Depends(admin)
+) -> JSONResponse:
+    """Revoke every API token of a user. Sign-out ends sessions only; tokens need this."""
+    if not ctx.users.exists(user_id):
+        raise api_error(404, "user.notFound", "user not found")
+    return _json({"revoked": ctx.users.revoke_tokens(user_id)})
+
+
+@router.delete(
+    "/api/admin/users/{user_id}/tokens/{token_id}",
+    status_code=204,
+    response_model=None,
+    tags=["admin"],
+    responses=ADMIN_RESPONSES,
+)
+def admin_revoke_user_token(
+    user_id: str, token_id: str, ctx: AppContext = Depends(_ctx), _admin: Principal = Depends(admin)
+) -> Response:
+    """Revoke one API token of a user. It stops working at once."""
+    if not ctx.users.revoke_token(user_id, token_id):
+        raise api_error(404, "token.notFound", "token not found")
+    return Response(status_code=204)
 
 
 @router.post("/api/admin/adopt-local", response_model=SongsMoved, tags=["admin"], responses=ADMIN_RESPONSES)

@@ -189,6 +189,24 @@ class SongRepository:
             conn.execute("UPDATE users SET default_instrument = ? WHERE id = ?", (default_instrument, user_id))
         return self.get_settings(user_id)
 
+    def reset_user_data(self, user_id: str) -> None:
+        """Forget everything the user did besides their songs (the demo instance's nightly reset).
+
+        Songs are removed by the caller. This clears practice sessions, goals and exercises, lesson progress,
+        audio calibrations and setlists, and puts the default instrument back.
+        """
+        with self._session(immediate=True) as conn:
+            for table in (
+                "practice_sessions",
+                "practice_goals",
+                "practice_exercises",
+                "lesson_progress",
+                "audio_calibrations",
+                "setlists",
+            ):
+                conn.execute(f"DELETE FROM {table} WHERE owner_id = ?", (user_id,))  # noqa: S608 - fixed names
+            conn.execute("UPDATE users SET default_instrument = ? WHERE id = ?", (DEFAULT_PRESET, user_id))
+
     # --- audio calibration -------------------------------------------------
 
     def get_calibration(
