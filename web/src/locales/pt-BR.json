@@ -1277,7 +1277,7 @@
     "about": {
       "fretboard": "Uma nota e uma corda são mostradas. Encontre a nota nessa corda tocando no braço ou tocando no seu instrumento.",
       "interval": "Duas notas soam em sequência. Diga o intervalo entre elas ou toque a segunda nota no seu instrumento.",
-      "chord": "Um acorde soa. Diga a qualidade: maior, menor, com sétima e assim por diante."
+      "chord": "Um acorde toca. Diga a qualidade: maior, menor, com sétima e assim por diante, ou toque o acorde de volta no seu instrumento."
     },
     "noteNames": "Nomes das notas",
     "sharps": "Sustenidos (C#)",
@@ -1307,6 +1307,7 @@
     "listen": "Ouvir de novo",
     "whichOne": "O que você ouve?",
     "playTheSecond": "Toque a segunda nota.",
+    "playTheChord": "Toque o acorde que você ouviu.",
     "itWas": "Era: {answer}",
     "right": "Certo!",
     "wrong": "Não foi isso.",

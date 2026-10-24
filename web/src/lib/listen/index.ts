@@ -13,6 +13,7 @@ export {
   type ListenProblem,
   type ListenSession,
 } from "./input";
+export type { ChromaEvent } from "./chroma";
 export { centsBetween, describePitch, midiToFrequency } from "./notes";
 export {
   CalibrationWizard,

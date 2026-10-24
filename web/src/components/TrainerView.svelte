@@ -4,12 +4,13 @@
   import Icon from "./Icon.svelte";
   import { recordPracticeExercise } from "../lib/api";
   import { ListenError, describeProblem, startListening, type ListenSession } from "../lib/listen";
-  import type { PitchEvent } from "../lib/listen";
+  import type { ChromaEvent, PitchEvent } from "../lib/listen";
   import { t } from "../lib/i18n.svelte";
   import { localDay } from "../lib/practiceLog";
   import { followLink, hrefFor } from "../lib/router.svelte";
   import { INSTRUMENTS } from "../lib/tuner";
   import { playChord, playMelodic } from "../lib/trainer/audio";
+  import { ChordAnswerMatcher } from "../lib/trainer/chordPlay";
   import {
     CHORD_QUALITIES,
     checkChord,
@@ -86,6 +87,7 @@
   let listener: ListenSession | null = null;
   let problem = $state("");
   const stable = new StableNote(3);
+  const chordMatcher = new ChordAnswerMatcher();
 
   const tuning = $derived.by((): number[] => {
     const [instrumentId, tuningId] = tuningChoice.split(":");
@@ -109,8 +111,7 @@
   );
   const best = $derived(store.bests[bestKey]);
   const directions = $derived<Direction[]>(direction === "both" ? ["up", "down"] : [direction]);
-  const canPlayBack = $derived(kind !== "chord");
-  const usesMic = $derived(canPlayBack && answerBy === "play");
+  const usesMic = $derived(answerBy === "play");
 
   function clearTimers() {
     if (tick) clearInterval(tick);
@@ -123,6 +124,7 @@
     const current = listener;
     listener = null;
     stable.reset();
+    chordMatcher.listen(null);
     await current?.stop().catch(() => undefined);
   }
 
@@ -135,7 +137,8 @@
     problem = "";
     if (usesMic) {
       try {
-        listener = await startListening({ onPitch });
+        listener = await startListening({ onPitch, onChroma });
+        listener.setChroma(kind === "chord");
       } catch (error) {
         problem = describeProblem(error instanceof ListenError ? error.problem : "other");
         return;
@@ -187,6 +190,8 @@
   async function playQuestion() {
     playing = true;
     stable.reset();
+    chordMatcher.listen(null);
+    const asked = chordQuestion;
     try {
       if (kind === "interval" && intervalQuestion) {
         await playMelodic([intervalQuestion.root, intervalQuestion.target]);
@@ -198,6 +203,9 @@
     } finally {
       playing = false;
       stable.reset();
+      // The question's own sound is over: from here a strum is an answer.
+      if (kind === "chord" && usesMic && asked && asked === chordQuestion && !locked)
+        chordMatcher.listen(asked, chordPool(level));
     }
   }
 
@@ -243,6 +251,16 @@
       answer(checkPlayed(tuning, fretQuestion, midi, FRETS));
     else if (kind === "interval" && intervalQuestion)
       answer(checkPlayedTarget(intervalQuestion, midi));
+  }
+
+  function onChroma(event: ChromaEvent) {
+    if (phase !== "running" || locked || kind !== "chord") return;
+    if (playing) {
+      chordMatcher.tick(event);
+      return;
+    }
+    const verdict = chordMatcher.push(event);
+    if (verdict) answer(verdict === "right");
   }
 
   function onChoice(id: string) {
@@ -301,7 +319,6 @@
   function selectKind(next: TrainerKind) {
     if (phase === "running") return;
     kind = next;
-    if (next === "chord") answerBy = "buttons";
     phase = "setup";
   }
 
@@ -405,17 +422,15 @@
           {/each}
         </select>
       </label>
-      {#if kind !== "chord"}
-        <label class="tool-field">
-          <span>{t("trainer.answerBy")}</span>
-          <select data-testid="trainer-answer-by" bind:value={answerBy}>
-            <option value="buttons"
-              >{kind === "fretboard" ? t("trainer.byTap") : t("trainer.byButtons")}</option
-            >
-            <option value="play">{t("trainer.byPlaying")}</option>
-          </select>
-        </label>
-      {/if}
+      <label class="tool-field">
+        <span>{t("trainer.answerBy")}</span>
+        <select data-testid="trainer-answer-by" bind:value={answerBy}>
+          <option value="buttons"
+            >{kind === "fretboard" ? t("trainer.byTap") : t("trainer.byButtons")}</option
+          >
+          <option value="play">{t("trainer.byPlaying")}</option>
+        </select>
+      </label>
     </div>
     {#if problem}<p class="error" role="alert" data-testid="trainer-problem">{problem}</p>{/if}
     {#if usesMic}<p class="muted small">{t("trainer.micHint")}</p>{/if}
@@ -474,7 +489,13 @@
         >
           <Icon name="play" size={18} />{t("trainer.listen")}
         </button>
-        <span class="muted">{usesMic ? t("trainer.playTheSecond") : t("trainer.whichOne")}</span>
+        <span class="muted"
+          >{usesMic
+            ? kind === "chord"
+              ? t("trainer.playTheChord")
+              : t("trainer.playTheSecond")
+            : t("trainer.whichOne")}</span
+        >
       </div>
       {#if !usesMic}
         <div class="choices" data-testid="trainer-choices">
@@ -495,7 +516,9 @@
               kind === "interval" && intervalQuestion
                 ? t(intervalQuestion.interval.labelKey)
                 : chordQuestion
-                  ? t(chordQuestion.quality.labelKey)
+                  ? usesMic
+                    ? `${noteName(chordQuestion.root % 12, accidentals)} ${t(chordQuestion.quality.labelKey)}`
+                    : t(chordQuestion.quality.labelKey)
                   : "",
           })}
         </p>
