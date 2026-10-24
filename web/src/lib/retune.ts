@@ -6,7 +6,14 @@ import type { ConvertBody, ConvertReport } from "./api-types";
 import type { InstrumentPreset, Track } from "./types";
 import { parseCustomTuning, tuningLabel } from "./tuning";
 
-export const RETUNE_GOALS = ["transpose", "retune", "shapes", "convert", "bassLine"] as const;
+export const RETUNE_GOALS = [
+  "transpose",
+  "retune",
+  "shapes",
+  "convert",
+  "bassLine",
+  "bassRoots",
+] as const;
 export type RetuneGoal = (typeof RETUNE_GOALS)[number];
 
 export const MAX_SEMITONES = 48;
@@ -27,6 +34,11 @@ export function clamp(value: number, low: number, high: number): number {
   return Math.min(high, Math.max(low, Math.round(value)));
 }
 
+/** The goals that boil a part down to one bass note per beat: its lowest notes, or the roots of its chords. */
+export function isBassLine(goal: RetuneGoal): boolean {
+  return goal === "bassLine" || goal === "bassRoots";
+}
+
 /** Choices for a goal, starting from the track as it is. Bass lines start an octave down, as a bass sounds. */
 export function defaultChoices(
   goal: RetuneGoal,
@@ -40,7 +52,7 @@ export function defaultChoices(
     capo: track.capo,
     preset: "",
   };
-  if (goal === "bassLine") {
+  if (isBassLine(goal)) {
     const bass = presets.find((item) => item.family === "bass");
     return {
       ...base,
@@ -60,7 +72,7 @@ export function presetsFor(
 ): InstrumentPreset[] {
   if (goal === "shapes")
     return presets.filter((item) => item.string_count === track.tuning_midi.length);
-  if (goal === "bassLine") return presets.filter((item) => item.family === "bass");
+  if (isBassLine(goal)) return presets.filter((item) => item.family === "bass");
   return presets;
 }
 
@@ -115,6 +127,7 @@ export function buildConvertBody(
   }
   if (choices.goal === "shapes") body.keep = "shape";
   if (choices.goal === "bassLine") body.reduce = "lowest";
+  if (choices.goal === "bassRoots") body.reduce = "root";
   return body;
 }
 
@@ -125,7 +138,7 @@ export function isNoChange(body: ConvertBody): boolean {
     !body.tuning_midi &&
     !body.preset &&
     body.capo === undefined &&
-    body.reduce !== "lowest"
+    body.reduce === "all"
   );
 }
 

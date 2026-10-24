@@ -3,7 +3,7 @@
 import pytest
 
 from fretbook.score.model import Beat, Note, Track, TrackBar, Voice
-from fretbook.score.retune import convert_track
+from fretbook.score.retune import chord_root_note, convert_track
 
 STANDARD = [64, 59, 55, 50, 45, 40]
 BASS4 = [43, 38, 33, 28]
@@ -146,6 +146,47 @@ def test_guitar_to_bass_lowest_voice_an_octave_down() -> None:
     # The lowest note is G2 (43, fret 3 on the low E); an octave down is G1 (31), fret 3 on a bass's low E.
     assert pitches(result.track) == [[31]]
     assert len(result.track.tuning_midi) == 4
+
+
+def test_root_reduce_uses_the_chord_root_not_the_lowest_note() -> None:
+    # C/E: E2 open, C3 (A string, fret 3), G3 (G string, open). The lowest note is E, the chord is C.
+    c_over_e = [Note(string=5, fret=0), Note(string=4, fret=3), Note(string=2, fret=0)]
+    # Plain E minor, root already lowest.
+    e_minor = [Note(string=5, fret=0), Note(string=3, fret=2), Note(string=2, fret=0)]
+    track = make_track([[beat(0, *c_over_e), beat(960, *e_minor)]])
+    lowest = convert_track(track, reduce="lowest")
+    assert pitches(lowest.track) == [[40], [40]]
+    result = convert_track(track, reduce="root")
+    assert pitches(result.track) == [[48], [40]]
+    assert result.report.reduced == 4
+
+
+def test_root_reduce_falls_back_to_the_lowest_note() -> None:
+    cluster = [Note(string=5, fret=0), Note(string=5, fret=1).model_copy(update={"string": 4, "fret": 1})]
+    track = make_track(
+        [
+            [
+                beat(0, *cluster),  # E2 and A#2: no known chord
+                beat(960, Note(string=3, fret=0)),  # a single note passes through
+                beat(1920, Note(string=5, fret=0), Note(string=4, fret=0, dead=True)),  # dead notes are ignored
+            ]
+        ]
+    )
+    result = convert_track(track, reduce="root")
+    assert pitches(result.track) == [[40], [50], [40]]
+
+
+def test_chord_root_note_names_the_root() -> None:
+    assert chord_root_note([40, 48, 55]) == 1  # C/E
+    assert chord_root_note([45, 52, 57, 60]) == 0  # Am
+    assert chord_root_note([45, 48, 52, 55]) == 0  # Am7, not C6: the tie goes to the bass note
+    assert chord_root_note([48, 52, 55, 57]) == 0  # C6 with C in the bass
+    assert chord_root_note([36, 43]) == 0  # power chord
+    assert chord_root_note([43, 36]) == 1  # a fifth with the fifth below is still a C5
+    assert chord_root_note([40, 41]) is None
+    assert chord_root_note([40]) is None
+    assert chord_root_note([48, 52, 55, 62]) == 0  # Cadd9 keeps C
+    assert chord_root_note([52, 55, 59, 62]) == 0  # Em7(9) stays E
 
 
 def test_ties_follow_a_note_that_moves() -> None:

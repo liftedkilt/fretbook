@@ -105,6 +105,14 @@ describe("RetuneSheet", () => {
     expect(lastBody()).toMatchObject({ reduce: "lowest", preset: "bass-4", semitones: -12 });
   });
 
+  it("asks for chord roots when the chord-root bass line is chosen", async () => {
+    mount();
+    await fireEvent.change(screen.getByTestId("retune-goal"), { target: { value: "bassRoots" } });
+    expect(screen.getByTestId("retune-tuning")).toHaveValue("G2 D2 A1 E1");
+    await waitFor(() => expect(api.convertTrack).toHaveBeenCalled());
+    expect(lastBody()).toMatchObject({ reduce: "root", preset: "bass-4", semitones: -12 });
+  });
+
   it("refuses a tuning it cannot read and does not call the server", async () => {
     mount();
     await fireEvent.change(screen.getByTestId("retune-goal"), { target: { value: "retune" } });

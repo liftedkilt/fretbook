@@ -944,7 +944,8 @@
             "default": "all",
             "enum": [
               "all",
-              "lowest"
+              "lowest",
+              "root"
             ],
             "title": "Reduce",
             "type": "string"
