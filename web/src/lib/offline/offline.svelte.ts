@@ -178,6 +178,10 @@ export function startOffline(): void {
   });
   // Another tab may have queued or sent edits.
   window.addEventListener("storage", reloadQueue);
+  // `online` can fire before the connection really works, and a server can be unreachable for a while: try again.
+  setInterval(() => {
+    if (offline.online && queue.edits.some((edit) => edit.state === "pending")) void flushQueue();
+  }, 5000);
   if (import.meta.env.PROD) void registerWorker();
   if (offline.online) void flushQueue().then(() => setTimeout(() => void refreshSaved(), 3000));
 }

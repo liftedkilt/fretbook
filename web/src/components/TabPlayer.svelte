@@ -1161,7 +1161,7 @@
         {/if}
       </div>
       <div class="hero-actions">
-        <OfflineToggle kind="song" id={song.id} title={song.title} />
+        <OfflineToggle kind="song" id={song.id} title={song.title} compact />
         <div
           class="segmented"
           role="group"

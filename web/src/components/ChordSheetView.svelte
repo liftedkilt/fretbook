@@ -112,7 +112,7 @@
         {#if song.artist}<p class="song-byline">{song.artist}</p>{/if}
       </div>
       <div class="hero-actions">
-        <OfflineToggle kind="song" id={song.id} title={song.title} />
+        <OfflineToggle kind="song" id={song.id} title={song.title} compact />
         <a
           class="button"
           data-testid="song-edit-link"

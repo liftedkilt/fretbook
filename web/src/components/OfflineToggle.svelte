@@ -11,7 +11,13 @@
   } from "../lib/offline/offline.svelte";
   import { offlineSupported } from "../lib/offline/store";
 
-  let { kind, id, title = "" }: { kind: "song" | "setlist"; id: string; title?: string } = $props();
+  // `compact` shows only the icon (the text stays for screen readers), for headers with no room to spare.
+  let {
+    kind,
+    id,
+    title = "",
+    compact = false,
+  }: { kind: "song" | "setlist"; id: string; title?: string; compact?: boolean } = $props();
 
   let busy = $state(false);
   let error = $state("");
@@ -46,7 +52,7 @@
       onclick={() => void toggle()}
     >
       <Icon name={saved ? "check" : "download"} size={18} />
-      <span>
+      <span class:visually-hidden={compact}>
         {#if busy}{t("offline.working")}{:else if saved}{t("offline.saved")}{:else}{t(
             "offline.make",
           )}{/if}
