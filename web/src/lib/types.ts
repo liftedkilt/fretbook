@@ -494,7 +494,7 @@ export interface PracticeSongStats {
   best_score: number | null;
 }
 
-export type ExerciseKind = "fretboard" | "interval" | "chord";
+export type ExerciseKind = "fretboard" | "interval" | "chord" | "rhythm";
 
 /** One finished trainer game, as sent to the practice log. */
 export interface PracticeExerciseDraft {
@@ -506,6 +506,11 @@ export interface PracticeExerciseDraft {
   rounds: number;
   correct: number;
   score: number | null;
+  /** Rhythm runs: the pattern drilled, a built-in pattern id or a song's bars. */
+  pattern?: string | null;
+  bpm?: number | null;
+  /** Rhythm runs: mean signed timing error in ms; positive is late. */
+  mean_error_ms?: number | null;
 }
 
 export interface PracticeExerciseStats {

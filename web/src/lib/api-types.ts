@@ -2697,6 +2697,8 @@ export interface components {
         };
         /** PracticeExercise */
         PracticeExercise: {
+            /** Bpm */
+            bpm?: number | null;
             /** Correct */
             correct: number;
             /** Day */
@@ -2709,7 +2711,11 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "fretboard" | "interval" | "chord";
+            kind: "fretboard" | "interval" | "chord" | "rhythm";
+            /** Mean Error Ms */
+            mean_error_ms?: number | null;
+            /** Pattern */
+            pattern?: string | null;
             /** Rounds */
             rounds: number;
             /** Score */
@@ -2719,6 +2725,8 @@ export interface components {
         };
         /** PracticeExerciseBody */
         PracticeExerciseBody: {
+            /** Bpm */
+            bpm?: number | null;
             /**
              * Correct
              * @default 0
@@ -2732,7 +2740,11 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "fretboard" | "interval" | "chord";
+            kind: "fretboard" | "interval" | "chord" | "rhythm";
+            /** Mean Error Ms */
+            mean_error_ms?: number | null;
+            /** Pattern */
+            pattern?: string | null;
             /**
              * Rounds
              * @default 0
@@ -2751,7 +2763,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "fretboard" | "interval" | "chord";
+            kind: "fretboard" | "interval" | "chord" | "rhythm";
             /** Last Day */
             last_day: string;
             /** Session Count */

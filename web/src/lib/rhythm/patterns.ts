@@ -6,6 +6,8 @@ export interface RhythmPattern {
   id: string;
   /** Locale key for the pattern's name. */
   labelKey: string;
+  /** A name that needs no translation, for a pattern taken from a song. */
+  label?: string;
   beats: number;
   /** Cells per beat: 1 quarters, 2 eighths, 3 triplets, 4 sixteenths. */
   grid: number;
