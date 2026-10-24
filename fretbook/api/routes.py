@@ -192,6 +192,7 @@ def meta(ctx: AppContext = Depends(_ctx), _user: Principal = Depends(_user)) -> 
             "ytdlp": asdict(ytdlp_status(ctx.settings)),
             "worker_kinds": ctx.jobs.live_worker_kinds(),
             "demo_mode": ctx.settings.demo_mode,
+            "metadata_lookup": ctx.settings.metadata_lookup,
         }
     )
 
@@ -233,6 +234,8 @@ def list_songs(
     favourite: bool = Query(False, description="Only starred songs."),
     difficulty_min: int | None = Query(None, ge=1, le=10, description="Songs at or above this level (1 to 10)."),
     difficulty_max: int | None = Query(None, ge=1, le=10, description="Songs at or below this level (1 to 10)."),
+    key: str | None = Query(None, max_length=40, description="Only songs in this key, as in `key` of a song."),
+    genre: str | None = Query(None, max_length=500, description="Only songs with this genre, ignoring case."),
     limit: int = Query(50, ge=1, le=200),
     cursor: str = Query("", max_length=64),
     ctx: AppContext = Depends(_ctx),
@@ -254,6 +257,8 @@ def list_songs(
         favourite=favourite,
         difficulty_min=difficulty_min,
         difficulty_max=difficulty_max,
+        key=key,
+        genre=genre,
         limit=limit,
         offset=start,
     )

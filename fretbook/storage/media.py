@@ -132,6 +132,14 @@ class MediaStore:
             ).fetchone()
         return dict(row) if row else None
 
+    def latest_of_kind(self, owner_id: str, song_id: str, kind: str) -> dict[str, str] | None:
+        with self._session() as conn:
+            row = conn.execute(
+                "SELECT * FROM media WHERE owner_id = ? AND song_id = ? AND kind = ? ORDER BY created_at DESC LIMIT 1",
+                (owner_id, song_id, kind),
+            ).fetchone()
+        return dict(row) if row else None
+
     def stems_for(self, owner_id: str, song_id: str) -> list[dict[str, str]]:
         """The newest file of each stem kind (``stem-bass``, ...), oldest kind first."""
         with self._session() as conn:

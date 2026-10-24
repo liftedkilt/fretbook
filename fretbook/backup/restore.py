@@ -24,6 +24,7 @@ from fretbook.chords import chordpro
 from fretbook.config import Settings
 from fretbook.importers.base import Notice
 from fretbook.jobs.runner import JobRunner, Progress
+from fretbook.metadata import MAX_COVER_BYTES, MetadataError, clean_metadata, sniff_cover
 from fretbook.score.model import ScoreDocument
 from fretbook.storage.lessons import LessonProgressRepository
 from fretbook.storage.media import AUDIO_TYPES, MediaStore
@@ -34,7 +35,7 @@ from fretbook.storage.practice import (
     PracticeRepository,
     SessionInput,
 )
-from fretbook.storage.repository import SongRepository
+from fretbook.storage.repository import METADATA_TEXT_LIMITS, YEAR_RANGE, SongRepository
 from fretbook.storage.setlists import (
     MAX_ENTRIES as MAX_SETLIST_ENTRIES,
 )
@@ -55,7 +56,8 @@ MAX_RATIO = 200
 RATIO_FLOOR = 8 * 1024 * 1024
 _CHUNK = 1024 * 1024
 _ID = re.compile(r"[A-Za-z0-9_-]{1,64}")
-_KINDS = {"audio", "import"}
+_KINDS = {"audio", "import", "cover"}
+METADATA_FIELDS = {"key", "genre", "album", "year", "notes"}
 
 Mode = Literal["skip", "copy"]
 
@@ -91,6 +93,8 @@ class _Song(BaseModel):
     # Untrusted like the rest: the repository cleans, dedupes and caps tags before storing them.
     tags: list[Annotated[str, Field(max_length=200)]] = Field(default_factory=list, max_length=1000)
     favourite: bool = False
+    # Additive: archives from before song metadata have none. Checked like a PATCH before it is stored.
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class _SetlistEntry(BaseModel):
@@ -480,6 +484,13 @@ def _restore_song(
     )
     songs.set_tags(owner_id, song["id"], entry.tags)
     songs.set_favourite(owner_id, song["id"], entry.favourite)
+    try:
+        wanted = {name: value for name, value in entry.metadata.items() if name in METADATA_FIELDS}
+        songs.set_metadata(owner_id, song["id"], clean_metadata(wanted, METADATA_TEXT_LIMITS, YEAR_RANGE))
+    except (MetadataError, TypeError, AttributeError):
+        warnings.append(
+            Notice("backup.metadataFailed", f"could not restore the details of {entry.title}", {"title": entry.title})
+        )
     song_ids[entry.id] = song["id"]
     for item in entry.media:
         try:
@@ -509,6 +520,13 @@ def _restore_media(
     try:
         with archive.open(info) as source:
             _copy_limited(source, staging, info.file_size)
+        if item.kind == "cover":
+            # Served from this origin: only an image recognised by its bytes comes back, as a type we choose.
+            with staging.open("rb") as written:
+                image = sniff_cover(written.read(16))
+            if image is None or info.file_size > MAX_COVER_BYTES:
+                raise ValueError("not a cover image")
+            filename, content_type = f"cover{image[0]}", image[1]
         media.save_file(owner_id, song_id, kind=item.kind, filename=filename, content_type=content_type, source=staging)
     finally:
         staging.unlink(missing_ok=True)

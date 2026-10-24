@@ -8,12 +8,14 @@ const mockDeleteSong = vi.fn();
 const mockListSongs = vi.fn();
 const mockListJobs = vi.fn().mockResolvedValue([]);
 const mockAddTags = vi.fn();
+const mockGetFacets = vi.fn();
 const mockSetFavourite = vi.fn();
 
 vi.mock("../lib/api", () => ({
   deleteSong: (...args: unknown[]) => mockDeleteSong(...args),
   listSongs: (...args: unknown[]) => mockListSongs(...args),
   listTags: vi.fn().mockResolvedValue([]),
+  getFacets: (...args: unknown[]) => mockGetFacets(...args),
   setFavourite: (...args: unknown[]) => mockSetFavourite(...args),
   addTags: (...args: unknown[]) => mockAddTags(...args),
   markSongOpened: vi.fn(),
@@ -42,6 +44,12 @@ function makeSong(overrides: Partial<SongSummary>): SongSummary {
     favourite: false,
     difficulty: null,
     tags: [],
+    key: null,
+    key_detected: false,
+    genre: "",
+    album: "",
+    year: null,
+    cover_url: null,
     lyrics_snippet: null,
     ...overrides,
   };
@@ -66,6 +74,8 @@ function fakeServer(query: SongQuery = {}): SongPage {
     )
     .filter((song) => (query.tag ?? []).every((tag) => song.tags.includes(tag)))
     .filter((song) => !query.favourite || song.favourite)
+    .filter((song) => !query.key || song.key === query.key)
+    .filter((song) => !query.genre || song.genre.toLowerCase() === query.genre.toLowerCase())
     .filter((song) =>
       words.every((word) => `${song.title} ${song.artist}`.toLowerCase().includes(word)),
     );
@@ -96,6 +106,7 @@ describe("LibraryView", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     songs = [];
+    mockGetFacets.mockResolvedValue({ keys: [], genres: [] });
     mockListSongs.mockImplementation(async (query?: SongQuery) => fakeServer(query));
     ui.songs = [];
     ui.total = 0;
@@ -107,6 +118,9 @@ describe("LibraryView", () => {
     ui.tagList = [];
     ui.favouritesOnly = false;
     ui.level = "all";
+    ui.keyFilter = "";
+    ui.genreFilter = "";
+    ui.facets = { keys: [], genres: [] };
     ui.search = "";
     ui.sheet = "";
     ui.error = "";
@@ -356,6 +370,53 @@ describe("LibraryView", () => {
     await waitFor(() =>
       expect(mockListSongs.mock.calls.at(-1)?.[0].difficulty_min).toBeUndefined(),
     );
+  });
+
+  it("shows a song's key and genre on its card and filters by them through the server", async () => {
+    await load([
+      makeSong({ id: "1", title: "Blue", key: "Am", key_detected: true, genre: "Blues" }),
+      makeSong({ id: "2", title: "Bright", key: "C", genre: "Pop" }),
+      makeSong({ id: "3", title: "Plain" }),
+    ]);
+    ui.facets = {
+      keys: [
+        { name: "Am", count: 1 },
+        { name: "C", count: 1 },
+      ],
+      genres: [
+        { name: "Blues", count: 1 },
+        { name: "Pop", count: 1 },
+      ],
+    };
+    render(LibraryView);
+
+    const details = screen.getAllByTestId("song-card-details");
+    expect(details).toHaveLength(2);
+    expect(details[0]).toHaveTextContent("A minor · Blues");
+    expect(details[1]).toHaveTextContent("C major · Pop");
+
+    await fireEvent.change(screen.getByTestId("library-key-filter"), { target: { value: "Am" } });
+    await waitFor(() =>
+      expect(mockListSongs).toHaveBeenLastCalledWith(expect.objectContaining({ key: "Am" })),
+    );
+    await waitFor(() => expect(screen.getAllByTestId("song-card")).toHaveLength(1));
+
+    await fireEvent.change(screen.getByTestId("library-key-filter"), { target: { value: "" } });
+    await fireEvent.change(screen.getByTestId("library-genre-filter"), {
+      target: { value: "Pop" },
+    });
+    await waitFor(() =>
+      expect(mockListSongs).toHaveBeenLastCalledWith(expect.objectContaining({ genre: "Pop" })),
+    );
+    await waitFor(() => expect(screen.getAllByTestId("song-card")).toHaveLength(1));
+    expect(screen.getByTestId("song-title")).toHaveTextContent("Bright");
+  });
+
+  it("hides the key and genre filters when no song has either", async () => {
+    await load([makeSong({ id: "1", title: "Plain" })]);
+    render(LibraryView);
+    expect(screen.queryByTestId("library-key-filter")).toBeNull();
+    expect(screen.queryByTestId("library-genre-filter")).toBeNull();
   });
 
   it("stars a song from its card", async () => {

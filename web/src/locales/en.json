@@ -481,7 +481,8 @@
       "practiceDropped": "{count} practice sessions could not be put back.",
       "exercisesDropped": "{count} trainer games could not be put back.",
       "practiceGoalFailed": "Could not restore the daily practice goal.",
-      "lessonProgressDropped": "{count} lesson results could not be put back."
+      "lessonProgressDropped": "{count} lesson results could not be put back.",
+      "metadataFailed": "Could not restore the details of {title}."
     },
     "import": {
       "failed": "The import failed.",
@@ -648,6 +649,17 @@
     },
     "demo": {
       "readOnly": "This is a read-only demo, so the library cannot be changed."
+    },
+    "metadata": {
+      "invalid": "Some of those details are not valid.",
+      "lookupDisabled": "Online lookup is turned off on this server.",
+      "lookupFailed": "Could not reach the metadata service.",
+      "notFound": "No matching recording was found."
+    },
+    "cover": {
+      "notImage": "Upload a PNG, JPEG or WebP image.",
+      "none": "This song has no cover art.",
+      "missing": "The cover file is missing."
     }
   },
   "ui": {
@@ -1877,5 +1889,39 @@
     "pick": "Practise it on a song",
     "pickPlaceholder": "Choose a song…",
     "play": "Open in the player"
+  },
+  "metadata": {
+    "heading": "Details",
+    "edit": "Edit details",
+    "editTitle": "Song details",
+    "key": "Key",
+    "keyAuto": "Automatic (from the score)",
+    "keyAutoNone": "Automatic (none found)",
+    "keyMajor": "{note} major",
+    "keyMinor": "{note} minor",
+    "keyDetected": "{key}, detected from the score",
+    "genre": "Genre",
+    "genreHint": "For example Blues or Rock.",
+    "album": "Album",
+    "year": "Year",
+    "notes": "Notes",
+    "notesHint": "Your own notes. Markdown works: **bold**, *italic*, lists and links.",
+    "notesEmpty": "No notes yet.",
+    "empty": "No details yet.",
+    "cover": "Cover art",
+    "coverAlt": "Cover art for {title}",
+    "coverUpload": "Upload image",
+    "coverRemove": "Remove cover",
+    "coverHint": "PNG, JPEG or WebP, up to 5 MB. Without one, the app draws a cover.",
+    "lookup": "Look up online",
+    "lookupHint": "Sends the artist and title to MusicBrainz and the Cover Art Archive to fill in an empty album, year and cover.",
+    "lookupDone": "Filled in from MusicBrainz.",
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "filters": "Key and genre",
+    "filterKey": "Key",
+    "filterGenre": "Genre",
+    "filterAny": "Any"
   }
 }

@@ -21,6 +21,7 @@ vi.mock("./api", () => ({
   getMeta: vi.fn(),
   saveSettings: vi.fn(),
   listTags: vi.fn().mockResolvedValue([]),
+  getFacets: vi.fn().mockResolvedValue({ keys: [], genres: [] }),
 }));
 
 function page(title: string): SongPage {
@@ -59,6 +60,13 @@ describe("songsPath", () => {
     expect(params.get("sort")).toBe("title");
     expect(params.has("cursor")).toBe(false);
     expect(songsPath()).toBe("/api/songs");
+  });
+
+  it("sends a key and genre filter, and leaves empty ones out", () => {
+    const params = new URL(songsPath({ key: "F#m", genre: "Blues" }), "http://x").searchParams;
+    expect(params.get("key")).toBe("F#m");
+    expect(params.get("genre")).toBe("Blues");
+    expect(songsPath({ key: "", genre: "" })).toBe("/api/songs");
   });
 
   it("sends each tag as its own parameter and drops a false favourite", () => {

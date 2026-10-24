@@ -1,4 +1,5 @@
 import {
+  getFacets,
   getMe,
   getMeta,
   isOfflineError,
@@ -11,6 +12,7 @@ import { levelQuery } from "./difficulty";
 import type {
   InstrumentPreset,
   LibraryCounts,
+  LibraryFacets,
   LibraryFilter,
   LibraryLevel,
   LibrarySort,
@@ -122,6 +124,12 @@ export const ui = $state({
   tags: [] as string[],
   /** Show only starred songs. */
   favouritesOnly: false,
+  /** Keep only songs in this key ("" for any), as the server names keys: `C`, `F#m`. */
+  keyFilter: "",
+  /** Keep only songs with this genre ("" for any). */
+  genreFilter: "",
+  /** The keys and genres in the library, for the filter menus. */
+  facets: { keys: [], genres: [] } as LibraryFacets,
   /** Keep only tabs in a difficulty band. */
   level: "all" as LibraryLevel,
   loaded: false,
@@ -132,6 +140,8 @@ export const ui = $state({
   ytdlp: null as YtDlpStatus | null,
   /** A read-only public demo: hide what would change the library. */
   demoMode: false,
+  /** The server can look up album, year and cover art online (`FRETBOOK_METADATA_LOOKUP`). */
+  lookupEnabled: false,
   version: null as string | null,
   commit: null as string | null,
   defaultInstrument: "bass-4",
@@ -160,6 +170,8 @@ function currentQuery(): SongQuery {
     instrument: ui.filter,
     tag: [...ui.tags],
     favourite: ui.favouritesOnly,
+    key: ui.keyFilter,
+    genre: ui.genreFilter,
     ...levelQuery(ui.level),
     limit: PAGE_SIZE,
   };
@@ -208,12 +220,22 @@ export async function loadMore(): Promise<void> {
 
 /** Reload the library and the sidebar after the set of songs, their tags or their stars changed. */
 export async function refreshSongs(): Promise<void> {
-  const [, recent, favourites, tagList] = await Promise.all([
+  const [, recent, favourites, tagList, facets] = await Promise.all([
     loadLibrary({ force: true }),
     listSongs({ sort: "updated", order: "desc", limit: 5 }),
     listSongs({ sort: "title", favourite: true, limit: 8 }),
     listTags(),
+    getFacets(),
   ]);
+  ui.facets = facets;
+  // A key or genre that no song has any more cannot filter anything.
+  if (ui.keyFilter && !facets.keys.some((item) => item.name === ui.keyFilter)) ui.keyFilter = "";
+  if (
+    ui.genreFilter &&
+    !facets.genres.some((item) => item.name.toLowerCase() === ui.genreFilter.toLowerCase())
+  ) {
+    ui.genreFilter = "";
+  }
   ui.recent = recent.items;
   ui.favourites = favourites.items;
   ui.tagList = tagList;
@@ -260,6 +282,7 @@ export async function loadMeta(): Promise<void> {
   ui.presets = meta.instruments;
   ui.ytdlp = meta.ytdlp;
   ui.demoMode = meta.demo_mode ?? false;
+  ui.lookupEnabled = meta.metadata_lookup ?? false;
   ui.version = meta.version;
   ui.commit = meta.commit;
   ui.defaultInstrument = me.settings.default_instrument;

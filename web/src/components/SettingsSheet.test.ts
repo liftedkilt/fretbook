@@ -26,6 +26,7 @@ vi.mock("../lib/api", () => ({
     next_cursor: null,
   }),
   listTags: async () => [],
+  getFacets: async () => ({ keys: [], genres: [] }),
 }));
 
 const mockPresets: InstrumentPreset[] = [

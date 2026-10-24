@@ -1,5 +1,6 @@
 <script lang="ts">
   import Cover from "./Cover.svelte";
+  import { coverSrc } from "../lib/cover";
   import FirstRun from "./FirstRun.svelte";
   import Icon from "./Icon.svelte";
   import ManageTagsSheet from "./ManageTagsSheet.svelte";
@@ -9,6 +10,7 @@
   import { t } from "../lib/i18n.svelte";
   import { levelOf } from "../lib/difficulty";
   import { instrumentLabel } from "../lib/instruments";
+  import { keyLabel } from "../lib/keys";
   import { snippetParts } from "../lib/lyricsSnippet";
   import { followLink, hrefFor } from "../lib/router.svelte";
   import type { LibraryLevel, LibrarySort, SongSummary } from "../lib/types";
@@ -58,7 +60,16 @@
   // App loads the first page; this only reacts to changes once it has.
   $effect(() => {
     const text = ui.search.trim();
-    void [ui.filter, ui.sort, ui.order, ui.tags, ui.favouritesOnly, ui.level];
+    void [
+      ui.filter,
+      ui.sort,
+      ui.order,
+      ui.tags,
+      ui.favouritesOnly,
+      ui.level,
+      ui.keyFilter,
+      ui.genreFilter,
+    ];
     if (!ui.loaded) return;
     const delay = text === searchSeen ? 0 : 200;
     searchSeen = text;
@@ -262,6 +273,33 @@
       {/each}
     </div>
 
+    {#if ui.facets.keys.length || ui.facets.genres.length}
+      <div class="facet-filters" role="group" aria-label={t("metadata.filters")}>
+        {#if ui.facets.keys.length}
+          <label class="facet">
+            <span>{t("metadata.filterKey")}</span>
+            <select data-testid="library-key-filter" bind:value={ui.keyFilter}>
+              <option value="">{t("metadata.filterAny")}</option>
+              {#each ui.facets.keys as item (item.name)}
+                <option value={item.name}>{keyLabel(item.name, t)} ({item.count})</option>
+              {/each}
+            </select>
+          </label>
+        {/if}
+        {#if ui.facets.genres.length}
+          <label class="facet">
+            <span>{t("metadata.filterGenre")}</span>
+            <select data-testid="library-genre-filter" bind:value={ui.genreFilter}>
+              <option value="">{t("metadata.filterAny")}</option>
+              {#each ui.facets.genres as item (item.name)}
+                <option value={item.name}>{item.name} ({item.count})</option>
+              {/each}
+            </select>
+          </label>
+        {/if}
+      </div>
+    {/if}
+
     {#if ui.tagList.length}
       <div class="chips tag-chips" role="group" aria-label={t("tags.filters")}>
         {#each ui.tagList as item (item.tag)}
@@ -387,6 +425,7 @@
                 title={song.title}
                 kind={song.content_kind}
                 strings={song.string_count}
+                src={coverSrc(song.cover_url)}
               />
               <span class="song-kind">
                 <Icon
@@ -414,6 +453,13 @@
                       >{t("difficulty.level", { level: levelOf(song.difficulty) })}</span
                     >{/if}
                 </span>
+              {/if}
+              {#if song.key || song.genre}
+                <span class="song-meta" data-testid="song-card-details"
+                  >{[song.key ? keyLabel(song.key, t) : "", song.genre]
+                    .filter(Boolean)
+                    .join(" · ")}</span
+                >
               {/if}
               {#if song.lyrics_snippet}
                 <span

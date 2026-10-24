@@ -847,6 +847,20 @@
         "title": "Body_upload_audio_api_songs__song_id__audio_post",
         "type": "object"
       },
+      "Body_upload_cover_api_songs__song_id__cover_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_cover_api_songs__song_id__cover_post",
+        "type": "object"
+      },
       "BulkImportAccepted": {
         "properties": {
           "batch_id": {
@@ -1621,6 +1635,24 @@
           "message"
         ],
         "title": "ErrorDetail",
+        "type": "object"
+      },
+      "FacetCount": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "count"
+        ],
+        "title": "FacetCount",
         "type": "object"
       },
       "Favourite": {
@@ -2607,6 +2639,31 @@
         "title": "LibraryCounts",
         "type": "object"
       },
+      "LibraryFacets": {
+        "description": "The keys and genres in the caller's library, most used first.",
+        "properties": {
+          "genres": {
+            "items": {
+              "$ref": "#/components/schemas/FacetCount"
+            },
+            "title": "Genres",
+            "type": "array"
+          },
+          "keys": {
+            "items": {
+              "$ref": "#/components/schemas/FacetCount"
+            },
+            "title": "Keys",
+            "type": "array"
+          }
+        },
+        "required": [
+          "keys",
+          "genres"
+        ],
+        "title": "LibraryFacets",
+        "type": "object"
+      },
       "Me": {
         "description": "The caller. In single-user mode this is the ``local`` user and ``authenticated`` is false.\n\n``role`` comes from the provider's groups at sign-in; it is always ``user`` in single-user mode.",
         "properties": {
@@ -2685,6 +2742,10 @@
             "title": "Instruments",
             "type": "array"
           },
+          "metadata_lookup": {
+            "title": "Metadata Lookup",
+            "type": "boolean"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -2718,9 +2779,76 @@
           "instruments",
           "ytdlp",
           "worker_kinds",
-          "demo_mode"
+          "demo_mode",
+          "metadata_lookup"
         ],
         "title": "Meta",
+        "type": "object"
+      },
+      "MetadataBody": {
+        "description": "Fields left out stay as they are. Send an empty string (or `null` for `year`) to clear one.",
+        "properties": {
+          "album": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Album"
+          },
+          "genre": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genre"
+          },
+          "key": {
+            "anyOf": [
+              {
+                "maxLength": 40,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "maxLength": 100000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          }
+        },
+        "title": "MetadataBody",
         "type": "object"
       },
       "MidiInspection": {
@@ -4084,6 +4212,10 @@
       },
       "SongDetail": {
         "properties": {
+          "album": {
+            "title": "Album",
+            "type": "string"
+          },
           "artist": {
             "title": "Artist",
             "type": "string"
@@ -4121,6 +4253,17 @@
             ],
             "title": "Content Kind",
             "type": "string"
+          },
+          "cover_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Url"
           },
           "created_at": {
             "title": "Created At",
@@ -4169,6 +4312,10 @@
             "title": "Favourite",
             "type": "boolean"
           },
+          "genre": {
+            "title": "Genre",
+            "type": "string"
+          },
           "has_audio": {
             "title": "Has Audio",
             "type": "boolean"
@@ -4180,6 +4327,21 @@
           "id": {
             "title": "Id",
             "type": "string"
+          },
+          "key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key"
+          },
+          "key_detected": {
+            "title": "Key Detected",
+            "type": "boolean"
           },
           "lyrics_snippet": {
             "anyOf": [
@@ -4195,6 +4357,10 @@
           "measure_count": {
             "title": "Measure Count",
             "type": "integer"
+          },
+          "notes": {
+            "title": "Notes",
+            "type": "string"
           },
           "preferred_instrument": {
             "title": "Preferred Instrument",
@@ -4243,6 +4409,17 @@
           "updated_at": {
             "title": "Updated At",
             "type": "string"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
           }
         },
         "required": [
@@ -4265,7 +4442,14 @@
           "favourite",
           "difficulty",
           "tags",
+          "key",
+          "key_detected",
+          "genre",
+          "album",
+          "year",
+          "cover_url",
           "lyrics_snippet",
+          "notes",
           "source_ref",
           "document",
           "chordpro",
@@ -4439,6 +4623,10 @@
       },
       "SongSummary": {
         "properties": {
+          "album": {
+            "title": "Album",
+            "type": "string"
+          },
           "artist": {
             "title": "Artist",
             "type": "string"
@@ -4454,6 +4642,17 @@
             ],
             "title": "Content Kind",
             "type": "string"
+          },
+          "cover_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Url"
           },
           "difficulty": {
             "anyOf": [
@@ -4481,6 +4680,10 @@
             "title": "Favourite",
             "type": "boolean"
           },
+          "genre": {
+            "title": "Genre",
+            "type": "string"
+          },
           "has_audio": {
             "title": "Has Audio",
             "type": "boolean"
@@ -4492,6 +4695,21 @@
           "id": {
             "title": "Id",
             "type": "string"
+          },
+          "key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key"
+          },
+          "key_detected": {
+            "title": "Key Detected",
+            "type": "boolean"
           },
           "lyrics_snippet": {
             "anyOf": [
@@ -4546,6 +4764,17 @@
           "updated_at": {
             "title": "Updated At",
             "type": "string"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
           }
         },
         "required": [
@@ -4568,6 +4797,12 @@
           "favourite",
           "difficulty",
           "tags",
+          "key",
+          "key_detected",
+          "genre",
+          "album",
+          "year",
+          "cover_url",
           "lyrics_snippet"
         ],
         "title": "SongSummary",
@@ -8892,6 +9127,88 @@
         ]
       }
     },
+    "/api/library/facets": {
+      "get": {
+        "description": "The keys and genres in the caller's library with how many songs have each, for the library filters.",
+        "operationId": "library_facets_api_library_facets_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryFacets"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Library Facets",
+        "tags": [
+          "songs"
+        ]
+      }
+    },
     "/api/library/import": {
       "post": {
         "description": "Queue a restore of an exported archive into the caller's library. Poll `GET /api/jobs/{job_id}`.\n\nA song already in the library (same id, or same title, artist and source) is left alone with\n`mode=skip` and added again as a copy with `mode=copy`. The archive is checked before the job is queued.",
@@ -10921,6 +11238,44 @@
             }
           },
           {
+            "description": "Only songs in this key, as in `key` of a song.",
+            "in": "query",
+            "name": "key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 40,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only songs in this key, as in `key` of a song.",
+              "title": "Key"
+            }
+          },
+          {
+            "description": "Only songs with this genre, ignoring case.",
+            "in": "query",
+            "name": "genre",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 500,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only songs with this genre, ignoring case.",
+              "title": "Genre"
+            }
+          },
+          {
             "in": "query",
             "name": "limit",
             "required": false,
@@ -12003,6 +12358,303 @@
         ]
       }
     },
+    "/api/songs/{song_id}/cover": {
+      "delete": {
+        "description": "Remove the uploaded cover art; the song goes back to its generated cover.",
+        "operationId": "delete_cover_api_songs__song_id__cover_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "song_id",
+            "required": true,
+            "schema": {
+              "title": "Song Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SongDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Delete Cover",
+        "tags": [
+          "songs"
+        ]
+      },
+      "get": {
+        "operationId": "download_cover_api_songs__song_id__cover_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "song_id",
+            "required": true,
+            "schema": {
+              "title": "Song Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              },
+              "image/webp": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "The song's cover image."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Download Cover",
+        "tags": [
+          "songs"
+        ]
+      },
+      "post": {
+        "description": "Replace the song's cover art with a PNG, JPEG or WebP image of at most 5 MB. SVG is refused.",
+        "operationId": "upload_cover_api_songs__song_id__cover_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "song_id",
+            "required": true,
+            "schema": {
+              "title": "Song Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_cover_api_songs__song_id__cover_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SongDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Upload Cover",
+        "tags": [
+          "songs"
+        ]
+      }
+    },
     "/api/songs/{song_id}/export.cho": {
       "get": {
         "operationId": "export_chordpro_api_songs__song_id__export_cho_get",
@@ -12474,6 +13126,202 @@
         "summary": "Set Favourite",
         "tags": [
           "tags"
+        ]
+      }
+    },
+    "/api/songs/{song_id}/metadata": {
+      "patch": {
+        "description": "Set the song's key, genre, year, album and notes. Leaves the revision alone, so it never conflicts.",
+        "operationId": "update_metadata_api_songs__song_id__metadata_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "song_id",
+            "required": true,
+            "schema": {
+              "title": "Song Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MetadataBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SongDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Update Metadata",
+        "tags": [
+          "songs"
+        ]
+      }
+    },
+    "/api/songs/{song_id}/metadata/lookup": {
+      "post": {
+        "description": "Fill in the album, year and cover art from MusicBrainz and the Cover Art Archive, by artist and title.\n\nOnly empty fields are filled; what the caller set stays. A 404 `metadata.lookupDisabled` means\n`FRETBOOK_METADATA_LOOKUP` is off, and `metadata.notFound` that nothing matched.",
+        "operationId": "lookup_metadata_api_songs__song_id__metadata_lookup_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "song_id",
+            "required": true,
+            "schema": {
+              "title": "Song Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SongDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Lookup Metadata",
+        "tags": [
+          "songs"
         ]
       }
     },

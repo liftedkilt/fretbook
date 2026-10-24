@@ -41,6 +41,7 @@ one is optional: the defaults give a single-user server on `127.0.0.1:8137`.
 | `FRETBOOK_INBOX_MODE` | `move` | `move` (imported files go to `processed/`, failures to `failed/`) or `library` (the folder is read-only; changed files are imported again). |
 | `FRETBOOK_INBOX_INTERVAL` | `10` | Seconds between looks at the inbox folder. |
 | `FRETBOOK_ALLOW_PRIVATE_URLS` | `false` | Let pasted links point at private, loopback and link-local addresses (for example a tab server on your LAN). Off by default so a link cannot reach services on the server's own network. |
+| `FRETBOOK_METADATA_LOOKUP` | `false` | Let a song's metadata lookup ask [MusicBrainz](https://musicbrainz.org) for its album and year, and the [Cover Art Archive](https://coverartarchive.org) for its cover, by artist and title. Off by default: the lookup sends the song's artist and title to those services. |
 | `FRETBOOK_FETCH_MAX_BYTES` | 25 MB | Largest download when importing from a pasted link. |
 | `FRETBOOK_FETCH_TIMEOUT` | `30` | Seconds a pasted link may take to download. |
 | `FRETBOOK_GP_CONVERTER` | _(auto)_ | Path to `gp-to-document.mjs`, the Node script that reads Guitar Pro files on the server. The Docker image has it; a checkout needs `npm run build:gp-cli` in `web/`. Without it, Guitar Pro still imports from the browser. |

@@ -7,6 +7,7 @@
   import ChordStrip from "./ChordStrip.svelte";
   import ChordWait from "./ChordWait.svelte";
   import Cover from "./Cover.svelte";
+  import { coverSrc } from "../lib/cover";
   import Icon from "./Icon.svelte";
   import Menu from "./Menu.svelte";
   import OfflineToggle from "./OfflineToggle.svelte";
@@ -191,7 +192,13 @@
       ><Icon name="back" size={18} />{t("app.back")}</a
     >
     <div class="song-hero">
-      <Cover id={song.id} title={song.title} kind="chords" size="lg" />
+      <Cover
+        id={song.id}
+        title={song.title}
+        kind="chords"
+        size="lg"
+        src={coverSrc(song.cover_url)}
+      />
       <div class="song-hero-text">
         <p class="eyebrow">{t("library.chordSheet")}</p>
         <h1 class="display song-heading" data-testid="song-heading">{song.title}</h1>

@@ -137,6 +137,16 @@ ENV_VARS: tuple[EnvVar, ...] = (
         ),
         "Importing",
     ),
+    EnvVar(
+        "FRETBOOK_METADATA_LOOKUP",
+        "`false`",
+        (
+            "Let a song's metadata lookup ask [MusicBrainz](https://musicbrainz.org) for its album and year, and the"
+            " [Cover Art Archive](https://coverartarchive.org) for its cover, by artist and title. Off by default:"
+            " the lookup sends the song's artist and title to those services."
+        ),
+        "Importing",
+    ),
     EnvVar("FRETBOOK_FETCH_MAX_BYTES", "25 MB", "Largest download when importing from a pasted link.", "Importing"),
     EnvVar("FRETBOOK_FETCH_TIMEOUT", "`30`", "Seconds a pasted link may take to download.", "Importing"),
     EnvVar(
@@ -291,6 +301,8 @@ class Settings:
     allow_private_urls: bool = False
     fetch_max_bytes: int = 25 * 1024 * 1024
     fetch_timeout_seconds: int = 30
+    # FRETBOOK_METADATA_LOOKUP: look up album, year and cover art on MusicBrainz. See fretbook/metadata.py.
+    metadata_lookup: bool = False
     failed_upload_retention_days: int = 7
     # Job kinds the web process leaves for a separate worker (python -m fretbook.worker).
     worker_kinds: tuple[str, ...] = ()
@@ -352,6 +364,7 @@ class Settings:
             allow_private_urls=_flag("FRETBOOK_ALLOW_PRIVATE_URLS", False),
             fetch_max_bytes=_int("FRETBOOK_FETCH_MAX_BYTES", 25 * 1024 * 1024),
             fetch_timeout_seconds=_int("FRETBOOK_FETCH_TIMEOUT", 30),
+            metadata_lookup=_flag("FRETBOOK_METADATA_LOOKUP", False),
             failed_upload_retention_days=_int("FRETBOOK_FAILED_UPLOAD_RETENTION_DAYS", 7),
             worker_kinds=tuple(k.strip() for k in os.environ.get("FRETBOOK_WORKER_KINDS", "").split(",") if k.strip()),
             inbox_watch_dir=Path(watch_raw).expanduser() if watch_raw else None,

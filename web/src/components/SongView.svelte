@@ -3,6 +3,7 @@
   import ChordSheetView from "./ChordSheetView.svelte";
   import DifficultyPanel from "./DifficultyPanel.svelte";
   import SongPractice from "./SongPractice.svelte";
+  import SongMetadata from "./SongMetadata.svelte";
   import SongTags from "./SongTags.svelte";
   import TabPlayer from "./TabPlayer.svelte";
   import { getSong, markSongOpened } from "../lib/api";
@@ -15,6 +16,20 @@
   let error = $state("");
   // Bumped when a chord-sheet practice session is saved, so the history below reloads.
   let logged = $state(0);
+
+  // Copy only the details that changed, so the player below keeps its state.
+  function applyMetadata(saved: SongDetail) {
+    if (!song) return;
+    Object.assign(song, {
+      key: saved.key,
+      key_detected: saved.key_detected,
+      genre: saved.genre,
+      album: saved.album,
+      year: saved.year,
+      notes: saved.notes,
+      cover_url: saved.cover_url,
+    });
+  }
 
   $effect(() => {
     const songId = id;
@@ -45,6 +60,7 @@
 {:else}
   {#key song.id}
     <SongTags {song} />
+    <SongMetadata {song} onchange={applyMetadata} />
   {/key}
   {#if song.content_kind === "chords"}
     <ChordSheetView {song} initialTranspose={transpose} />
