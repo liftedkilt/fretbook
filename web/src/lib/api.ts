@@ -39,7 +39,7 @@ import type {
 } from "./api-types";
 import { keyed } from "./i18n.svelte";
 import type { EditBase } from "./offline/merge";
-import { dropEdit, queue, queueEdit } from "./offline/queueState.svelte";
+import { dropEdit, queue, queueEdit, queueOp } from "./offline/queueState.svelte";
 import { refreshSavedSong } from "./offline/store";
 import type { MidiImportOptions } from "./midiImport";
 import { currentPath } from "./router.svelte";
@@ -245,9 +245,20 @@ export function listTags(): Promise<TagCount[]> {
 }
 
 /** Replace the song's tags. Resolves to the tags as stored: trimmed, without repeats, sorted. */
-export async function setSongTags(id: string, tags: string[]): Promise<string[]> {
+export async function putSongTags(id: string, tags: string[]): Promise<string[]> {
   const body = await request<ContractSongTags>(`/api/songs/${id}/tags`, json("PUT", { tags }));
   return body.tags;
+}
+
+/** Like `putSongTags`, but with no network the change is queued and the tags are answered as asked for. */
+export async function setSongTags(id: string, tags: string[]): Promise<string[]> {
+  try {
+    return await putSongTags(id, tags);
+  } catch (error) {
+    if (!isOfflineError(error)) throw error;
+    queueOp({ kind: "tags", songId: id, tags });
+    return tags;
+  }
 }
 
 /** Add tags to many songs at once. Resolves to how many songs were updated. */
@@ -276,12 +287,23 @@ export function revokeApiToken(id: string): Promise<void> {
   return request<void>(`/api/tokens/${id}`, { method: "DELETE" });
 }
 
-export async function setFavourite(id: string, favourite: boolean): Promise<boolean> {
+export async function putFavourite(id: string, favourite: boolean): Promise<boolean> {
   const body = await request<{ favourite: boolean }>(
     `/api/songs/${id}/favourite`,
     json("PUT", { favourite }),
   );
   return body.favourite;
+}
+
+/** Like `putFavourite`, but with no network the change is queued and answered as asked for. */
+export async function setFavourite(id: string, favourite: boolean): Promise<boolean> {
+  try {
+    return await putFavourite(id, favourite);
+  } catch (error) {
+    if (!isOfflineError(error)) throw error;
+    queueOp({ kind: "favourite", songId: id, favourite });
+    return favourite;
+  }
 }
 
 /** The last version of each song this page saw, so an edit made offline can answer with the song it changed. */
@@ -432,11 +454,43 @@ export function deleteStems(id: string): Promise<void> {
   return request(`/api/songs/${id}/stems`, { method: "DELETE" });
 }
 
-export function patchSync(
+export async function sendSync(
   id: string,
   body: { bpm: number; anchors: Record<string, number> },
 ): Promise<SongDetail> {
-  return view(request<ContractSongDetail>(`/api/songs/${id}/sync`, json("PATCH", body)));
+  const saved = await view<SongDetail>(
+    request<ContractSongDetail>(`/api/songs/${id}/sync`, json("PATCH", body)),
+  );
+  lastSeen.set(id, saved);
+  return saved;
+}
+
+/**
+ * Save sync marks and BPM. With no network (and a song this page loaded) the change is queued and answered as the
+ * song would look once saved; `flushOps` sends it later.
+ */
+export async function patchSync(
+  id: string,
+  body: { bpm: number; anchors: Record<string, number> },
+): Promise<SongDetail> {
+  try {
+    return await sendSync(id, body);
+  } catch (error) {
+    const seen = lastSeen.get(id);
+    if (!isOfflineError(error) || !seen) throw error;
+    queueOp({ kind: "sync", songId: id, revision: seen.revision, ...body });
+    const queued: SongDetail = {
+      ...seen,
+      document: seen.document && {
+        ...seen.document,
+        bpm: body.bpm,
+        sync: { ...seen.document.sync, anchors: body.anchors },
+      },
+    };
+    lastSeen.set(id, queued);
+    await refreshSavedSong(queued).catch(() => undefined);
+    return queued;
+  }
 }
 
 export function deleteSong(id: string): Promise<void> {
@@ -475,17 +529,30 @@ export function deleteSetlist(id: string): Promise<void> {
  * Add a session to the practice log. Best effort: a failure is swallowed, because losing a
  * minute of log must never get in the way of playing. `keepalive` lets the request outlive the page.
  */
+export async function postPracticeSession(
+  session: PracticeSessionDraft,
+  keepalive = false,
+): Promise<void> {
+  await request<ContractPracticeSession>("/api/practice/sessions", {
+    ...json("POST", session),
+    keepalive,
+  });
+}
+
+/** With no network the session is kept on this device and added to the log when the connection returns. */
 export async function recordPracticeSession(
   session: PracticeSessionDraft,
   keepalive = false,
 ): Promise<void> {
   try {
-    await request<ContractPracticeSession>("/api/practice/sessions", {
-      ...json("POST", session),
-      keepalive,
-    });
-  } catch {
-    /* the log is a convenience */
+    await postPracticeSession(session, keepalive);
+  } catch (error) {
+    if (!isOfflineError(error)) return;
+    try {
+      queueOp({ kind: "practice", session });
+    } catch {
+      /* storage is full or blocked: the log is a convenience */
+    }
   }
 }
 

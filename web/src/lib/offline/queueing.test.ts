@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getSong, isOfflineError, updateSong, ApiError } from "../api";
-import { queue } from "./queueState.svelte";
+import { opsQueue, queue } from "./queueState.svelte";
 import { clearOfflineData, flushQueue } from "./offline.svelte";
 
 const song = {
@@ -130,5 +130,69 @@ describe("updateSong with no network", () => {
     expect(queue.edits).toEqual([]);
     await flushQueue();
     expect(puts).toEqual(["Newer"]);
+  });
+});
+
+describe("small writes made with no network", () => {
+  const gone = () => {
+    throw new TypeError("Failed to fetch");
+  };
+
+  it("queues sync marks, tags, favourites and practice sessions, and sends them in order when back online", async () => {
+    let online = false;
+    const calls: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (!online && init?.method) return gone();
+        if (!init?.method) return json({ ...song, document: { bpm: 90, sync: { anchors: {} } } });
+        calls.push(`${init.method} ${url}`);
+        if (url.endsWith("/sync")) return json({ ...song, revision: 4 });
+        if (url.endsWith("/tags")) return json({ tags: ["a"] });
+        if (url.endsWith("/favourite")) return json({ favourite: true });
+        return json({}, 201);
+      }),
+    );
+    const { patchSync, setSongTags, setFavourite, recordPracticeSession } = await import("../api");
+    await getSong("s1");
+    const synced = await patchSync("s1", { bpm: 100, anchors: { "0": 1 } });
+    expect(synced.document).toMatchObject({ bpm: 100, sync: { anchors: { "0": 1 } } });
+    expect(await setSongTags("s1", ["a"])).toEqual(["a"]);
+    expect(await setFavourite("s1", true)).toBe(true);
+    await recordPracticeSession({ song_id: "s1" } as never);
+    await recordPracticeSession({ song_id: "s1" } as never);
+    // A later change to the same thing replaces the earlier one; sessions all stay.
+    await patchSync("s1", { bpm: 110, anchors: { "0": 2 } });
+    expect(opsQueue.ops.map((item) => item.op.kind)).toEqual([
+      "tags",
+      "favourite",
+      "practice",
+      "practice",
+      "sync",
+    ]);
+
+    online = true;
+    await flushQueue();
+    expect(opsQueue.ops).toHaveLength(0);
+    expect(calls.filter((call) => call.includes("/practice/sessions"))).toHaveLength(2);
+    expect(calls.filter((call) => call.includes("/sync"))).toHaveLength(1);
+  });
+
+  it("keeps a refused change for the user to dismiss, and does not queue what the server refused", async () => {
+    let online = false;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        if (!online) return gone();
+        return json({ detail: { key: "song.notFound", message: "gone", params: {} } }, 404);
+      }),
+    );
+    const { setFavourite } = await import("../api");
+    await setFavourite("s1", true);
+    online = true;
+    await flushQueue();
+    expect(opsQueue.ops).toMatchObject([{ state: "failed", message: expect.any(String) }]);
+    await expect(setFavourite("s1", false)).rejects.toBeInstanceOf(ApiError);
+    expect(opsQueue.ops).toHaveLength(1);
   });
 });

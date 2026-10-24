@@ -1,6 +1,26 @@
-import { ApiError, getSong, isOfflineError, noteRebase, putSong } from "../api";
+import {
+  ApiError,
+  getSong,
+  isOfflineError,
+  noteRebase,
+  postPracticeSession,
+  putFavourite,
+  putSong,
+  putSongTags,
+  sendSync,
+} from "../api";
 import type { SongDetail } from "../types";
-import { dropEdit, markEdit, queue, reloadQueue } from "./queueState.svelte";
+import { refreshSongs } from "../ui.svelte";
+import {
+  dropEdit,
+  dropOp,
+  markEdit,
+  markOp,
+  opsQueue,
+  queue,
+  reloadQueue,
+} from "./queueState.svelte";
+import type { Op } from "./ops";
 import { mergeOnto } from "./merge";
 import type { QueuedEdit } from "./queue";
 import {
@@ -23,7 +43,7 @@ import {
   warmEssentials,
 } from "./store";
 
-export { queue } from "./queueState.svelte";
+export { opsQueue, queue } from "./queueState.svelte";
 
 export const offline = $state<{ online: boolean; syncing: boolean; saved: Registry }>({
   online: typeof navigator === "undefined" || navigator.onLine !== false,
@@ -120,56 +140,97 @@ function alreadySaved(latest: SongDetail, body: QueuedEdit["body"]): boolean {
   );
 }
 
-/** Send queued edits in the order they were made. Stops at the first sign of no network. */
+async function sendOp(op: Op): Promise<void> {
+  switch (op.kind) {
+    case "sync": {
+      const saved = await sendSync(op.songId, { bpm: op.bpm, anchors: op.anchors });
+      noteRebase(op.songId, op.revision, saved.revision);
+      return;
+    }
+    case "tags":
+      await putSongTags(op.songId, op.tags);
+      return;
+    case "favourite":
+      await putFavourite(op.songId, op.favourite);
+      return;
+    case "practice":
+      await postPracticeSession(op.session);
+  }
+}
+
+/** Send the small writes in the order they were made. Stops at the first sign of no network. */
+async function flushOps(): Promise<void> {
+  let sent = false;
+  for (const item of [...opsQueue.ops]) {
+    if (item.state !== "pending") continue;
+    try {
+      await sendOp(item.op);
+      dropOp(item.id);
+      sent = true;
+    } catch (error) {
+      if (isOfflineError(error) || !(error instanceof ApiError)) break;
+      markOp(item.id, "failed", error.message);
+    }
+  }
+  // The library lists were last drawn before these changes.
+  if (sent) await refreshSongs().catch(() => undefined);
+}
+
+/** Send queued edits, then the small writes, in the order they were made. Stops at the first sign of no network. */
 export async function flushQueue(): Promise<void> {
   if (offline.syncing) return;
   offline.syncing = true;
   try {
-    for (const edit of [...queue.edits]) {
-      if (edit.state !== "pending") continue;
-      try {
-        const saved = await putSong(edit.songId, edit.body);
-        noteRebase(edit.songId, edit.body.revision, saved.revision);
-        dropEdit(edit.songId);
-      } catch (error) {
-        if (isOfflineError(error)) break;
-        if (!(error instanceof ApiError)) break;
-        if (error.status === 409) {
-          try {
-            const latest = await getSong(edit.songId);
-            if (alreadySaved(latest, edit.body)) {
-              noteRebase(edit.songId, edit.body.revision, latest.revision);
-              dropEdit(edit.songId);
-              continue;
-            }
-            const document = edit.base && edit.body.document && latest.document;
-            const merged = document
-              ? mergeOnto(latest.document!, edit.body.document!, edit.base!)
-              : null;
-            if (merged) {
-              // Only the sync marks or BPM moved elsewhere: save the edit on top of them.
-              const saved = await putSong(edit.songId, {
-                ...edit.body,
-                document: merged,
-                revision: latest.revision,
-              });
-              noteRebase(edit.songId, edit.body.revision, saved.revision);
-              dropEdit(edit.songId);
-              continue;
-            }
-          } catch (retry) {
-            if (retry instanceof ApiError && !isOfflineError(retry)) {
-              markEdit(edit.songId, retry.status === 409 ? "conflict" : "failed", retry.message);
-              continue;
-            }
-            break;
-          }
-        }
-        markEdit(edit.songId, error.status === 409 ? "conflict" : "failed", error.message);
-      }
-    }
+    await flushEdits();
+    await flushOps();
   } finally {
     offline.syncing = false;
+  }
+}
+
+async function flushEdits(): Promise<void> {
+  for (const edit of [...queue.edits]) {
+    if (edit.state !== "pending") continue;
+    try {
+      const saved = await putSong(edit.songId, edit.body);
+      noteRebase(edit.songId, edit.body.revision, saved.revision);
+      dropEdit(edit.songId);
+    } catch (error) {
+      if (isOfflineError(error)) break;
+      if (!(error instanceof ApiError)) break;
+      if (error.status === 409) {
+        try {
+          const latest = await getSong(edit.songId);
+          if (alreadySaved(latest, edit.body)) {
+            noteRebase(edit.songId, edit.body.revision, latest.revision);
+            dropEdit(edit.songId);
+            continue;
+          }
+          const document = edit.base && edit.body.document && latest.document;
+          const merged = document
+            ? mergeOnto(latest.document!, edit.body.document!, edit.base!)
+            : null;
+          if (merged) {
+            // Only the sync marks or BPM moved elsewhere: save the edit on top of them.
+            const saved = await putSong(edit.songId, {
+              ...edit.body,
+              document: merged,
+              revision: latest.revision,
+            });
+            noteRebase(edit.songId, edit.body.revision, saved.revision);
+            dropEdit(edit.songId);
+            continue;
+          }
+        } catch (retry) {
+          if (retry instanceof ApiError && !isOfflineError(retry)) {
+            markEdit(edit.songId, retry.status === 409 ? "conflict" : "failed", retry.message);
+            continue;
+          }
+          break;
+        }
+      }
+      markEdit(edit.songId, error.status === 409 ? "conflict" : "failed", error.message);
+    }
   }
 }
 
@@ -200,6 +261,7 @@ export async function resolveEdit(songId: string, keep: "mine" | "theirs"): Prom
 export async function clearOfflineData(): Promise<void> {
   await clearAllData();
   for (const edit of [...queue.edits]) dropEdit(edit.songId);
+  for (const item of [...opsQueue.ops]) dropOp(item.id);
   setSaved(emptyRegistry());
 }
 
@@ -228,7 +290,12 @@ export function startOffline(): void {
   window.addEventListener("storage", reloadQueue);
   // `online` can fire before the connection really works, and a server can be unreachable for a while: try again.
   setInterval(() => {
-    if (offline.online && queue.edits.some((edit) => edit.state === "pending")) void flushQueue();
+    if (
+      offline.online &&
+      (queue.edits.some((edit) => edit.state === "pending") ||
+        opsQueue.ops.some((item) => item.state === "pending"))
+    )
+      void flushQueue();
   }, 5000);
   if (import.meta.env.PROD) void registerWorker();
   if (offline.online) void flushQueue().then(() => setTimeout(() => void refreshSaved(), 3000));

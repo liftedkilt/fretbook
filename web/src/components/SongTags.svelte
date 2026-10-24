@@ -27,7 +27,7 @@
     error = "";
     try {
       tags = await setSongTags(song.id, next);
-      await refreshSongs();
+      await refreshSongs().catch(() => undefined); // offline: the change is queued
     } catch (err) {
       error = err instanceof Error ? err.message : t("error.generic");
     } finally {

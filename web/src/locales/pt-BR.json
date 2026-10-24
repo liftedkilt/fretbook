@@ -1520,9 +1520,11 @@
     "failed": "Não foi possível remover. Tente novamente.",
     "saveFailed": "Não foi possível salvar para uso offline. Verifique a conexão e tente novamente.",
     "queued": {
-      "one": "{count} edição aguardando sincronização.",
-      "other": "{count} edições aguardando sincronização."
+      "one": "{count} alteração aguardando sincronização.",
+      "other": "{count} alterações aguardando sincronização."
     },
+    "opFailed": "Uma alteração feita offline não pôde ser salva: {message}",
+    "dismiss": "Dispensar",
     "syncNow": "Sincronizar agora",
     "conflict": "“{title}” foi alterada em outro lugar, então suas edições offline não foram salvas.",
     "syncFailed": "Não foi possível salvar suas edições offline de “{title}”: {message}",
