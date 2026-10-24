@@ -16,12 +16,14 @@ from __future__ import annotations
 import argparse
 import importlib
 import re
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
 from typing import Any
 
+from fretbook.audio.ytdlp import AudioDownloadError, run_ytdlp, stage_cookies
+from fretbook.audio.ytdlp_health import subprocess_env
+from fretbook.config import Settings
 from fretbook.importers.base import ImporterNotImplemented, ImportError, ImportRequest, ImportResult, Progress
 from fretbook.importers.tab_synth import build_templates, bundled_font
 from fretbook.importers.tab_vision import (
@@ -42,6 +44,14 @@ from fretbook.score.model import ScoreDocument
 _WATCH = re.compile(
     r"^https?://(?:www\.|m\.)?(?:youtube\.com/watch\?v=|youtube\.com/shorts/|youtu\.be/)([\w-]{11})(?:\S*)?$"
 )
+# yt-dlp failure classes (``fretbook.audio.ytdlp_health``) as the video importer's error keys.
+_VIDEO_FAILURES = {
+    "audio.timeout": "import.videoTimeout",
+    "audio.signIn": "import.videoSignIn",
+    "audio.unavailable": "import.videoUnavailable",
+    "audio.geoBlocked": "import.videoGeoBlocked",
+    "audio.outdated": "import.videoOutdated",
+}
 _VIDEO_SUFFIXES = {".mp4", ".mkv", ".webm", ".mov", ".avi"}
 
 
@@ -87,13 +97,47 @@ class YouTubeFrameImporter:
             document=document,
         )
 
-    def download_video(self, video_url: str, dest: Path, progress: Progress) -> Path:
-        """Download a watch URL with yt-dlp. Not used for links until the feature is finished."""
-        progress("Reading the file", "import.readingFile")
+    def download_video(
+        self,
+        video_url: str,
+        dest: Path,
+        progress: Progress,
+        *,
+        settings: Settings | None = None,
+        timeout_seconds: int = 600,
+    ) -> Path:
+        """Download a watch URL with yt-dlp. Not used for links until the feature is finished.
+
+        ``settings`` selects the updated yt-dlp and the cookies file, the same as audio downloads.
+        Failures carry an ``import.video*`` key that suggests supplying a local video or frames.
+        """
         command = video_download_command(video_url, dest)
-        completed = subprocess.run(command, capture_output=True, text=True, check=False)
-        if completed.returncode != 0 or not dest.is_file():
-            raise ImportError("video download failed", "import.failed")
+        progress("Downloading video", "import.downloadingVideo")
+        env = None
+        cookies_copy: Path | None = None
+        if settings is not None:
+            env = subprocess_env(settings)
+            cookies_copy = stage_cookies(settings, dest)
+            if cookies_copy:
+                command[3:3] = ["--cookies", str(cookies_copy)]
+        try:
+            run_ytdlp(
+                command,
+                env,
+                dest,
+                progress,
+                timeout_seconds,
+                label="Downloading video",
+                key="import.downloadingVideo",
+            )
+        except AudioDownloadError as exc:
+            key = _VIDEO_FAILURES.get(exc.key, "import.videoFailed")
+            raise ImportError(
+                "video download failed; supply a local video or frames instead", key, **exc.params
+            ) from exc
+        finally:
+            if cookies_copy:
+                cookies_copy.unlink(missing_ok=True)
         return dest
 
     def extract_frames(self, video_path: Path, work_dir: Path, progress: Progress) -> list[Path]:
