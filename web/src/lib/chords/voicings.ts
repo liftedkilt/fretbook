@@ -1,5 +1,5 @@
 import type { ChordDefine } from "../chordpro";
-import { parseChord, type ParsedChord } from "./theory";
+import { parseChord, shapeName, type ParsedChord } from "./theory";
 
 /**
  * Chord voicings, generated.
@@ -28,6 +28,8 @@ export interface Voicing {
   /** First fret of the drawn window: 1 when everything fits near the nut. */
   baseFret: number;
   barre: Barre | null;
+  /** Finger per string (1 index to 4 little), `null` for open and muted strings; absent when unknown. */
+  fingers?: (number | null)[];
   /** Where it came from: generated, or a `{define:}` in the song. */
   source: "generated" | "define";
 }
@@ -85,8 +87,42 @@ function baseFretOf(frets: (number | null)[]): number {
   return Math.max(...fretted) <= WINDOW ? 1 : Math.min(...fretted);
 }
 
-function toVoicing(frets: (number | null)[], source: Voicing["source"]): Voicing {
-  return { frets, baseFret: baseFretOf(frets), barre: findBarre(frets), source };
+/**
+ * A fingering for the frets: the barre is the index finger, then one finger per
+ * remaining note from the lowest fret up (and from the lowest string within a fret).
+ * `fingersNeeded` has already kept the count to four.
+ */
+function assignFingers(frets: (number | null)[], barre: Barre | null): (number | null)[] {
+  const fingers = frets.map(() => null as number | null);
+  let next = 1;
+  if (barre) {
+    for (let index = barre.from; index <= barre.to; index += 1) {
+      if (frets[index] === barre.fret) fingers[index] = 1;
+    }
+    next = 2;
+  }
+  const notes = frets
+    .map((fret, index) => ({ fret, index }))
+    .filter(({ fret, index }) => fret !== null && fret > 0 && fingers[index] === null)
+    .sort((a, b) => a.fret! - b.fret! || a.index - b.index);
+  for (const { index } of notes) {
+    fingers[index] = next;
+    next += 1;
+  }
+  return fingers;
+}
+
+function toVoicing(
+  frets: (number | null)[],
+  source: Voicing["source"],
+  fingers?: (number | null)[],
+): Voicing {
+  const barre = findBarre(frets);
+  const voicing: Voicing = { frets, baseFret: baseFretOf(frets), barre, source };
+  const given = fingers && fingers.length === frets.length ? fingers : undefined;
+  if (source === "generated") voicing.fingers = assignFingers(frets, barre);
+  else if (given) voicing.fingers = given;
+  return voicing;
 }
 
 function score(frets: (number | null)[], barre: Barre | null): number {
@@ -214,7 +250,66 @@ export function generateVoicings(
 /** A `{define:}` fingering as a voicing, or `null` if it is for another number of strings. */
 export function defineVoicing(define: ChordDefine, strings: number): Voicing | null {
   if (define.frets.length !== strings) return null;
-  return toVoicing(define.frets, "define");
+  return toVoicing(define.frets, "define", define.fingers);
+}
+
+const MOVABLE_TO = 15;
+
+/**
+ * A `{define:}` carried up or down the neck by `semitones`, or `null` when it cannot go:
+ * a shape with an open string leans on the nut, and one that would leave the neck is out.
+ * The nearest position wins, so a transpose of +11 slides down one fret rather than up eleven.
+ */
+export function moveDefine(define: ChordDefine, semitones: number): ChordDefine | null {
+  if (define.frets.includes(0)) return semitones % 12 === 0 ? define : null;
+  const fretted = define.frets.filter((fret): fret is number => fret !== null);
+  if (!fretted.length) return null;
+  const up = ((semitones % 12) + 12) % 12;
+  const low = Math.min(...fretted);
+  const high = Math.max(...fretted);
+  const delta = (up <= 6 ? [up, up - 12] : [up - 12, up]).find(
+    (by) => low + by >= 1 && high + by <= MOVABLE_TO,
+  );
+  if (delta === undefined) return null;
+  if (delta === 0) return define;
+  return {
+    ...define,
+    baseFret: define.baseFret + delta,
+    frets: define.frets.map((fret) => (fret === null ? null : fret + delta)),
+  };
+}
+
+/**
+ * The song's `{define:}`s as they stand once the chords are transposed by `semitones`, by
+ * the name they are shown under. Shapes that cannot move are left out, so the generator
+ * answers for those chords.
+ */
+export function movedDefines(
+  defines: Record<string, ChordDefine>,
+  semitones: number,
+  flats: boolean,
+): Record<string, ChordDefine> {
+  if (!semitones) return defines;
+  const moved: Record<string, ChordDefine> = {};
+  for (const define of Object.values(defines)) {
+    const shape = moveDefine(define, semitones);
+    if (!shape) continue;
+    const name = shapeName(define.name, semitones, flats);
+    moved[name] = { ...shape, name };
+  }
+  return moved;
+}
+
+/** A define for the same chord under another spelling (`Bb` for `A#`, `Amin` for `Am`). */
+function spelledAlike(defines: Record<string, ChordDefine>, name: string): ChordDefine | undefined {
+  const chord = parseChord(name);
+  if (!chord) return undefined;
+  return Object.values(defines).find((define) => {
+    const other = parseChord(define.name);
+    return (
+      other?.root === chord.root && other.quality === chord.quality && other.bass === chord.bass
+    );
+  });
 }
 
 /**
@@ -228,7 +323,7 @@ export function voicingsFor(
   options: GenerateOptions = {},
 ): Voicing[] {
   const generated = generateVoicings(tuning, name, options);
-  const define = defines[name];
+  const define = defines[name] ?? spelledAlike(defines, name);
   const defined = define ? defineVoicing(define, tuning.length) : null;
   if (!defined) return generated;
   const key = voicingKey(defined.frets);

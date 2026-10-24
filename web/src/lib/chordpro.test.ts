@@ -56,12 +56,25 @@ describe("{define:}", () => {
     });
   });
 
-  it("counts frets from the base fret and ignores fingers", () => {
+  it("counts frets from the base fret and reads fingers", () => {
     expect(parseDefine("Bm base-fret 2 frets x 1 3 3 2 1 fingers x 1 3 4 2 1")).toEqual({
       name: "Bm",
       baseFret: 2,
       frets: [null, 2, 4, 4, 3, 2],
+      fingers: [null, 1, 3, 4, 2, 1],
     });
+  });
+
+  it("takes anything but 1 to 4 as no finger, and drops a list of the wrong length", () => {
+    expect(parseDefine("C frets x 3 2 0 1 0 fingers - 3 2 0 1 T")?.fingers).toEqual([
+      null,
+      3,
+      2,
+      null,
+      1,
+      null,
+    ]);
+    expect(parseDefine("C frets x 3 2 0 1 0 fingers 3 2 1")?.fingers).toBeUndefined();
   });
 
   it("reads the older form, and - as a mute", () => {

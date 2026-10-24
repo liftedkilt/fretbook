@@ -4725,6 +4725,13 @@ kbd {
   fill: var(--accent);
 }
 
+.chord-diagram .finger {
+  fill: #1b1208;
+  font-size: 7.5px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
 .chord-diagram .open {
   fill: none;
   stroke: var(--text-2);
@@ -4774,6 +4781,10 @@ kbd {
 
   .chord-diagram .fret-number {
     fill: #000;
+  }
+
+  .chord-diagram .finger {
+    fill: #fff;
   }
 }
 

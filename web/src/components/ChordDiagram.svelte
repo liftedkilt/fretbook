@@ -52,11 +52,21 @@
     />
   {/if}
   {#each geometry.dots as dot (dot.string)}
-    <circle class="dot" cx={x(dot.string)} cy={y(dot.row)} r="5" />
+    <circle class="dot" cx={x(dot.string)} cy={y(dot.row)} r="5.5" />
+    {#if dot.finger}
+      <text class="finger" x={x(dot.string)} y={y(dot.row) + 2.7} text-anchor="middle"
+        >{dot.finger}</text
+      >
+    {/if}
   {/each}
   {#if geometry.barre}
     {#each [geometry.barre.from, geometry.barre.to] as string (string)}
-      <circle class="dot" cx={x(string)} cy={y(geometry.barre.row)} r="5" />
+      <circle class="dot" cx={x(string)} cy={y(geometry.barre.row)} r="5.5" />
+      {#if geometry.barre.finger}
+        <text class="finger" x={x(string)} y={y(geometry.barre.row) + 2.7} text-anchor="middle"
+          >{geometry.barre.finger}</text
+        >
+      {/if}
     {/each}
   {/if}
 </svg>

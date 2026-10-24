@@ -84,7 +84,21 @@ export function paintDiagram(
       color: INK,
     });
   }
-  for (const dot of geometry.dots) {
-    page.drawCircle({ x: x(dot.string), y: y(dot.row), size: 3, color: INK });
+  const finger = (string: number, row: number, number: number | null) => {
+    page.drawCircle({ x: x(string), y: y(row), size: 3.4, color: INK });
+    if (!number) return;
+    const label = String(number);
+    page.drawText(label, {
+      x: x(string) - font.widthOfTextAtSize(label, 5) / 2,
+      y: y(row) - 1.7,
+      size: 5,
+      font,
+      color: rgb(1, 1, 1),
+    });
+  };
+  if (geometry.barre) {
+    finger(geometry.barre.from, geometry.barre.row, geometry.barre.finger);
+    finger(geometry.barre.to, geometry.barre.row, geometry.barre.finger);
   }
+  for (const dot of geometry.dots) finger(dot.string, dot.row, dot.finger);
 }

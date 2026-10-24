@@ -48,7 +48,7 @@ describe("diagramGeometry", () => {
     const [f] = generateVoicings(physicalTuning([64, 59, 55, 50, 45, 40]), "F");
     const geometry = diagramGeometry(f, 6);
     expect(geometry.rows).toBe(DIAGRAM_ROWS);
-    expect(geometry.barre).toEqual({ row: 0, from: 0, to: 5 });
+    expect(geometry.barre).toMatchObject({ row: 0, from: 0, to: 5 });
     expect(geometry.dots.map((dot) => dot.string)).toEqual([1, 2, 3]);
     const [c] = generateVoicings(physicalTuning([64, 59, 55, 50, 45, 40]), "C");
     const open = diagramGeometry(c, 6);

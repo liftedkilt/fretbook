@@ -10,8 +10,8 @@ export interface DiagramGeometry {
   rows: number;
   /** The fret the first row stands for. Above 1 the diagram is labelled with it. */
   baseFret: number;
-  dots: { string: number; row: number }[];
-  barre: { row: number; from: number; to: number } | null;
+  dots: { string: number; row: number; finger: number | null }[];
+  barre: { row: number; from: number; to: number; finger: number | null } | null;
   open: number[];
   muted: number[];
 }
@@ -24,7 +24,13 @@ export function diagramGeometry(voicing: Voicing, strings: number): DiagramGeome
     const fret = voicing.frets[index] ?? null;
     if (fret === null) muted.push(index);
     else if (fret === 0) open.push(index);
-    else dots.push({ string: index, row: fret - voicing.baseFret });
+    else {
+      dots.push({
+        string: index,
+        row: fret - voicing.baseFret,
+        finger: voicing.fingers?.[index] ?? null,
+      });
+    }
   }
   const { barre } = voicing;
   return {
@@ -41,7 +47,14 @@ export function diagramGeometry(voicing: Voicing, strings: number): DiagramGeome
             ),
         )
       : dots,
-    barre: barre ? { row: barre.fret - voicing.baseFret, from: barre.from, to: barre.to } : null,
+    barre: barre
+      ? {
+          row: barre.fret - voicing.baseFret,
+          from: barre.from,
+          to: barre.to,
+          finger: voicing.fingers?.[barre.from] ?? null,
+        }
+      : null,
     open,
     muted,
   };
