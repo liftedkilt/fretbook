@@ -26,7 +26,7 @@ from fretbook.score.model import Note, ScoreDocument, Track, TrackBar
 
 ENGINE_ENV = "FRETBOOK_AUDIVERIS"  # documented in config.ENV_VARS
 TIMEOUT_SECONDS = 900
-SUFFIXES = (".pdf", ".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".gif", ".webp")
+SUFFIXES = (".pdf", ".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".gif")
 _CANDIDATES = ("audiveris", "Audiveris", "/opt/audiveris/bin/Audiveris")
 
 # (page file, directory for the output, progress callback) -> the MusicXML file the engine wrote.
@@ -54,7 +54,7 @@ def run_audiveris(source: Path, out_dir: Path, progress: Progress) -> Path:
     """Recognise ``source`` and return the MusicXML Audiveris exported into ``out_dir``."""
     engine = find_engine()
     if engine is None:
-        raise ImportError("Audiveris is not installed on this worker, so sheet music cannot be read", "omr.unavailable")
+        raise ImportError("Audiveris is not available here, so sheet music cannot be read", "omr.unavailable")
     progress("Reading the sheet music", "import.omrReading")
     command = [engine, "-batch", "-export", "-output", str(out_dir), str(source)]
     try:

@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 
 from fretbook.api.deps import context, principal
 from fretbook.api.errors import api_error
-from fretbook.api.routes import _prefer, _safe_name, _spool
+from fretbook.api.routes import _prefer, _safe_name, _spool, bulk_job_kind
 from fretbook.api.schemas import AUTH_RESPONSES
 from fretbook.auth.base import Principal
 from fretbook.context import AppContext
@@ -93,7 +93,7 @@ async def import_bulk(
             for item in extracted:
                 job_id = ctx.jobs.enqueue(
                     user.user_id,
-                    "import.file",
+                    bulk_job_kind(ctx, item.path, item.filename),
                     {
                         "path": str(item.path),
                         "filename": item.filename,
@@ -112,7 +112,7 @@ async def import_bulk(
 
             job_id = ctx.jobs.enqueue(
                 user.user_id,
-                "import.file",
+                bulk_job_kind(ctx, staging_file, filename),
                 {
                     "path": str(staging_file),
                     "filename": filename,

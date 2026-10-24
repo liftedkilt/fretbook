@@ -146,6 +146,18 @@ def import_job_kind(ctx: AppContext, importer_kind: str) -> str:
     return "import.omr"
 
 
+def bulk_job_kind(ctx: AppContext, path: Path, filename: str) -> str:
+    """Like :func:`import_job_kind` for a batch: sheet music goes to a live worker, else it fails on its own."""
+    from fretbook.importers import sniff  # noqa: PLC0415
+
+    if (
+        sniff.sniff_path(path, filename).kind in (sniff.PDF, sniff.IMAGE)
+        and "import.omr" in ctx.jobs.live_worker_kinds()
+    ):
+        return "import.omr"
+    return "import.file"
+
+
 async def _spool(file: UploadFile, dest: Path, limit: int) -> int:
     """Copy an upload to ``dest`` in chunks, stopping at ``limit`` bytes."""
     size = 0

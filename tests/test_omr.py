@@ -191,3 +191,25 @@ def test_the_worker_job_saves_the_draft(tmp_path: Path, monkeypatch: pytest.Monk
         assert song["title"] == "Scale tune"
         assert song["document"]["tracks"][0]["bars"][0]["voices"][0]["beats"][0]["notes"]
         assert any(w["key"] == "omr.review" for w in job["result"]["warnings"]), job["result"]
+
+
+def test_batches_send_sheet_music_to_the_worker(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(omr.ENGINE_ENV, str(tmp_path / "missing"))
+    with TestClient(create_app(Settings.for_tests(tmp_path))) as client:
+        ctx = client.app.state.ctx
+
+        def upload(name: str) -> str:
+            sent = client.post("/api/imports/bulk", files=[("files", (name, PDF, "application/pdf"))])
+            assert sent.status_code == 202, sent.text
+            return sent.json()["jobs"][0]["job_id"]
+
+        # No worker: the web process takes the job and it fails on its own with a catalog key.
+        alone = upload("a.pdf")
+        assert ctx.jobs.run_once() is True
+        failed = client.get(f"/api/jobs/{alone}").json()
+        assert failed["status"] == "error" and failed["error_key"] == "omr.unavailable"
+        # A worker that advertises it: the web process leaves the job queued.
+        JobRunner(ctx.settings, worker_id="w1").heartbeat(["import.omr"], host="test", pid=1)
+        waiting = upload("b.pdf")
+        assert ctx.jobs.run_once() is False
+        assert client.get(f"/api/jobs/{waiting}").json()["status"] == "queued"
