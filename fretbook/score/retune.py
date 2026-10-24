@@ -10,7 +10,8 @@ set of options:
   sounds higher or lower but is played with the same hand shapes (capo-style).
 * **Reduce** (``reduce="lowest"``): keep only the lowest note of every beat, a starting point for a bass line.
   ``reduce="root"`` keeps the root of the chord the beat sounds instead (see :func:`chord_root_note`), which is the
-  better bass note for inversions, slash chords and open-string drones.
+  better bass note for inversions, slash chords and open-string drones. A beat with fewer than three pitch classes
+  (an arpeggio plays one note per beat) takes the root of the chord the whole bar spells instead.
 
 Frets count from the capo, as everywhere in the score model: a note sounds at ``tuning[string] + capo + fret``.
 
@@ -126,6 +127,32 @@ def chord_root_note(pitches: Sequence[int]) -> int | None:
     return min(candidates, key=lambda index: pitches[index])
 
 
+def _root_note(track: Track, beat_notes: list[Note], bar_notes: list[Note]) -> Note:
+    """The bass note for one beat of ``reduce="root"``: the root of the chord the beat spells, else the root of the
+    chord the whole bar spells when the beat has fewer than three pitch classes (an arpeggio plays one note per beat;
+    a dyad only counts if it plays that root), else the beat's lowest note. The bar's root is its lowest note of the
+    chord's root; when the beat does not play it, a copy of that note stands in, so the beat keeps its place and length.
+    """
+    sounding = [_sounding(track.tuning_midi, track.capo, note) for note in beat_notes]
+    lowest = min(range(len(beat_notes)), key=lambda i: sounding[i])
+    root = chord_root_note(sounding)
+    if root is not None:
+        return beat_notes[root]
+    if len({pitch % 12 for pitch in sounding}) >= 3:
+        return beat_notes[lowest]
+    bar_sounding = [_sounding(track.tuning_midi, track.capo, note) for note in bar_notes]
+    bar_root = chord_root_note(bar_sounding)
+    if bar_root is None:
+        return beat_notes[lowest]
+    own = [i for i, pitch in enumerate(sounding) if pitch == bar_sounding[bar_root]]
+    if own:
+        return beat_notes[own[0]]
+    if len(sounding) > 1 and len({pitch % 12 for pitch in sounding}) > 1:
+        # A dyad the bar's chord does not contain is a chord of its own (the second chord of the bar): keep its bass.
+        return beat_notes[lowest]
+    return _clone(bar_notes[bar_root], tie=False)
+
+
 def _clone(note: Note, **changes: object) -> Note:
     return note.model_copy(update=changes, deep=True)
 
@@ -224,25 +251,25 @@ def _convert_voice(
     report: Report,
 ) -> None:
     # Which source notes survive, per beat.
+    bar_pitched: dict[int, list[Note]] = {}
+    if reduce == "root":
+        # Every sounding note of each bar, for beats too thin to name a chord on their own (an arpeggio).
+        for bar_index, beat in beats:
+            bar_pitched.setdefault(bar_index, []).extend(note for note in beat.notes if not note.dead)
     kept: list[list[Note]] = []
-    for _, beat in beats:
+    for bar_index, beat in beats:
         notes = list(beat.notes)
         report.notes += len(notes)
+        pitched = [note for note in notes if not note.dead]
         if reduce == "lowest" and len(notes) > 1:
-            pitched = [note for note in notes if not note.dead]
             if pitched:
                 lowest = min(pitched, key=lambda note: _sounding(track.tuning_midi, track.capo, note))
                 report.reduced += len(notes) - 1
                 notes = [lowest]
-        elif reduce == "root" and len(notes) > 1:
-            pitched = [note for note in notes if not note.dead]
-            if pitched:
-                sounding = [_sounding(track.tuning_midi, track.capo, note) for note in pitched]
-                root = chord_root_note(sounding)
-                if root is None:
-                    root = min(range(len(pitched)), key=lambda i: sounding[i])
-                report.reduced += len(notes) - 1
-                notes = [pitched[root]]
+        elif reduce == "root" and pitched:
+            chosen = _root_note(track, pitched, bar_pitched[bar_index])
+            report.reduced += len(notes) - 1 if chosen in notes else len(notes)
+            notes = [chosen]
         kept.append(notes)
 
     # Placement of every surviving note: index of beat -> {id(source note): (string, fret)}.

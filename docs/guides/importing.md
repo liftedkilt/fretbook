@@ -83,7 +83,7 @@ every guitar and bass part with suggested instruments.
   what had to give; then save it as a new track next to the original or replace the track. Choose to transpose by
   semitones, retune keeping the pitches (standard to Drop D or Eb, a different capo, 4 to 5-string bass, 6 to 7-string
   guitar), retune keeping the shapes (the frets stay and the pitch changes, capo-style), convert to another instrument,
-  or make a bass line from the lowest note of each beat, or from the root of the chord each beat sounds (inversions and slash chords then still give the root; a beat with no recognised chord keeps its lowest note). Notes stay on their string when they still fit. A note that
+  or make a bass line from the lowest note of each beat, or from the root of the chord each beat sounds (inversions and slash chords then still give the root; an arpeggio, one note a beat, takes the root of the chord the whole bar spells; a beat with no recognised chord keeps its lowest note). Notes stay on their string when they still fit. A note that
   falls off the neck, or a chord that no longer fits the hand, is placed again, a pitch the instrument cannot reach moves
   by an octave and the preview names the bars, and a natural harmonic that moves becomes a plain note. Type your own
   tuning as note names (`E4 B3 G3 D3 A2 D2`) or pick an instrument. The API is `POST /api/songs/{id}/convert`.
