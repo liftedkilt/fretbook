@@ -46,6 +46,10 @@ A song is either a **tab** or a **chord sheet**.
 
 Links go through the provider registry in `fretbook/importers/remote.py`: Songsterr, YouTube (blank tab plus `AudioFetch`), and everything else, which `SafeFetcher` (`safe_fetch.py`) downloads and the sniffer classifies; an HTML page is searched by `pages.py` for linked score files, then `<pre>` tab blocks. `SafeFetcher` is the only way the server fetches a user-supplied URL: public addresses only (unless `FRETBOOK_ALLOW_PRIVATE_URLS`), connect to the checked address with the original `Host` and SNI, manual redirects re-checked per hop, size and deadline limits. A new site (Ultimate Guitar) is a new `Provider` plus a branch in `_import_link`.
 
+## Watched inbox
+
+`fretbook/inbox.py` (`InboxWatcher`) is a thread started in the app's lifespan when `FRETBOOK_INBOX_DIR` is set. It does not queue jobs: each poll stats the files, and one whose size and mtime match the previous poll is copied to the upload spool and run through `import_local_file` (the `import.file` path in `jobs/handlers.py`, so sniffing, importers, duplicate and tag handling are shared). Doing it inline keeps the outcome and the file move in one place with no state to lose on a restart; a crash between storing a song and moving its file leaves the file to be skipped as a duplicate. In `move` mode the result decides `processed/` or `failed/` (plus `.error.txt`). In `library` mode nothing is written to the folder; migration 011 `inbox_files` keeps the hash and song id per file, and a changed file is imported with `replace_song_id` so the same song is updated. With sign-in the owner is the user whose email, email local part, display name or subject equals the subfolder name.
+
 ## Background jobs
 
 Imports run on a job thread in the web process, reading the `jobs` table. Slow or GPU-bound work (stem separation, transcription, OCR, recognising tabs in video frames) runs in a separate worker, `python -m fretbook.worker [--kinds a,b]`, that claims only its own kinds from the same table and lands its result as a draft for review in the editor. The design is in [design/youtube-tab-import.md](design/youtube-tab-import.md).

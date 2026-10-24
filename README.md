@@ -101,6 +101,16 @@ for f in *.gp *.gp3 *.gp4 *.gp5 *.gpx; do
 done
 ```
 
+## Watched inbox folder
+
+For tabs kept on a NAS share, in Syncthing or in Nextcloud: set `FRETBOOK_INBOX_DIR` to a folder the server can read and write, and drop files into it. The folder is polled every `FRETBOOK_INBOX_INTERVAL` seconds (no inotify, so network mounts work). A file is imported when its size and modification time are the same on two polls in a row, by the same content detection as the Add button, so a mislabelled file still lands in the right importer. Partial files (`.part`, `.tmp`, `.crdownload`, names starting with `.` or `~`) are left alone, and a file already in your library is skipped.
+
+- **`move` mode (default).** An imported file moves to `processed/`; a file that could not be imported moves to `failed/` with `<name>.error.txt` beside it saying why. Subfolders are read, and keep their layout under `processed/` and `failed/`. Fix a failed file and drop it in again.
+- **`library` mode (`FRETBOOK_INBOX_MODE=library`).** The folder is the source of truth and is never written to, so it can be mounted read-only. Fretbook remembers each file's hash; a file whose content changes replaces the song it made before, and an unchanged file is not read again. A file that failed is tried again only after it changes (the reason is in the server log).
+- **Sign-in.** With OIDC each user has a subfolder named after their e-mail address, the part before the `@`, their display name or their OIDC subject (for example `<inbox>/ada/`). Files in the folder root, or in a folder that matches no user (or more than one), are ignored. In single-user mode the folder itself is the library.
+
+This is not `$DATA_DIR/inbox`, which only holds uploads while they are being imported.
+
 ## Configuration
 
 | Variable | Default | Purpose |
@@ -112,6 +122,9 @@ done
 | `FRETBOOK_MIGRATION_BACKUPS_KEEP` | `5` | Number of automatic pre-migration backups to keep in `$DATA_DIR/backups`. |
 | `FRETBOOK_FAILED_UPLOAD_RETENTION_DAYS` | `7` | Days to keep uploaded files from failed imports before cleaning them up. |
 | `FRETBOOK_WORKER_KINDS` | empty | Comma-separated job kinds the web process leaves for a separate `python -m fretbook.worker` process (see [ARCHITECTURE](docs/ARCHITECTURE.md#background-jobs)). Worker-only kinds such as `echo` are always left to the worker. |
+| `FRETBOOK_INBOX_DIR` | empty | Watched folder: files dropped here are imported. See [Watched inbox folder](#watched-inbox-folder). |
+| `FRETBOOK_INBOX_MODE` | `move` | `move` (imported files go to `processed/`, failures to `failed/`) or `library` (the folder is read-only; changed files are imported again). |
+| `FRETBOOK_INBOX_INTERVAL` | `10` | Seconds between looks at the inbox folder. |
 | `FRETBOOK_LEGACY_SONGS_DIR` | `songs` | bass-tab-sync `songs/<slug>/` folders to import on start. Empty disables it. |
 | `FRETBOOK_AUTH_MODE` | `single`, or `oidc` when `FRETBOOK_OIDC_ISSUER` is set | `single` (no login, one library) or `oidc` (sign-in, one library per user). |
 | `FRETBOOK_ROOT_PATH` | empty | URL prefix when a reverse proxy strips one, for example `/fretbook`. |

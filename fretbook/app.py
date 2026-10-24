@@ -35,6 +35,7 @@ from fretbook.config import Settings
 from fretbook.context import AppContext
 from fretbook.db.migrate import migrate
 from fretbook.importers.safe_fetch import SafeFetcher
+from fretbook.inbox import InboxWatcher
 from fretbook.jobs.handlers import register_handlers
 from fretbook.jobs.registry import register_kinds
 from fretbook.jobs.runner import JobRunner
@@ -142,6 +143,7 @@ def create_app(
     register_restore_handler(jobs, songs, media)
     register_kinds(jobs)
     updater = AutoUpdater(settings)
+    inbox = InboxWatcher(settings, songs, media) if settings.inbox_watch_dir else None
     ctx = AppContext(
         settings=settings,
         songs=songs,
@@ -164,7 +166,11 @@ def create_app(
             logger.info("imported %s legacy song(s)", count)
         jobs.start()
         updater.start()
+        if inbox:
+            inbox.start()
         yield
+        if inbox:
+            inbox.stop()
         updater.stop()
         jobs.stop()
 

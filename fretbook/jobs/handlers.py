@@ -155,6 +155,36 @@ def _import_file(job: dict[str, Any], progress: Progress, songs: SongRepository,
     return stored
 
 
+def import_local_file(
+    owner_id: str,
+    path: Path,
+    songs: SongRepository,
+    media: MediaStore,
+    *,
+    prefer: str | None = None,
+    on_duplicate: str = "skip",
+    replace_song_id: str | None = None,
+    progress: Progress | None = None,
+) -> dict[str, Any]:
+    """Run the ``import.file`` path on ``path`` now, without a queued job. ``path`` is deleted afterwards."""
+    job = {
+        "owner_id": owner_id,
+        "payload": {
+            "path": str(path),
+            "filename": path.name,
+            "kind": None,
+            "prefer": prefer,
+            "on_duplicate": on_duplicate,
+            "replace_song_id": replace_song_id,
+        },
+    }
+
+    def quiet(_message: str, _key: str = "") -> None:
+        return None
+
+    return _import_file(job, progress or quiet, songs, media)
+
+
 def _reimport(
     existing: dict[str, Any], result: ImportResult, songs: SongRepository, owner_id: str, warnings: list[Notice]
 ) -> dict[str, Any] | None:
@@ -226,9 +256,15 @@ def _store_result(
         if tags:
             source_ref["tags"] = tags
 
-        duplicate = songs.find_existing_duplicate(
-            owner_id, content_hash=hash_val, title=result.title, artist=result.artist
-        )
+        # A re-import that names the song it came from (the watched inbox in library mode) replaces that song.
+        replace_id = payload.get("replace_song_id")
+        duplicate = songs.get_song(owner_id, replace_id) if replace_id else None
+        if duplicate is not None:
+            on_duplicate = "replace"
+        else:
+            duplicate = songs.find_existing_duplicate(
+                owner_id, content_hash=hash_val, title=result.title, artist=result.artist
+            )
         if duplicate is not None:
             if on_duplicate == "skip":
                 warnings.append(
