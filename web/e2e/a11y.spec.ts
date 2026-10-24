@@ -34,6 +34,7 @@ for (const scheme of ["light", "dark"] as const) {
         "/tools",
         "/tools/tuner",
         "/tools/metronome",
+        "/tools/rhythm",
         "/tools/chords",
         `/songs/${tab.id}`,
         `/songs/${sheet.id}`,

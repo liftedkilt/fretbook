@@ -1207,25 +1207,46 @@
     "capoOption": "Capo {capo}: play {shapes}",
     "capoNone": "These chords are already easy to play without a capo."
   },
-  "offline": {
-    "indicator": "Offline",
-    "indicatorHint": "Songs and setlists saved on this device still work. Edits are sent when you are back online.",
-    "make": "Make available offline",
-    "saved": "Available offline",
-    "working": "Saving…",
-    "makeHint": "Keep this on the device so it opens with no network",
-    "removeHint": "Remove the copy kept on this device",
-    "failed": "Could not remove it. Try again.",
-    "saveFailed": "Could not save it for offline use. Check your connection and try again.",
-    "queued": {
-      "one": "{count} edit is waiting to sync.",
-      "other": "{count} edits are waiting to sync."
-    },
-    "syncNow": "Sync now",
-    "conflict": "“{title}” was changed somewhere else, so your offline edits were not saved.",
-    "syncFailed": "Your offline edits to “{title}” could not be saved: {message}",
-    "keepMine": "Keep my edits",
-    "keepTheirs": "Use the other version"
+  "rhythm": {
+    "toolTitle": "Rhythm trainer",
+    "toolDescription": "Tap, press Space or strum a muted string along with a click and see whether you rush or drag.",
+    "openTool": "Open Rhythm trainer",
+    "intro": "Pick a pattern, then play it along with the click after a one-bar count-in. The click marks the beats only, so you have to feel the subdivisions yourself.",
+    "pattern": "Pattern",
+    "tempo": "Tempo (BPM)",
+    "bars": "Bars to play",
+    "useMic": "Listen with the microphone (strum muted strings)",
+    "noCalibration": "No latency calibration yet. Run the calibration in Settings for more accurate microphone timing.",
+    "calibrated": "Microphone timing corrected by {ms} ms of calibrated latency.",
+    "barLabel": "Rhythm: {pattern}",
+    "tripletNote": "Triplets: three even hits to each beat.",
+    "countIn": "Count-in…",
+    "playing": "Bar {bar} of {bars}",
+    "tap": "Tap here or press Space",
+    "again": "Try again",
+    "results": "Timing",
+    "rushing": "You rush: you tend to play ahead of the click.",
+    "dragging": "You drag: you tend to play behind the click.",
+    "steady": "Steady: your hits sit on the click.",
+    "noHits": "No hits were heard. Tap, press Space or strum along with the click.",
+    "hits": "Hits",
+    "extra": "Extra hits",
+    "average": "Average error",
+    "spread": "Spread",
+    "ms": "ms",
+    "histogram": "Histogram of timing errors in milliseconds",
+    "histogramHint": "Bars to the left are early hits, bars to the right are late ones (milliseconds).",
+    "patterns": {
+      "quarters": "Quarter notes",
+      "eighths": "Eighth notes",
+      "sixteenths": "Sixteenth notes",
+      "triplets": "Eighth-note triplets",
+      "rests": "Quarters with rests",
+      "offbeats": "Off-beat eighths",
+      "syncopation": "Syncopation",
+      "gallop": "Gallop",
+      "tripletRests": "Triplets with rests"
+    }
   },
   "exercises": {
     "toolTitle": "Exercises",
@@ -1371,5 +1392,25 @@
       "chordCount": "Enter {min} to {max} chords.",
       "outOfRange": "A note falls outside this instrument's range."
     }
+  },
+  "offline": {
+    "indicator": "Offline",
+    "indicatorHint": "Songs and setlists saved on this device still work. Edits are sent when you are back online.",
+    "make": "Make available offline",
+    "saved": "Available offline",
+    "working": "Saving…",
+    "makeHint": "Keep this on the device so it opens with no network",
+    "removeHint": "Remove the copy kept on this device",
+    "failed": "Could not remove it. Try again.",
+    "saveFailed": "Could not save it for offline use. Check your connection and try again.",
+    "queued": {
+      "one": "{count} edit is waiting to sync.",
+      "other": "{count} edits are waiting to sync."
+    },
+    "syncNow": "Sync now",
+    "conflict": "“{title}” was changed somewhere else, so your offline edits were not saved.",
+    "syncFailed": "Your offline edits to “{title}” could not be saved: {message}",
+    "keepMine": "Keep my edits",
+    "keepTheirs": "Use the other version"
   }
 }
