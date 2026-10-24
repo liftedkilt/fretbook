@@ -47,6 +47,8 @@ export interface PracticeSettings {
     audio: number;
     /** The built-in synth's volume (used when the song has no recording). */
     synth: number;
+    /** With a recording: 0 plays only the recording, 1 only the synth, 0.5 both at full volume. */
+    balance: number;
     tracks: Record<string, TrackMix>;
   };
   /** Wait mode options. Whether it is on is not remembered: it needs a click to open the microphone. */
@@ -100,7 +102,7 @@ export function defaultPractice(): PracticeSettings {
   return {
     metronome: { on: false, volume: 0.7 },
     countIn: { bars: 0, beforeLoops: false },
-    mix: { audio: 1, synth: 1, tracks: {} },
+    mix: { audio: 1, synth: 1, balance: 0, tracks: {} },
     wait: { anyOctave: true, silent: false, hintSeconds: 5, chords: true },
     fretboard: { on: false, label: "names", leftHanded: false, root: null },
     loops: [],
@@ -134,6 +136,7 @@ export function parsePractice(raw: unknown): PracticeSettings {
   if (isRecord(mix)) {
     result.mix.audio = clamp01(mix.audio, 1);
     result.mix.synth = clamp01(mix.synth, 1);
+    result.mix.balance = clamp01(mix.balance, 0);
     if (isRecord(mix.tracks)) {
       for (const [id, value] of Object.entries(mix.tracks)) {
         if (!isRecord(value)) continue;
@@ -352,4 +355,14 @@ export function preservePitch(audio: HTMLAudioElement): void {
   element.preservesPitch = true;
   if ("webkitPreservesPitch" in element) element.webkitPreservesPitch = true;
   if ("mozPreservesPitch" in element) element.mozPreservesPitch = true;
+}
+
+/** The recording's volume while a recording and the synth play together. */
+export function recordingGain(mix: PracticeSettings["mix"]): number {
+  return mix.audio * Math.min(1, 2 * (1 - mix.balance));
+}
+
+/** The synth's volume while it plays alongside a recording. */
+export function synthGain(mix: PracticeSettings["mix"]): number {
+  return mix.synth * Math.min(1, 2 * mix.balance);
 }
