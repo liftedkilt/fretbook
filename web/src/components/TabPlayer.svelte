@@ -26,9 +26,11 @@
   import { ApiError, getSong, patchSync, recordPracticeSession, uploadAudio } from "../lib/api";
   import YouTubeAudio from "./YouTubeAudio.svelte";
   import { AudioMedia } from "../lib/alphatab/audioHandler";
+  import { planFollow, SynthFollower } from "../lib/alphatab/synthFollow";
   import { separateEffectBands } from "../lib/alphatab/display";
   import { preferredTrack, scoreToAlphaTex } from "../lib/alphatex";
   import { Clicker } from "../lib/clicker";
+  import { recordingGain, synthGain } from "../lib/practice";
   import { barTicks } from "../lib/durations";
   import {
     handsFree,
@@ -128,6 +130,13 @@
   let autoSyncOpen = $state(false);
   let shiftMs = 0;
   const player: { api: alphaTab.AlphaTabApi | null } = { api: null };
+  // With a recording, a second, hidden alphaTab player plays the score's tracks and follows the
+  // recording's clock, so the mixer can balance the two (see lib/alphatab/synthFollow.ts).
+  const companion: {
+    api: alphaTab.AlphaTabApi | null;
+    follower: SynthFollower | null;
+    ready: boolean;
+  } = { api: null, follower: null, ready: false };
   const clicker = new Clicker();
   // Time spent playing goes to the practice log, one session per stretch (see lib/practiceLog.ts).
   const practiceTimer = new PracticeTimer({
@@ -226,6 +235,11 @@
   const renderBpm = $derived(song.has_audio ? untrack(() => song.document.bpm) : document_.bpm);
   // Every track is loaded so the synth can play and mix them all; only the chosen one is drawn.
   const tex = $derived(scoreToAlphaTex({ ...document_, bpm: renderBpm }, song.title, song.artist));
+  // The score at its written tempo, for the synth that plays next to a recording.
+  const synthTex = $derived(
+    song.has_audio ? scoreToAlphaTex(document_, song.title, song.artist) : "",
+  );
+  const synthWanted = $derived(song.has_audio && synthGain(practice.mix) > 0);
   const trackIndex = $derived(Math.max(0, document_.tracks.indexOf(track)));
   const waitSteps = $derived(buildWaitSteps(document_, track, { chords: practice.wait.chords }));
   const scoredSteps = $derived(buildScoredSteps(document_, track, song.has_audio));
@@ -313,7 +327,81 @@
     clock = formatTime(seconds);
     currentSeconds = seconds;
     playing = !audioEl.paused;
+    followWithSynth(seconds, starts);
   }
+
+  /** Keeps the synth that plays next to the recording on the recording's clock. */
+  function followWithSynth(seconds: number, starts: number[]) {
+    const { follower, ready } = companion;
+    if (!follower || !ready || !audioEl) return;
+    const written = highwayStarts(song.document, false);
+    const bar = Math.max(0, currentMeasure);
+    const target = timeAtBarPosition(
+      written,
+      bar,
+      currentPosition,
+      playedBarTicks(song.document, bar),
+    );
+    follower.apply(
+      planFollow({
+        target,
+        synthAt: follower.position,
+        // Before the first bar (an intro, a count-in) the synth waits.
+        playing: !audioEl.paused && !countingIn && seconds >= (starts[0] ?? 0),
+        rate: audioEl.playbackRate,
+        synthBar: (written[bar + 1] ?? 0) - (written[bar] ?? 0),
+        recordingBar: (starts[bar + 1] ?? 0) - (starts[bar] ?? 0),
+      }),
+    );
+  }
+
+  $effect(() => {
+    const element = host;
+    const source = synthTex;
+    const index = untrack(() => trackIndex);
+    if (!element || !synthWanted || !source) return;
+    // The player needs a place in the page, but nothing in it is shown.
+    const hidden = document.createElement("div");
+    hidden.setAttribute("aria-hidden", "true");
+    hidden.style.cssText = "position:absolute;width:0;height:0;overflow:hidden;visibility:hidden";
+    document.body.appendChild(hidden);
+    const settings = new alphaTab.Settings();
+    settings.core.fontDirectory = new URL("font/", document.baseURI).href;
+    settings.core.logLevel = alphaTab.LogLevel.Warning;
+    settings.core.enableLazyLoading = true;
+    settings.player.playerMode = alphaTab.PlayerMode.EnabledSynthesizer;
+    settings.player.soundFont = new URL("soundfont/sonivox.sf2", document.baseURI).href;
+    settings.player.enableCursor = false;
+    settings.player.enableElementHighlighting = false;
+    settings.player.enableUserInteraction = false;
+    const instance = new alphaTab.AlphaTabApi(hidden, settings);
+    companion.api = instance;
+    companion.ready = false;
+    let scoreLoaded = false;
+    let playerReady = false;
+    const check = () => {
+      if (!scoreLoaded || !playerReady || companion.api !== instance) return;
+      companion.follower = new SynthFollower(instance);
+      companion.ready = true;
+      applyPractice();
+    };
+    instance.scoreLoaded.on(() => {
+      scoreLoaded = true;
+      queueMicrotask(check);
+    });
+    instance.playerReady.on(() => {
+      playerReady = true;
+      queueMicrotask(check);
+    });
+    instance.tex(source, [index]);
+    return () => {
+      companion.api = null;
+      companion.follower = null;
+      companion.ready = false;
+      instance.destroy();
+      hidden.remove();
+    };
+  });
 
   $effect(() => {
     const element = host;
@@ -612,8 +700,6 @@
         return practiceChanged();
       case "muteTrack":
       case "soloTrack": {
-        // Tracks only sound through the synth; a recording plays as one mix.
-        if (song.has_audio) return;
         const mix = (practice.mix.tracks[track.id] ??= trackMix(practice, track.id));
         if (action === "muteTrack") mix.mute = !mix.mute;
         else mix.solo = !mix.solo;
@@ -639,12 +725,17 @@
   function applyPractice() {
     savePractice(song.id, practice);
     // While stems play, the recording stays silent and the stems carry the volume.
-    if (audioEl && !stemsActive) audioEl.volume = practice.mix.audio;
-    const api = player.api;
-    // A recording plays without the synth, so the synth's own metronome and tracks are silent.
-    if (!api?.score || song.has_audio) return;
-    api.metronomeVolume = practice.metronome.on ? practice.metronome.volume : 0;
-    api.masterVolume = waitOn && practice.wait.silent ? 0 : practice.mix.synth;
+    if (audioEl && !stemsActive) audioEl.volume = recordingGain(practice.mix);
+    // A recording is mixed with the synth in the hidden companion player, which has no metronome:
+    // the page's own clicks keep time there.
+    const api = song.has_audio ? (companion.ready ? companion.api : null) : player.api;
+    if (!api?.score) return;
+    if (!song.has_audio) {
+      api.metronomeVolume = practice.metronome.on ? practice.metronome.volume : 0;
+      api.masterVolume = waitOn && practice.wait.silent ? 0 : practice.mix.synth;
+    } else {
+      api.masterVolume = synthGain(practice.mix);
+    }
     api.score.tracks.forEach((item, index) => {
       const id = document_.tracks[index]?.id;
       if (id === undefined) return;
@@ -1577,7 +1668,7 @@
           <StemMixer
             songId={song.id}
             {audioEl}
-            master={practice.mix.audio}
+            master={recordingGain(practice.mix)}
             onactive={(active) => {
               stemsActive = active;
               if (!active) applyPractice();
