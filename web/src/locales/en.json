@@ -1260,7 +1260,10 @@
     "capoHeading": "Capo suggestions",
     "capoHint": "Fewer barre chords with a capo.",
     "capoOption": "Capo {capo}: play {shapes}",
-    "capoNone": "These chords are already easy to play without a capo."
+    "capoNone": "These chords are already easy to play without a capo.",
+    "capoApplied": "Capo applied at fret {capo}. The sheet and diagrams show the shapes; the sound is unchanged.",
+    "capoUndo": "Back to the sheet's capo",
+    "capoApply": "Use this capo"
   },
   "trainer": {
     "title": "Ear & fretboard trainer",

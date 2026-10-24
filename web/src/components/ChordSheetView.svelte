@@ -31,11 +31,16 @@
   let choice = $state(untrack(() => loadChoice(song.id)));
 
   const sheet = $derived(parse(song.chordpro ?? ""));
-  const capo = $derived(capoOf(sheet));
+  const sheetCapo = $derived(capoOf(sheet));
+  // A capo suggestion the reader applied: a view setting, the saved ChordPro is untouched. The
+  // sound stays the same, so the shapes shift by the difference from the sheet's own capo.
+  let appliedCapo = $state<number | null>(null);
+  const capo = $derived(appliedCapo ?? sheetCapo);
+  const shapeShift = $derived(transpose + (appliedCapo === null ? 0 : sheetCapo - appliedCapo));
   const setup = $derived(resolveSetup(choice.instrument, choice.tuning));
   const entries = $derived(
     buildEntries(
-      chordsUsed(sheet, transpose, flats),
+      chordsUsed(sheet, shapeShift, flats),
       setup.tuning.strings,
       setup.instrument.rootInBass,
       sheet.defines,
@@ -83,7 +88,7 @@
         chordpro: song.chordpro ?? "",
         title: song.title,
         artist: song.artist,
-        transpose,
+        transpose: shapeShift,
         flats,
         diagrams: {
           strings: setup.tuning.strings.length,
@@ -193,17 +198,25 @@
     </section>
   {/if}
 
-  <CapoSuggestions chords={chordsUsed(sheet, transpose, flats)} {capo} {flats} />
+  <CapoSuggestions
+    chords={chordsUsed(sheet, shapeShift, flats)}
+    {capo}
+    {flats}
+    applied={appliedCapo !== null}
+    onapply={(fret) => (appliedCapo = fret)}
+    onundo={() => (appliedCapo = null)}
+  />
 
   <ChordWait
     text={song.chordpro ?? ""}
-    {transpose}
+    transpose={shapeShift}
     {flats}
+    capo={appliedCapo ?? undefined}
     onactive={(key) => (activeChord = key)}
   />
 
   <div class="paper chord-paper" style="font-size:{size}rem">
-    <ChordSheet text={song.chordpro ?? ""} {transpose} {flats} active={activeChord} />
+    <ChordSheet text={song.chordpro ?? ""} transpose={shapeShift} {flats} active={activeChord} />
   </div>
 
   <div class="float-dock no-print" role="toolbar" aria-label={t("chords.controls")}>

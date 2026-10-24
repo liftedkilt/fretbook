@@ -14,17 +14,20 @@
     text,
     transpose = 0,
     flats = false,
+    capo,
     onactive,
   }: {
     text: string;
     transpose?: number;
     flats?: boolean;
+    /** Replaces the sheet's own `{capo:}` when the reader applied a capo suggestion. */
+    capo?: number;
     onactive: (key: string | null) => void;
   } = $props();
 
   type Phase = "idle" | "waiting" | "done";
 
-  const built = $derived(chordSheetSteps(parse(text), transpose, flats));
+  const built = $derived(chordSheetSteps(parse(text), transpose, flats, capo));
   let on = $state(false);
   let phase = $state<Phase>("idle");
   let current = $state(-1);

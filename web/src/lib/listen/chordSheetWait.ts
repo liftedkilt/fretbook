@@ -18,10 +18,16 @@ export interface ChordSheetSteps {
  * The chords of a sheet in reading order, as wait steps. The player plays the chord shown and
  * the sheet advances to the next one. A chord that is not a chord ("N.C.") is skipped.
  * `transpose` is the sheet's transposition in semitones; the sheet's `{capo}` raises the sound
- * of the shapes, since the chords are written as shapes.
+ * of the shapes, since the chords are written as shapes. `capoOverride` replaces that capo (an
+ * applied capo suggestion), with `transpose` then carrying the shift of the shapes.
  */
-export function chordSheetSteps(sheet: Sheet, transpose = 0, flats = false): ChordSheetSteps {
-  const capo = Number.parseInt(sheet.meta.capo ?? "", 10);
+export function chordSheetSteps(
+  sheet: Sheet,
+  transpose = 0,
+  flats = false,
+  capoOverride?: number,
+): ChordSheetSteps {
+  const capo = capoOverride ?? Number.parseInt(sheet.meta.capo ?? "", 10);
   const lift = Number.isFinite(capo) && capo > 0 ? capo : 0;
   const steps: WaitStep[] = [];
   const keys: string[] = [];

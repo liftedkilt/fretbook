@@ -50,3 +50,19 @@ test("a chord sheet suggests a capo for barre chords", async ({ page, seed }) =>
   await page.goto(`/songs/${song.id}`);
   await expect(page.getByTestId("capo-option-3")).toContainText("play G, C, D, Em");
 });
+
+test("applying a capo suggestion shows its shapes, and undo restores them", async ({
+  page,
+  seed,
+}) => {
+  const song = await seed.create({
+    title: "Flat Key Capo",
+    chordpro: "[Bb]Hello [Eb]world\n[F]Goodbye [Gm]moon",
+  });
+  await page.goto(`/songs/${song.id}`);
+  await page.getByTestId("capo-apply-3").click();
+  await expect(page.getByTestId("strip-chord-name")).toHaveText(["G", "C", "D", "Em"]);
+  await expect(page.getByTestId("chord-capo")).toBeVisible();
+  await page.getByTestId("capo-undo").click();
+  await expect(page.getByTestId("strip-chord-name")).toHaveText(["Bb", "Eb", "F", "Gm"]);
+});

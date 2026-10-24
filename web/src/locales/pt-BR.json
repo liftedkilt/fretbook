@@ -1260,7 +1260,10 @@
     "capoHeading": "Sugestões de capotraste",
     "capoHint": "Menos pestanas com um capotraste.",
     "capoOption": "Capotraste {capo}: toque {shapes}",
-    "capoNone": "Estes acordes já são fáceis de tocar sem capotraste."
+    "capoNone": "Estes acordes já são fáceis de tocar sem capotraste.",
+    "capoApplied": "Capotraste aplicado na casa {capo}. A cifra e os diagramas mostram as formas; o som não muda.",
+    "capoUndo": "Voltar ao capotraste da cifra",
+    "capoApply": "Usar este capotraste"
   },
   "trainer": {
     "title": "Treino de ouvido e braço",
