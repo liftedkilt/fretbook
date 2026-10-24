@@ -2,16 +2,22 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   barClicks,
+  calcNextSpeed,
   ClickScheduler,
   clicksBetween,
   countInClicks,
   defaultPractice,
+  defaultSpeedTrainer,
+  formatSpeedPercent,
   loadPractice,
   nextCountIn,
   parsePractice,
   preservePitch,
+  recordLoopPracticeLog,
   savePractice,
   trackMix,
+  updateLoopHighestSpeed,
+  type SavedLoop,
 } from "./practice";
 
 const FOUR: [number, number] = [4, 4];
@@ -73,6 +79,68 @@ describe("settings", () => {
     expect(parsePractice({ metronome: { on: true } }).wait.anyOctave).toBe(true);
     expect(parsePractice("nonsense")).toEqual(defaultPractice());
     expect(parsePractice([])).toEqual(defaultPractice());
+  });
+
+  it("remembers saved loops and repairs bad entries", () => {
+    expect(defaultPractice().loops).toEqual([]);
+    const parsed = parsePractice({
+      loops: [
+        { id: "solo", name: "Solo", a: 16, b: 24, highestSpeed: 0.8 },
+        { id: "riff", name: "  Bridge riff  ", a: 8, b: 12 },
+        { id: "invalid-bounds", name: "Bad", a: 20, b: 10 },
+        { id: "", name: "", a: -5, b: -2 },
+        "not-an-object",
+      ],
+    });
+    expect(parsed.loops).toEqual([
+      { id: "solo", name: "Solo", a: 16, b: 24, highestSpeed: 0.8 },
+      { id: "riff", name: "Bridge riff", a: 8, b: 12 },
+      { id: "invalid-bounds", name: "Bad", a: 20, b: 20 },
+      { id: "loop-4", name: "Loop 4", a: 0, b: 0 },
+    ]);
+  });
+
+  it("remembers speed trainer settings and clamps bounds", () => {
+    expect(defaultSpeedTrainer()).toEqual(defaultPractice().speedTrainer);
+    expect(defaultPractice().speedTrainer).toEqual({
+      enabled: false,
+      startPercent: 60,
+      targetPercent: 100,
+      stepPercent: 5,
+      passesPerStep: 1,
+    });
+    const parsed = parsePractice({
+      speedTrainer: {
+        enabled: true,
+        startPercent: 40,
+        targetPercent: 120,
+        stepPercent: 10,
+        passesPerStep: 2,
+      },
+    });
+    expect(parsed.speedTrainer).toEqual({
+      enabled: true,
+      startPercent: 40,
+      targetPercent: 120,
+      stepPercent: 10,
+      passesPerStep: 2,
+    });
+    const clamped = parsePractice({
+      speedTrainer: {
+        enabled: true,
+        startPercent: 5,
+        targetPercent: 500,
+        stepPercent: 200,
+        passesPerStep: 50,
+      },
+    });
+    expect(clamped.speedTrainer).toEqual({
+      enabled: true,
+      startPercent: 10,
+      targetPercent: 300,
+      stepPercent: 100,
+      passesPerStep: 20,
+    });
   });
 
   it("remembers settings per song and survives broken or missing storage", () => {
@@ -195,5 +263,91 @@ describe("preservePitch", () => {
     } as unknown as HTMLAudioElement;
     preservePitch(gecko);
     expect((gecko as unknown as { mozPreservesPitch: boolean }).mozPreservesPitch).toBe(true);
+  });
+});
+
+describe("calcNextSpeed", () => {
+  it("steps toward target without exceeding it", () => {
+    expect(calcNextSpeed(60, 100, 5)).toBe(65);
+    expect(calcNextSpeed(95, 100, 5)).toBe(100);
+    expect(calcNextSpeed(98, 100, 5)).toBe(100);
+    expect(calcNextSpeed(100, 100, 5)).toBe(100);
+    expect(calcNextSpeed(110, 100, 5)).toBe(100);
+  });
+});
+
+describe("updateLoopHighestSpeed", () => {
+  it("records higher speeds and ignores lower ones", () => {
+    const loops: SavedLoop[] = [
+      { id: "1", name: "Solo", a: 5, b: 10, highestSpeed: 0.8 },
+      { id: "2", name: "Intro", a: 0, b: 4 },
+    ];
+
+    const lower = updateLoopHighestSpeed(loops, "1", 0.75);
+    expect(lower.updated).toBe(false);
+    expect(lower.loops[0].highestSpeed).toBe(0.8);
+
+    const higher = updateLoopHighestSpeed(loops, "1", 0.9);
+    expect(higher.updated).toBe(true);
+    expect(higher.loops[0].highestSpeed).toBe(0.9);
+
+    const first = updateLoopHighestSpeed(loops, "2", 1.0);
+    expect(first.updated).toBe(true);
+    expect(first.loops[1].highestSpeed).toBe(1.0);
+
+    const notFound = updateLoopHighestSpeed(loops, "99", 1.2);
+    expect(notFound.updated).toBe(false);
+  });
+});
+
+describe("recordLoopPracticeLog", () => {
+  it("does not throw when window is undefined", () => {
+    vi.stubGlobal("window", undefined);
+    expect(() =>
+      recordLoopPracticeLog("song-1", { id: "loop-1", name: "Riff" }, 0.8),
+    ).not.toThrow();
+  });
+
+  it("dispatches fretbook:practice-log-record event on window", () => {
+    let dispatched: unknown = null;
+    vi.stubGlobal("window", {
+      dispatchEvent: (event: unknown) => {
+        dispatched = event;
+        return true;
+      },
+    });
+    vi.stubGlobal(
+      "CustomEvent",
+      class CustomEvent {
+        type: string;
+        detail: unknown;
+        constructor(type: string, init?: { detail?: unknown }) {
+          this.type = type;
+          this.detail = init?.detail;
+        }
+      },
+    );
+
+    recordLoopPracticeLog("song-123", { id: "loop-1", name: "Riff" }, 0.85);
+
+    expect(dispatched).toMatchObject({
+      type: "fretbook:practice-log-record",
+      detail: {
+        songId: "song-123",
+        loopId: "loop-1",
+        loopName: "Riff",
+        speed: 0.85,
+      },
+    });
+  });
+});
+
+describe("formatSpeedPercent", () => {
+  it("formats ratios and percentages cleanly", () => {
+    expect(formatSpeedPercent(undefined)).toBe("");
+    expect(formatSpeedPercent(0.85)).toBe("85%");
+    expect(formatSpeedPercent(1)).toBe("100%");
+    expect(formatSpeedPercent(1.25)).toBe("125%");
+    expect(formatSpeedPercent(90)).toBe("90%");
   });
 });

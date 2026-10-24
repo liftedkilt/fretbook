@@ -949,5 +949,27 @@
       "lowG": "Sol grave (Low G)",
       "custom": "Personalizada"
     }
+  },
+  "speedTrainer": {
+    "title": "Treinador de velocidade",
+    "enable": "Treinador de velocidade",
+    "start": "Início",
+    "target": "Alvo",
+    "step": "Passo",
+    "passes": "Passagens",
+    "passesPerStep": "Passagens por passo",
+    "status": "Passagem {pass}/{totalPasses} a {speed}% → Alvo {target}%",
+    "goalReached": "Alvo alcançado: {speed}%",
+    "saveLoop": "Salvar repetição",
+    "loopName": "Nome da repetição",
+    "loopNamePlaceholder": "ex: Solo, Riff da ponte",
+    "savedLoops": "Repetições salvas",
+    "defaultLoopName": "Compassos {a}–{b}",
+    "deleteLoop": "Excluir repetição",
+    "jumpToLoop": "Ir para {name} (compassos {a}–{b})",
+    "bestSpeed": "Melhor: {speed}%",
+    "highestSpeed": "Velocidade máxima: {speed}%",
+    "reset": "Reiniciar",
+    "selectLoop": "Repetições salvas…"
   }
 }

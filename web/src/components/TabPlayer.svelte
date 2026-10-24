@@ -7,6 +7,7 @@
   import FretboardPanel from "./FretboardPanel.svelte";
   import Highway from "./Highway.svelte";
   import Icon from "./Icon.svelte";
+  import LoopPanel from "./LoopPanel.svelte";
   import Menu from "./Menu.svelte";
   import PracticePanel from "./PracticePanel.svelte";
   import ShortcutHelp from "./ShortcutHelp.svelte";
@@ -33,13 +34,18 @@
   import { followPlayed, playedBars } from "../lib/playback";
   import {
     ClickScheduler,
+    calcNextSpeed,
     clamp01,
     countInClicks,
+    formatSpeedPercent,
     loadPractice,
     nextCountIn,
     preservePitch,
+    recordLoopPracticeLog,
     savePractice,
     trackMix,
+    updateLoopHighestSpeed,
+    type SavedLoop,
   } from "../lib/practice";
   import { followLink, hrefFor } from "../lib/router.svelte";
   import { RATES, shortcutFor, stepRate, type ShortcutAction } from "../lib/shortcuts";
@@ -73,6 +79,12 @@
   let tapIndex = $state(0);
   let loopA = $state<number | null>(null);
   let loopB = $state<number | null>(null);
+  let practice = $state(untrack(() => loadPractice(initial.id)));
+  let activeLoopId = $state<string | null>(null);
+  let speedTrainerPercent = $state(untrack(() => practice.speedTrainer.startPercent));
+  let speedTrainerPass = $state(1);
+  let speedTrainerCompleted = $state(false);
+  let speedTrainerRunning = $state(false);
   let follow = $state(true);
   let rate = $state(1);
   let currentMeasure = $state(-1);
@@ -82,7 +94,6 @@
   let currentSeconds = $state(0);
   let clock = $state("0:00.0");
   let playing = $state(false);
-  let practice = $state(untrack(() => loadPractice(initial.id)));
   let countingIn = $state(false);
   let helpOpen = $state(false);
   let countInTimer = 0;
@@ -195,16 +206,7 @@
       playedBarTicks(song.document, currentMeasure),
     );
     if (loopA != null && loopB != null && currentMeasure > loopB && !audioEl.paused) {
-      const target = Math.max(0, starts[loopA] ?? 0);
-      scheduler.reset();
-      if (practice.countIn.bars > 0 && practice.countIn.beforeLoops && !countingIn) {
-        const element = audioEl;
-        element.pause();
-        element.currentTime = target;
-        runCountIn(loopA, () => void element.play());
-      } else {
-        audioEl.currentTime = target;
-      }
+      handleLoopTurnaround();
     }
     clock = formatTime(seconds);
     currentSeconds = seconds;
@@ -267,7 +269,7 @@
       );
       // The synth has no loop of its own: past the end of the range, go back to its start.
       if (loopA != null && loopB != null && currentMeasure > loopB && playing) {
-        goToBar(loopA);
+        handleLoopTurnaround();
         return;
       }
       if (waitRun && beat.voice.bar.staff.track.index === untrack(() => trackIndex)) {
@@ -280,6 +282,10 @@
       }
     });
     instance.playerFinished.on(() => {
+      if (loopA != null && loopB != null && loopB >= barCount - 1 && playing) {
+        handleLoopTurnaround();
+        return;
+      }
       if (!waitRun) return;
       waitState = "done";
       waitStep = null;
@@ -355,6 +361,18 @@
   });
 
   onMount(() => {
+    if (typeof location !== "undefined") {
+      const params = new URLSearchParams(location.search);
+      const loopParam = params.get("loop");
+      if (loopParam) {
+        const found = practice.loops.find(
+          (l) => l.id === loopParam || l.name.toLowerCase() === loopParam.toLowerCase(),
+        );
+        if (found) {
+          activateLoop(found);
+        }
+      }
+    }
     const timer = window.setInterval(paintAudioClock, 50);
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
@@ -457,8 +475,8 @@
   }
 
   /** Clicks the bars in, then calls `then`. Without a count-in it calls `then` at once. */
-  function runCountIn(index: number, then: () => void) {
-    const bars = practice.countIn.bars;
+  function runCountIn(index: number, then: () => void, overrideBars?: number) {
+    const bars = overrideBars ?? practice.countIn.bars;
     if (bars <= 0 || countingIn) return then();
     const bar = Math.min(Math.max(index, 0), Math.max(barCount - 1, 0));
     const signature = document_.bars[bar]?.signature ?? [4, 4];
@@ -498,13 +516,31 @@
     if (!api) return;
     if (countingIn) return cancelCountIn();
     if (waitRun && waitState === "waiting") return waitRun.skip();
+
+    if (practice.speedTrainer.enabled && !playing) {
+      if (!speedTrainerRunning) {
+        speedTrainerPercent = practice.speedTrainer.startPercent;
+        speedTrainerPass = 1;
+        speedTrainerCompleted = false;
+        speedTrainerRunning = true;
+        setRate(speedTrainerPercent / 100);
+      }
+      if (loopA != null && (currentMeasure < loopA || (loopB != null && currentMeasure > loopB))) {
+        goToBar(loopA);
+      }
+    }
+
+    const countBars = practice.speedTrainer.enabled
+      ? Math.max(1, practice.countIn.bars)
+      : practice.countIn.bars;
+
     if (song.has_audio && audioEl) {
-      if (audioEl.paused) runCountIn(currentMeasure, () => api.play());
+      if (audioEl.paused) runCountIn(currentMeasure, () => api.play(), countBars);
       else api.pause();
       return;
     }
     if (api.playerState === alphaTab.synth.PlayerState.Playing) api.pause();
-    else runCountIn(currentMeasure, () => api.play());
+    else runCountIn(currentMeasure, () => api.play(), countBars);
   }
 
   function step(direction: number) {
@@ -556,13 +592,119 @@
   }
 
   function setLoop(which: "a" | "b") {
-    if (currentMeasure < 0 || currentMeasure >= barCount) return;
+    if (barCount <= 0) return;
+    const bar = Math.min(barCount - 1, Math.max(0, currentMeasure));
+    activeLoopId = null;
     if (which === "a") {
-      loopA = currentMeasure;
-      if (loopB == null || loopB < currentMeasure) loopB = currentMeasure;
+      loopA = bar;
+      if (loopB == null || loopB < bar) loopB = bar;
     } else {
-      loopB = currentMeasure;
-      if (loopA == null || loopA > currentMeasure) loopA = currentMeasure;
+      loopB = bar;
+      if (loopA == null || loopA > bar) loopA = bar;
+    }
+  }
+
+  function clearLoop() {
+    loopA = null;
+    loopB = null;
+    activeLoopId = null;
+    speedTrainerRunning = false;
+    speedTrainerCompleted = false;
+  }
+
+  function activateLoop(loop: SavedLoop) {
+    loopA = loop.a;
+    loopB = loop.b;
+    activeLoopId = loop.id;
+    if (practice.speedTrainer.enabled) {
+      speedTrainerPercent = practice.speedTrainer.startPercent;
+      speedTrainerPass = 1;
+      speedTrainerCompleted = false;
+      speedTrainerRunning = false;
+      setRate(speedTrainerPercent / 100);
+    }
+    goToBar(loop.a);
+  }
+
+  function recordCurrentLoopSpeed(speedRatio: number) {
+    if (loopA == null || loopB == null) return;
+    const matching = practice.loops.find(
+      (l) => l.id === activeLoopId || (l.a === loopA && l.b === loopB),
+    );
+    if (matching) {
+      const res = updateLoopHighestSpeed(practice.loops, matching.id, speedRatio);
+      if (res.updated) {
+        practice.loops = res.loops;
+        savePractice(song.id, practice);
+      }
+      recordLoopPracticeLog(song.id, matching, speedRatio);
+    }
+  }
+
+  function handleLoopTurnaround() {
+    if (loopA == null || loopB == null) return;
+
+    if (practice.speedTrainer.enabled) {
+      const currentRatio = speedTrainerPercent / 100;
+      recordCurrentLoopSpeed(currentRatio);
+
+      if (speedTrainerPass < practice.speedTrainer.passesPerStep) {
+        speedTrainerPass += 1;
+      } else {
+        speedTrainerPass = 1;
+        const nextPct = calcNextSpeed(
+          speedTrainerPercent,
+          practice.speedTrainer.targetPercent,
+          practice.speedTrainer.stepPercent,
+        );
+        speedTrainerCompleted =
+          nextPct >= practice.speedTrainer.targetPercent &&
+          speedTrainerPercent >= practice.speedTrainer.targetPercent;
+        speedTrainerPercent = nextPct;
+        setRate(speedTrainerPercent / 100);
+        recordCurrentLoopSpeed(speedTrainerPercent / 100);
+      }
+    }
+
+    const needCountIn =
+      practice.speedTrainer.enabled || (practice.countIn.bars > 0 && practice.countIn.beforeLoops);
+    const countBars = practice.speedTrainer.enabled
+      ? Math.max(1, practice.countIn.bars)
+      : practice.countIn.bars;
+
+    const targetBar = loopA;
+    scheduler.reset();
+
+    if (song.has_audio && audioEl) {
+      const element = audioEl;
+      const starts = startsNow();
+      const targetTime = Math.max(0, starts[targetBar] ?? 0);
+      element.currentTime = targetTime;
+      currentSeconds = targetTime;
+      currentMeasure = targetBar;
+
+      if (needCountIn && !countingIn) {
+        element.pause();
+        runCountIn(
+          targetBar,
+          () => {
+            if (playing) void element.play();
+          },
+          countBars,
+        );
+      }
+    } else {
+      goToBar(targetBar);
+      if (needCountIn && !countingIn) {
+        player.api?.pause();
+        runCountIn(
+          targetBar,
+          () => {
+            if (playing && player.api) player.api.play();
+          },
+          countBars,
+        );
+      }
     }
   }
 
@@ -751,6 +893,43 @@
               ><Icon name="waveform" size={14} />{t("library.audio")}</span
             >{/if}
         </div>
+        {#if practice.loops.length > 0}
+          <div
+            class="song-saved-loops"
+            data-testid="song-saved-loops"
+            aria-label={t("speedTrainer.savedLoops")}
+          >
+            <span class="saved-loops-label"
+              ><Icon name="repeat" size={14} />{t("speedTrainer.savedLoops")}:</span
+            >
+            <div class="saved-loops-pills">
+              {#each practice.loops as loop (loop.id)}
+                <button
+                  type="button"
+                  class="pill pill-button"
+                  class:pill-accent={loopA === loop.a && loopB === loop.b}
+                  data-testid={`song-page-loop-${loop.id}`}
+                  onclick={() => activateLoop(loop)}
+                  title={t("speedTrainer.jumpToLoop", {
+                    name: loop.name,
+                    a: loop.a + 1,
+                    b: loop.b + 1,
+                  })}
+                >
+                  <span class="loop-name">{loop.name}</span>
+                  <span class="loop-range"
+                    >{t("player.loopRange", { a: loop.a + 1, b: loop.b + 1 })}</span
+                  >
+                  {#if loop.highestSpeed != null}
+                    <span class="loop-speed" data-testid={`song-page-loop-speed-${loop.id}`}>
+                      {formatSpeedPercent(loop.highestSpeed)}
+                    </span>
+                  {/if}
+                </button>
+              {/each}
+            </div>
+          </div>
+        {/if}
       </div>
       <div class="hero-actions">
         <div
@@ -948,25 +1127,20 @@
             </p>
           </div>
         {/if}
-        <div class="panel-group">
-          <h3>{t("player.loop")}</h3>
-          <div class="button-row">
-            <button onclick={() => setLoop("a")}
-              ><Icon name="repeat" size={16} />{t("player.loopA")}</button
-            >
-            <button onclick={() => setLoop("b")}>{t("player.loopB")}</button>
-            <button
-              onclick={() => {
-                loopA = null;
-                loopB = null;
-              }}
-              disabled={loopA == null}>{t("player.clearLoop")}</button
-            >
-            {#if loopA != null && loopB != null}<span class="pill pill-accent"
-                >{t("player.loopRange", { a: loopA + 1, b: loopB + 1 })}</span
-              >{/if}
-          </div>
-        </div>
+        <LoopPanel
+          {practice}
+          {loopA}
+          {loopB}
+          {activeLoopId}
+          {speedTrainerRunning}
+          {speedTrainerPercent}
+          {speedTrainerPass}
+          {speedTrainerCompleted}
+          onsetloop={setLoop}
+          onclearloop={clearLoop}
+          onchange={practiceChanged}
+          onjump={activateLoop}
+        />
         <div class="panel-group panel-inline">
           <label class="field compact-field">
             <span>{t("player.bpm")}</span>
