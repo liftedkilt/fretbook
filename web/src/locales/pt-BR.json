@@ -514,6 +514,11 @@
       "badJson": "O Songsterr enviou {what} ilegível.",
       "badVideo": "O Songsterr indicou um id de vídeo inesperado."
     },
+    "ultimateGuitar": {
+      "noStore": "Não foi possível ler a página do Ultimate Guitar. O site pode ter mudado ou ter bloqueado este servidor.",
+      "noTab": "Esta página do Ultimate Guitar não tem uma versão em texto da tablatura.",
+      "notText": "As tablaturas {type} do Ultimate Guitar são baseadas em Guitar Pro e não estão disponíveis como texto. Importe um arquivo do Guitar Pro desta música."
+    },
     "musicxml": {
       "parse": "Não foi possível ler o arquivo MusicXML.",
       "timewise": "MusicXML no formato timewise não é suportado. Salve como partwise.",

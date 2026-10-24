@@ -1165,7 +1165,7 @@ export interface components {
          * @description Queued import.
          *
          *     ``detected`` is what the server took the input for: an importer kind,
-         *     or ``songsterr``, ``youtube`` or ``web`` for a link.
+         *     or ``songsterr``, ``youtube``, ``ultimate-guitar`` or ``web`` for a link.
          */
         AutoImportAccepted: {
             /** Detected */

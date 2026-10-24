@@ -179,6 +179,8 @@ def test_link_routing_is_reported(tmp_path: Path) -> None:
         assert songsterr.json()["detected"] == "songsterr"
         youtube = _auto(client, data={"url": "https://youtu.be/dQw4w9WgXcQ"})
         assert youtube.json()["detected"] == "youtube"
+        ug = _auto(client, data={"url": "https://tabs.ultimate-guitar.com/tab/artist/song-chords-123"})
+        assert ug.json()["detected"] == "ultimate-guitar"
         web = _auto(client, data={"url": "https://example.com/some/page"})
         assert web.json()["detected"] == "web"
         # A pasted block that is just a link is a link.

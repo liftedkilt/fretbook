@@ -514,6 +514,11 @@
       "badJson": "Songsterr sent unreadable {what}.",
       "badVideo": "Songsterr named an unexpected video id."
     },
+    "ultimateGuitar": {
+      "noStore": "Ultimate Guitar's page could not be read. The site may have changed, or it blocked this server.",
+      "noTab": "This Ultimate Guitar page has no text version of the tab.",
+      "notText": "Ultimate Guitar's {type} tabs are Guitar Pro based and are not available as text. Import a Guitar Pro file for this song instead."
+    },
     "musicxml": {
       "parse": "The MusicXML file could not be read.",
       "timewise": "Timewise MusicXML is not supported. Save it as partwise.",

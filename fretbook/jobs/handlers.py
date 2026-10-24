@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from fretbook.audio.ytdlp import AudioDownloadError, download_audio
-from fretbook.importers import remote
+from fretbook.importers import remote, ultimate_guitar
 from fretbook.importers.audio_only import blank_document
 from fretbook.importers.base import AudioFetch, ImportError, ImportRequest, ImportResult, Notice
 from fretbook.importers.registry import resolve_importer
@@ -23,6 +23,10 @@ from fretbook.storage.repository import SongRepository
 from fretbook.tags import suggest_tags
 
 logger = logging.getLogger(__name__)
+
+
+# Sources whose links refresh a song in place, and the ``source_ref`` key that identifies the song on the site.
+_REIMPORT_KEY = {"songsterr": "song_id", "ultimate-guitar": "tab_id"}
 
 
 def register_handlers(
@@ -117,6 +121,12 @@ def _import_link(
             audio=AudioFetch(video_id=video_id),
         )
         return _store_result(job, result, songs, media, progress)
+    if provider == "ultimate-guitar":
+        progress("Downloading the link", "import.fetching")
+        fetched = fetcher.fetch(url)
+        result = ultimate_guitar.parse_page(fetched.content.decode("utf-8", errors="replace"), url)
+        progress("Ready", "import.tabReady")
+        return _store_result(job, result, songs, media, progress)
     staged = remote.fetch_importable(url, fetcher, songs.settings.inbox_dir, progress)
     job = {
         **job,
@@ -159,11 +169,13 @@ def _import_file(job: dict[str, Any], progress: Progress, songs: SongRepository,
 def _reimport(
     existing: dict[str, Any], result: ImportResult, songs: SongRepository, owner_id: str, warnings: list[Notice]
 ) -> dict[str, Any] | None:
-    """Refresh an untouched Songsterr import in place, keeping the user's taps. ``None`` means "make a new song"."""
-    assert result.document is not None
-    stored = ScoreDocument.model_validate(existing["document"])
+    """Refresh an untouched import in place, keeping the user's taps. ``None`` means "make a new song"."""
     imported_hash = existing["source_ref"].get("content_hash")
-    if imported_hash != content_hash(stored):
+    if result.chordpro is not None:
+        current = hashlib.sha256((existing.get("chordpro") or "").strip().encode("utf-8")).hexdigest()
+    else:
+        current = content_hash(ScoreDocument.model_validate(existing["document"]))
+    if imported_hash != current:
         warnings.append(
             Notice(
                 "import.keptEditedCopy",
@@ -172,6 +184,22 @@ def _reimport(
             )
         )
         return None
+    if result.chordpro is not None:
+        source_ref = {
+            **result.source_ref,
+            "content_hash": hashlib.sha256(result.chordpro.strip().encode("utf-8")).hexdigest(),
+        }
+        return songs.update_song(
+            owner_id,
+            existing["id"],
+            title=result.title,
+            artist=result.artist,
+            revision=existing["revision"],
+            chordpro=result.chordpro,
+            source_ref=source_ref,
+        )
+    assert result.document is not None
+    stored = ScoreDocument.model_validate(existing["document"])
     document = result.document
     played = len(played_bars(document.bars))
     anchors = {key: value for key, value in stored.sync.anchors.items() if int(key) <= played}
@@ -208,10 +236,15 @@ def _store_result(
 
     warnings = list(result.warnings)
     saved: dict[str, Any] | None = None
-    if result.source_kind == "songsterr" and result.document is not None:
-        song_id = result.source_ref.get("song_id")
-        existing = songs.find_by_source(owner_id, "songsterr", song_id=song_id) if song_id is not None else None
-        if existing:
+    ref_key = _REIMPORT_KEY.get(result.source_kind)
+    if ref_key is not None and (result.document is not None or result.chordpro is not None):
+        ref_value = result.source_ref.get(ref_key)
+        existing = (
+            songs.find_by_source(owner_id, result.source_kind, **{ref_key: ref_value})
+            if ref_value not in (None, "")
+            else None
+        )
+        if existing and existing["content_kind"] == result.content_kind:
             saved = _reimport(existing, result, songs, owner_id, warnings)
 
     if saved is None:
