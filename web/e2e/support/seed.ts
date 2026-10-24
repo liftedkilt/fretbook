@@ -97,6 +97,50 @@ export class Seeder {
     return { id, title: "Synced Groove" };
   }
 
+  /** A generated 240 bpm bass tab (one second a bar), long enough to scroll the score. */
+  async longBassTab(bars: number): Promise<SeededSong> {
+    const title = "Long Groove";
+    const document = {
+      version: 1,
+      bpm: 240,
+      bars: Array.from({ length: bars }, () => ({ signature: [4, 4] })),
+      sync: { video_id: null, points: [], anchors: {} },
+      tracks: [
+        {
+          id: "trk_bass",
+          name: "Bass",
+          instrument: "bass-guitar",
+          capo: 0,
+          tuning_midi: [43, 38, 33, 28],
+          preferred: true,
+          bars: Array.from({ length: bars }, (_, bar) => ({
+            voices: [
+              {
+                beats: [0, 1, 2, 3].map((beat) => ({
+                  position: beat * 960,
+                  duration: 960,
+                  notes: [{ string: 3, fret: (bar + beat) % 12 }],
+                })),
+              },
+            ],
+          })),
+        },
+      ],
+    };
+    const accepted = await this.ok<{ job_id: string }>(
+      await this.request.post("/api/imports/file", {
+        multipart: {
+          file: {
+            name: "long-groove.json",
+            mimeType: "application/json",
+            buffer: Buffer.from(JSON.stringify({ title, content_kind: "tab", document })),
+          },
+        },
+      }),
+    );
+    return { id: await this.waitForJob(accepted.job_id), title };
+  }
+
   async list(): Promise<SongBody[]> {
     return (await this.ok<{ items: SongBody[] }>(await this.request.get("/api/songs?limit=200")))
       .items;
