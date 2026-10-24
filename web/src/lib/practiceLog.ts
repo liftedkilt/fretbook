@@ -98,6 +98,8 @@ interface Open {
   seconds: number;
   /** Seconds weighted by speed, to report the speed the time was spent at. */
   weighted: number;
+  /** The player played the whole song through in this session (see `PracticeTimer.complete`). */
+  completed?: boolean;
 }
 
 export interface TimerOptions {
@@ -168,6 +170,16 @@ export class PracticeTimer {
     this.finish(keepalive);
   }
 
+  /**
+   * A wait-mode run was played through: end the open session now, flagged as completed. The flag belongs to this
+   * session only, not to the one that carries on after it.
+   */
+  complete(): void {
+    this.accrue(this.now());
+    if (this.open) this.open.completed = true;
+    this.finish(false);
+  }
+
   /** Stop the timer and drop its pending work. Call after `flush`. */
   dispose(): void {
     this.cancelPauseTimer();
@@ -211,6 +223,7 @@ export class PracticeTimer {
         speed: Math.round(speed * 100) / 100 || 1,
         mode: context.mode,
         score: context.mode === "scored" ? (context.score ?? null) : null,
+        ...(open.completed && context.mode === "wait" ? { completed: true } : {}),
       },
       keepalive,
     );

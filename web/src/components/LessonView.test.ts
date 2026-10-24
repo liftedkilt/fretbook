@@ -7,6 +7,7 @@ const mockGet = vi.fn();
 const mockOpen = vi.fn();
 const mockReport = vi.fn();
 const mockCheck = vi.fn();
+const mockSongs = vi.fn();
 
 vi.mock("../lib/api", async (original) => ({
   ...(await original<typeof import("../lib/api")>()),
@@ -14,6 +15,7 @@ vi.mock("../lib/api", async (original) => ({
   openLesson: (...args: unknown[]) => mockOpen(...args),
   reportLessonProgress: (...args: unknown[]) => mockReport(...args),
   checkLesson: (...args: unknown[]) => mockCheck(...args),
+  listSongs: (...args: unknown[]) => mockSongs(...args),
 }));
 
 const progress = (extra = {}) => ({
@@ -55,6 +57,7 @@ describe("LessonView", () => {
     vi.resetAllMocks();
     mockOpen.mockResolvedValue(undefined);
     mockGet.mockResolvedValue(lesson());
+    mockSongs.mockResolvedValue({ items: [] });
   });
 
   it("shows the lesson, notes the visit, and marks a lesson with no condition as done", async () => {
@@ -145,5 +148,40 @@ describe("LessonView", () => {
     render(LessonView, { course: "g1", lesson: "l1" });
     await fireEvent.click(await screen.findByTestId("lesson-complete"));
     await waitFor(() => expect(screen.getByTestId("lesson-error")).toHaveTextContent("boom"));
+  });
+
+  it("offers the learner's tab songs to play the lesson on, linking back to the lesson", async () => {
+    mockGet.mockResolvedValue(
+      lesson({ pass_condition: { type: "wait", min_score: null, min_bpm: null, song: "" } }),
+    );
+    mockSongs.mockResolvedValue({
+      items: [
+        { id: "s1", title: "Riff", artist: "Me", content_kind: "tab" },
+        { id: "s2", title: "Sheet", artist: "", content_kind: "chords" },
+      ],
+    });
+    render(LessonView, { course: "g1", lesson: "l1" });
+    const pick = await screen.findByTestId("lesson-song-pick");
+    expect(screen.queryByTestId("lesson-play-link")).toBeNull();
+    // Chord sheets cannot be played in wait or scored mode.
+    expect(pick.querySelectorAll("option")).toHaveLength(2);
+    await fireEvent.change(pick, { target: { value: "s1" } });
+    expect(await screen.findByTestId("lesson-play-link")).toHaveAttribute(
+      "href",
+      "/songs/s1?lesson=g1/l1",
+    );
+  });
+
+  it("offers no song picker when the lesson names a song or has no pass condition", async () => {
+    mockGet.mockResolvedValue(
+      lesson({ pass_condition: { type: "wait", min_score: null, min_bpm: null, song: "s1" } }),
+    );
+    mockSongs.mockResolvedValue({
+      items: [{ id: "s1", title: "Riff", artist: "", content_kind: "tab" }],
+    });
+    render(LessonView, { course: "g1", lesson: "l1" });
+    await screen.findByTestId("lesson-check");
+    expect(screen.queryByTestId("lesson-song-pick")).toBeNull();
+    expect(mockSongs).not.toHaveBeenCalled();
   });
 });

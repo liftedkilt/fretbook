@@ -21,6 +21,7 @@ import type {
   LessonDetail,
   LessonPreview,
   LessonPackResult,
+  LessonProgressBody,
   LessonProgressResult,
   LessonSource,
   MidiInspection,
@@ -109,7 +110,12 @@ type _matchesContract = [
   AssertAssignable<ContractRecommendations, Recommendations>,
   AssertAssignable<ContractSongPractice, SongPractice>,
   // The draft is what the browser sends, so it must fit the request body.
-  AssertAssignable<PracticeSessionDraft, ContractPracticeSessionBody>,
+  // `completed` is only sent for a finished wait-mode run, so the draft may leave it out.
+  AssertAssignable<
+    PracticeSessionDraft,
+    Omit<ContractPracticeSessionBody, "completed"> &
+      Partial<Pick<ContractPracticeSessionBody, "completed">>
+  >,
   AssertAssignable<PracticeExerciseDraft, ContractPracticeExerciseBody>,
 ];
 
@@ -816,7 +822,7 @@ export function openLesson(course: string, lesson: string): Promise<void> {
 export function reportLessonProgress(
   course: string,
   lesson: string,
-  body: { score?: number; bpm?: number; wait_completed?: boolean; completed?: boolean },
+  body: Partial<LessonProgressBody>,
 ): Promise<LessonProgressResult> {
   return request<LessonProgressResult>(
     `/api/courses/${course}/lessons/${lesson}/progress`,

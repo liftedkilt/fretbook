@@ -1852,5 +1852,20 @@
       "other": "Removed {count} demo songs."
     },
     "banner": "This is a read-only demo. Look around and play; changes are not saved, and the library resets every night."
+  },
+  "lessonRun": {
+    "back": "Back to {title}",
+    "unavailable": "This lesson could not be loaded, so results from here are not reported.",
+    "askWait": "Play the whole song through in wait mode, from the first note, to pass this lesson.",
+    "askScore": "Play the whole song in scored mode with a score of at least {score}%.",
+    "askScoreBpm": "Play the whole song in scored mode with a score of at least {score}% at {bpm} BPM or faster.",
+    "noCondition": "This lesson is marked as done on its own page.",
+    "songBound": "This lesson is checked against your practice log: play its song, then press Check my practice on the lesson page.",
+    "passed": "Lesson passed!",
+    "missed": "Not there yet. Try again.",
+    "error": "The result could not be saved to the lesson. Check your connection and play it again.",
+    "pick": "Practise it on a song",
+    "pickPlaceholder": "Choose a song…",
+    "play": "Open in the player"
   }
 }

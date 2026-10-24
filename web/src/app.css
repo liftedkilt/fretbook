@@ -4917,3 +4917,26 @@ kbd {
 .chords-page.stage .chord-paper {
   line-height: 1.6;
 }
+
+.lesson-run {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  padding: 0.6rem 1rem;
+  margin-bottom: 1rem;
+  border-radius: 14px;
+  border: 1px solid var(--line-strong);
+  background: var(--accent-soft);
+}
+
+.lesson-run-text {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 1rem;
+}
+
+.lesson-run-text p {
+  margin: 0;
+}

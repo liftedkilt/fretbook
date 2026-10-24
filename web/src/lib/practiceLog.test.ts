@@ -159,6 +159,34 @@ describe("PracticeTimer", () => {
     expect(h.sessions.map((item) => item.session.duration_seconds)).toEqual([30, 30]);
   });
 
+  it("complete ends the open wait session at once with the completed flag, and only that one", () => {
+    const h = harness();
+    const wait = { ...base, mode: "wait" as const };
+    h.timer.update(true, wait);
+    h.advance(40_000);
+    h.timer.complete();
+    expect(h.sessions).toHaveLength(1);
+    expect(h.sessions[0].session).toMatchObject({
+      mode: "wait",
+      duration_seconds: 40,
+      completed: true,
+    });
+    // Still playing: the next stretch is a new session and is not flagged.
+    h.advance(20_000);
+    h.timer.flush();
+    expect(h.sessions[1].session.completed).toBeUndefined();
+  });
+
+  it("complete does nothing without an open session, and never flags other modes", () => {
+    const h = harness();
+    h.timer.complete();
+    expect(h.sessions).toHaveLength(0);
+    h.timer.update(true, base);
+    h.advance(30_000);
+    h.timer.complete();
+    expect(h.sessions[0].session.completed).toBeUndefined();
+  });
+
   it("cuts a very long session at the cap", () => {
     const h = harness();
     h.timer.update(true, base);

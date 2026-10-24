@@ -4,7 +4,7 @@ import type { ChromaEvent } from "./chroma";
 import type { PitchEvent } from "./engine";
 import type { ListenOptions, ListenSession } from "./input";
 import type { WaitStep } from "./wait";
-import { WaitRun } from "./waitRun";
+import { COMPLETE_HIT_SHARE, WaitRun } from "./waitRun";
 
 const step = (tick: number, midi: number, kind: "note" | "dead" = "note"): WaitStep => ({
   bar: 0,
@@ -201,5 +201,82 @@ describe("WaitRun", () => {
     run.reach(1);
     expect(chroma.at(-1)).toBe(false);
     expect(expected.at(-1)).toBe(28);
+  });
+
+  describe("completed", () => {
+    const five = () => [0, 1, 2, 3, 4].map((n) => step(n * 960, 28 + n));
+
+    // Each note is heard later than the last, as in real playing.
+    let clock = 1;
+    async function play(run: WaitRun, hear: (e: PitchEvent) => void, indices: number[]) {
+      for (const index of indices) {
+        run.reach(index);
+        clock += 1;
+        hear(attack(clock, 28 + index));
+      }
+    }
+
+    it("is true once every step of the track was played from the first one", async () => {
+      const { run, hear } = setup(five());
+      await run.start();
+      run.seek(0);
+      expect(run.completed).toBe(false);
+      await play(run, hear, [0, 1, 2, 3]);
+      expect(run.completed).toBe(false);
+      await play(run, hear, [4]);
+      expect(run.completed).toBe(true);
+    });
+
+    it("is false for a run that started part way through the song", async () => {
+      const { run, hear } = setup(five());
+      await run.start();
+      run.seek(2 * 960);
+      await play(run, hear, [2, 3, 4]);
+      expect(run.hits).toBe(3);
+      expect(run.completed).toBe(false);
+    });
+
+    it("is false after jumping past steps, and a restart from the top begins again", async () => {
+      const { run, hear } = setup(five());
+      await run.start();
+      run.seek(0);
+      await play(run, hear, [0, 1]);
+      run.seek(4 * 960);
+      await play(run, hear, [4]);
+      expect(run.completed).toBe(false);
+      run.seek(0);
+      await play(run, hear, [0, 1, 2, 3, 4]);
+      expect(run.completed).toBe(true);
+      // Going round again must not count the old pass.
+      run.seek(0);
+      expect(run.completed).toBe(false);
+    });
+
+    it("allows a few skipped steps but not many", async () => {
+      expect(COMPLETE_HIT_SHARE).toBe(0.8);
+      const { run, hear } = setup(five());
+      await run.start();
+      run.seek(0);
+      await play(run, hear, [0, 1, 2, 3]);
+      run.reach(4);
+      run.skip();
+      expect(run.completed).toBe(true);
+
+      const many = setup(five());
+      await many.run.start();
+      many.run.seek(0);
+      await play(many.run, many.hear, [0, 1, 2]);
+      for (const index of [3, 4]) {
+        many.run.reach(index);
+        many.run.skip();
+      }
+      expect(many.run.completed).toBe(false);
+    });
+
+    it("is false for a track with no steps", async () => {
+      const { run } = setup([]);
+      await run.start();
+      expect(run.completed).toBe(false);
+    });
   });
 });
