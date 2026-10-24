@@ -74,6 +74,10 @@ class Settings:
     failed_upload_retention_days: int = 7
     # Job kinds the web process leaves for a separate worker (python -m fretbook.worker).
     worker_kinds: tuple[str, ...] = ()
+    # Watched folder (FRETBOOK_INBOX_DIR; not the upload spool, ``inbox_dir``). See fretbook/inbox.py.
+    inbox_watch_dir: Path | None = None
+    inbox_mode: str = "move"
+    inbox_interval_seconds: int = 10
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -88,6 +92,8 @@ class Settings:
             backups_keep = int(backups_keep_raw)
         except ValueError:
             backups_keep = 5
+        watch_raw = os.environ.get("FRETBOOK_INBOX_DIR", "").strip()
+        inbox_mode = os.environ.get("FRETBOOK_INBOX_MODE", "").strip().lower() or "move"
         return cls(
             host=os.environ.get("FRETBOOK_HOST", "127.0.0.1"),
             port=int(os.environ.get("FRETBOOK_PORT", "8137")),
@@ -123,6 +129,9 @@ class Settings:
             fetch_timeout_seconds=_int("FRETBOOK_FETCH_TIMEOUT", 30),
             failed_upload_retention_days=_int("FRETBOOK_FAILED_UPLOAD_RETENTION_DAYS", 7),
             worker_kinds=tuple(k.strip() for k in os.environ.get("FRETBOOK_WORKER_KINDS", "").split(",") if k.strip()),
+            inbox_watch_dir=Path(watch_raw).expanduser() if watch_raw else None,
+            inbox_mode="library" if inbox_mode == "library" else "move",
+            inbox_interval_seconds=max(1, _int("FRETBOOK_INBOX_INTERVAL", 10)),
         )
 
     @classmethod

@@ -553,6 +553,34 @@ def verify_v10(conn: sqlite3.Connection) -> None:
     assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
 
 
+def seed_v11(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        INSERT INTO users (id, external_subject, display_name, created_at)
+        VALUES ('user-v11', 'sub-v11', 'User V11', '2026-01-11T00:00:00Z')
+        """
+    )
+    conn.commit()
+
+
+def verify_v11(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        "INSERT INTO inbox_files (owner_id, rel_path, content_hash, imported_at) "
+        "VALUES ('user-v11', 'a/b.tab', 'abc', '2026-01-11T00:00:00Z')"
+    )
+    row = conn.execute("SELECT song_id, error FROM inbox_files").fetchone()
+    assert (row["song_id"], row["error"]) == (None, "")
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute(
+            "INSERT INTO inbox_files (owner_id, rel_path, content_hash, imported_at) "
+            "VALUES ('user-v11', 'a/b.tab', 'def', '2026-01-11T00:00:00Z')"
+        )
+    conn.execute("DELETE FROM users WHERE id = 'user-v11'")
+    assert conn.execute("SELECT count(*) FROM inbox_files").fetchone()[0] == 0
+    conn.rollback()
+    assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+
+
 SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.Connection], None]]] = {
     1: (seed_v1, verify_v1),
     2: (seed_v2, verify_v2),
@@ -564,6 +592,7 @@ SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.C
     8: (seed_v8, verify_v8),
     9: (seed_v9, verify_v9),
     10: (seed_v10, verify_v10),
+    11: (seed_v11, verify_v11),
 }
 
 
