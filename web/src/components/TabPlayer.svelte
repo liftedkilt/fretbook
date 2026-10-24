@@ -26,6 +26,14 @@
   import { preferredTrack, scoreToAlphaTex } from "../lib/alphatex";
   import { Clicker } from "../lib/clicker";
   import { barTicks } from "../lib/durations";
+  import {
+    handsFree,
+    isTyping,
+    pageDelta,
+    pedalAction,
+    setStage,
+    STAGE_SCALE,
+  } from "../lib/handsFree.svelte";
   import { t } from "../lib/i18n.svelte";
   import {
     buildFretEvents,
@@ -300,6 +308,7 @@
     settings.core.logLevel = alphaTab.LogLevel.Warning;
     settings.core.enableLazyLoading = false;
     settings.display.staveProfile = staveProfile(untrack(() => ui.notation));
+    settings.display.scale = untrack(() => (handsFree.stage ? STAGE_SCALE : 1));
     settings.player.playerMode = useAudio
       ? alphaTab.PlayerMode.EnabledExternalMedia
       : alphaTab.PlayerMode.EnabledSynthesizer;
@@ -520,6 +529,20 @@
       if (target?.closest('[data-testid="autosync-sheet"]')) return;
       // A focused button already handles Space itself.
       if (target?.tagName === "BUTTON" && event.key === " ") return;
+      // A page-turner pedal sends ordinary keys; the ones the user mapped win over the shortcuts.
+      const pedal = isTyping(target) ? null : pedalAction(event);
+      if (
+        pedal === "nextPage" ||
+        pedal === "previousPage" ||
+        pedal === "toggle" ||
+        pedal === "loop"
+      ) {
+        event.preventDefault();
+        if (pedal === "toggle") toggle();
+        else if (pedal === "loop") toggleLoop();
+        else pageBy(pedal === "nextPage" ? 1 : -1);
+        return;
+      }
       const action = shortcutFor(event);
       if (!action) return;
       // The help dialog is modal: only its own key works while it is open.
@@ -771,6 +794,34 @@
       if (loopA == null || loopA > bar) loopA = bar;
     }
   }
+
+  /** Pedal: clear the loop, else loop the bar being played (or the first one). */
+  function toggleLoop() {
+    if (loopA != null && loopB != null) return clearLoop();
+    if (barCount <= 0) return;
+    const bar = Math.min(barCount - 1, Math.max(0, currentMeasure));
+    activeLoopId = null;
+    loopA = bar;
+    loopB = bar;
+  }
+
+  function pageBy(direction: 1 | -1) {
+    const calm = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    window.scrollBy({
+      top: pageDelta(window.innerHeight, direction),
+      behavior: calm ? "auto" : "smooth",
+    });
+  }
+
+  // Stage mode draws the score larger and hides everything around it.
+  $effect(() => {
+    const api = player.api;
+    const scale = handsFree.stage ? STAGE_SCALE : 1;
+    if (!api || api.settings.display.scale === scale) return;
+    api.settings.display.scale = scale;
+    api.updateSettings();
+    api.render();
+  });
 
   function clearLoop() {
     loopA = null;
@@ -1181,7 +1232,7 @@
   }
 </script>
 
-<div class="song-page player-page">
+<div class="song-page player-page" class:stage={handsFree.stage}>
   <header class="song-header">
     <a class="back-link" href={hrefFor("/")} onclick={(event) => followLink(event, "/")}
       ><Icon name="back" size={18} />{t("app.back")}</a
@@ -1703,6 +1754,16 @@
           title={t("player.follow")}
         >
           <Icon name="follow" size={18} />
+        </button>
+        <button
+          class="icon-button ghost"
+          data-testid="stage-toggle"
+          aria-pressed={handsFree.stage}
+          onclick={() => setStage(!handsFree.stage)}
+          aria-label={t("handsFree.stage")}
+          title={t("handsFree.stage")}
+        >
+          <Icon name="monitor" size={18} />
         </button>
         <button
           class="icon-button ghost"

@@ -1779,5 +1779,31 @@
     "importPack": "Importar um pacote de aulas",
     "imported": "{courses} cursos e {lessons} aulas importados.",
     "problems": "{count} arquivos de aula têm problemas"
+  },
+  "handsFree": {
+    "autoScroll": "Rolagem automática",
+    "scrollSlower": "Rolar mais devagar",
+    "scrollFaster": "Rolar mais rápido",
+    "stage": "Modo palco",
+    "pedalTitle": "Pedal de virar página",
+    "pedalHint": "Um pedal Bluetooth envia teclas comuns. Escolha o que cada uma faz no player e nas cifras. “Manter” deixa a tecla com sua função normal.",
+    "reset": "Restaurar padrões",
+    "keys": {
+      "PageDown": "Page Down",
+      "PageUp": "Page Up",
+      "ArrowDown": "Seta para baixo",
+      "ArrowUp": "Seta para cima",
+      "ArrowRight": "Seta para a direita",
+      "ArrowLeft": "Seta para a esquerda"
+    },
+    "actions": {
+      "default": "Manter",
+      "nextPage": "Próxima página",
+      "previousPage": "Página anterior",
+      "toggle": "Tocar / pausar (rolagem automática nas cifras)",
+      "loop": "Ativar / desativar loop",
+      "nextSong": "Próxima música do repertório",
+      "previousSong": "Música anterior do repertório"
+    }
   }
 }

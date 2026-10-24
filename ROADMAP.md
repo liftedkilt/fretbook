@@ -34,10 +34,6 @@ Features that use the microphone to hear the instrument, in the order to build t
 
 - More file formats, such as Power Tab (`.ptb`).
 
-### Playing live
-
-- Turning pages and starting playback hands-free with a Bluetooth page-turner pedal.
-
 ### Other
 
 - More languages. See [CONTRIBUTING.md](CONTRIBUTING.md#adding-a-locale).

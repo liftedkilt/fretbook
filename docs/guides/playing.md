@@ -77,6 +77,22 @@ setlists are part of the library backup.
 To add a song without opening the setlist, press **Add to setlist** on the song page or on its library card, then pick a
 setlist or type a name to start a new one. The song goes to the end of the running order.
 
+## Hands-free
+
+A Bluetooth page-turner pedal sends ordinary keys, so no pairing software is needed beyond the pedal's own. By default
+**Page Down** and **Page Up** scroll a page forward and back in the tab player and on chord sheets. Open **Settings →
+Page-turner pedal** to give any of Page Down, Page Up, the up and down arrows, or the left and right arrows one of
+these jobs: next or previous page, play or pause (auto-scroll on a chord sheet), loop on or off (the bar being played,
+or clear the loop), or the next or previous song while playing through a setlist. **Keep** leaves a key to its normal
+job (the left and right arrows step a bar in the tab player). The choice is stored in the browser, per device.
+
+On a chord sheet, **Auto-scroll** moves the page so the end arrives as the song ends. The length comes from a
+`{duration: 3:45}` directive, else from `{tempo: 120}` and the number of lines (two 4/4 bars a line), else a typical
+song length of 3½ minutes. The ± buttons scale the speed from 0.5× to 2×.
+
+**Stage mode** (the monitor button) draws chord sheets in large print and the tab larger, and hides the song header and
+panels so only the music and the transport are left.
+
 ## Language
 
 English and Brazilian Portuguese. The header switcher remembers the choice. With none saved, the browser language is
