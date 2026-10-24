@@ -3,6 +3,7 @@
 
   import Icon from "./Icon.svelte";
   import { ApiError, getSong, updateSong } from "../lib/api";
+  import { contentKey, mergeOnto, type EditBase } from "../lib/offline/merge";
   import { barTicks, EDITOR_DURATIONS } from "../lib/durations";
   import { t, tOr } from "../lib/i18n.svelte";
   import { followLink, hrefFor } from "../lib/router.svelte";
@@ -62,10 +63,6 @@
   const beats = $derived(trackBar.voices[voiceIndex]?.beats ?? []);
   const used = $derived(beats.reduce((total, beat) => total + (beat.grace ? 0 : beat.duration), 0));
   const length = $derived(barTicks(bar.signature));
-
-  function contentKey(document: ScoreDocument): string {
-    return JSON.stringify({ bars: document.bars, tracks: document.tracks });
-  }
 
   function reflow(list: Beat[]) {
     let position = 0;
@@ -231,18 +228,25 @@
 
   // --- save ---------------------------------------------------------------
 
-  async function send(revision: number, sync: SyncMap, bpm: number) {
-    const document: ScoreDocument = {
+  /** The document as edited, with the sync marks re-keyed to the bars as they are now. */
+  function edited(): ScoreDocument {
+    return {
       ...$state.snapshot(song.document),
-      bpm,
-      sync: remapSync(sync, origin, baseBars, $state.snapshot(song.document.bars) as Bar[]),
+      sync: remapSync(baseSync, origin, baseBars, $state.snapshot(song.document.bars) as Bar[]),
     };
-    return updateSong(song.id, {
-      title: song.title.trim() || t("library.untitled"),
-      artist: song.artist.trim(),
-      revision,
-      document,
-    });
+  }
+
+  function send(revision: number, document: ScoreDocument, base: EditBase) {
+    return updateSong(
+      song.id,
+      {
+        title: song.title.trim() || t("library.untitled"),
+        artist: song.artist.trim(),
+        revision,
+        document,
+      },
+      base,
+    );
   }
 
   async function save() {
@@ -251,19 +255,25 @@
     conflict = false;
     try {
       let saved;
+      const base: EditBase = {
+        content: loadedContent,
+        bpm: loadedBpm,
+        origin: $state.snapshot(origin),
+      };
+      const document = edited();
       try {
-        saved = await send(song.revision, baseSync, song.document.bpm);
+        saved = await send(song.revision, document, base);
       } catch (err) {
         if (!(err instanceof ApiError) || err.status !== 409) throw err;
         // Someone changed the song since it was loaded. If only the sync marks or BPM moved
         // (the player in another tab), keep those and save these edits on top.
         const latest = await getSong(song.id);
-        if (!latest.document || contentKey(latest.document) !== loadedContent) {
+        const merged = latest.document && mergeOnto(latest.document, document, base);
+        if (!merged) {
           conflict = true;
           throw err;
         }
-        const bpm = song.document.bpm === loadedBpm ? latest.document.bpm : song.document.bpm;
-        saved = await send(latest.revision, latest.document.sync, bpm);
+        saved = await send(latest.revision, merged, base);
       }
       song = saved as TabSong;
       loadedContent = contentKey(saved.document!);

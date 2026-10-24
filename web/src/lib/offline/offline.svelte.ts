@@ -1,6 +1,7 @@
 import { ApiError, getSong, isOfflineError, noteRebase, putSong } from "../api";
 import type { SongDetail } from "../types";
 import { dropEdit, markEdit, queue, reloadQueue } from "./queueState.svelte";
+import { mergeOnto } from "./merge";
 import type { QueuedEdit } from "./queue";
 import {
   emptyRegistry,
@@ -141,7 +142,26 @@ export async function flushQueue(): Promise<void> {
               dropEdit(edit.songId);
               continue;
             }
-          } catch {
+            const document = edit.base && edit.body.document && latest.document;
+            const merged = document
+              ? mergeOnto(latest.document!, edit.body.document!, edit.base!)
+              : null;
+            if (merged) {
+              // Only the sync marks or BPM moved elsewhere: save the edit on top of them.
+              const saved = await putSong(edit.songId, {
+                ...edit.body,
+                document: merged,
+                revision: latest.revision,
+              });
+              noteRebase(edit.songId, edit.body.revision, saved.revision);
+              dropEdit(edit.songId);
+              continue;
+            }
+          } catch (retry) {
+            if (retry instanceof ApiError && !isOfflineError(retry)) {
+              markEdit(edit.songId, retry.status === 409 ? "conflict" : "failed", retry.message);
+              continue;
+            }
             break;
           }
         }
