@@ -941,7 +941,13 @@
     "playNote": "Nota",
     "playTranspose": "Transposta {semitones}",
     "playEmpty": "Este repertório não tem músicas para tocar.",
-    "playNav": "Navegação do repertório"
+    "playNav": "Navegação do repertório",
+    "addToSetlist": "Adicionar à setlist",
+    "addToSetlistFor": "Adicionar {title} a uma setlist",
+    "addToTitle": "Adicionar à setlist",
+    "addedTo": "{title} adicionada a {name}.",
+    "pickerEmpty": "Você ainda não tem setlists. Dê um nome abaixo para começar uma com esta música.",
+    "pickerNew": "Nova setlist…"
   },
   "highway": {
     "view": "Visualização",

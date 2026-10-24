@@ -2,6 +2,7 @@
   import Cover from "./Cover.svelte";
   import Icon from "./Icon.svelte";
   import RecentImports from "./RecentImports.svelte";
+  import SetlistPicker from "./SetlistPicker.svelte";
   import { addTags, deleteSong } from "../lib/api";
   import { t } from "../lib/i18n.svelte";
   import { levelOf } from "../lib/difficulty";
@@ -23,6 +24,7 @@
   } from "../lib/ui.svelte";
 
   let error = $state("");
+  let pickerSong = $state<{ id: string; title: string } | null>(null);
   let searchInput = $state<HTMLInputElement>();
   let searchSeen = ui.search.trim();
 
@@ -442,6 +444,15 @@
             </a>
             <button
               class="icon-button glass"
+              data-testid="song-add-to-setlist"
+              onclick={() => (pickerSong = { id: song.id, title: song.title })}
+              aria-label={`${t("setlists.addToSetlist")}: ${song.title}`}
+              title={t("setlists.addToSetlist")}
+            >
+              <Icon name="list" size={16} />
+            </button>
+            <button
+              class="icon-button glass"
               data-testid="song-delete"
               onclick={() => void remove(song)}
               aria-label={`${t("library.delete")}: ${song.title}`}
@@ -466,4 +477,5 @@
       {/if}
     </div>
   {/if}
+  <SetlistPicker song={pickerSong} onclose={() => (pickerSong = null)} />
 </section>

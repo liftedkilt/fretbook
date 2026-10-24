@@ -74,6 +74,9 @@ Named, ordered lists of songs for a rehearsal or a gig. Reorder by dragging or w
 ← or →). **Export PDF** makes one file with a contents page followed by every song. A song can be in many setlists, and
 setlists are part of the library backup.
 
+To add a song without opening the setlist, press **Add to setlist** on the song page or on its library card, then pick a
+setlist or type a name to start a new one. The song goes to the end of the running order.
+
 ## Language
 
 English and Brazilian Portuguese. The header switcher remembers the choice. With none saved, the browser language is

@@ -154,6 +154,7 @@ describe("request wrappers", () => {
       "PUT",
       "api/setlists/l1/entries",
     ],
+    ["addSetlistEntry", () => api.addSetlistEntry("l1", "s1"), "POST", "api/setlists/l1/entries"],
     ["deleteSetlist", () => api.deleteSetlist("l1"), "DELETE", "api/setlists/l1"],
     ["listJobs", () => api.listJobs(), "GET", "api/jobs"],
     ["getJob", () => api.getJob("j1"), "GET", "api/jobs/j1"],

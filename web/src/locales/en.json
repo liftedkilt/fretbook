@@ -941,7 +941,13 @@
     "playNote": "Note",
     "playTranspose": "Transposed {semitones}",
     "playEmpty": "This setlist has no songs to play.",
-    "playNav": "Setlist navigation"
+    "playNav": "Setlist navigation",
+    "addToSetlist": "Add to setlist",
+    "addToSetlistFor": "Add {title} to a setlist",
+    "addToTitle": "Add to setlist",
+    "addedTo": "Added {title} to {name}.",
+    "pickerEmpty": "You have no setlists yet. Name one below to start it with this song.",
+    "pickerNew": "New setlist…"
   },
   "highway": {
     "view": "Player view",

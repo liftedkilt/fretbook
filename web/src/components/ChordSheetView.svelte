@@ -10,6 +10,7 @@
   import Icon from "./Icon.svelte";
   import Menu from "./Menu.svelte";
   import OfflineToggle from "./OfflineToggle.svelte";
+  import SetlistPicker from "./SetlistPicker.svelte";
   import { parse } from "../lib/chordpro";
   import { loadChoice, saveChoice } from "../lib/chords/choice";
   import { buildEntries } from "../lib/chords/entries";
@@ -22,6 +23,7 @@
 
   let { song, initialTranspose = 0 }: { song: SongDetail; initialTranspose?: number } = $props();
 
+  let pickerOpen = $state(false);
   let transpose = $state(untrack(() => initialTranspose));
   const transposeLabel = $derived(transpose > 0 ? `+${transpose}` : String(transpose));
   let flats = $state(false);
@@ -128,6 +130,9 @@
         >
           <Icon name="edit" size={18} /><span>{t("player.edit")}</span>
         </a>
+        <button data-testid="song-add-to-setlist" onclick={() => (pickerOpen = true)}>
+          <Icon name="list" size={18} /><span>{t("setlists.addToSetlist")}</span>
+        </button>
         <Menu label={t("player.export")} icon="download" testid="export-menu">
           {#snippet children(close)}
             <button
@@ -276,4 +281,8 @@
       </button>
     </div>
   </div>
+  <SetlistPicker
+    song={pickerOpen ? { id: song.id, title: song.title } : null}
+    onclose={() => (pickerOpen = false)}
+  />
 </div>

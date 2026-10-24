@@ -173,3 +173,27 @@ test("the play bar stays on screen while the score scrolls, clear of the dock", 
   });
   expect(rects.bar.bottom).toBeLessThanOrEqual(rects.dock.top);
 });
+
+test("add a song to a setlist from the library and from the song page", async ({ page, seed }) => {
+  await seed.create({ title: "Alpha", chordpro: SHEET("Alpha") });
+  await seed.create({ title: "Bravo", chordpro: SHEET("Bravo") });
+
+  await page.goto("/");
+  // Library card: keyboard-reachable button, creating a new setlist on the way.
+  const card = page.getByTestId("song-card").filter({ hasText: "Alpha" });
+  await card.getByTestId("song-add-to-setlist").focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByTestId("setlist-picker-empty")).toBeVisible();
+  await page.getByTestId("setlist-picker-name").fill("Friday gig");
+  await page.keyboard.press("Enter");
+  await expect(page.getByTestId("setlist-picker-done")).toContainText("Added Alpha to Friday gig.");
+  await page.keyboard.press("Escape");
+
+  // Song page: pick the existing setlist.
+  await page.getByTestId("song-card").filter({ hasText: "Bravo" }).getByTestId("song-link").click();
+  await page.getByTestId("song-add-to-setlist").click();
+  await page.getByTestId("setlist-picker-item").filter({ hasText: "Friday gig" }).click();
+  await expect(page.getByTestId("setlist-picker-done")).toContainText("Added Bravo to Friday gig.");
+  await page.getByRole("link", { name: "Open" }).click();
+  await expect(page.getByTestId("setlist-entry-title")).toHaveText(["Alpha", "Bravo"]);
+});
