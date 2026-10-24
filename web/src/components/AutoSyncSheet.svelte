@@ -3,7 +3,7 @@
 
   import Icon from "./Icon.svelte";
   import Sheet from "./Sheet.svelte";
-  import { getJob, startAutoSync } from "../lib/api";
+  import { dismissJob, getJob, startAutoSync } from "../lib/api";
   import {
     barsToCheck,
     clampBar,
@@ -15,6 +15,7 @@
     type Click,
   } from "../lib/autosync";
   import { Clicker } from "../lib/clicker";
+  import { playedBars } from "../lib/playback";
   import { keyed, t, tOr } from "../lib/i18n.svelte";
   import type { AutoSyncProposal, ScoreDocument } from "../lib/types";
 
@@ -55,7 +56,11 @@
   let cursor = 0;
   let run = 0;
 
-  const barCount = $derived(proposal ? Object.keys(proposal.anchors).length - 1 : 0);
+  // The end of the last bar is a mark too, but not a bar.
+  const playedCount = $derived(playedBars(score.bars).length);
+  const barCount = $derived(
+    proposal ? Object.keys(proposal.anchors).filter((key) => Number(key) < playedCount).length : 0,
+  );
   const toCheck = $derived(proposal ? barsToCheck(proposal) : []);
   const shown = $derived(toCheck.slice(0, SHOWN_BARS).join(", "));
 
@@ -70,6 +75,10 @@
       const { job_id } = await startAutoSync(songId);
       for (let attempt = 0; attempt < 1200; attempt += 1) {
         const job = await getJob(job_id);
+        if (job.status === "done" || job.status === "error") {
+          // Read it once and let it go: it is not an import, and a failed one would sit in the import list.
+          void dismissJob(job_id).catch(() => undefined);
+        }
         if (mine !== run) return;
         if (job.status === "error") {
           throw new Error(

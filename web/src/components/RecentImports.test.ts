@@ -53,6 +53,19 @@ describe("RecentImports", () => {
     });
   });
 
+  it("leaves auto-sync jobs out: they are not imports", async () => {
+    mockListJobs.mockResolvedValue([
+      makeJob({ id: "sync-1", kind: "audio.autosync", status: "error", label: "Auto Groove" }),
+      makeJob({ id: "sync-2", kind: "audio.autosync", status: "running", label: "Auto Groove" }),
+    ]);
+
+    render(RecentImports);
+
+    await vi.waitFor(() => expect(mockListJobs).toHaveBeenCalled());
+    expect(screen.queryByTestId("recent-imports-panel")).toBeNull();
+    expect(screen.queryByText("Auto Groove")).toBeNull();
+  });
+
   it("renders failed jobs with error and retry/dismiss buttons", async () => {
     const failedJob = makeJob({
       id: "failed-1",

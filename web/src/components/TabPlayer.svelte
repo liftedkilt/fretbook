@@ -467,8 +467,8 @@
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       if (target && /INPUT|TEXTAREA|SELECT/.test(target.tagName)) return;
-      // A sheet is open: its keys are its own (Space or T must not tap a bar behind the Auto-sync preview).
-      if (target?.closest("dialog")) return;
+      // Space and T in the Auto-sync preview must not tap a bar behind the sheet.
+      if (target?.closest('[data-testid="autosync-sheet"]')) return;
       // A focused button already handles Space itself.
       if (target?.tagName === "BUTTON" && event.key === " ") return;
       const action = shortcutFor(event);

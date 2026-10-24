@@ -4,11 +4,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AutoSyncProposal, Job, ScoreDocument } from "../lib/types";
 import AutoSyncSheet from "./AutoSyncSheet.svelte";
 
-const api = vi.hoisted(() => ({ startAutoSync: vi.fn(), getJob: vi.fn() }));
+const api = vi.hoisted(() => ({
+  startAutoSync: vi.fn(),
+  getJob: vi.fn(),
+  dismissJob: vi.fn(),
+}));
 vi.mock("../lib/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../lib/api")>()),
   startAutoSync: api.startAutoSync,
   getJob: api.getJob,
+  dismissJob: api.dismissJob,
 }));
 
 const clicker = vi.hoisted(() => ({ click: vi.fn(), unlock: vi.fn(), close: vi.fn() }));
@@ -80,6 +85,7 @@ function mount(props: { existing?: number } = {}) {
 beforeEach(() => {
   api.startAutoSync.mockReset().mockResolvedValue({ job_id: "j1" });
   api.getJob.mockReset();
+  api.dismissJob.mockReset().mockResolvedValue(undefined);
   clicker.click.mockReset();
   HTMLDialogElement.prototype.showModal ??= function showModal(this: HTMLDialogElement) {
     this.open = true;
@@ -94,6 +100,7 @@ describe("AutoSyncSheet", () => {
     api.getJob.mockResolvedValue(job({ result: { autosync: proposal } }));
     const { onaccept } = mount();
     expect(api.startAutoSync).toHaveBeenCalledWith("s1");
+    await waitFor(() => expect(api.dismissJob).toHaveBeenCalledWith("j1"));
     const summary = await screen.findByTestId("autosync-summary");
     expect(summary.textContent).toContain("3 bar marks found");
     expect(summary.textContent).toContain("70% confidence");
@@ -133,6 +140,7 @@ describe("AutoSyncSheet", () => {
     mount();
     const alert = await screen.findByTestId("autosync-error");
     expect(alert.textContent).toContain("No steady beat was found");
+    expect(api.dismissJob).toHaveBeenCalledWith("j1");
     api.getJob.mockResolvedValue(job({ result: { autosync: proposal } }));
     await fireEvent.click(screen.getByTestId("autosync-retry"));
     await screen.findByTestId("autosync-summary");
