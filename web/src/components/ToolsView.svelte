@@ -31,6 +31,15 @@
       path: "/tools/chords",
       testId: "tool-card-chords",
     },
+    {
+      id: "trainer",
+      titleKey: "trainer.title",
+      descKey: "trainer.toolDescription",
+      openKey: "trainer.open",
+      icon: "guitar",
+      path: "/tools/trainer",
+      testId: "tool-card-trainer",
+    },
   ];
 </script>
 

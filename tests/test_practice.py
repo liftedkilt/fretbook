@@ -359,3 +359,54 @@ def test_dashboard_titles_only_come_from_the_owners_own_songs(tmp_path: Path) ->
             conn.close()
         stats = PracticeRepository(settings).stats("local", date.fromisoformat(_day()))
         assert stats["songs_practised"] == 0 and stats["recent"] == []
+
+
+def _exercise(client: TestClient, offset: int = 0, **extra):
+    body = {"kind": "interval", "day": _day(offset), "duration_seconds": 120, "rounds": 10, "correct": 8, "score": 80}
+    return client.post("/api/practice/exercises", json={**body, **extra})
+
+
+def test_record_a_trainer_round(client: TestClient) -> None:
+    created = _exercise(client)
+    assert created.status_code == 201
+    row = created.json()
+    assert (row["kind"], row["duration_seconds"], row["rounds"], row["correct"], row["score"]) == (
+        "interval",
+        120,
+        10,
+        8,
+        80,
+    )
+
+
+def test_trainer_rounds_are_validated(client: TestClient) -> None:
+    assert _exercise(client, kind="nope").status_code == 422
+    assert _exercise(client, duration_seconds=0).status_code == 422
+    assert _exercise(client, score=101).status_code == 422
+    assert _exercise(client, offset=30).status_code == 400
+
+
+def test_trainer_time_counts_toward_the_day_streak_and_goal(client: TestClient) -> None:
+    client.put("/api/practice/goal", json={"daily_minutes": 4, "weekly_summary": True})
+    _exercise(client, offset=-1, kind="fretboard", score=50)
+    _exercise(client, kind="chord", duration_seconds=240, score=90)
+    _exercise(client, kind="chord", duration_seconds=60, score=70)
+    stats = client.get("/api/practice/stats", params={"today": _day()}).json()
+    assert stats["today_seconds"] == 300
+    assert stats["current_streak"] == 2
+    assert stats["total_seconds"] == 420
+    assert stats["week"]["goal_days"] == 1
+    assert stats["songs_practised"] == 0
+    by_kind = {item["kind"]: item for item in stats["exercises"]}
+    assert by_kind["chord"]["session_count"] == 2
+    assert by_kind["chord"]["best_score"] == 90
+    assert by_kind["fretboard"]["total_seconds"] == 120
+
+
+def test_trainer_time_adds_to_song_time(client: TestClient) -> None:
+    song = _song(client, "Alpha")
+    _log(client, song, 600)
+    _exercise(client)
+    stats = client.get("/api/practice/stats", params={"today": _day()}).json()
+    assert stats["today_seconds"] == 720
+    assert stats["heatmap"][-1]["sessions"] == 2

@@ -22,6 +22,7 @@
     label = "none",
     root = 0,
     leftHanded = false,
+    onselect,
   }: {
     /** Open-string pitches, highest string first. 4 to 8 strings read best. */
     tuning: number[];
@@ -33,6 +34,8 @@
     /** Pitch class (0 to 11) that the interval labels count from. */
     root?: number;
     leftHanded?: boolean;
+    /** When given, every fret of every string is a button that reports the tapped note. */
+    onselect?: (note: FretNote) => void;
   } = $props();
 
   const LEFT = 34;
@@ -145,6 +148,29 @@
         {/if}
       </g>
     {/each}
+    {#if onselect}
+      {#each tuning as _, string (string)}
+        {#each Array.from({ length: frets + 1 }, (_, fret) => fret) as fret (fret)}
+          <circle
+            class="tap"
+            data-testid={`fret-tap-${string}-${fret}`}
+            role="button"
+            tabindex="-1"
+            aria-label={describe({ string, fret })}
+            cx={x(dotPosition(fret, frets))}
+            cy={y(string)}
+            r="13"
+            onclick={() => onselect({ string, fret })}
+            onkeydown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onselect({ string, fret });
+              }
+            }}
+          />
+        {/each}
+      {/each}
+    {/if}
     {#each [3, 5, 7, 9, 12, 15, 17, 19, 21, 24].filter((fret) => fret <= frets) as fret (fret)}
       <text class="fret-number" x={x(dotPosition(fret, frets))} y={height - 3}>{fret}</text>
     {/each}
@@ -197,6 +223,14 @@
     font-weight: 600;
     text-anchor: middle;
     dominant-baseline: central;
+  }
+  .tap {
+    fill: transparent;
+    cursor: pointer;
+  }
+  .tap:hover {
+    fill: var(--accent);
+    opacity: 0.25;
   }
   .fret-number {
     fill: var(--text-3);

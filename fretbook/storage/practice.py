@@ -17,6 +17,7 @@ from fretbook.db.connection import session
 from fretbook.db.migrate import utcnow
 
 MODES = ("free", "wait", "scored")
+EXERCISE_KINDS = ("fretboard", "interval", "chord")
 MIN_SECONDS = 1
 MAX_SECONDS = 6 * 3600
 MAX_SPEED = 4.0
@@ -42,6 +43,17 @@ class SessionInput:
     mode: str = "free"
     score: float | None = None
     id: str | None = None
+
+
+@dataclass
+class ExerciseInput:
+    kind: str
+    day: str
+    duration_seconds: int
+    rounds: int = 0
+    correct: int = 0
+    score: float | None = None
+    started_at: str | None = None
 
 
 class UnknownSong(Exception):
@@ -83,6 +95,33 @@ class PracticeRepository:
             _insert(conn, owner_id, new_id, item)
             row = conn.execute("SELECT * FROM practice_sessions WHERE id = ?", (new_id,)).fetchone()
         return _session_dict(row)
+
+    def record_exercise(self, owner_id: str, item: ExerciseInput) -> dict[str, Any]:
+        """Store one trainer round (a fretboard, interval or chord game)."""
+        new_id = uuid.uuid4().hex[:12]
+        kind = item.kind if item.kind in EXERCISE_KINDS else "fretboard"
+        rounds = max(0, item.rounds)
+        with self._session(immediate=True) as conn:
+            conn.execute(
+                """
+                INSERT INTO practice_exercises (id, owner_id, kind, started_at, day, duration_seconds,
+                                                rounds, correct, score)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    new_id,
+                    owner_id,
+                    kind,
+                    _started_at(item.started_at),
+                    parse_day(item.day).isoformat(),
+                    max(MIN_SECONDS, min(MAX_SECONDS, item.duration_seconds)),
+                    rounds,
+                    max(0, min(rounds, item.correct)),
+                    item.score,
+                ),
+            )
+            row = conn.execute("SELECT * FROM practice_exercises WHERE id = ?", (new_id,)).fetchone()
+        return _exercise_dict(row)
 
     def song_history(self, owner_id: str, song_id: str) -> dict[str, Any] | None:
         """Totals and the latest sessions for one song, or ``None`` when the owner has no such song."""
@@ -130,12 +169,26 @@ class PracticeRepository:
                 row["day"]: (row["seconds"], row["sessions"])
                 for row in conn.execute(
                     """
-                    SELECT day, sum(duration_seconds) AS seconds, count(*) AS sessions
-                    FROM practice_sessions WHERE owner_id = ? GROUP BY day
+                    SELECT day, sum(duration_seconds) AS seconds, sum(sessions) AS sessions FROM (
+                        SELECT day, duration_seconds, 1 AS sessions FROM practice_sessions WHERE owner_id = ?
+                        UNION ALL
+                        SELECT day, duration_seconds, 1 AS sessions FROM practice_exercises WHERE owner_id = ?
+                    ) GROUP BY day
+                    """,
+                    (owner_id, owner_id),
+                )
+            }
+            exercises = [
+                dict(row)
+                for row in conn.execute(
+                    """
+                    SELECT kind, count(*) AS session_count, sum(duration_seconds) AS total_seconds,
+                           max(day) AS last_day, max(score) AS best_score
+                    FROM practice_exercises WHERE owner_id = ? GROUP BY kind ORDER BY max(started_at) DESC, kind
                     """,
                     (owner_id,),
                 )
-            }
+            ]
             songs = [
                 dict(row)
                 for row in conn.execute(
@@ -151,7 +204,7 @@ class PracticeRepository:
                     (owner_id,),
                 )
             ]
-        return _dashboard(goal, per_day, songs, today)
+        return {**_dashboard(goal, per_day, songs, today), "exercises": exercises}
 
     def export_all(self, owner_id: str | None) -> dict[str, Any]:
         """Sessions (of one owner, or of all) and, for one owner, their goal, for the backup archive."""
@@ -236,6 +289,19 @@ def _session_dict(row: sqlite3.Row) -> dict[str, Any]:
         "duration_seconds": row["duration_seconds"],
         "speed": row["speed"],
         "mode": row["mode"],
+        "score": row["score"],
+    }
+
+
+def _exercise_dict(row: sqlite3.Row) -> dict[str, Any]:
+    return {
+        "id": row["id"],
+        "kind": row["kind"],
+        "started_at": row["started_at"],
+        "day": row["day"],
+        "duration_seconds": row["duration_seconds"],
+        "rounds": row["rounds"],
+        "correct": row["correct"],
         "score": row["score"],
     }
 

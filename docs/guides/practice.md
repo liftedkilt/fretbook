@@ -49,6 +49,22 @@ pair per user, with a manual offset.
 
 **Tools** has a standalone tuner (it follows the instrument's own tuning on a song page) and a metronome.
 
+## Ear and fretboard trainer
+
+**Tools → Ear & fretboard trainer** has three games. Pick a round length (30, 60 or 120 seconds, or no limit) and press
+**Start**; the score, streak and time left are shown while you play.
+
+- **Fretboard notes**: a note and a string are shown ("C on string 1"). Find it by tapping the fretboard, or play it on
+  your instrument (the microphone listens, as in the tuner). Pick the tuning to match your instrument. A wrong answer
+  shows where the note was. Strings you miss come up more often, and the table under the game keeps accuracy and
+  average time per string and tuning.
+- **Intervals**: two notes play one after the other. Name the interval with the buttons, or play the second note on your
+  instrument (any octave). Choose the easy set (3rds, 4th, 5th, octave) or all twelve, going up, down or both.
+- **Chord qualities**: a chord plays; name it (major, minor, diminished, augmented, sus4 and the sevenths). Buttons only.
+
+Wait for the sound to finish before you play. The best score for each game is kept in this browser; the time and score of
+each game also go into the practice log below.
+
 ## Practice log
 
 The time you spend playing a tab is logged automatically, per song, track and loop, with the speed and the mode (free
@@ -57,8 +73,8 @@ stretches under five seconds are not logged.
 
 The **Practice** page shows a progress ring for the day's minutes against your daily goal (default 15; 0 turns it off),
 the current and longest streak, songs practised, a calendar heatmap, a weekly summary, recently practised songs, best
-scores, and songs you have not played in two weeks. Days follow your browser's local midnight. The log is part of the
-library backup.
+scores, and songs you have not played in two weeks. Days follow your browser's local midnight. Trainer games count toward the day's minutes, the streak and the heatmap, and are listed on the Practice page; the
+song log is part of the library backup (trainer games are not yet).
 
 ## Checking it by hand
 

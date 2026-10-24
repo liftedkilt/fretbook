@@ -403,6 +403,28 @@ export interface PracticeSongStats {
   best_score: number | null;
 }
 
+export type ExerciseKind = "fretboard" | "interval" | "chord";
+
+/** One finished trainer game, as sent to the practice log. */
+export interface PracticeExerciseDraft {
+  kind: ExerciseKind;
+  /** The player's local date, `YYYY-MM-DD`. */
+  day: string;
+  started_at?: string;
+  duration_seconds: number;
+  rounds: number;
+  correct: number;
+  score: number | null;
+}
+
+export interface PracticeExerciseStats {
+  kind: ExerciseKind;
+  session_count: number;
+  total_seconds: number;
+  last_day: string;
+  best_score: number | null;
+}
+
 export interface PracticeStats {
   today: string;
   goal: PracticeGoal;
@@ -416,6 +438,7 @@ export interface PracticeStats {
   recent: PracticeSongStats[];
   best_scores: PracticeSongStats[];
   stale: PracticeSongStats[];
+  exercises: PracticeExerciseStats[];
 }
 
 export interface SongPractice {

@@ -2058,6 +2058,182 @@
         "title": "PracticeDay",
         "type": "object"
       },
+      "PracticeExercise": {
+        "properties": {
+          "correct": {
+            "title": "Correct",
+            "type": "integer"
+          },
+          "day": {
+            "title": "Day",
+            "type": "string"
+          },
+          "duration_seconds": {
+            "title": "Duration Seconds",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "fretboard",
+              "interval",
+              "chord"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "rounds": {
+            "title": "Rounds",
+            "type": "integer"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "started_at": {
+            "title": "Started At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "started_at",
+          "day",
+          "duration_seconds",
+          "rounds",
+          "correct",
+          "score"
+        ],
+        "title": "PracticeExercise",
+        "type": "object"
+      },
+      "PracticeExerciseBody": {
+        "properties": {
+          "correct": {
+            "default": 0,
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Correct",
+            "type": "integer"
+          },
+          "day": {
+            "maxLength": 10,
+            "minLength": 10,
+            "title": "Day",
+            "type": "string"
+          },
+          "duration_seconds": {
+            "maximum": 21600.0,
+            "minimum": 1.0,
+            "title": "Duration Seconds",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "fretboard",
+              "interval",
+              "chord"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "rounds": {
+            "default": 0,
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Rounds",
+            "type": "integer"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "maxLength": 40,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          }
+        },
+        "required": [
+          "kind",
+          "day",
+          "duration_seconds"
+        ],
+        "title": "PracticeExerciseBody",
+        "type": "object"
+      },
+      "PracticeExerciseStats": {
+        "properties": {
+          "best_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Score"
+          },
+          "kind": {
+            "enum": [
+              "fretboard",
+              "interval",
+              "chord"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "last_day": {
+            "title": "Last Day",
+            "type": "string"
+          },
+          "session_count": {
+            "title": "Session Count",
+            "type": "integer"
+          },
+          "total_seconds": {
+            "title": "Total Seconds",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "session_count",
+          "total_seconds",
+          "last_day",
+          "best_score"
+        ],
+        "title": "PracticeExerciseStats",
+        "type": "object"
+      },
       "PracticeGoal": {
         "properties": {
           "daily_minutes": {
@@ -2380,6 +2556,13 @@
             "title": "Current Streak",
             "type": "integer"
           },
+          "exercises": {
+            "items": {
+              "$ref": "#/components/schemas/PracticeExerciseStats"
+            },
+            "title": "Exercises",
+            "type": "array"
+          },
           "goal": {
             "$ref": "#/components/schemas/PracticeGoal"
           },
@@ -2440,7 +2623,8 @@
           "week",
           "recent",
           "best_scores",
-          "stale"
+          "stale",
+          "exercises"
         ],
         "title": "PracticeStats",
         "type": "object"
@@ -6117,6 +6301,97 @@
         "summary": "Meta",
         "tags": [
           "meta"
+        ]
+      }
+    },
+    "/api/practice/exercises": {
+      "post": {
+        "operationId": "record_exercise_api_practice_exercises_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PracticeExerciseBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PracticeExercise"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Record Exercise",
+        "tags": [
+          "practice"
         ]
       }
     },

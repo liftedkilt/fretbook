@@ -16,6 +16,7 @@
   import StandaloneMetronomeView from "./components/StandaloneMetronomeView.svelte";
   import StandaloneTunerView from "./components/StandaloneTunerView.svelte";
   import ToolsView from "./components/ToolsView.svelte";
+  import TrainerView from "./components/TrainerView.svelte";
   import TunerSheet from "./components/TunerSheet.svelte";
   import { t } from "./lib/i18n.svelte";
   import { followLink, hrefFor, navigate, routePath } from "./lib/router.svelte";
@@ -40,6 +41,7 @@
   const isToolsTuner = $derived(path === "/tools/tuner" || path === "/tools/tuner/");
   const isToolsMetronome = $derived(path === "/tools/metronome" || path === "/tools/metronome/");
   const isToolsChords = $derived(path === "/tools/chords" || path === "/tools/chords/");
+  const isToolsTrainer = $derived(path === "/tools/trainer" || path === "/tools/trainer/");
   const isToolsActive = $derived(path.startsWith("/tools"));
   const isLibrary = $derived(path === "/");
   const isAdmin = $derived(ui.me?.role === "admin");
@@ -266,6 +268,8 @@
       <StandaloneTunerView />
     {:else if isToolsMetronome}
       <StandaloneMetronomeView />
+    {:else if isToolsTrainer}
+      <TrainerView />
     {:else if isToolsChords}
       <ChordLibraryView />
     {:else if path === "/admin" && isAdmin && ui.me}

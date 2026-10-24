@@ -92,7 +92,11 @@ Results (`ScoreResults.svelte`) show overall accuracy, stars, the counts, accura
 
 ## Fretboard
 
-`web/src/components/Fretboard.svelte` only draws: it takes the tuning (4 to 8 strings), capo, fret count, the notes lit now and the faded upcoming ones, a label mode and a handedness flag, so the tuner, wait mode and trainers can reuse it. `web/src/lib/fretboard.ts` holds the pure parts: `buildFretEvents` (beats of a track in played order), `focusAt` (current and next notes at a bar and tick), `positionInBar` (a recording's clock to ticks), fret spacing and the dot labels. Frets count from the capo, so the capo is the nut. The options live in the per-song practice settings (`fretboard`).
+`web/src/components/Fretboard.svelte` only draws: it takes the tuning (4 to 8 strings), capo, fret count, the notes lit now and the faded upcoming ones, a label mode and a handedness flag, so the tuner, wait mode and trainers can reuse it. `web/src/lib/fretboard.ts` holds the pure parts: `buildFretEvents` (beats of a track in played order), `focusAt` (current and next notes at a bar and tick), `positionInBar` (a recording's clock to ticks), fret spacing and the dot labels. Frets count from the capo, so the capo is the nut. The options live in the per-song practice settings (`fretboard`). Giving it an `onselect` handler turns every fret into a tap target, which the note trainer uses.
+
+## Ear and fretboard trainer
+
+`web/src/components/TrainerView.svelte` (route `/tools/trainer`) is a thin shell over the pure modules in `web/src/lib/trainer/`: `fretboardGame.ts` (questions, tap and played-note checks, `StableNote` to debounce pitch readings, per-string statistics), `ear.ts` (interval and chord-quality pools, questions, answer checks, session summary), `session.ts` (timed rounds with an injected clock), `store.ts` (per-string stats and best scores in `localStorage`) and `audio.ts` (Web Audio voices). Microphone answers reuse `startListening` from `lib/listen`. A finished game is posted to `POST /api/practice/exercises` (table `practice_exercises`, migration 012) because it belongs to no song; the practice stats sum its seconds into the same per-day totals as song sessions, so goal, streak and heatmap count it, and list it under `exercises`.
 
 ## Chord diagrams
 

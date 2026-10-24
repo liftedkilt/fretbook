@@ -67,6 +67,7 @@ function stats(overrides: Partial<PracticeStats> = {}): PracticeStats {
         best_score: null,
       },
     ],
+    exercises: [],
     ...overrides,
   };
 }
@@ -125,6 +126,7 @@ describe("PracticeView", () => {
         recent: [],
         best_scores: [],
         stale: [],
+        exercises: [],
         current_streak: 0,
       }),
     );
@@ -144,5 +146,30 @@ describe("PracticeView", () => {
     render(PracticeView);
     await screen.findByTestId("practice-today");
     expect(screen.getByTestId("practice-ring")).toHaveAttribute("data-progress", "0.00");
+  });
+
+  it("lists the trainer games, and a log of only trainer time is not empty", async () => {
+    mockStats.mockResolvedValue(
+      stats({
+        songs_practised: 0,
+        recent: [],
+        best_scores: [],
+        stale: [],
+        exercises: [
+          {
+            kind: "interval",
+            session_count: 3,
+            total_seconds: 180,
+            last_day: "2026-03-10",
+            best_score: 82.5,
+          },
+        ],
+      }),
+    );
+    render(PracticeView);
+    const list = await screen.findByTestId("practice-list-exercises");
+    expect(list).toHaveTextContent("Intervals");
+    expect(list).toHaveTextContent("83%");
+    expect(screen.queryByTestId("practice-empty")).toBeNull();
   });
 });
