@@ -82,6 +82,7 @@ def _options(payload: dict[str, Any]) -> dict[str, Any]:
         "slug": payload.get("slug"),
         "part_ids": payload.get("part_ids"),
         "prefer": payload.get("prefer"),
+        "midi": payload.get("midi"),
     }
 
 

@@ -1233,6 +1233,13 @@
             >
             <a
               class="menu-item"
+              data-testid="export-midi"
+              role="menuitem"
+              href={exportUrl("mid")}
+              onclick={close}><Icon name="download" size={18} />{t("player.exportMidi")}</a
+            >
+            <a
+              class="menu-item"
               data-testid="export-json"
               role="menuitem"
               href={exportUrl("json")}

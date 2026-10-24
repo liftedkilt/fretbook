@@ -34,8 +34,8 @@ no_implicit_optional = true
 check_untyped_defs = true
 
 [[tool.mypy.overrides]]
-# Optional dependencies (requirements-vision.txt) ship without type stubs.
-module = ["cv2.*", "pytesseract.*", "PIL.*"]
+# Optional dependencies (requirements-vision.txt) and mido ship without type stubs.
+module = ["cv2.*", "pytesseract.*", "PIL.*", "mido.*"]
 ignore_missing_imports = true
 
 [tool.ruff]
@@ -54,7 +54,7 @@ source = ["fretbook"]
 branch = true
 
 [tool.coverage.report]
-# The floor: current total (lines and branches, 88.8%) rounded down. Raise it as tests are added; never lower it.
-fail_under = 89
+# The floor: current total (lines and branches, 90.1%) rounded down. Raise it as tests are added; never lower it.
+fail_under = 90
 show_missing = true
 skip_covered = true

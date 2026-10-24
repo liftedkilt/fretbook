@@ -12,6 +12,7 @@ import type {
   ImportPreview as ContractImportPreview,
   Job as ContractJob,
   JobAccepted,
+  MidiInspection,
   Me as ContractMe,
   Meta as ContractMeta,
   PracticeGoal as ContractPracticeGoal,
@@ -32,6 +33,7 @@ import type {
   TagsAdded,
 } from "./api-types";
 import { keyed } from "./i18n.svelte";
+import type { MidiImportOptions } from "./midiImport";
 import { currentPath } from "./router.svelte";
 import { songsPath } from "./songQuery";
 import type {
@@ -409,6 +411,21 @@ export function importFile(file: File): Promise<JobAccepted> {
   const data = new FormData();
   data.append("file", file);
   return request<JobAccepted>("/api/imports/file", { method: "POST", body: data });
+}
+
+/** List the parts of a MIDI file (name, range, suggested instrument) without saving anything. */
+export function inspectMidi(file: File): Promise<MidiInspection> {
+  const data = new FormData();
+  data.append("file", file);
+  return request<MidiInspection>("/api/imports/midi/inspect", { method: "POST", body: data });
+}
+
+/** Queue the import of a MIDI file with the chosen parts, instruments, capo and grid. */
+export function importMidi(file: File, options: MidiImportOptions): Promise<JobAccepted> {
+  const data = new FormData();
+  data.append("file", file);
+  data.append("options", JSON.stringify(options));
+  return request<JobAccepted>("/api/imports/midi", { method: "POST", body: data });
 }
 
 /** Queue an import of whatever was dropped, pasted or linked. Send exactly one of `file`, `text` or `url`. */

@@ -185,7 +185,7 @@ def meta(ctx: AppContext = Depends(_ctx), _user: Principal = Depends(_user)) -> 
             "version": __version__,
             "commit": git_sha(),
             "auth_mode": ctx.settings.auth_mode,
-            "exporters": ["json", "musicxml", "chordpro", "pdf"],
+            "exporters": ["json", "musicxml", "midi", "chordpro", "pdf"],
             "instruments": presets_payload(),
             "ytdlp": asdict(ytdlp_status(ctx.settings)),
             "worker_kinds": ctx.jobs.live_worker_kinds(),

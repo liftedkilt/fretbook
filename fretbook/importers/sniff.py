@@ -6,7 +6,7 @@ looks at magic bytes first and falls back to the extension for formats that
 have none (plain text).
 
 The kinds returned here are format names, not importer names. The registry maps
-them to importers; formats Fretbook cannot read yet (MIDI, PDF, images) are still
+them to importers; formats Fretbook cannot read yet (PDF, images) are still
 named so the UI can say so instead of "unrecognised".
 """
 
@@ -40,6 +40,7 @@ SUPPORTED_LABELS = (
     "MusicXML (.musicxml, .xml, .mxl)",
     "ChordPro and chords over lyrics",
     "ASCII tab",
+    "MIDI (.mid, .midi)",
     "Fretbook JSON",
     "audio files (.mp3, .wav, .ogg, .m4a, .flac, .webm)",
 )

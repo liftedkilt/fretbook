@@ -11,6 +11,8 @@ const mockPreviewAsciiTab = vi.fn();
 const mockImportAsciiTab = vi.fn();
 const mockImportFile = vi.fn();
 const mockImportAuto = vi.fn();
+const mockInspectMidi = vi.fn();
+const mockImportMidi = vi.fn();
 const mockImportDocument = vi.fn();
 const mockWaitForJob = vi.fn();
 const mockListSongs = vi.fn();
@@ -31,6 +33,8 @@ vi.mock("../lib/api", () => ({
   importAsciiTab: (...args: unknown[]) => mockImportAsciiTab(...args),
   importFile: (...args: unknown[]) => mockImportFile(...args),
   importAuto: (...args: unknown[]) => mockImportAuto(...args),
+  inspectMidi: (...args: unknown[]) => mockInspectMidi(...args),
+  importMidi: (...args: unknown[]) => mockImportMidi(...args),
   importDocument: (...args: unknown[]) => mockImportDocument(...args),
   waitForJob: (...args: unknown[]) => mockWaitForJob(...args),
   listSongs: (...args: unknown[]) => mockListSongs(...args),
@@ -309,6 +313,71 @@ describe("AddSheet", () => {
       await fireEvent.change(screen.getByTestId("any-file-input"), { target: { files: [file] } });
 
       await vi.waitFor(() => expect(mockImportAuto).toHaveBeenCalledWith({ file }));
+    });
+
+    it("asks which parts and instruments to use for a MIDI file, then imports them", async () => {
+      mockInspectMidi.mockResolvedValue({
+        title: "Riff",
+        bpm: 100,
+        signature: [4, 4],
+        drum_notes: 0,
+        tracks: [
+          {
+            id: "1:0",
+            name: "Bass",
+            channel: 1,
+            program: 33,
+            notes: 8,
+            lowest: 28,
+            highest: 43,
+            in_range: true,
+            suggested_preset: "bass-4",
+            selected: true,
+          },
+        ],
+      });
+      mockImportMidi.mockResolvedValue({ job_id: "job-1" });
+      mockWaitForJob.mockResolvedValue({
+        status: "done",
+        result: { song_id: "song-1", warnings: [] },
+      });
+      // Named like text: the header decides, not the name.
+      const file = new File([new Uint8Array([77, 84, 104, 100, 0, 0, 0, 6])], "riff.txt");
+      render(AddSheet);
+      await fireEvent.change(screen.getByTestId("any-file-input"), { target: { files: [file] } });
+
+      expect(await screen.findByTestId("midi-import")).toBeInTheDocument();
+      expect(mockImportAuto).not.toHaveBeenCalled();
+      await fireEvent.click(screen.getByTestId("midi-submit"));
+
+      await vi.waitFor(() =>
+        expect(mockImportMidi).toHaveBeenCalledWith(file, {
+          tracks: ["1:0"],
+          presets: { "1:0": "bass-4" },
+          capo: 0,
+          grid: 16,
+        }),
+      );
+    });
+
+    it("goes back to the Add box when a MIDI import is cancelled, and shows a read error", async () => {
+      mockInspectMidi.mockRejectedValueOnce(new Error("This MIDI file could not be read."));
+      const file = new File([new Uint8Array([77, 84, 104, 100, 0])], "bad.mid");
+      render(AddSheet);
+      await fireEvent.change(screen.getByTestId("any-file-input"), { target: { files: [file] } });
+      expect(await screen.findByTestId("add-error")).toHaveTextContent("could not be read");
+
+      mockInspectMidi.mockResolvedValueOnce({
+        title: "",
+        bpm: 120,
+        signature: [4, 4],
+        drum_notes: 0,
+        tracks: [],
+      });
+      await fireEvent.change(screen.getByTestId("any-file-input"), { target: { files: [file] } });
+      expect(await screen.findByTestId("midi-import")).toBeInTheDocument();
+      await fireEvent.click(screen.getByText("Cancel"));
+      expect(await screen.findByTestId("any-text")).toBeInTheDocument();
     });
 
     it("reads a Guitar Pro file in the browser even when it has no Guitar Pro name", async () => {

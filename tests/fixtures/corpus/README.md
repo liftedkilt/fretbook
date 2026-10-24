@@ -17,13 +17,13 @@ few bars of techniques invented for the tests, and the lyrics are placeholder te
 | `chordpro/*.cho` | ChordPro with long and short directive forms | Hand-written |
 | `ugtext/*.txt` | Ultimate Guitar style chords-over-lyrics, with and without a header | Hand-written |
 | `asciitab/*.tab`, `asciitab/*.txt` | ASCII tab in twelve styles: labelled and unlabelled rows, bass, drop D, 5-string bass written low string first, 7-string, multi-digit frets, technique marks, repeat signs, sections with chord lines and lyrics, `PM` rows, wrapped systems, sixteenth runs, and a `.txt` with a tab among prose | Hand-written |
-| `midi/riff.mid` | The riff as a format-0 MIDI file | Written byte by byte |
+| `midi/riff.mid` | The riff as a format-0 MIDI file (imports to the same notes as the MusicXML riff) | Written byte by byte |
 | `json/*.json` | Fretbook JSON: tab export, chord export, bare document, malformed | Produced by the MusicXML and ChordPro importers |
 | `golden/*.json` | Expected result of importing each file above | `pytest tests/test_import_corpus.py --update-golden` |
 | `golden-web/*.json` | Expected result of importing each Guitar Pro file in the browser | `UPDATE_GOLDEN=1 npm test --prefix web` |
 
 Not covered yet, because there is no way to generate an original file or no importer exists: Guitar Pro 6 (`.gpx`),
-and server importers for MIDI and `.mxl`. Those fixtures are snapshotted as "no importer" so the snapshot
+and a server importer for `.mxl`. Those fixtures are snapshotted as "no importer" so the snapshot
 changes when support lands.
 
 To add a file, put it in the matching folder and run both update commands; review the new snapshot in the diff.
