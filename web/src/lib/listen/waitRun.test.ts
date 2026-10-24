@@ -67,6 +67,36 @@ describe("WaitRun", () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
+  it("follows a click on the score: drops the wait and stops on the clicked step", async () => {
+    const { run, calls, expected } = setup([step(0, 28), step(960, 33), step(1920, 28)]);
+    await run.start();
+    run.reach(0);
+    expect(run.reposition(1920)).toBe(true);
+    expect(run.waitingOn).toBe(2);
+    expect(calls.wait).toEqual([0, 2]);
+    expect(expected.at(-1)).toBe(28);
+    // Steps before the click are behind the cursor now.
+    expect(run.reach(1)).toBe(false);
+  });
+
+  it("lets the song carry on from a click between steps, and stops on the next step", async () => {
+    const { run, calls } = setup([step(0, 28), step(960, 33), step(1920, 28)]);
+    await run.start();
+    run.reach(0);
+    expect(run.reposition(1000)).toBe(false);
+    expect(run.waitingOn).toBe(-1);
+    expect(run.reach(2)).toBe(true);
+    expect(calls.wait).toEqual([0, 2]);
+  });
+
+  it("clicking the step it is already waiting on starts that wait again", async () => {
+    const { run, calls } = setup([step(0, 28), step(960, 33)]);
+    await run.start();
+    run.reach(1);
+    expect(run.reposition(960)).toBe(true);
+    expect(calls.wait).toEqual([1, 1]);
+  });
+
   it("stops on a step, tells the detector what to expect, and goes on after the note", async () => {
     const { run, calls, expected, hear } = setup([step(0, 28), step(960, 33)]);
     await run.start();

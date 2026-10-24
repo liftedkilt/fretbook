@@ -358,6 +358,11 @@
         if (index >= 0) waitRun.reach(index);
       }
     });
+    // A click on the score moves alphaTab's cursor; wait mode follows it to the clicked beat.
+    instance.beatMouseDown.on((beat) => {
+      if (!waitRun || beat.voice.bar.staff.track.index !== untrack(() => trackIndex)) return;
+      followWaitClick(beat.voice.bar.index, beat.displayStart);
+    });
     instance.playerFinished.on(() => {
       if (scoreRun?.running) {
         scoreRun.finish();
@@ -719,6 +724,18 @@
         if (waitState !== "idle") waitState = "idle";
       }
     }
+  }
+
+  /** The player clicked a beat of the score while wait mode is on: wait on it, or play on from it. */
+  function followWaitClick(written: number, position: number) {
+    if (!waitRun) return;
+    const played = followPlayed(order, written, currentMeasure);
+    if (played < 0) return;
+    currentMeasure = played;
+    currentPosition = position;
+    waitStep = null;
+    if (waitState !== "idle") waitState = "idle";
+    waitRun.reposition(tickOfBar(played) + position);
   }
 
   function tap() {
