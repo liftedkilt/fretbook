@@ -61,17 +61,13 @@ describe("scoreLog", () => {
     expect(log.history).toHaveLength(30);
   });
 
-  it("saves, reloads and announces a result", () => {
-    const heard = vi.fn();
-    vi.stubGlobal("window", { dispatchEvent: heard });
+  it("saves and reloads a result", () => {
     recordScore("song-1", record(0.9));
-    expect(heard).toHaveBeenCalledTimes(1);
-    expect(heard.mock.calls[0][0].detail).toMatchObject({ kind: "score", songId: "song-1" });
     expect(loadScores("song-1").history).toHaveLength(1);
     expect(loadScores("other").history).toHaveLength(0);
   });
 
-  it("survives having no storage or window", () => {
+  it("survives having no storage", () => {
     vi.stubGlobal("localStorage", undefined);
     expect(loadScores("x")).toEqual({ history: [], bests: {} });
     expect(recordScore("x", record(0.5)).isBest).toBe(true);

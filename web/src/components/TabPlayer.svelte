@@ -420,8 +420,13 @@
       loopName: named?.name ?? "",
       loopStart: loop ? loopA : null,
       loopEnd: loop ? loopB : null,
-      mode: waitOn ? "wait" : "free",
+      mode: scoreOn ? "scored" : waitOn ? "wait" : "free",
       speed: rate,
+      // The latest pass's accuracy, as a percent with one decimal.
+      score:
+        scoreOn && scoreSummary && scoreSummary.graded > 0
+          ? Math.round(scoreSummary.accuracy * 1000) / 10
+          : null,
     });
   });
 

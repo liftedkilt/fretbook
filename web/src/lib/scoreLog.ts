@@ -98,7 +98,7 @@ export function addScore(
   };
 }
 
-/** Saves a finished run and tells the practice log about it. */
+/** Saves a finished run. The practice log gets the session's time and score from the player. */
 export function recordScore(
   songId: string,
   record: ScoreRecord,
@@ -109,13 +109,6 @@ export function recordScore(
       localStorage.setItem(KEY_PREFIX + songId, JSON.stringify(result.log));
   } catch {
     // Private mode or a full quota: the result just does not stick.
-  }
-  if (typeof window !== "undefined") {
-    window.dispatchEvent(
-      new CustomEvent("fretbook:practice-log-record", {
-        detail: { kind: "score", songId, ...record },
-      }),
-    );
   }
   return result;
 }
