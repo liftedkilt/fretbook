@@ -52,6 +52,8 @@ def test_chord_too_wide_drops_inner_notes_and_reports_it():
     result = assign_frets([wide], GUITAR, max_stretch=0)
     assert result.dropped == [0]
     assert 0 < len(result.groups[0]) < len(wide)
+    assert all(sounded(GUITAR, 0, placed) == placed.pitch for placed in result.groups[0])
+    assert len({placed.string for placed in result.groups[0]}) == len(result.groups[0])
 
 
 def test_pitches_below_the_instrument_move_up_an_octave():

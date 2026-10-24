@@ -3,6 +3,7 @@
 import io
 import json
 import time
+import zipfile
 from dataclasses import replace
 from pathlib import Path
 
@@ -417,6 +418,20 @@ def test_dropping_a_midi_file_in_the_add_box_uses_the_defaults(tmp_path: Path) -
         assert response.status_code == 202, response.text
         job = _wait(client, response.json()["job_id"])
         assert job["status"] == "done", job
+
+
+def test_a_midi_file_in_a_zip_is_imported_with_the_defaults(tmp_path: Path) -> None:
+    data = make_midi(conductor(), notes([40, 43], program=33))
+    archive = io.BytesIO()
+    with zipfile.ZipFile(archive, "w") as bundle:
+        bundle.writestr("pack/riff.mid", data)
+    with _client(tmp_path) as client:
+        response = client.post("/api/imports/auto", files={"file": ("pack.zip", archive.getvalue())})
+        assert response.status_code == 202, response.text
+        job = _wait(client, response.json()["job_id"])
+        assert job["status"] == "done", job
+        song = client.get(f"/api/songs/{job['result']['song_id']}").json()
+        assert song["source_kind"] == "midi" and len(song["document"]["tracks"]) == 1
 
 
 def test_capabilities_list_the_midi_exporter(tmp_path: Path) -> None:

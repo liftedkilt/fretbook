@@ -79,10 +79,10 @@ export FRETBOOK_URL=https://fretbook.example.com FRETBOOK_TOKEN=fb_...
 python -m fretbook.cli import song.gp5 https://www.songsterr.com/a/wsa/... ~/tabs   # files, links, and folders
 python -m fretbook.cli import --recursive --no-wait ~/tabs
 python -m fretbook.cli list "blue"                                                  # or: list --json
-python -m fretbook.cli export <song id> -f musicxml -o song.musicxml                # json (default), musicxml, chordpro
+python -m fretbook.cli export <song id> -f musicxml -o song.musicxml                # json (default), musicxml, midi, chordpro
 ```
 
-In Docker: `docker compose exec -e FRETBOOK_TOKEN=fb_... fretbook python -m fretbook.cli --url http://localhost:8137 list`. A folder import picks up Guitar Pro, MusicXML, ChordPro, Fretbook JSON and `.tab` files and skips the rest. `import` waits for each job and exits 1 if any failed. Guitar Pro files need the server-side converter (`FRETBOOK_GP_CONVERTER`; the Docker image has it).
+In Docker: `docker compose exec -e FRETBOOK_TOKEN=fb_... fretbook python -m fretbook.cli --url http://localhost:8137 list`. A folder import picks up Guitar Pro, MusicXML, MIDI, ChordPro, Fretbook JSON and `.tab` files and skips the rest. `import` waits for each job and exits 1 if any failed. Guitar Pro files need the server-side converter (`FRETBOOK_GP_CONVERTER`; the Docker image has it).
 
 **Example: import a folder of Guitar Pro files from cron.** Drop files in `~/tabs/incoming`, and every night upload them and move the ones that imported:
 

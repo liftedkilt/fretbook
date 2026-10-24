@@ -111,7 +111,9 @@ def _local_cost(candidate: _Candidate) -> float:
 
 
 def _mean_string(candidate: _Candidate) -> float:
-    return sum(string for string, _ in candidate) / len(candidate)
+    """The average string of the notes actually placed (a pitch left out of a thinned chord has string -1)."""
+    played = [string for string, _ in candidate if string >= 0]
+    return sum(played) / len(played)
 
 
 def _trim(pitches: list[int], tuning: Sequence[int], capo: int, max_fret: int, max_stretch: int) -> list[_Candidate]:
@@ -176,34 +178,37 @@ def assign_frets(
         found.sort(key=lambda candidate: (_spread(candidate), _local_cost(candidate)))
         prepared.append((index, pitches, found[:_MAX_CANDIDATES]))
 
-    # costs[state] = (total cost, hand position carried out of this state, previous state)
+    # Per state: (total cost, hand position carried out of the state, previous state). A state with only open
+    # strings keeps the hand where it was, so the carried position depends on the best predecessor.
     previous: list[tuple[float, float | None, int]] | None = None
+    before_strings: list[float] = []
     trail: list[list[int]] = []
     for _, _, found in prepared:
+        positions = [_position(candidate) for candidate in found]
+        locals_ = [_local_cost(candidate) for candidate in found]
+        strings = [_mean_string(candidate) for candidate in found]
         row: list[tuple[float, float | None, int]] = []
-        links: list[int] = []
-        for candidate in found:
-            position = _position(candidate)
-            local = _local_cost(candidate)
+        for candidate_index in range(len(found)):
+            position = positions[candidate_index]
             if previous is None:
-                row.append((local, position, -1))
-                links.append(-1)
+                row.append((locals_[candidate_index], position, -1))
                 continue
             best: tuple[float, float | None, int] | None = None
             for before, (cost, carried, _) in enumerate(previous):
-                prior = prepared[len(trail) - 1][2][before]
-                move = 0.0
-                if position is not None and carried is not None:
-                    move = abs(position - carried)
-                strings = abs(_mean_string(candidate) - _mean_string(prior))
-                total = cost + local + _MOVE_WEIGHT * move + _STRING_WEIGHT * strings
+                move = abs(position - carried) if position is not None and carried is not None else 0.0
+                total = (
+                    cost
+                    + locals_[candidate_index]
+                    + _MOVE_WEIGHT * move
+                    + _STRING_WEIGHT * abs(strings[candidate_index] - before_strings[before])
+                )
                 if best is None or total < best[0]:
                     best = (total, position if position is not None else carried, before)
             assert best is not None
             row.append(best)
-            links.append(best[2])
-        trail.append(links)
+        trail.append([state[2] for state in row])
         previous = row
+        before_strings = strings
 
     if previous is None:
         return result
