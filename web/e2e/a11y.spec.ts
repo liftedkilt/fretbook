@@ -51,6 +51,12 @@ for (const scheme of ["light", "dark"] as const) {
       expect(found).toEqual([]);
     });
 
+    test("the first-run welcome has no axe violations", async ({ page }) => {
+      await page.goto("/");
+      await expect(page.getByTestId("first-run-demo")).toBeVisible();
+      expect(await violations(page, "first run")).toEqual([]);
+    });
+
     test("sheets have no axe violations", async ({ page, seed }) => {
       const tab = await seed.musicXmlTab();
       const found: string[] = [];

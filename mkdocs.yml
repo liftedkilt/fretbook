@@ -62,5 +62,6 @@ nav:
       - Watched inbox folder: guides/inbox.md
       - Keeping yt-dlp working: guides/ytdlp.md
       - Scripts and the command line: guides/cli.md
+      - Demo library and demo mode: guides/demo.md
   - Reference:
       - Configuration: reference/configuration.md

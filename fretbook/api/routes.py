@@ -191,6 +191,7 @@ def meta(ctx: AppContext = Depends(_ctx), _user: Principal = Depends(_user)) -> 
             "instruments": presets_payload(),
             "ytdlp": asdict(ytdlp_status(ctx.settings)),
             "worker_kinds": ctx.jobs.live_worker_kinds(),
+            "demo_mode": ctx.settings.demo_mode,
         }
     )
 

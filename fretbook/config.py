@@ -185,6 +185,16 @@ ENV_VARS: tuple[EnvVar, ...] = (
         "Job worker",
     ),
     EnvVar(
+        "FRETBOOK_DEMO_MODE",
+        "`false`",
+        (
+            "Run a public, read-only demo: no uploads, imports, edits or deletes, and the library is reset to the demo "
+            "songs at start and every night at 03:00 UTC. For single-user mode. See [Demo library and demo mode]"
+            "(../guides/demo.md)."
+        ),
+        "Server",
+    ),
+    EnvVar(
         "FRETBOOK_AUTH_MODE",
         "`single`, or `oidc` when `FRETBOOK_OIDC_ISSUER` is set",
         "`single` (no login, one library) or `oidc` (sign-in, one library per user).",
@@ -290,6 +300,8 @@ class Settings:
     inbox_interval_seconds: int = 10
     # FRETBOOK_LESSONS_DIR: the user's own courses; ``lessons_path`` is where they live when unset.
     lessons_dir: Path | None = None
+    # FRETBOOK_DEMO_MODE: a read-only public demo that resets nightly. See fretbook/demo/.
+    demo_mode: bool = False
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -346,6 +358,7 @@ class Settings:
             inbox_mode="library" if inbox_mode == "library" else "move",
             inbox_interval_seconds=max(1, _int("FRETBOOK_INBOX_INTERVAL", 10)),
             lessons_dir=Path(lessons_raw).expanduser() if lessons_raw else None,
+            demo_mode=_flag("FRETBOOK_DEMO_MODE", False),
         )
 
     @classmethod

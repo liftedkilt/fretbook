@@ -272,6 +272,8 @@ export interface Meta {
   exporters: string[];
   instruments: InstrumentPreset[];
   ytdlp: YtDlpStatus;
+  /** A read-only public demo (`FRETBOOK_DEMO_MODE`). */
+  demo_mode?: boolean;
 }
 
 export interface Settings {

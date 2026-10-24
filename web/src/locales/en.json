@@ -645,6 +645,9 @@
       "packNoCourse": "The course {course} has no course.md.",
       "badPack": "That pack could not be imported.",
       "packTooManyLessons": "That pack has too many lessons (the limit is {limit})."
+    },
+    "demo": {
+      "readOnly": "This is a read-only demo, so the library cannot be changed."
     }
   },
   "ui": {
@@ -1815,5 +1818,39 @@
       "nextSong": "Next song in the setlist",
       "previousSong": "Previous song in the setlist"
     }
+  },
+  "firstRun": {
+    "title": "Welcome to Fretbook",
+    "subtitle": "Your library is empty. Pick a place to start; you can come back to any of these later.",
+    "importTitle": "Bring in a song",
+    "importBody": "Paste a Songsterr, Ultimate Guitar or YouTube link, drop a Guitar Pro, MusicXML, MIDI or ChordPro file or a whole folder, paste a text tab, or start a blank tab.",
+    "demoTitle": "Try the demo songs",
+    "demoBody": "Three original songs: a bass tab with audio and sync, a guitar tab and a chord sheet. Remove them any time in Settings.",
+    "demoButton": "Add the demo songs",
+    "demoAdding": "Adding…",
+    "instrumentTitle": "Choose your instrument",
+    "instrumentBody": "New tabs, added parts and imports start on this instrument.",
+    "tunerTitle": "Tune up",
+    "tunerBody": "Check your tuning with the microphone before you play.",
+    "tunerButton": "Open the tuner",
+    "courseTitle": "Learn the basics",
+    "courseBody": "A short beginner course for your instrument, with lessons you can play along to.",
+    "courseButton": "Start the beginner course"
+  },
+  "demo": {
+    "heading": "Demo songs",
+    "hint": "Three original songs that come with Fretbook. Removing them never touches your own songs.",
+    "add": "Add the demo songs",
+    "remove": "Remove the demo songs",
+    "confirmRemove": "Remove the demo songs from your library?",
+    "added": {
+      "one": "Added {count} demo song.",
+      "other": "Added {count} demo songs."
+    },
+    "removed": {
+      "one": "Removed {count} demo song.",
+      "other": "Removed {count} demo songs."
+    },
+    "banner": "This is a read-only demo. Look around and play; changes are not saved, and the library resets every night."
   }
 }

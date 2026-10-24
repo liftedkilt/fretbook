@@ -22,6 +22,7 @@ from fretbook.api.backup import RESTORE_PATH
 from fretbook.api.backup import router as backup_router
 from fretbook.api.bulk_routes import router as bulk_router
 from fretbook.api.calibration_routes import router as calibration_router
+from fretbook.api.demo_routes import router as demo_router
 from fretbook.api.lesson_routes import router as lesson_router
 from fretbook.api.middleware import BodyLimitMiddleware, SameOriginMiddleware
 from fretbook.api.midi_routes import router as midi_router
@@ -40,6 +41,8 @@ from fretbook.backup.restore import register_restore_handler
 from fretbook.config import Settings
 from fretbook.context import AppContext
 from fretbook.db.migrate import migrate
+from fretbook.demo import DemoResetter
+from fretbook.demo.middleware import DemoReadOnlyMiddleware
 from fretbook.importers.safe_fetch import SafeFetcher
 from fretbook.inbox import InboxWatcher
 from fretbook.jobs.handlers import register_handlers
@@ -159,6 +162,8 @@ def create_app(
         auth=build_auth(settings, users, transport=oidc_transport),
     )
 
+    resetter = DemoResetter(ctx)
+
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         migrate(
@@ -178,11 +183,13 @@ def create_app(
             logger.info("imported %s legacy song(s)", count)
         jobs.start()
         updater.start()
+        resetter.start()
         if inbox:
             inbox.start()
         yield
         if inbox:
             inbox.stop()
+        resetter.stop()
         updater.stop()
         jobs.stop()
 
@@ -231,6 +238,10 @@ def create_app(
                 ),
             },
             {
+                "name": "demo",
+                "description": "The bundled demo songs: add them to the library or remove them again.",
+            },
+            {
                 "name": "imports",
                 "description": "Start a background import. Poll GET /api/jobs/{job_id}.",
             },
@@ -260,6 +271,8 @@ def create_app(
     app.state.ctx = ctx
     app.add_exception_handler(RequestValidationError, _validation_error)
     app.add_middleware(SameOriginMiddleware)
+    if settings.demo_mode:
+        app.add_middleware(DemoReadOnlyMiddleware)
     # Room for multipart framing around the largest allowed upload.
     app.add_middleware(
         BodyLimitMiddleware,
@@ -282,6 +295,7 @@ def create_app(
     app.include_router(setlist_router)
     app.include_router(practice_router)
     app.include_router(lesson_router)
+    app.include_router(demo_router)
     auth_routes = ctx.auth.routes()
     if auth_routes is not None:
         app.include_router(auth_routes)

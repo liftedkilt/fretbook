@@ -31,6 +31,10 @@ For development, see [CONTRIBUTING.md](https://github.com/liftedkilt/fretbook/bl
 
 ## First steps
 
+An empty library opens on a welcome with the ways to start, including **Add the demo songs**: three original songs
+(a bass tab with audio and sync, a guitar tab and a chord sheet) to try the player first. See
+[Demo library and demo mode](guides/demo.md).
+
 1. Press **Add** and drop a Guitar Pro, MusicXML or MIDI file, paste a Songsterr or Ultimate Guitar link, or paste
    ASCII tab. See [Importing songs](guides/importing.md).
 2. Open the song and press Space to play. See [Playing and syncing](guides/playing.md).

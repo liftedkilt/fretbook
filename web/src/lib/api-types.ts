@@ -293,6 +293,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/demo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Demo
+         * @description The demo songs and which of them are in the caller's library.
+         */
+        get: operations["get_demo_api_demo_get"];
+        put?: never;
+        /**
+         * Add Demo
+         * @description Add the demo songs that are missing. Adding twice changes nothing.
+         */
+        post: operations["add_demo_api_demo_post"];
+        /**
+         * Remove Demo
+         * @description Remove the demo songs and their audio. Songs the caller made or imported are kept.
+         */
+        delete: operations["remove_demo_api_demo_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -1961,6 +1989,37 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** DemoChange */
+        DemoChange: {
+            /** Changed */
+            changed: number;
+            /** Installed */
+            installed: number;
+            /** Songs */
+            songs: components["schemas"]["DemoSongInfo"][];
+        };
+        /** DemoLibrary */
+        DemoLibrary: {
+            /** Installed */
+            installed: number;
+            /** Songs */
+            songs: components["schemas"]["DemoSongInfo"][];
+        };
+        /** DemoSongInfo */
+        DemoSongInfo: {
+            /** Artist */
+            artist: string;
+            /** Has Audio */
+            has_audio: boolean;
+            /** Id */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Song Id */
+            song_id: string | null;
+            /** Title */
+            title: string;
+        };
         /**
          * DifficultyFactor
          * @description One reason for a track's level.
@@ -2387,6 +2446,8 @@ export interface components {
             auth_mode: string;
             /** Commit */
             commit: string | null;
+            /** Demo Mode */
+            demo_mode: boolean;
             /** Exporters */
             exporters: string[];
             /** Instruments */
@@ -3369,6 +3430,9 @@ export type CourseSummary = components['schemas']['CourseSummary'];
 export type CreateSetlistBody = components['schemas']['CreateSetlistBody'];
 export type CreateSongBody = components['schemas']['CreateSongBody'];
 export type CreateTokenBody = components['schemas']['CreateTokenBody'];
+export type DemoChange = components['schemas']['DemoChange'];
+export type DemoLibrary = components['schemas']['DemoLibrary'];
+export type DemoSongInfo = components['schemas']['DemoSongInfo'];
 export type DifficultyFactor = components['schemas']['DifficultyFactor'];
 export type ErrorBody = components['schemas']['ErrorBody'];
 export type ErrorDetail = components['schemas']['ErrorDetail'];
@@ -4909,6 +4973,228 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LessonSource"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    get_demo_api_demo_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoLibrary"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    add_demo_api_demo_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoChange"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    remove_demo_api_demo_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoChange"];
                 };
             };
             /** @description Keyed error. `detail` is {key, message, params}. */
