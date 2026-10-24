@@ -113,6 +113,26 @@ describe("TrainerView", () => {
     expect(screen.queryByTestId("trainer-hud")).toBeNull();
   });
 
+  it("shows the listen panel only when answering by playing, and uses the chosen input", async () => {
+    localStorage.setItem("fretbook.listen.device", "scarlett");
+    let onLevel: ((level: { rms: number; peak: number }) => void) | undefined;
+    const session = { channelCount: 1, setChroma: vi.fn(), stop: vi.fn(async () => undefined) };
+    vi.mocked(startListening).mockImplementationOnce(async (options) => {
+      onLevel = options?.onLevel;
+      expect(options?.deviceId).toBe("scarlett");
+      return session as unknown as ListenSession;
+    });
+    render(TrainerView);
+    expect(screen.queryByTestId("listen-panel")).toBeNull();
+    await fireEvent.change(screen.getByTestId("trainer-answer-by"), { target: { value: "play" } });
+    expect(screen.getByTestId("listen-panel")).toBeInTheDocument();
+    await fireEvent.click(screen.getByTestId("trainer-start"));
+    await vi.advanceTimersByTimeAsync(0);
+    onLevel?.({ rms: 1, peak: 1 });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(screen.getByTestId("listen-meter")).toHaveAttribute("aria-valuenow", "100");
+  });
+
   it("answers the chord game by playing the chord", async () => {
     let onChroma: ((event: ChromaEvent) => void) | undefined;
     const session = { setChroma: vi.fn(), stop: vi.fn(async () => undefined) };

@@ -2,10 +2,17 @@
   import { untrack } from "svelte";
 
   import Icon from "./Icon.svelte";
+  import ListenPanel from "./ListenPanel.svelte";
   import { parse } from "../lib/chordpro";
   import { t } from "../lib/i18n.svelte";
   import { chordSheetSteps } from "../lib/listen/chordSheetWait";
-  import { describeProblem, ListenError, startListening } from "../lib/listen/input";
+  import { getSavedChannel, getSavedDevice } from "../lib/listen/devicePrefs";
+  import {
+    describeProblem,
+    ListenError,
+    startListening,
+    type ListenSession,
+  } from "../lib/listen/input";
   import { WaitRun } from "../lib/listen/waitRun";
 
   // Wait mode for a chord sheet: the chord that is lit is the one to play; the next lights up
@@ -34,6 +41,11 @@
   let hits = $state(0);
   let error = $state("");
   let run: WaitRun | null = null;
+  const savedDevice = getSavedDevice();
+  let deviceId = $state(savedDevice);
+  let channel = $state(getSavedChannel(savedDevice));
+  let level = $state(0);
+  let session = $state<ListenSession | null>(null);
 
   const chord = $derived(built.steps[current]?.label ?? "");
 
@@ -43,7 +55,13 @@
     const { steps, keys } = built;
     const next = new WaitRun({
       steps,
-      listen: startListening,
+      listen: (options) =>
+        startListening({
+          ...options,
+          deviceId: deviceId || undefined,
+          channel,
+          onLevel: ({ peak }) => (level = peak),
+        }),
       hintSeconds: 0,
       onWait: (_, index) => {
         current = index;
@@ -69,6 +87,7 @@
       return;
     }
     run = next;
+    session = next.listening;
     on = true;
     hits = 0;
     next.seek(0);
@@ -78,6 +97,8 @@
   function stop() {
     run?.stop();
     run = null;
+    session = null;
+    level = 0;
     on = false;
     phase = "idle";
     current = -1;
@@ -111,6 +132,14 @@
         ><Icon name="mic" size={16} />{on ? t("chordWait.stop") : t("chordWait.start")}</button
       >
     </div>
+    <ListenPanel
+      {session}
+      {deviceId}
+      {channel}
+      {level}
+      onDevice={(next) => (deviceId = next)}
+      onChannel={(next) => (channel = next)}
+    />
     {#if error}<p class="alert" role="alert" data-testid="chord-wait-error">
         <Icon name="alert" size={18} />{error}
       </p>{/if}

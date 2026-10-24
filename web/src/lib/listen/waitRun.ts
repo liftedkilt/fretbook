@@ -36,6 +36,11 @@ export class WaitRun {
     this.matcher = new WaitMatcher({ ...DEFAULT_WAIT_OPTIONS, ...options.match });
   }
 
+  /** The open microphone session, for the channel picker; null until `start` resolves. */
+  get listening(): ListenSession | null {
+    return this.session;
+  }
+
   get total(): number {
     return this.options.steps.length;
   }
