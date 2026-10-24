@@ -18,8 +18,9 @@ and fast, technical lead playing 8 or more. Bump :data:`VERSION` when they chang
 start-up when their version is older.
 
 A chord sheet has no notes, so :func:`estimate_chordpro` rates it from its chords instead, with four factors of its
-own (:data:`CHORD_FACTORS`): how many different chords it uses, how many of them are barre chords, how many are
-extended (ninths, diminished, added notes and the like), and how often the chord changes from line to line.
+own (:data:`CHORD_FACTORS`): how many different chords it uses, how many of them are barre chords (judged on the
+sheet's ``{define:}`` fingering, else the voicing the diagram shows; see :mod:`fretbook.chords.voicings`), how many
+are extended (ninths, diminished, added notes and the like), and how often the chord changes from line to line.
 """
 
 from __future__ import annotations
@@ -29,9 +30,10 @@ from dataclasses import dataclass
 from math import ceil
 
 from fretbook.chords.chordpro import is_chord
+from fretbook.chords.voicings import STANDARD_GUITAR, Frets, best_voicing, needs_barre, sheet_defines
 from fretbook.score.model import Beat, ScoreDocument, Track, bar_seconds, preferred_track
 
-VERSION = 2
+VERSION = 3
 """Version of the estimate. Rows stored with an older one are recomputed."""
 
 FACTORS = ("density", "shifts", "stretch", "techniques", "chords", "rhythm")
@@ -244,7 +246,8 @@ _OPEN_SHAPES = {
     "B": {"7"},
     "F": {"maj7"},
 }
-"""Chords with a common open-position fingering that needs no barre, by root. Everything else counts as a barre."""
+"""Chords with a common open-position fingering that needs no barre, by root. Everything else counts as a barre.
+Only used for a chord with no voicing to look at (see :func:`chord_needs_barre`)."""
 
 
 def _split_chord(chord: str) -> tuple[str, str] | None:
@@ -262,6 +265,20 @@ def _split_chord(chord: str) -> tuple[str, str] | None:
 def chord_is_barre(root: str, quality: str) -> bool:
     """Whether the usual fingering of the chord lays one finger across the strings."""
     return quality != "5" and quality not in _OPEN_SHAPES.get(root, ())
+
+
+def chord_needs_barre(name: str, defines: dict[str, Frets]) -> bool:
+    """Whether the shape the chord diagram shows for ``name`` lays a finger across the strings.
+
+    That is the sheet's own ``{define:}`` fingering when it has one for six strings, else the best voicing the
+    generator finds for a guitar in standard tuning. A chord with neither falls back to its name.
+    """
+    define = defines.get(name)
+    voicing = define if define is not None and len(define) == len(STANDARD_GUITAR) else best_voicing(name)
+    if voicing is not None:
+        return needs_barre(voicing)
+    split = _split_chord(name)
+    return split is not None and chord_is_barre(*split)
 
 
 def chord_is_extended(quality: str) -> bool:
@@ -284,10 +301,11 @@ def estimate_chordpro(chordpro: str) -> list[TrackDifficulty]:
         return []
 
     shapes = {name.strip("()").split("/")[0] for name in sequence}
-    parsed = [split for split in (_split_chord(name) for name in shapes) if split]
+    defines = sheet_defines(chordpro)
+    parsed = [(name, split) for name in shapes if (split := _split_chord(name))]
     distinct = len(parsed)
-    barres = sum(1 for root, quality in parsed if chord_is_barre(root, quality))
-    extended = sum(1 for _root, quality in parsed if chord_is_extended(quality))
+    barres = sum(1 for name, _split in parsed if chord_needs_barre(name.strip("()"), defines))
+    extended = sum(1 for _name, (_root, quality) in parsed if chord_is_extended(quality))
     bases = [name.strip("()").split("/")[0] for name in sequence]
     changes = sum(1 for before, after in zip(bases, bases[1:], strict=False) if before != after)
     changes_per_line = changes / chord_lines
