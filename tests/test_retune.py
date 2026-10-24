@@ -176,6 +176,40 @@ def test_root_reduce_falls_back_to_the_lowest_note() -> None:
     assert pitches(result.track) == [[40], [50], [40]]
 
 
+def test_root_reduce_reads_an_arpeggio_over_the_whole_bar() -> None:
+    # Am arpeggio, one note a beat: A2 (low E fret 5), E3, A3, C4. Without the bar every note would pass through.
+    arpeggio = [
+        beat(0, Note(string=5, fret=5), duration=480),
+        beat(480, Note(string=3, fret=2), duration=480),
+        beat(960, Note(string=2, fret=2), duration=480),
+        beat(1440, Note(string=1, fret=1), duration=480),
+    ]
+    result = convert_track(make_track([arpeggio]), reduce="root")
+    # Every beat gets the bar's root, A2; the beats keep their positions and lengths.
+    assert pitches(result.track) == [[45], [45], [45], [45]]
+    assert [b.position for b in result.track.bars[0].voices[0].beats] == [0, 480, 960, 1440]
+    assert result.report.reduced == 3
+
+
+def test_root_reduce_arpeggio_keeps_the_beats_own_root_and_leaves_unknown_bars() -> None:
+    # Bar 1: C arpeggio starting on its third (E2, C3, G3, C4): the lowest root is C3. Bar 2: no chord, notes stay.
+    c_over_e = [
+        beat(0, Note(string=5, fret=0)),
+        beat(960, Note(string=4, fret=3)),
+        beat(1920, Note(string=2, fret=0)),
+    ]
+    cluster = [beat(0, Note(string=5, fret=0)), beat(960, Note(string=5, fret=1))]
+    result = convert_track(make_track([c_over_e, cluster]), reduce="root")
+    assert pitches(result.track) == [[48], [48], [48], [40], [41]]
+
+
+def test_root_reduce_bar_chord_does_not_override_a_beat_power_chord() -> None:
+    power_a = [Note(string=4, fret=0), Note(string=3, fret=2)]
+    power_e = [Note(string=5, fret=0), Note(string=4, fret=2)]
+    track = make_track([[beat(0, *power_e), beat(960, *power_a)]])
+    assert pitches(convert_track(track, reduce="root").track) == [[40], [45]]
+
+
 def test_chord_root_note_names_the_root() -> None:
     assert chord_root_note([40, 48, 55]) == 1  # C/E
     assert chord_root_note([45, 52, 57, 60]) == 0  # Am
