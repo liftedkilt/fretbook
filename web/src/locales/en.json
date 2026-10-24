@@ -490,6 +490,7 @@
       "fetchTimeout": "The download took too long.",
       "tooManyRedirects": "The link redirects too many times.",
       "syncCountMismatch": "The source has {points} sync points for {bars} bars, so playback may drift.",
+      "youtubeTitleUnavailable": "Could not read the video's title, so the song has a generic one.",
       "noSyncPoints": "No sync points are published for this song.",
       "keptEditedCopy": "\"{title}\" was edited since it was imported, so this import was saved as a separate song.",
       "anchorsDropped": "The new import has fewer bars, so some sync marks were dropped.",

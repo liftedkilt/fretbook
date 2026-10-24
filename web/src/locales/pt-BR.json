@@ -489,6 +489,7 @@
       "fetchTimeout": "O download demorou demais.",
       "tooManyRedirects": "O link redireciona vezes demais.",
       "syncCountMismatch": "A fonte tem {points} pontos de sincronia para {bars} compassos, então a reprodução pode sair do tempo.",
+      "youtubeTitleUnavailable": "Não foi possível ler o título do vídeo, então a música ficou com um título genérico.",
       "noSyncPoints": "Não há pontos de sincronia publicados para esta música.",
       "keptEditedCopy": "\"{title}\" teve alterações desde a importação, então esta importação foi salva como outra música.",
       "anchorsDropped": "A nova importação tem menos compassos, então algumas marcas de sincronia foram descartadas.",
