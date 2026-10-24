@@ -44,11 +44,13 @@ test("playing a tab is logged and shows in the song's history", async ({ page, s
   await expect(page.getByTestId("player-score").locator("svg").first()).toBeVisible();
   const play = page.getByTestId("player-play");
   await expect(play).toBeEnabled();
-  await play.click();
-  await expect(play).toHaveAttribute("data-playing", "true", { timeout: 30_000 });
-  await page.waitForTimeout(6_000);
-  await play.click();
-  await expect(play).toHaveAttribute("data-playing", "false");
+  // The riff is four seconds long and a session needs at least five, so play it through twice;
+  // the pause between the two is short enough to stay one session.
+  for (let pass = 0; pass < 2; pass += 1) {
+    await play.click();
+    await expect(play).toHaveAttribute("data-playing", "true", { timeout: 30_000 });
+    await expect(play).toHaveAttribute("data-playing", "false", { timeout: 30_000 });
+  }
 
   // Leaving the song ends the session, even though the pause has not lasted a minute yet.
   await page.getByTestId("nav-practice").click();
