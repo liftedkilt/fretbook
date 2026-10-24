@@ -168,5 +168,7 @@ def _media_rows(settings: Settings, song_id: str) -> list[dict[str, Any]]:
     with session(settings.database_path) as conn:
         return [
             dict(row)
-            for row in conn.execute("SELECT * FROM media WHERE song_id = ? ORDER BY created_at, id", (song_id,))
+            for row in conn.execute(
+                "SELECT * FROM media WHERE song_id = ? AND kind NOT LIKE 'stem-%' ORDER BY created_at, id", (song_id,)
+            )
         ]

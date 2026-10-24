@@ -593,6 +593,13 @@
       "tooShort": "The audio is too short to find a beat.",
       "noBeat": "No steady beat was found in this audio.",
       "noMatch": "The beats found in the audio do not line up with this tab."
+    },
+    "stems": {
+      "noWorker": "No worker is running that can separate stems.",
+      "none": "This song has no such stem.",
+      "badModel": "That stem model is not available.",
+      "unavailable": "Demucs is not installed in the worker, so it cannot separate stems.",
+      "decodeFailed": "The audio file could not be read for separation."
     }
   },
   "ui": {
@@ -1571,5 +1578,38 @@
     "accept": "Accept marks",
     "discard": "Discard",
     "acceptHint": "After accepting, fix any mark that is off with the tap, nudge and clear buttons, as before."
+  },
+  "stems": {
+    "title": "Stems",
+    "hint": "Separate the recording into its parts to mute the bass or solo the guitar.",
+    "separate": "Separate stems",
+    "separateHint": "Takes a few minutes on a GPU, much longer on a CPU. The first run downloads the model.",
+    "rerun": "Separate again",
+    "remove": "Remove stems",
+    "use": "Play with stems",
+    "usingHint": "The recording plays as its separate parts.",
+    "loading": "Loading the model",
+    "separating": "Separating the stems (slow without a GPU)",
+    "saving": "Saving the stems",
+    "queued": "Waiting for the worker…",
+    "working": "Separating the stems…",
+    "noResult": "The separation finished without stems.",
+    "timeout": "Separating took too long. Try again.",
+    "retry": "Try again",
+    "failed": "The stems could not be made.",
+    "mute": "Mute",
+    "solo": "Solo",
+    "muteStem": "Mute {name}",
+    "soloStem": "Solo {name}",
+    "stemVolume": "{name} volume",
+    "names": {
+      "bass": "Bass",
+      "drums": "Drums",
+      "guitar": "Guitar",
+      "piano": "Piano",
+      "vocals": "Vocals",
+      "other": "Other"
+    },
+    "noWorker": "Stem separation needs the job worker with Demucs installed. See the self-hosting guide."
   }
 }

@@ -11,6 +11,7 @@
   import Menu from "./Menu.svelte";
   import OfflineToggle from "./OfflineToggle.svelte";
   import PracticePanel from "./PracticePanel.svelte";
+  import StemMixer from "./StemMixer.svelte";
   import AutoSyncSheet from "./AutoSyncSheet.svelte";
   import RetuneSheet from "./RetuneSheet.svelte";
   import ScorePanel from "./ScorePanel.svelte";
@@ -93,6 +94,7 @@
   let error = $state("");
   let host = $state<HTMLDivElement | null>(null);
   let audioEl = $state<HTMLAudioElement | null>(null);
+  let stemsActive = false;
   let trackId = $state(untrack(() => song.preferred_track_id || preferredTrack(song.document).id));
   let scoreReady = $state(0);
   let retuneOpen = $state(false);
@@ -537,7 +539,8 @@
   /** Pushes the mixer, metronome and volume settings to the synth or the recording, and remembers them. */
   function applyPractice() {
     savePractice(song.id, practice);
-    if (audioEl) audioEl.volume = practice.mix.audio;
+    // While stems play, the recording stays silent and the stems carry the volume.
+    if (audioEl && !stemsActive) audioEl.volume = practice.mix.audio;
     const api = player.api;
     // A recording plays without the synth, so the synth's own metronome and tracks are silent.
     if (!api?.score || song.has_audio) return;
@@ -1355,6 +1358,17 @@
           tracks={song.document.tracks}
           onchange={practiceChanged}
         />
+        {#if song.has_audio}
+          <StemMixer
+            songId={song.id}
+            {audioEl}
+            master={practice.mix.audio}
+            onactive={(active) => {
+              stemsActive = active;
+              if (!active) applyPractice();
+            }}
+          />
+        {/if}
         <FretboardPanel {practice} onchange={practiceChanged} />
         <WaitPanel
           {practice}

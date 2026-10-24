@@ -42,6 +42,7 @@ class JobRunner:
         self.worker_id = worker_id
         self._handlers: dict[str, Handler] = {}
         self._worker_only: set[str] = set(settings.worker_kinds)
+        self._declared_worker_only: set[str] = set()
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
 
@@ -52,6 +53,11 @@ class JobRunner:
         self._handlers[kind] = handler
         if worker_only:
             self._worker_only.add(kind)
+            self._declared_worker_only.add(kind)
+
+    def worker_only_kinds(self) -> list[str]:
+        """Kinds registered as worker-only (not those only moved to a worker by ``FRETBOOK_WORKER_KINDS``)."""
+        return sorted(self._declared_worker_only)
 
     def local_kinds(self) -> list[str]:
         """Kinds this process claims by default: registered, and not reserved for a worker."""

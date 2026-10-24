@@ -348,6 +348,27 @@ class Job(BaseModel):
     updated_at: str
 
 
+class Stem(BaseModel):
+    """One separated part of a song's recording."""
+
+    name: Literal["bass", "drums", "guitar", "piano", "vocals", "other"]
+    url: str
+    """Where to fetch the audio, relative to the page like ``audio_url``."""
+    byte_size: int
+
+
+class StemList(BaseModel):
+    """The stems stored for a song. ``available`` is true while a worker that separates stems is running."""
+
+    stems: list[Stem]
+    available: bool
+
+
+class StemRequest(BaseModel):
+    model: Literal["htdemucs_6s", "htdemucs"] = "htdemucs_6s"
+    """``htdemucs_6s`` also separates guitar and piano; ``htdemucs`` gives bass, drums, vocals and other."""
+
+
 class JobAccepted(BaseModel):
     """Accepted import. Poll ``GET /api/jobs/{job_id}``."""
 

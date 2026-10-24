@@ -17,6 +17,7 @@ from fretbook.importers.safe_fetch import SafeFetcher
 from fretbook.importers.youtube_frames import YouTubeFrameImporter
 from fretbook.jobs.autosync import register_autosync
 from fretbook.jobs.runner import JobRunner, Progress
+from fretbook.jobs.stems import register_stems
 from fretbook.score.model import ScoreDocument, content_hash
 from fretbook.score.playback import played_bars
 from fretbook.storage.media import AUDIO_TYPES, MediaStore
@@ -76,6 +77,7 @@ def register_handlers(
     runner.register("import.file", file_import)
     runner.register("import.youtube_frames", youtube)
     register_autosync(runner, songs, media)
+    register_stems(runner, songs, media)
 
 
 def _options(payload: dict[str, Any]) -> dict[str, Any]:

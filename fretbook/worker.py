@@ -16,11 +16,13 @@ import socket
 import threading
 from collections.abc import Sequence
 
+from fretbook.audio.stems import available as stems_available
 from fretbook.config import Settings
 from fretbook.db.migrate import migrate
 from fretbook.jobs.handlers import register_handlers
 from fretbook.jobs.registry import KINDS, register_kinds
 from fretbook.jobs.runner import JobRunner
+from fretbook.jobs.stems import KIND as STEMS_KIND
 from fretbook.storage.media import MediaStore
 from fretbook.storage.repository import SongRepository
 
@@ -86,7 +88,11 @@ def main(argv: Sequence[str] | None = None) -> None:
     if args.kinds:
         kinds = [k.strip() for k in args.kinds.split(",") if k.strip()]
     else:
-        kinds = sorted(name for name, kind in KINDS.items() if kind.worker_only)
+        kinds = sorted({name for name, kind in KINDS.items() if kind.worker_only} | set(runner.worker_only_kinds()))
+        if STEMS_KIND in kinds and not stems_available():
+            # Without Demucs the kind would be advertised but could never run; leave it to a worker that can.
+            kinds.remove(STEMS_KIND)
+            logger.warning("Demucs is not installed, so this worker does not claim %s", STEMS_KIND)
     unknown = [k for k in kinds if k not in runner._handlers]
     if unknown:
         raise SystemExit(f"unknown job kind(s): {', '.join(unknown)}")

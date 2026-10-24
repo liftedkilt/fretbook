@@ -27,6 +27,7 @@ import type {
   SetlistDetail as ContractSetlistDetail,
   SetlistSummary as ContractSetlistSummary,
   Settings as ContractSettings,
+  StemList as ContractStemList,
   SongDetail as ContractSongDetail,
   SongPractice as ContractSongPractice,
   SongPage as ContractSongPage,
@@ -412,6 +413,23 @@ export function convertTrack(id: string, body: ConvertBody): Promise<ConvertOutc
 /** Queue an estimate of the bar marks from the song's audio; wait for the job and read `result.autosync`. */
 export function startAutoSync(id: string): Promise<JobAccepted> {
   return request<JobAccepted>(`/api/songs/${id}/autosync`, { method: "POST" });
+}
+
+/** The stems stored for a song, and whether a worker that can make them is running. */
+export function getStems(id: string): Promise<ContractStemList> {
+  return request<ContractStemList>(`/api/songs/${id}/stems`);
+}
+
+/** Queue a separation into stems; wait for the job, then read `getStems`. A new run replaces the old stems. */
+export function startStems(
+  id: string,
+  model: "htdemucs_6s" | "htdemucs" = "htdemucs_6s",
+): Promise<JobAccepted> {
+  return request<JobAccepted>(`/api/songs/${id}/stems`, json("POST", { model }));
+}
+
+export function deleteStems(id: string): Promise<void> {
+  return request(`/api/songs/${id}/stems`, { method: "DELETE" });
 }
 
 export function patchSync(
