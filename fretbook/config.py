@@ -201,6 +201,16 @@ ENV_VARS: tuple[EnvVar, ...] = (
         "Job worker",
     ),
     EnvVar(
+        "FRETBOOK_AUDIVERIS",
+        "empty (looks for `audiveris` on the `PATH`)",
+        (
+            "Path to the Audiveris launcher the job worker uses to read sheet music (PDF and images). Without it, a "
+            "worker that cannot find Audiveris does not claim `import.omr`. See [Sheet music recognition]"
+            "(../self-hosting/worker.md#sheet-music-recognition)."
+        ),
+        "Job worker",
+    ),
+    EnvVar(
         "FRETBOOK_DEMO_MODE",
         "`false`",
         (

@@ -6,7 +6,7 @@ table and writes results the same way. The design is in the
 [architecture notes](https://github.com/liftedkilt/fretbook/blob/main/docs/ARCHITECTURE.md).
 
 !!! info "What runs on it today"
-    The worker runs **stem separation** (`audio.stems`, see below) and a built-in test kind, `echo`. Transcription
+    The worker runs **stem separation** (`audio.stems`, see below), **sheet music recognition** (`import.omr`, optional) and a built-in test kind, `echo`. Transcription
     and recognising tabs in video frames are on the
     [roadmap](https://github.com/liftedkilt/fretbook/blob/main/ROADMAP.md) and will use it too. You do not need a
     worker for any other feature.
@@ -47,6 +47,23 @@ volume for each, for example to play along without the bass or to solo the guita
   ffmpeg are all it needs.
 - A worker where Demucs is not installed does not claim the kind, so the feature stays hidden. With no worker at all
   nothing is shown and the rest of Fretbook is unaffected.
+
+## Sheet music recognition
+
+With a worker that has [Audiveris](https://github.com/Audiveris/audiveris), dropping a PDF or an image of standard
+notation into **Add** reads it into a tab draft (`import.omr`, see [Importing](../guides/importing.md#sheet-music)).
+It is optional because Audiveris is Java and adds about 300 MB to the image. Build the worker with the Ubuntu 22.04
+package from the [releases page](https://github.com/Audiveris/audiveris/releases):
+
+```sh
+docker build -f Dockerfile.worker \
+  --build-arg AUDIVERIS_DEB_URL=https://github.com/Audiveris/audiveris/releases/download/5.11.0/Audiveris-5.11.0-ubuntu22.04-x86_64.deb \
+  -t fretbook-worker .
+```
+
+Outside Docker, install Audiveris so that `audiveris` is on the `PATH`, or set `FRETBOOK_AUDIVERIS` to its launcher
+(`/opt/audiveris/bin/Audiveris` for the package). A worker without it does not claim `import.omr`, and a worker needs no
+GPU for this. A page takes from several seconds to a few minutes; the job times out after 15 minutes.
 
 ## Moving a kind off the web process
 

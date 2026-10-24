@@ -400,7 +400,9 @@
     "ready": "Pronto",
     "skippedDuplicate": "Duplicata ignorada",
     "noFrettedTracks": "Este arquivo não tem faixas de cordas.",
-    "downloadingVideo": "Baixando o vídeo"
+    "downloadingVideo": "Baixando o vídeo",
+    "omrReading": "Lendo a partitura",
+    "omrFingering": "Escolhendo as casas"
   },
   "error": {
     "generic": "Algo deu errado."
@@ -498,14 +500,13 @@
       "unknownKind": "Importador desconhecido: {kind}.",
       "notUrl": "{kind} não é uma importação por link.",
       "noUrlImporter": "Nenhum importador corresponde a este link. Links do Songsterr funcionam hoje; a importação por quadros do YouTube ainda não está disponível.",
-      "noFileImporter": "Não foi possível reconhecer isto. O Fretbook lê Guitar Pro, MusicXML, ChordPro e cifras sobre a letra, tablatura ASCII, MIDI, JSON do Fretbook e arquivos de áudio.",
+      "noFileImporter": "Não foi possível reconhecer isto. O Fretbook lê Guitar Pro, MusicXML, ChordPro e cifras sobre a letra, tablatura ASCII, MIDI, JSON do Fretbook, arquivos de áudio e partituras (PDF ou imagem) quando o servidor consegue lê-las.",
       "guitarProInBrowser": "Arquivos do Guitar Pro são lidos no navegador. Use o botão de importar no Fretbook.",
       "guitarProUnavailable": "A importação de Guitar Pro não está disponível neste servidor. Importe o arquivo pelo navegador.",
       "guitarProUnreadable": "Não foi possível ler este arquivo do Guitar Pro.",
       "guitarProNoFretted": "Este arquivo do Guitar Pro não tem pistas com trastes.",
       "audioDisabled": "Os downloads de áudio estão desativados neste servidor.",
       "isLibraryArchive": "Este é um backup da biblioteca do Fretbook. Restaure-o em Configurações, Backup da biblioteca.",
-      "notYetSupported": "Arquivos {format} são reconhecidos, mas ainda não podem ser importados.",
       "chooseOne": "Adicione um arquivo, um bloco de texto ou um link.",
       "badUrl": "Cole um link da web que comece com http:// ou https://.",
       "urlBlocked": "Este link aponta para um endereço privado ou local, então o Fretbook não vai acessá-lo.",
@@ -625,6 +626,13 @@
       "noBeat": "Nenhuma pulsação regular foi encontrada neste áudio.",
       "noMatch": "As batidas encontradas no áudio não combinam com esta tablatura.",
       "badStart": "Esse compasso não está nesta tablatura."
+    },
+    "omr": {
+      "noWorker": "Ler partituras precisa de um worker com o Audiveris, e nenhum está em execução. Veja Hospedagem própria, O worker de tarefas.",
+      "unavailable": "O Audiveris não está instalado neste worker, então não é possível ler partituras.",
+      "timeout": "A leitura da partitura demorou demais.",
+      "noMusic": "Nenhuma música foi reconhecida neste arquivo. Tente uma digitalização mais nítida ou uma única página.",
+      "review": "O reconhecimento de partituras pode errar. Confira esta tablatura com a página antes de confiar nela."
     },
     "stems": {
       "noWorker": "Nenhum worker capaz de separar stems está em execução.",

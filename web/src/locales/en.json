@@ -400,7 +400,9 @@
     "ready": "Ready",
     "skippedDuplicate": "Skipped duplicate",
     "noFrettedTracks": "This file has no fretted tracks.",
-    "downloadingVideo": "Downloading video"
+    "downloadingVideo": "Downloading video",
+    "omrReading": "Reading the sheet music",
+    "omrFingering": "Choosing frets"
   },
   "error": {
     "generic": "Something went wrong."
@@ -498,7 +500,7 @@
       "unknownKind": "Unknown importer: {kind}.",
       "notUrl": "{kind} is not a link import.",
       "noUrlImporter": "No importer matches this link. Songsterr links work today; YouTube frame import is not available yet.",
-      "noFileImporter": "Couldn't recognise this. Fretbook reads Guitar Pro, MusicXML, ChordPro and chords over lyrics, ASCII tab, MIDI, Fretbook JSON, and audio files.",
+      "noFileImporter": "Couldn't recognise this. Fretbook reads Guitar Pro, MusicXML, ChordPro and chords over lyrics, ASCII tab, MIDI, Fretbook JSON, audio files, and sheet music (PDF or image) where the server can read it.",
       "noPreview": "This link has no track list to choose from.",
       "guitarProInBrowser": "Guitar Pro files are read in the browser. Use the import button in Fretbook.",
       "guitarProUnavailable": "Guitar Pro import is not available on this server. Import the file from the browser instead.",
@@ -506,7 +508,6 @@
       "guitarProNoFretted": "This Guitar Pro file has no fretted tracks.",
       "audioDisabled": "Audio downloads are turned off on this server.",
       "isLibraryArchive": "This is a Fretbook library backup. Restore it from Settings, Library backup.",
-      "notYetSupported": "{format} files are recognised but cannot be imported yet.",
       "chooseOne": "Add one file, one block of text, or one link.",
       "badUrl": "Paste a web link that starts with http:// or https://.",
       "urlBlocked": "This link points at a private or local address, so Fretbook will not fetch it.",
@@ -625,6 +626,13 @@
       "noBeat": "No steady beat was found in this audio.",
       "noMatch": "The beats found in the audio do not line up with this tab.",
       "badStart": "That bar is not in this tab."
+    },
+    "omr": {
+      "noWorker": "Reading sheet music needs a worker with Audiveris, and none is running. See Self-hosting, The job worker.",
+      "unavailable": "Audiveris is not installed on this worker, so sheet music cannot be read.",
+      "timeout": "Reading the sheet music took too long.",
+      "noMusic": "No music could be recognised in this file. Try a sharper scan or a single page.",
+      "review": "Sheet music recognition can be wrong. Check this tab against the page before you rely on it."
     },
     "stems": {
       "noWorker": "No worker is running that can separate stems.",

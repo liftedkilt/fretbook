@@ -63,6 +63,7 @@ one is optional: the defaults give a single-user server on `127.0.0.1:8137`.
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `FRETBOOK_WORKER_KINDS` | empty | Comma-separated job kinds the web process leaves for a separate `python -m fretbook.worker` process. Worker-only kinds are always left to the worker. See [The job worker](../self-hosting/worker.md). |
+| `FRETBOOK_AUDIVERIS` | empty (looks for `audiveris` on the `PATH`) | Path to the Audiveris launcher the job worker uses to read sheet music (PDF and images). Without it, a worker that cannot find Audiveris does not claim `import.omr`. See [Sheet music recognition](../self-hosting/worker.md#sheet-music-recognition). |
 
 ## Sign-in (OIDC)
 
