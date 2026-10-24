@@ -42,11 +42,19 @@ and tempo changes included) and proposes a mark for every bar. Nothing is saved 
 
 After accepting, fix a bar that is off the usual way: play to it, press **T**, or use the nudge and clear buttons.
 
-Auto-sync works best on a recording with a clear, steady pulse and a bass or kick that lands on the first beat of
-the bar. It assumes the recording follows the score's bar structure (the same bars, repeats and order) and that the
-first strong sound is the first bar; an intro or count-in that the tab does not have throws the marks off, so
-trim the audio or fix the first marks and the rest by hand. A recording that speeds up and slows down a lot, or has a long rubato passage, will come out with low-confidence
-marks there. Reading formats other than WAV needs `ffmpeg`, which the Docker image includes.
+Auto-sync works best on a recording with a clear pulse and a bass or kick that lands on the first beat of the bar. It
+assumes the recording follows the score's bar structure (the same bars, repeats and order).
+
+The sheet opens on a choice before it estimates. Leave it alone when the recording starts with the tab's first bar: the
+first strong sound is taken as bar 1. Otherwise say where the music starts:
+
+- **At this time in the audio** (`12.5` seconds, or `0:12`) for an intro, count-in or silence the tab does not have.
+  The time can be a few tenths of a second out; the nearest beat is used. Use the preview to hear where you are.
+- **Music starts at bar** for a recording that begins partway through the song. Earlier bars get no mark.
+
+A recording that pushes and pulls the time (rubato, a live take, a slowing ending) is followed by a second tracker that
+re-reads the tempo as it goes; it is used when it places the bars clearly better than the steady one. Extreme swings
+(a quarter faster and slower within a few bars) still come out with wrong marks, so check the preview there. Reading formats other than WAV needs `ffmpeg`, which the Docker image includes.
 
 Songsterr imports that carry sync data already have marks. Importing the same song again keeps yours. The metronome
 and count-in follow the marks.

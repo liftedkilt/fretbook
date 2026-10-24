@@ -66,6 +66,7 @@ test("Auto-sync estimates the bar marks, previews them and saves them on accept"
 
   const sheet = page.getByTestId("autosync-sheet");
   await expect(sheet).toBeVisible();
+  await page.getByTestId("autosync-estimate").click();
   const summary = page.getByTestId("autosync-summary");
   await expect(summary).toContainText(`${bars} bar marks found`, { timeout: 30_000 });
   await expect(summary).toContainText("120 BPM");

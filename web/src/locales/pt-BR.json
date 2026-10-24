@@ -617,7 +617,8 @@
       "decodeFailed": "Não foi possível ler o arquivo de áudio.",
       "tooShort": "O áudio é curto demais para encontrar uma pulsação.",
       "noBeat": "Nenhuma pulsação regular foi encontrada neste áudio.",
-      "noMatch": "As batidas encontradas no áudio não combinam com esta tablatura."
+      "noMatch": "As batidas encontradas no áudio não combinam com esta tablatura.",
+      "badStart": "Esse compasso não está nesta tablatura."
     },
     "stems": {
       "noWorker": "Nenhum worker capaz de separar stems está em execução.",
@@ -1686,6 +1687,12 @@
       "one": "Aceitar substitui a sua marca atual ({count}).",
       "other": "Aceitar substitui as suas {count} marcas atuais."
     },
+    "startHint": "A gravação começa no primeiro compasso da tablatura? Se ela tem uma introdução ou contagem que a tablatura não tem, ou começa no meio da música, diga onde a música começa. Caso contrário, deixe como está.",
+    "musicBar": "A música começa no compasso",
+    "musicTime": "Neste momento do áudio",
+    "musicTimePlaceholder": "primeiro som, ou 12,5 ou 0:12",
+    "musicTimeInvalid": "Digite segundos (12,5) ou minutos e segundos (0:12).",
+    "estimate": "Estimar",
     "startAt": "Começar no compasso",
     "preview": "Ouvir com clique",
     "stop": "Parar",

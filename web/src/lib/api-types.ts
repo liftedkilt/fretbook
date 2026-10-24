@@ -1091,6 +1091,10 @@ export interface paths {
          *
          *     The finished job's ``result.autosync`` holds the proposed anchors and a confidence for each. Nothing is
          *     saved: accept a proposal by sending its anchors to ``PATCH /api/songs/{song_id}/sync``.
+         *
+         *     The body is optional. By default the tab's first bar starts with the first sound in the audio; when the
+         *     recording has an intro or count-in the tab lacks, give ``start_seconds`` (and ``start_bar`` if the audio
+         *     begins partway through the tab).
          */
         post: operations["start_autosync_api_songs__song_id__autosync_post"];
         delete?: never;
@@ -1739,6 +1743,19 @@ export interface components {
             overall: number;
             /** Tempo Bpm */
             tempo_bpm: number;
+        };
+        /**
+         * AutoSyncRequest
+         * @description Where the music starts, when the audio has an intro or count-in the tab does not, or is cut mid-song.
+         */
+        AutoSyncRequest: {
+            /**
+             * Start Bar
+             * @default 0
+             */
+            start_bar: number;
+            /** Start Seconds */
+            start_seconds?: number | null;
         };
         /**
          * Bar
@@ -3573,6 +3590,7 @@ export type AudioCalibration = components['schemas']['AudioCalibration'];
 export type AudioCalibrationBody = components['schemas']['AudioCalibrationBody'];
 export type AutoImportAccepted = components['schemas']['AutoImportAccepted'];
 export type AutoSyncProposal = components['schemas']['AutoSyncProposal'];
+export type AutoSyncRequest = components['schemas']['AutoSyncRequest'];
 export type Bar = components['schemas']['Bar'];
 export type Beat = components['schemas']['Beat'];
 export type BodyImportAutoApiImportsAutoPost = components['schemas']['Body_import_auto_api_imports_auto_post'];
@@ -9035,7 +9053,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AutoSyncRequest"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             202: {

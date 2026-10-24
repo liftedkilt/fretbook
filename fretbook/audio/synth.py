@@ -33,10 +33,26 @@ def render(
     tail: float = 1.0,
     seed: int = 7,
     noise: float = 0.01,
+    count_in: int = 0,
+    intro: float = 0.0,
 ) -> Floats:
-    """Audio in which played bar ``k`` starts at ``bar_starts[k]`` seconds; ``bar_starts`` has one more for the end."""
+    """Audio in which played bar ``k`` starts at ``bar_starts[k]`` seconds; ``bar_starts`` has one more for the end.
+
+    ``count_in`` is a number of stick clicks before bar 0, one a beat of the first bar, and ``intro`` the seconds
+    after the start of the audio in which an unmetered pad is strummed, music the tab does not have. Both need
+    room before ``bar_starts[0]``.
+    """
     rng = np.random.default_rng(seed)
     out = np.zeros(int((bar_starts[-1] + tail) * sample_rate))
+    pulse = (bar_starts[1] - bar_starts[0]) / document.bars[0].signature[0]
+    for click in range(1, count_in + 1):
+        _add(out, bar_starts[0] - click * pulse, _click(sample_rate), sample_rate)
+    if intro:
+        strum = 0.3
+        while strum < min(intro, bar_starts[0] - count_in * pulse - 0.3):
+            for offset, midi in enumerate((45, 52, 57)):
+                _add(out, strum + 0.03 * offset, _tone(midi, sample_rate), sample_rate)
+            strum += 1.37
     track = preferred_track(document)
     order = played_bars(document.bars)
     for played, written in enumerate(order):
@@ -69,6 +85,11 @@ def _add(out: Floats, when: float, sound: Floats, sample_rate: int) -> None:
         return
     piece = sound[: out.size - index]
     out[index : index + piece.size] += piece
+
+
+def _click(sample_rate: int) -> Floats:
+    t = np.arange(int(0.03 * sample_rate)) / sample_rate
+    return 0.7 * np.sin(2 * np.pi * 1800 * t) * np.exp(-150 * t)
 
 
 def _kick(sample_rate: int) -> Floats:
@@ -126,15 +147,34 @@ def build_document(
     return ScoreDocument(bpm=bpm, bars=bars, tracks=[track])
 
 
-def bar_starts_for(document: ScoreDocument, *, lead_in: float = 0.0, drift: float = 0.0) -> list[float]:
+def bar_starts_for(
+    document: ScoreDocument,
+    *,
+    lead_in: float = 0.0,
+    drift: float = 0.0,
+    sway: float = 0.0,
+    sway_cycles: float = 4.0,
+    ritardando: float = 0.0,
+    jitter: float = 0.0,
+    seed: int = 11,
+) -> list[float]:
     """Audio time of every played bar start (plus the end) at the score's own tempo, after ``lead_in`` seconds.
 
     ``drift`` slows or speeds the whole performance by up to that fraction, as a slow sine over the song.
+    ``sway`` does the same ``sway_cycles`` times over (rubato), ``ritardando`` slows the last eighth of the
+    song by up to that fraction, and ``jitter`` moves each bar start by a random amount of that many seconds
+    (standard deviation), as a human player does.
     """
     starts = [lead_in]
     lengths = played_bar_seconds(document)
     total = sum(lengths)
     for length in lengths:
         progress = (starts[-1] - lead_in) / total
-        starts.append(starts[-1] + length * (1 + drift * np.sin(2 * np.pi * progress)))
+        factor = 1 + drift * np.sin(2 * np.pi * progress) + sway * np.sin(2 * np.pi * sway_cycles * progress)
+        factor += ritardando * max(0.0, (progress - 0.875) / 0.125)
+        starts.append(starts[-1] + length * factor)
+    if jitter:
+        moved = np.array(starts)
+        moved[1:-1] += np.random.default_rng(seed).normal(0, jitter, len(starts) - 2)
+        starts = moved.tolist()
     return starts

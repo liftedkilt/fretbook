@@ -6,6 +6,8 @@ import {
   confidencePercent,
   dueClicks,
   firstClickAt,
+  firstMarkedBar,
+  parseStartTime,
   previewClicks,
   proposedStarts,
   pulses,
@@ -122,5 +124,30 @@ describe("proposal summary", () => {
     expect(clampBar(99, 8)).toBe(7);
     expect(clampBar(Number.NaN, 8)).toBe(0);
     expect(clampBar(-3, 8)).toBe(0);
+  });
+});
+
+describe("parseStartTime", () => {
+  it("reads seconds, minutes and seconds, and a blank as the first sound", () => {
+    expect(parseStartTime("")).toBeNull();
+    expect(parseStartTime("  ")).toBeNull();
+    expect(parseStartTime("12.5")).toBe(12.5);
+    expect(parseStartTime("12,5")).toBe(12.5);
+    expect(parseStartTime("1:05")).toBe(65);
+    expect(parseStartTime("0:12.5")).toBe(12.5);
+  });
+
+  it("refuses text that is not a time", () => {
+    for (const text of ["soon", "-3", "1:2:3", "1e3", "99999"]) {
+      expect(parseStartTime(text)).toBeUndefined();
+    }
+  });
+});
+
+describe("firstMarkedBar", () => {
+  it("is the lowest bar with a mark", () => {
+    const proposal = { anchors: { "4": 1, "2": 0.5, "9": 3 } } as unknown as AutoSyncProposal;
+    expect(firstMarkedBar(proposal)).toBe(2);
+    expect(firstMarkedBar({ anchors: {} } as unknown as AutoSyncProposal)).toBe(0);
   });
 });

@@ -82,6 +82,13 @@ function mount(props: { existing?: number } = {}) {
   return { onaccept, onclose };
 }
 
+/** Mount the sheet and press Estimate on its start options. */
+async function estimate(props: { existing?: number } = {}) {
+  const mounted = mount(props);
+  await fireEvent.click(await screen.findByTestId("autosync-estimate"));
+  return mounted;
+}
+
 beforeEach(() => {
   api.startAutoSync.mockReset().mockResolvedValue({ job_id: "j1" });
   api.getJob.mockReset();
@@ -98,8 +105,8 @@ beforeEach(() => {
 describe("AutoSyncSheet", () => {
   it("estimates, shows what it found and hands the anchors over on accept", async () => {
     api.getJob.mockResolvedValue(job({ result: { autosync: proposal } }));
-    const { onaccept } = mount();
-    expect(api.startAutoSync).toHaveBeenCalledWith("s1");
+    const { onaccept } = await estimate();
+    expect(api.startAutoSync).toHaveBeenCalledWith("s1", { start_bar: 0, start_seconds: null });
     await waitFor(() => expect(api.dismissJob).toHaveBeenCalledWith("j1"));
     const summary = await screen.findByTestId("autosync-summary");
     expect(summary.textContent).toContain("3 bar marks found");
@@ -116,7 +123,7 @@ describe("AutoSyncSheet", () => {
 
   it("says how many existing marks accepting replaces", async () => {
     api.getJob.mockResolvedValue(job({ result: { autosync: proposal } }));
-    mount({ existing: 5 });
+    await estimate({ existing: 5 });
     expect((await screen.findByTestId("autosync-replaces")).textContent).toContain(
       "5 current marks",
     );
@@ -126,7 +133,7 @@ describe("AutoSyncSheet", () => {
     api.getJob
       .mockResolvedValueOnce(job({ status: "running", progress_key: "autoSync.tracking" }))
       .mockResolvedValue(job({ result: { autosync: proposal } }));
-    mount();
+    await estimate();
     await waitFor(() =>
       expect(screen.getByTestId("autosync-working").textContent).toContain("Finding the beats"),
     );
@@ -137,7 +144,7 @@ describe("AutoSyncSheet", () => {
     api.getJob.mockResolvedValueOnce(
       job({ status: "error", error: "no beat", error_key: "autosync.noBeat" }),
     );
-    mount();
+    await estimate();
     const alert = await screen.findByTestId("autosync-error");
     expect(alert.textContent).toContain("No steady beat was found");
     expect(api.dismissJob).toHaveBeenCalledWith("j1");
@@ -149,13 +156,13 @@ describe("AutoSyncSheet", () => {
 
   it("shows an error when the request itself is refused", async () => {
     api.startAutoSync.mockRejectedValue(new Error("This song has no audio."));
-    mount();
+    await estimate();
     expect((await screen.findByTestId("autosync-error")).textContent).toContain("no audio");
   });
 
   it("treats a finished job without a proposal as a failure", async () => {
     api.getJob.mockResolvedValue(job({ result: {} }));
-    mount();
+    await estimate();
     expect((await screen.findByTestId("autosync-error")).textContent).toContain("without a result");
   });
 
@@ -168,7 +175,7 @@ describe("AutoSyncSheet", () => {
     );
     vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
     try {
-      mount();
+      await estimate();
       await vi.waitFor(() => expect(screen.getByTestId("autosync-preview")).toBeTruthy());
       await fireEvent.click(screen.getByTestId("autosync-preview"));
       // Bar 2 starts at 3 s in the proposal.
@@ -191,7 +198,7 @@ describe("AutoSyncSheet", () => {
 
   it("keeps the starting bar inside the song", async () => {
     api.getJob.mockResolvedValue(job({ result: { autosync: proposal } }));
-    mount();
+    await estimate();
     const input = (await screen.findByTestId("autosync-start")) as HTMLInputElement;
     input.value = "99";
     await fireEvent.change(input);
@@ -200,9 +207,46 @@ describe("AutoSyncSheet", () => {
 
   it("discards without handing anything over", async () => {
     api.getJob.mockResolvedValue(job({ result: { autosync: proposal } }));
-    const { onaccept, onclose } = mount();
+    const { onaccept, onclose } = await estimate();
     await fireEvent.click(await screen.findByTestId("autosync-discard"));
     expect(onclose).toHaveBeenCalled();
     expect(onaccept).not.toHaveBeenCalled();
+  });
+
+  it("sends where the music starts, and refuses a time it cannot read", async () => {
+    api.getJob.mockResolvedValue(
+      job({ result: { autosync: { ...proposal, low_confidence: [] } } }),
+    );
+    mount();
+    await fireEvent.input(await screen.findByTestId("autosync-music-bar"), {
+      target: { value: "2" },
+    });
+    await fireEvent.input(screen.getByTestId("autosync-music-time"), {
+      target: { value: "soon" },
+    });
+    await fireEvent.click(screen.getByTestId("autosync-estimate"));
+    expect(screen.getByTestId("autosync-time-error")).toBeTruthy();
+    expect(api.startAutoSync).not.toHaveBeenCalled();
+
+    await fireEvent.input(screen.getByTestId("autosync-music-time"), {
+      target: { value: "0:12.5" },
+    });
+    await fireEvent.click(screen.getByTestId("autosync-estimate"));
+    await screen.findByTestId("autosync-summary");
+    expect(api.startAutoSync).toHaveBeenCalledWith("s1", { start_bar: 1, start_seconds: 12.5 });
+  });
+
+  it("previews from the first marked bar when the audio starts partway through", async () => {
+    const cut: AutoSyncProposal = {
+      ...proposal,
+      anchors: { "1": 0.5, "2": 2.5, "3": 4.5 },
+      confidence: { "1": 0.9, "2": 0.9, "3": 0.9 },
+      low_confidence: [],
+    };
+    api.getJob.mockResolvedValue(job({ result: { autosync: cut } }));
+    await estimate();
+    const input = (await screen.findByTestId("autosync-start")) as HTMLInputElement;
+    expect(input.value).toBe("2");
+    expect(input.min).toBe("2");
   });
 });

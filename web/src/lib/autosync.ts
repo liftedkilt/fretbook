@@ -85,3 +85,22 @@ export function clampBar(bar: number, barCount: number): number {
   if (!Number.isFinite(bar)) return 0;
   return Math.min(Math.max(Math.round(bar) - 1, 0), Math.max(0, barCount - 1));
 }
+
+/**
+ * Where in the audio the music starts, from what a person typed: seconds ("12.5"), or minutes and seconds
+ * ("1:05"). Empty means "the first sound", `null`; text that is not a time is `undefined`.
+ */
+export function parseStartTime(text: string): number | null | undefined {
+  const trimmed = text.trim().replace(",", ".");
+  if (!trimmed) return null;
+  const match = /^(?:(\d+):)?(\d+(?:\.\d+)?)$/.exec(trimmed);
+  if (!match) return undefined;
+  const seconds = Number(match[1] ?? 0) * 60 + Number(match[2]);
+  return Number.isFinite(seconds) && seconds <= 86400 ? seconds : undefined;
+}
+
+/** The played bar (0-based) a proposal starts at: the lowest bar with a mark. */
+export function firstMarkedBar(proposal: AutoSyncProposal): number {
+  const bars = Object.keys(proposal.anchors).map(Number);
+  return bars.length ? Math.min(...bars) : 0;
+}

@@ -348,6 +348,15 @@ class SongExport(BaseModel):
     chordpro: str | None = None
 
 
+class AutoSyncRequest(BaseModel):
+    """Where the music starts, when the audio has an intro or count-in the tab does not, or is cut mid-song."""
+
+    start_bar: int = Field(default=0, ge=0)
+    """Played bar index (0-based) at which the music in the audio starts. Earlier bars get no mark."""
+    start_seconds: float | None = Field(default=None, ge=0, le=86400)
+    """Seconds into the audio at which that bar starts. Without it, the first attack in the audio is used."""
+
+
 class AutoSyncProposal(BaseModel):
     """Bar marks estimated from the audio. Nothing is saved until the anchors go to ``PATCH /api/songs/{id}/sync``."""
 

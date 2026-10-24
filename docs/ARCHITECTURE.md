@@ -74,12 +74,46 @@ Imports run on a job thread in the web process, reading the `jobs` table. Slow o
 
 ## Automatic sync
 
-`POST /api/songs/{id}/autosync` queues an `audio.autosync` job (`fretbook/jobs/autosync.py`, a normal kind, so it runs in the web process unless `FRETBOOK_WORKER_KINDS` moves it to a worker). Its result is a proposal, `result.autosync`: anchors keyed by played bar index, a 0 to 1 confidence for each, the overall confidence and the bars to check. It saves nothing and needs no migration; the browser applies a proposal through the existing `PATCH /api/songs/{id}/sync`, so revisions and conflicts behave as for tapped marks.
+`POST /api/songs/{id}/autosync` (optional body `{start_bar, start_seconds}`: where the music starts, see below) queues an `audio.autosync` job (`fretbook/jobs/autosync.py`, a normal kind, so it runs in the web process unless `FRETBOOK_WORKER_KINDS` moves it to a worker). Its result is a proposal, `result.autosync`: anchors keyed by played bar index, a 0 to 1 confidence for each, the overall confidence and the bars to check. It saves nothing and needs no migration; the browser applies a proposal through the existing `PATCH /api/songs/{id}/sync`, so revisions and conflicts behave as for tapped marks.
 
 - `fretbook/audio/beats.py` is numpy only (no librosa, madmom or torch, which would triple the image). It decodes (a WAV is read directly, everything else through `ffmpeg`), takes a log-spectral-flux onset envelope (full band for the beat, and a low band under 250 Hz for the bar's first beat), estimates the period by autocorrelation with the score's tempo as a log-Gaussian prior (one octave wide, so a recording a few tens of percent off the written tempo is followed but half-time is not chosen), and tracks beats with Ellis-style dynamic programming. The period can be one value per frame, which is how tempo changes are followed.
-- `fretbook/score/autosync.py` maps the beats onto the score's quarter-note timeline for the *played* bars (`played_bars`), so repeats, signatures and tempo changes come from the score. A Viterbi pass over "which beat does bar *k* start on" rewards low-band onsets at bar starts and charges a fixed cost when a bar is a beat early or late of its length, so a beat the tracker dropped moves a few bars rather than every later one. Bar 0 is pulled toward the first attack in the audio. Scores with tempo changes get a second and third tracking pass whose period follows the first alignment. A score whose bars are not whole quarter notes (7/8) is tracked in eighths.
+- `fretbook/score/autosync.py` maps the beats onto the score's quarter-note timeline for the *played* bars (`played_bars`), so repeats, signatures and tempo changes come from the score. A Viterbi pass over "which beat does bar *k* start on" rewards low-band onsets at bar starts and charges a fixed cost when a bar is a beat early or late of its length, so a beat the tracker dropped moves a few bars rather than every later one. Bar 0 is pulled toward the first attack in the audio, or toward the time the user gave (`start_seconds`, with 0.3 s of slack since a person's ear is not exact); `start_bar` aligns only the bars from that one on, for a recording cut partway. Scores with tempo changes get a second and third tracking pass whose period follows the first alignment. A score whose bars are not whole quarter notes (7/8) is tracked in eighths.
 - Confidence for a bar is the strength of the low-band onset at its start against the song's beats, and how steady the beat intervals are around it. Bars under 0.5 are listed in `low_confidence`.
 - `fretbook/audio/synth.py` renders a score to rough audio with known bar times, and `scripts/autosync_eval.py` prints the error table (median, 95th percentile and maximum error, in milliseconds, per case). `tests/test_autosync.py` runs a smaller version with thresholds.
+
+**Rubato and the second tracker.** `beat_grid(flexible=True)` replaces the single autocorrelation period by `local_periods`: the period of each 6 s window (within 35 % of the global one, median-filtered over three windows), and tracks with a looser tempo penalty. `propose(tracker="auto")` runs the steady and the flexible tracker and keeps the flexible one only if the mean low-band strength at its bar starts is 0.15 standard deviations better. With tempo changes in the score, only the score-led steady path is used. On the synthetic rubato rows below the steady tracker is off by whole beats (median 4.1 s at +-15 % with four swells); the flexible one is within 10 ms and costs nothing on steady material. A sway of +-25 % is still not followed.
+
+**Evaluation set.** There are no hand-checked real recordings in the repository: the licence of a recording has to be clear and none was available to the agent that wrote this. `scripts/autosync_eval.py` has "performed" rows instead: synthetic takes with random timing jitter, rubato, a ritardando, a stick count-in, an unmetered intro and a recording cut at a bar, with bar starts known exactly. They are a floor, not a proof: a real mix has a bass, vocals and a drummer who does not play a kick on every bar. Adding original or public-domain recordings with hand-checked bar marks stays open (follow-up issue linked from the pull request). Latest run (`.venv/bin/python scripts/autosync_eval.py`):
+
+| Case | Bars marked | Median error | 95th percentile | Max | Within 50 ms | Confidence | Time |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| corpus riff, 4/4, 60 BPM | 33/33 | 5.7 ms | 11.4 ms | 13.4 ms | 100 % | 0.86 | 0.4 s |
+| corpus riff, 4/4, 90 BPM | 33/33 | 6.3 ms | 11.9 ms | 15.6 ms | 100 % | 0.85 | 0.2 s |
+| corpus riff, 4/4, 120 BPM | 33/33 | 2.8 ms | 5.4 ms | 5.9 ms | 100 % | 0.81 | 0.2 s |
+| corpus riff, 4/4, 160 BPM | 33/33 | 2.6 ms | 6.6 ms | 6.7 ms | 100 % | 0.79 | 0.1 s |
+| corpus riff, 4/4, 200 BPM | 33/33 | 2.6 ms | 6.0 ms | 6.6 ms | 100 % | 0.83 | 0.1 s |
+| 3/4, 100 BPM | 33/33 | 3.6 ms | 5.7 ms | 7.7 ms | 100 % | 0.79 | 0.1 s |
+| 6/8, 120 BPM | 33/33 | 3.3 ms | 6.0 ms | 6.1 ms | 100 % | 0.78 | 0.1 s |
+| 4/4 3/4 7/8 mixed, 110 BPM | 33/33 | 3.1 ms | 6.5 ms | 7.3 ms | 100 % | 0.79 | 0.2 s |
+| repeat x3 (bars 3-6), 120 BPM | 19/19 | 2.9 ms | 5.6 ms | 5.8 ms | 100 % | 0.81 | 0.1 s |
+| no lead-in, 120 BPM | 33/33 | 2.7 ms | 5.4 ms | 5.9 ms | 100 % | 0.82 | 0.1 s |
+| tempo drift +-8 %, 100 BPM | 41/41 | 2.7 ms | 10.0 ms | 37.0 ms | 100 % | 0.82 | 0.2 s |
+| tempo change 100, 130, 90 BPM | 37/37 | 5.1 ms | 12.3 ms | 51.2 ms | 97 % | 0.81 | 0.2 s |
+| played 12 % slower than the score | 33/33 | 2.7 ms | 6.4 ms | 6.6 ms | 100 % | 0.82 | 0.2 s |
+| played 10 % faster than the score | 33/33 | 3.3 ms | 5.9 ms | 6.3 ms | 100 % | 0.83 | 0.2 s |
+| noisy (noise floor x10) | 33/33 | 2.8 ms | 5.8 ms | 8.3 ms | 100 % | 0.81 | 0.2 s |
+| human feel: 15 ms jitter, 100 BPM | 33/33 | 3.2 ms | 6.9 ms | 8.3 ms | 100 % | 0.82 | 0.2 s |
+| rubato +-15 %, 4 swells | 33/33 | 2.8 ms | 10.0 ms | 10.7 ms | 100 % | 0.83 | 0.2 s |
+| rubato +-25 %, 4 swells | 29/33 | 2385.6 ms | 5446.0 ms | 5858.5 ms | 17 % | 0.80 | 0.2 s |
+| ritardando over the last bars | 33/33 | 4.7 ms | 14.4 ms | 117.9 ms | 97 % | 0.82 | 0.2 s |
+| count-in of 4 clicks | 33/33 | 2.7 ms | 6.3 ms | 7.4 ms | 100 % | 0.81 | 0.2 s |
+| count-in, start stated | 33/33 | 2.7 ms | 6.3 ms | 7.4 ms | 100 % | 0.81 | 0.2 s |
+| 6 s unmetered intro, start stated | 33/33 | 3.0 ms | 6.7 ms | 7.1 ms | 100 % | 0.81 | 0.2 s |
+| 6 s unmetered intro, not stated | 33/33 | 3.0 ms | 6.7 ms | 7.1 ms | 100 % | 0.81 | 0.2 s |
+| recording cut at bar 9, bar given | 25/25 | 3.0 ms | 8.1 ms | 34.3 ms | 100 % | 0.82 | 0.1 s |
+
+A better downbeat cue than the low-band onset (chord changes, the score's own bass notes) was considered and not built: on this synthetic material the cue is never the weak point, so there is nothing to measure it against until real recordings are in the set.
+
 
 On the client, `web/src/lib/autosync.ts` builds the click track (an accent on each bar start, a click on each beat after it, in compound time one a dotted quarter) from the proposal's anchors and the same `measureStarts` the player uses, and `AutoSyncSheet.svelte` runs the job, previews it on its own `Audio` element and `Clicker`, and hands the anchors to `TabPlayer`, which saves them like tapped marks.
 

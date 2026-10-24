@@ -166,6 +166,48 @@ def estimate_period(envelope: Floats, frame_seconds: float, hint_bpm: float | No
     return float(best * frame_seconds)
 
 
+def local_periods(envelope: Floats, frame_seconds: float, period: float, window: float = 6.0) -> Floats:
+    """Seconds per beat for every frame, from the autocorrelation of a sliding window around it.
+
+    The steady tracker holds one period for the whole song; a player who pushes and pulls the time (rubato,
+    a live take, a ritardando) leaves it behind. Each window of ``window`` seconds is searched for its own
+    period within 35 % of ``period``, and the readings are median-filtered so a window of silence or a fill
+    does not throw the track off.
+    """
+    frames = int(window / frame_seconds)
+    hop = max(1, int(1.0 / frame_seconds))
+    low = max(2, int(0.65 * period / frame_seconds))
+    high = max(low + 2, int(1.35 * period / frame_seconds))
+    if envelope.size < frames + hop:
+        return np.full(envelope.size, period)
+    centres: list[float] = []
+    found: list[float] = []
+    previous = period
+    for first in range(0, envelope.size - frames + 1, hop):
+        piece = envelope[first : first + frames]
+        piece = piece - piece.mean()
+        size = 1 << int(np.ceil(np.log2(frames * 2)))
+        spectrum = np.fft.rfft(piece, size)
+        acf = np.fft.irfft(spectrum * np.conj(spectrum))[: high + 2]
+        acf = acf / (acf[0] + 1e-12)
+        lags = np.arange(low, high + 1)
+        # Prefer the lag nearest the previous reading: a window that is all noise then keeps the tempo.
+        score = acf[low : high + 1] * np.exp(-0.5 * (np.log2(lags * frame_seconds / previous) / 0.25) ** 2)
+        best = int(lags[int(np.argmax(score))])
+        refined = float(best)
+        if low < best < high:
+            left, mid, right = acf[best - 1], acf[best], acf[best + 1]
+            denominator = left - 2 * mid + right
+            if denominator < 0:
+                refined = best + 0.5 * (left - right) / denominator
+        previous = refined * frame_seconds
+        centres.append((first + frames / 2) * frame_seconds)
+        found.append(previous)
+    smooth = np.array([np.median(found[max(0, i - 1) : i + 2]) for i in range(len(found))])
+    times = np.arange(envelope.size) * frame_seconds
+    return np.interp(times, centres, smooth)
+
+
 def track_beats(envelope: Floats, frame_seconds: float, period: float | Floats, tightness: float = 100.0) -> list[int]:
     """Frame indexes of the beats: each beat adds its onset score and a penalty for straying from the period.
 
@@ -204,14 +246,23 @@ def beat_grid(
     envelope: Envelope,
     hint_bpm: float | None = None,
     period: float | Floats | None = None,
+    flexible: bool = False,
 ) -> BeatGrid:
-    """Track beats in ``envelope``. Without ``period`` it is estimated (with ``hint_bpm`` as a prior)."""
+    """Track beats in ``envelope``. Without ``period`` it is estimated (with ``hint_bpm`` as a prior).
+
+    ``flexible`` re-reads the period along the song (:func:`local_periods`) and lets the beats stray from it
+    more, for a recording whose tempo moves a lot. ``period`` is then only the first estimate.
+    """
     frame_seconds = envelope.frame_seconds
     if envelope.size < int(4 / frame_seconds):
         raise AudioDecodeError("the audio is too short to find a beat", "autosync.tooShort")
     if period is None:
         period = estimate_period(envelope.full, frame_seconds, hint_bpm)
-    frames = track_beats(envelope.full, frame_seconds, period)
+    tightness = 100.0
+    if flexible:
+        period = local_periods(envelope.full, frame_seconds, float(np.median(period)))
+        tightness = 40.0
+    frames = track_beats(envelope.full, frame_seconds, period, tightness)
     if len(frames) < 4:
         raise AudioDecodeError("no steady beat was found in this audio", "autosync.noBeat")
     beats = np.array(frames, dtype=np.float64) * frame_seconds + FRAME_OFFSET
