@@ -644,6 +644,46 @@ def verify_v13(conn: sqlite3.Connection) -> None:
     assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
 
 
+def seed_v14(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        INSERT INTO users (id, external_subject, display_name, created_at)
+        VALUES ('user-v14', 'sub-v14', 'User V14', '2026-01-14T00:00:00Z')
+        """
+    )
+    conn.execute(
+        """
+        INSERT INTO songs (
+            id, owner_id, slug, title, artist, content_kind, source_kind, source_ref,
+            revision, bpm, measure_count, track_count, string_count, preferred_instrument,
+            preferred_track_id, has_sync, duration, document, chordpro, created_at, updated_at
+        ) VALUES (
+            'song-v14', 'user-v14', 'v14', 'Tagged V14', 'Artist V14', 'chords', 'manual', '{}',
+            1, 0.0, 0, 0, 0, '', '', 0, NULL, NULL, '[C]Hello', '2026-01-14T00:00:00Z', '2026-01-14T00:00:00Z'
+        )
+        """
+    )
+    conn.execute("INSERT INTO song_tags (song_id, tag, tag_key) VALUES ('song-v14', 'Campfire', 'campfire')")
+    conn.commit()
+
+
+def verify_v14(conn: sqlite3.Connection) -> None:
+    def found(text: str) -> list[str]:
+        rows = conn.execute("SELECT song_id FROM songs_fts WHERE songs_fts MATCH ?", (text,))
+        return [row[0] for row in rows]
+
+    # Title, artist and existing tags are indexed; the lyrics wait for the application's backfill.
+    assert found('"tagged"*') == ["song-v14"] and found('"campfire"*') == ["song-v14"]
+    assert conn.execute("SELECT lyrics_indexed FROM songs WHERE id = 'song-v14'").fetchone()[0] == 0
+    conn.execute("INSERT INTO song_tags (song_id, tag, tag_key) VALUES ('song-v14', 'Slow', 'slow')")
+    conn.execute("UPDATE songs SET title = 'Renamed V14' WHERE id = 'song-v14'")
+    assert found('"slow"*') == ["song-v14"] and found('"campfire"*') == ["song-v14"]
+    conn.execute("DELETE FROM song_tags WHERE tag_key = 'slow'")
+    assert found('"slow"*') == []
+    conn.rollback()
+    assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+
+
 SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.Connection], None]]] = {
     1: (seed_v1, verify_v1),
     2: (seed_v2, verify_v2),
@@ -658,6 +698,7 @@ SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.C
     11: (seed_v11, verify_v11),
     12: (seed_v12, verify_v12),
     13: (seed_v13, verify_v13),
+    14: (seed_v14, verify_v14),
 }
 
 

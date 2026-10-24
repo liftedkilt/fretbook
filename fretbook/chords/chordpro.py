@@ -125,3 +125,15 @@ def metadata(text: str) -> dict[str, str]:
     if "artist" not in found and "subtitle" in found:
         found["artist"] = found["subtitle"]
     return found
+
+
+def lyrics(text: str) -> str:
+    """The words of a sheet: chord markers, directives and blank lines removed, for the library search index."""
+    kept = []
+    for line in text.splitlines():
+        if _DIRECTIVE.match(line) or _SECTION.match(line):
+            continue
+        words = _INLINE_CHORD.sub("", line).strip()
+        if words:
+            kept.append(words)
+    return "\n".join(kept)
