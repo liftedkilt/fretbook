@@ -137,8 +137,10 @@ make the provider send the group names in the claim.
 
 ## Good to know
 
-- Each user's library is private. Songs from single-user mode (and bass-tab-sync imports) belong to no signed-in user;
-  an admin can move them into their own library from the Users page.
+- Each user's personal library is private. Songs from single-user mode (and bass-tab-sync imports) belong to no signed-in user;
+  an admin can move them into their own library from the Users page. A band library is visible only to its members.
+  Read-only share links stay off unless `FRETBOOK_SHARE_LINKS=true`; the reverse proxy then has to allow
+  `/share/` and `/api/share/` without a session. See [Bands and share links](../guides/sharing.md).
 - Each person makes their own API tokens under **Settings → API tokens**; see
   [Scripts and the command line](../guides/cli.md). A token keeps working after its owner is signed out. Fretbook
   only learns about group membership when someone signs in: when a person removed from the provider group tries to

@@ -187,6 +187,10 @@ def migrate(
                 if conn.in_transaction:
                     conn.execute("ROLLBACK")
                 raise
+            # A migration may turn foreign keys off (see 021). Turn them back on outside a transaction
+            # so the rest of this connection, and later migrations, check constraints again.
+            if not conn.in_transaction:
+                conn.execute("PRAGMA foreign_keys = ON")
 
         return backup_path
     finally:

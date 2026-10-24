@@ -1,4 +1,5 @@
 import {
+  ApiError,
   getFacets,
   getMe,
   getMeta,
@@ -47,6 +48,7 @@ const THEME_KEY = "fretbook.theme";
 const NOTATION_KEY = "fretbook.notation";
 const VIEW_KEY = "fretbook.playerView";
 const SORT_KEY = "fretbook.librarySort";
+const LIBRARY_KEY = "fretbook.library";
 
 /** Songs per request. The library shows more through "Load more". */
 export const PAGE_SIZE = 48;
@@ -103,6 +105,14 @@ export function storedPlayerView(userId?: string | null): PlayerView {
   }
 }
 
+function storedLibrary(): string {
+  try {
+    return localStorage.getItem(LIBRARY_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
 const initialSort = storedSort();
 
 export const ui = $state({
@@ -142,6 +152,10 @@ export const ui = $state({
   demoMode: false,
   /** The server can look up album, year and cover art online (`FRETBOOK_METADATA_LOOKUP`). */
   lookupEnabled: false,
+  /** Read-only song links are on (`FRETBOOK_SHARE_LINKS`). */
+  shareLinks: false,
+  /** Band library being browsed. Empty is the personal library. */
+  libraryId: storedLibrary(),
   version: null as string | null,
   commit: null as string | null,
   defaultInstrument: "bass-4",
@@ -164,6 +178,10 @@ export function countFor(filter: LibraryFilter | "favourites"): number {
   return ui.counts[filter];
 }
 
+function libraryQuery(): Pick<SongQuery, "library"> {
+  return ui.libraryId ? { library: ui.libraryId } : {};
+}
+
 function currentQuery(): SongQuery {
   return {
     q: ui.search.trim(),
@@ -175,6 +193,7 @@ function currentQuery(): SongQuery {
     key: ui.keyFilter,
     genre: ui.genreFilter,
     ...levelQuery(ui.level),
+    ...libraryQuery(),
     limit: PAGE_SIZE,
   };
 }
@@ -220,14 +239,39 @@ export async function loadMore(): Promise<void> {
   }
 }
 
+/** Remember which library the pages list. Empty is the personal library. */
+export function setActiveLibrary(id: string): void {
+  ui.libraryId = id;
+  try {
+    if (id) localStorage.setItem(LIBRARY_KEY, id);
+    else localStorage.removeItem(LIBRARY_KEY);
+  } catch {
+    /* storage may be unavailable */
+  }
+}
+
 /** Reload the library and the sidebar after the set of songs, their tags or their stars changed. */
 export async function refreshSongs(): Promise<void> {
+  try {
+    await reloadLibrary();
+  } catch (error) {
+    if (error instanceof ApiError && error.key === "library.notFound" && ui.libraryId) {
+      setActiveLibrary("");
+      await reloadLibrary();
+      return;
+    }
+    throw error;
+  }
+}
+
+async function reloadLibrary(): Promise<void> {
+  const scope = libraryQuery();
   const [, recent, favourites, tagList, facets] = await Promise.all([
     loadLibrary({ force: true }),
-    listSongs({ sort: "updated", order: "desc", limit: 5 }),
-    listSongs({ sort: "title", favourite: true, limit: 8 }),
-    listTags(),
-    getFacets(),
+    listSongs({ sort: "updated", order: "desc", limit: 5, ...scope }),
+    listSongs({ sort: "title", favourite: true, limit: 8, ...scope }),
+    listTags(ui.libraryId),
+    getFacets(ui.libraryId),
   ]);
   ui.facets = facets;
   // A key or genre that no song has any more cannot filter anything.
@@ -285,6 +329,7 @@ export async function loadMeta(): Promise<void> {
   ui.ytdlp = meta.ytdlp;
   ui.demoMode = meta.demo_mode ?? false;
   ui.lookupEnabled = meta.metadata_lookup ?? false;
+  ui.shareLinks = meta.share_links ?? false;
   ui.version = meta.version;
   ui.commit = meta.commit;
   ui.defaultInstrument = me.settings.default_instrument;

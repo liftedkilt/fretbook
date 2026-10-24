@@ -221,6 +221,16 @@ ENV_VARS: tuple[EnvVar, ...] = (
         "Server",
     ),
     EnvVar(
+        "FRETBOOK_SHARE_LINKS",
+        "`false`",
+        (
+            "Allow read-only links to a song (`/share/…` and `/api/share/…`) without signing in. Leave this off when a "
+            "reverse proxy is what keeps the server private, and allow those paths through the proxy only when it is "
+            "on. See [Sharing](../guides/sharing.md)."
+        ),
+        "Server",
+    ),
+    EnvVar(
         "FRETBOOK_AUTH_MODE",
         "`single`, or `oidc` when `FRETBOOK_OIDC_ISSUER` is set",
         "`single` (no login, one library) or `oidc` (sign-in, one library per user).",
@@ -341,6 +351,8 @@ class Settings:
     lessons_dir: Path | None = None
     # FRETBOOK_DEMO_MODE: a read-only public demo that resets nightly. See fretbook/demo/.
     demo_mode: bool = False
+    # FRETBOOK_SHARE_LINKS: public read-only /share/<token> pages. Off unless the operator opts in.
+    share_links: bool = False
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -401,6 +413,7 @@ class Settings:
             inbox_interval_seconds=max(1, _int("FRETBOOK_INBOX_INTERVAL", 10)),
             lessons_dir=Path(lessons_raw).expanduser() if lessons_raw else None,
             demo_mode=_flag("FRETBOOK_DEMO_MODE", False),
+            share_links=_flag("FRETBOOK_SHARE_LINKS", False),
         )
 
     @classmethod

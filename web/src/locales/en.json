@@ -432,6 +432,25 @@
       "needsDocument": "A tab needs its score to be saved.",
       "needsChordPro": "A chord sheet needs its text to be saved."
     },
+    "library": {
+      "notFound": "That library was not found.",
+      "readOnly": "You can view this, but not change it.",
+      "notEmpty": "Move or delete this band's songs before deleting it.",
+      "lastEditor": "A band needs at least one person who can edit.",
+      "personal": "A personal library cannot be shared.",
+      "same": "Choose a different library.",
+      "memberNotFound": "Nobody with that email address has an account.",
+      "ambiguousEmail": "More than one account has that email address.",
+      "alreadyMember": "That person is already in this band.",
+      "badName": "The library name must be 1 to 80 characters.",
+      "badRole": "Choose view or edit."
+    },
+    "share": {
+      "notFound": "That link is not available.",
+      "disabled": "Share links are turned off on this server.",
+      "tooMany": "This song already has as many links as it can.",
+      "badExpiry": "Expiry must be between 1 and 3650 days."
+    },
     "sync": {
       "badAnchor": "Sync marks must belong to bars of this song.",
       "notTab": "Only tabs have sync marks."
@@ -2141,5 +2160,48 @@
       "spend": "{name} has used 80% of their monthly spend cap."
     },
     "dismiss": "Dismiss"
+  },
+  "bands": {
+    "nav": "Bands",
+    "heading": "Bands",
+    "intro": "A band is a shared library. People you add can view it, or edit the songs in it.",
+    "personal": "Personal",
+    "yours": "Your library",
+    "empty": "You are not in a band yet.",
+    "name": "Band name",
+    "create": "Create band",
+    "created": "Band created.",
+    "members": "Members",
+    "email": "Email address",
+    "role": "Role",
+    "view": "Can view",
+    "edit": "Can edit",
+    "add": "Add",
+    "remove": "Remove",
+    "rename": "Rename",
+    "delete": "Delete band",
+    "deleteConfirm": "Delete this empty band?",
+    "songs": "{count} songs",
+    "switcher": "Library"
+  },
+  "sharing": {
+    "share": "Share",
+    "heading": "Read-only link",
+    "hint": "Anyone with the link can play this song. They cannot change it.",
+    "expiry": "Expires in (days, optional)",
+    "create": "Create link",
+    "created": "Link created. Copy it now; it will not be shown again.",
+    "copy": "Copy link",
+    "copied": "Copied",
+    "revoke": "Revoke",
+    "none": "No live links.",
+    "disabled": "Share links are turned off on this server.",
+    "move": "Copy or move",
+    "moveHint": "Copy keeps the original. Move needs edit rights in both libraries.",
+    "destination": "Library",
+    "copySong": "Copy",
+    "moveSong": "Move",
+    "unavailable": "This link is not available.",
+    "back": "Fretbook"
   }
 }

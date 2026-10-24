@@ -20,6 +20,7 @@ vi.mock("../lib/api", () => ({
   addTags: (...args: unknown[]) => mockAddTags(...args),
   markSongOpened: vi.fn(),
   listJobs: (...args: unknown[]) => mockListJobs(...args),
+  listLibraries: vi.fn().mockResolvedValue([]),
   apiUrl: (p: string) => p,
 }));
 

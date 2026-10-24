@@ -33,7 +33,7 @@ def start_youtube_audio(
 
     Poll the job; when it is done, read the song again to get the new ``audio_url``.
     """
-    require_song(ctx, user.user_id, song_id)
+    require_song(ctx, user.user_id, song_id, write=True)
     if not ctx.settings.download_audio:
         raise api_error(400, "import.audioDisabled", "audio downloads are turned off on this server")
     url = body.url.strip()

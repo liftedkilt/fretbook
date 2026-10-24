@@ -16,6 +16,7 @@ from fretbook.config import Settings
 from fretbook.db.connection import session
 from fretbook.db.migrate import utcnow
 from fretbook.recommend import LEVEL_DAYS, LOOP_DAYS, build
+from fretbook.storage.access import can_read
 
 MODES = ("free", "wait", "scored")
 EXERCISE_KINDS = ("fretboard", "interval", "chord", "rhythm")
@@ -286,7 +287,8 @@ class PracticeRepository:
 
 
 def _owns_song(conn: sqlite3.Connection, owner_id: str, song_id: str) -> bool:
-    return conn.execute("SELECT 1 FROM songs WHERE id = ? AND owner_id = ?", (song_id, owner_id)).fetchone() is not None
+    """A practice session may name a song the caller can read, including a band song."""
+    return can_read(conn, owner_id, song_id)
 
 
 def _insert(conn: sqlite3.Connection, owner_id: str, new_id: str, item: SessionInput) -> None:

@@ -52,7 +52,7 @@ def start_stems(
     Poll the job; the finished job's ``result.stems`` lists the stems, which ``GET /api/songs/{song_id}/stems``
     serves. A new run replaces the old stems.
     """
-    require_song(ctx, user.user_id, song_id)
+    require_song(ctx, user.user_id, song_id, write=True)
     if ctx.media.audio_for(user.user_id, song_id) is None:
         raise api_error(400, "audio.none", "this song has no audio")
     if KIND not in ctx.jobs.live_worker_kinds():
@@ -82,6 +82,6 @@ def download_stem(
 @router.delete("/api/songs/{song_id}/stems", status_code=204, tags=["songs"], responses=AUTH_RESPONSES)
 def delete_stems(song_id: str, ctx: AppContext = Depends(context), user: Principal = Depends(principal)) -> Response:
     """Remove the song's stems to free the space; the recording itself stays."""
-    require_song(ctx, user.user_id, song_id)
+    require_song(ctx, user.user_id, song_id, write=True)
     ctx.media.delete_stems(user.user_id, song_id)
     return Response(status_code=204)

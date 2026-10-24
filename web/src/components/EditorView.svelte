@@ -2,7 +2,9 @@
   import ChordEditor from "./ChordEditor.svelte";
   import TabEditor from "./TabEditor.svelte";
   import { getMe, getMeta, getSong } from "../lib/api";
+  import { canEdit } from "../lib/bands";
   import { t } from "../lib/i18n.svelte";
+  import { followLink, hrefFor } from "../lib/router.svelte";
   import type { InstrumentPreset, SongDetail, TabSong } from "../lib/types";
 
   let { id }: { id: string } = $props();
@@ -38,6 +40,14 @@
   {#if !error}<div class="loading" role="status">
       <span class="spinner"></span>{t("app.loading")}
     </div>{/if}
+{:else if !canEdit(song.library_role)}
+  {@const songId = song.id}
+  <p class="alert" role="alert">{t("errors.library.readOnly")}</p>
+  <a
+    class="button"
+    href={hrefFor(`/songs/${songId}`)}
+    onclick={(event) => followLink(event, `/songs/${songId}`)}>{t("app.back")}</a
+  >
 {:else if song.content_kind === "chords"}
   {#key song.id}<ChordEditor {song} />{/key}
 {:else}

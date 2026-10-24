@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, Query, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from fretbook import metadata as song_metadata
-from fretbook.api.deps import context, principal, require_song
+from fretbook.api.deps import context, principal, require_library, require_song
 from fretbook.api.errors import api_error
 from fretbook.api.schemas import AUTH_RESPONSES, LibraryFacets, SongDetail
 from fretbook.auth.base import Principal
@@ -49,7 +49,7 @@ def update_metadata(
     song_id: str, body: MetadataBody, ctx: AppContext = Depends(context), user: Principal = Depends(principal)
 ) -> JSONResponse:
     """Set the song's key, genre, year, album and notes. Leaves the revision alone, so it never conflicts."""
-    require_song(ctx, user.user_id, song_id)
+    require_song(ctx, user.user_id, song_id, write=True)
     sent = {name: getattr(body, name) for name in body.model_fields_set}
     try:
         changes = song_metadata.clean_metadata(sent, METADATA_TEXT_LIMITS, YEAR_RANGE)
@@ -60,9 +60,13 @@ def update_metadata(
 
 
 @router.get("/api/library/facets", response_model=LibraryFacets, tags=["songs"], responses=AUTH_RESPONSES)
-def library_facets(ctx: AppContext = Depends(context), user: Principal = Depends(principal)) -> JSONResponse:
-    """The keys and genres in the caller's library with how many songs have each, for the library filters."""
-    return JSONResponse(ctx.songs.facets(user.user_id))
+def library_facets(
+    library: str | None = Query(None, max_length=64, description="Library to read. Omit it for the personal library."),
+    ctx: AppContext = Depends(context),
+    user: Principal = Depends(principal),
+) -> JSONResponse:
+    """The keys and genres in a library the caller belongs to, for the library filters."""
+    return JSONResponse(ctx.songs.facets(require_library(ctx, user.user_id, library)))
 
 
 @router.post("/api/songs/{song_id}/cover", response_model=SongDetail, tags=["songs"], responses=AUTH_RESPONSES)
@@ -73,7 +77,7 @@ async def upload_cover(
     user: Principal = Depends(principal),
 ) -> JSONResponse:
     """Replace the song's cover art with a PNG, JPEG or WebP image of at most 5 MB. SVG is refused."""
-    require_song(ctx, user.user_id, song_id)
+    require_song(ctx, user.user_id, song_id, write=True)
     data = await file.read(song_metadata.MAX_COVER_BYTES + 1)
     if len(data) > song_metadata.MAX_COVER_BYTES:
         raise api_error(413, "upload.tooLarge", "file is too large", limit=song_metadata.MAX_COVER_BYTES)
@@ -116,7 +120,7 @@ def delete_cover(
     song_id: str, ctx: AppContext = Depends(context), user: Principal = Depends(principal)
 ) -> JSONResponse:
     """Remove the uploaded cover art; the song goes back to its generated cover."""
-    require_song(ctx, user.user_id, song_id)
+    require_song(ctx, user.user_id, song_id, write=True)
     ctx.media.delete_kind(user.user_id, song_id, "cover")
     return JSONResponse(require_song(ctx, user.user_id, song_id))
 
@@ -132,7 +136,7 @@ def lookup_metadata(
     Only empty fields are filled; what the caller set stays. A 404 `metadata.lookupDisabled` means
     `FRETBOOK_METADATA_LOOKUP` is off, and `metadata.notFound` that nothing matched.
     """
-    song = require_song(ctx, user.user_id, song_id)
+    song = require_song(ctx, user.user_id, song_id, write=True)
     if not ctx.settings.metadata_lookup or ctx.fetcher is None:
         raise api_error(404, "metadata.lookupDisabled", "online metadata lookup is turned off")
     try:

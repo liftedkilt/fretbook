@@ -1,4 +1,10 @@
-"""Song and user rows. Every song query is scoped by ``owner_id``."""
+"""Song and user rows.
+
+``owner_id`` on a song is a library id. Listing stays inside one library. Reading one song, and
+changing it, also allow a band member (see ``fretbook.storage.access``). A personal library id
+is the user's id, so a caller passing their own id still sees only their songs unless they are
+a member somewhere else and ask for that song by id.
+"""
 
 from __future__ import annotations
 
@@ -27,6 +33,7 @@ from fretbook.score.model import (
     content_hash,
     summary_fields,
 )
+from fretbook.storage.access import can_read, editable_library
 from fretbook.tags import MAX_TAGS_PER_SONG, clean_tags, tag_key
 
 _EMPTY_SUMMARY: dict[str, Any] = {
@@ -419,9 +426,11 @@ class SongRepository:
     def mark_opened(self, owner_id: str, song_id: str) -> bool:
         """Record that the song was opened. Leaves ``updated_at`` and ``revision`` alone."""
         with self._session() as conn:
+            if not can_read(conn, owner_id, song_id):
+                return False
             cursor = conn.execute(
-                "UPDATE songs SET last_opened_at = ? WHERE owner_id = ? AND id = ?",
-                (utcnow(), owner_id, song_id),
+                "UPDATE songs SET last_opened_at = ? WHERE id = ?",
+                (utcnow(), song_id),
             )
             return cursor.rowcount > 0
 
@@ -432,11 +441,25 @@ class SongRepository:
                 SELECT s.*, {_TAGS_COLUMN}, {_COVER_COLUMN},
                        (SELECT m.id FROM media m
                         WHERE m.song_id = s.id AND m.kind = 'audio'
-                        ORDER BY m.created_at DESC LIMIT 1) AS audio_id
+                        ORDER BY m.created_at DESC LIMIT 1) AS audio_id,
+                       CASE
+                         WHEN s.owner_id = ? THEN 'edit'
+                         ELSE (
+                           SELECT m.role FROM library_members m
+                           WHERE m.library_id = s.owner_id AND m.user_id = ?
+                         )
+                       END AS library_role
                 FROM songs s
-                WHERE s.owner_id = ? AND s.id = ?
+                WHERE s.id = ?
+                  AND (
+                    s.owner_id = ?
+                    OR EXISTS (
+                      SELECT 1 FROM library_members m
+                      WHERE m.library_id = s.owner_id AND m.user_id = ?
+                    )
+                  )
                 """,
-                (owner_id, song_id),
+                (owner_id, owner_id, song_id, owner_id, owner_id),
             ).fetchone()
         return _detail(row) if row else None
 
@@ -699,8 +722,11 @@ class SongRepository:
             assignments.append("source_ref = ?")
             values.append(json.dumps(source_ref, ensure_ascii=False))
         with self._session(immediate=True) as conn:
+            library_id = editable_library(conn, owner_id, song_id)
+            if library_id is None:
+                return None
             row = conn.execute(
-                "SELECT revision FROM songs WHERE owner_id = ? AND id = ?", (owner_id, song_id)
+                "SELECT revision FROM songs WHERE owner_id = ? AND id = ?", (library_id, song_id)
             ).fetchone()
             if row is None:
                 return None
@@ -708,7 +734,7 @@ class SongRepository:
                 raise RevisionConflict(row["revision"])
             conn.execute(
                 f"UPDATE songs SET {', '.join(assignments)} WHERE owner_id = ? AND id = ?",
-                (*values, owner_id, song_id),
+                (*values, library_id, song_id),
             )
             _index_lyrics(conn, song_id, fields["chordpro"])
         return self.get_song(owner_id, song_id)
@@ -723,9 +749,12 @@ class SongRepository:
     ) -> dict[str, Any] | None:
         """Set the opening tempo and tapped anchors in one locked read-modify-write."""
         with self._session(immediate=True) as conn:
+            library_id = editable_library(conn, owner_id, song_id)
+            if library_id is None:
+                return None
             row = conn.execute(
                 "SELECT document FROM songs WHERE owner_id = ? AND id = ? AND content_kind = 'tab'",
-                (owner_id, song_id),
+                (library_id, song_id),
             ).fetchone()
             if row is None:
                 return None
@@ -750,7 +779,7 @@ class SongRepository:
                     fields["difficulty"],
                     fields["difficulty_detail"],
                     fields["difficulty_version"],
-                    owner_id,
+                    library_id,
                     song_id,
                 ),
             )
@@ -848,14 +877,14 @@ class SongRepository:
         columns = {"key": "musical_key", "genre": "genre", "album": "album", "year": "year", "notes": "notes"}
         assignments = [f"{columns[name]} = ?" for name in changes]
         with self._session() as conn:
+            library_id = editable_library(conn, owner_id, song_id)
+            if library_id is None:
+                return False
             if not assignments:
-                return (
-                    conn.execute("SELECT 1 FROM songs WHERE owner_id = ? AND id = ?", (owner_id, song_id)).fetchone()
-                    is not None
-                )
+                return True
             cursor = conn.execute(
                 f"UPDATE songs SET {', '.join(assignments)} WHERE owner_id = ? AND id = ?",  # noqa: S608 - fixed names
-                (*changes.values(), owner_id, song_id),
+                (*changes.values(), library_id, song_id),
             )
             return cursor.rowcount > 0
 
@@ -909,10 +938,14 @@ class SongRepository:
         return updated
 
     def set_favourite(self, owner_id: str, song_id: str, favourite: bool) -> bool:
-        """Star or unstar a song. Returns whether the owner has it."""
+        """Star or unstar a song. Returns whether the caller may edit it."""
         with self._session() as conn:
+            library_id = editable_library(conn, owner_id, song_id)
+            if library_id is None:
+                return False
             cursor = conn.execute(
-                "UPDATE songs SET favourite = ? WHERE owner_id = ? AND id = ?", (int(favourite), owner_id, song_id)
+                "UPDATE songs SET favourite = ? WHERE owner_id = ? AND id = ?",
+                (int(favourite), library_id, song_id),
             )
             return cursor.rowcount > 0
 
@@ -973,12 +1006,16 @@ class SongRepository:
 
     def delete_song(self, owner_id: str, song_id: str) -> bool:
         with self._session() as conn:
-            cursor = conn.execute("DELETE FROM songs WHERE owner_id = ? AND id = ?", (owner_id, song_id))
+            library_id = editable_library(conn, owner_id, song_id)
+            if library_id is None:
+                return False
+            cursor = conn.execute("DELETE FROM songs WHERE owner_id = ? AND id = ?", (library_id, song_id))
             return cursor.rowcount > 0
 
 
 def _owns(conn: sqlite3.Connection, owner_id: str, song_id: str) -> bool:
-    return conn.execute("SELECT 1 FROM songs WHERE owner_id = ? AND id = ?", (owner_id, song_id)).fetchone() is not None
+    """Whether ``owner_id`` may change this song (their library, or edit membership of its library)."""
+    return editable_library(conn, owner_id, song_id) is not None
 
 
 def _index_lyrics(conn: sqlite3.Connection, song_id: str, chordpro: str | None) -> None:
@@ -1087,4 +1124,6 @@ def _detail(row: sqlite3.Row) -> dict[str, Any]:
     payload["preferred_track_id"] = row["preferred_track_id"]
     payload["notes"] = row["notes"]
     payload["difficulty_tracks"] = json.loads(row["difficulty_detail"] or "[]")
+    payload["library_id"] = row["owner_id"]
+    payload["library_role"] = row["library_role"]
     return payload

@@ -179,6 +179,25 @@ describe("request wrappers", () => {
     ["signOutUser", () => api.signOutUser("u1"), "POST", "api/admin/users/u1/sign-out"],
     ["revokeUserTokens", () => api.revokeUserTokens("u1"), "DELETE", "api/admin/users/u1/tokens"],
     ["adoptLocal", () => api.adoptLocal(), "POST", "api/admin/adopt-local"],
+    ["listLibraries", () => api.listLibraries(), "GET", "api/libraries"],
+    ["createBand", () => api.createBand("Tuesday"), "POST", "api/libraries"],
+    ["renameBand", () => api.renameBand("b1", "Wednesday"), "PATCH", "api/libraries/b1"],
+    ["deleteBand", () => api.deleteBand("b1"), "DELETE", "api/libraries/b1"],
+    ["listMembers", () => api.listMembers("b1"), "GET", "api/libraries/b1/members"],
+    ["addMember", () => api.addMember("b1", "a@b.c", "view"), "POST", "api/libraries/b1/members"],
+    [
+      "setMemberRole",
+      () => api.setMemberRole("b1", "u1", "edit"),
+      "PATCH",
+      "api/libraries/b1/members/u1",
+    ],
+    ["removeMember", () => api.removeMember("b1", "u1"), "DELETE", "api/libraries/b1/members/u1"],
+    ["copySongTo", () => api.copySongTo("s1", "b1"), "POST", "api/songs/s1/copy"],
+    ["moveSongTo", () => api.moveSongTo("s1", "b1"), "POST", "api/songs/s1/move"],
+    ["listShares", () => api.listShares("s1"), "GET", "api/songs/s1/shares"],
+    ["createShare", () => api.createShare("s1", 7), "POST", "api/songs/s1/shares"],
+    ["revokeShare", () => api.revokeShare("s1", "sh1"), "DELETE", "api/songs/s1/shares/sh1"],
+    ["getSharedSong", () => api.getSharedSong("sh_abc"), "GET", "api/share/sh_abc"],
   ];
 
   it.each(cases)("%s calls the right route", async (_name, call, method, path) => {
@@ -307,6 +326,15 @@ describe("errors", () => {
     const error = (await api.getMe().catch((e: unknown) => e)) as api.ApiError;
     expect(error.status).toBe(502);
     expect(error.message).toBe("Bad Gateway");
+  });
+
+  it("does not send a public share visitor to sign in", async () => {
+    const assign = vi.fn();
+    vi.stubGlobal("location", { pathname: "/app/share/sh_abc", search: "", assign });
+    respond = () => reply({ detail: { key: "share.notFound", message: "missing" } }, 404);
+    await expect(api.getSharedSong("sh_a/b")).rejects.toMatchObject({ key: "share.notFound" });
+    expect(calls[0].url).toBe("http://fretbook.test/app/api/share/sh_a%2Fb");
+    expect(assign).not.toHaveBeenCalled();
   });
 
   it("sends a signed-out browser to sign in", async () => {

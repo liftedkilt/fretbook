@@ -5,7 +5,8 @@
   import type { SongDetail } from "../lib/types";
   import { refreshSongs, starSong, ui } from "../lib/ui.svelte";
 
-  let { song }: { song: SongDetail } = $props();
+  let { song, readOnly = false }: { song: SongDetail; readOnly?: boolean } = $props();
+  const locked = $derived(ui.demoMode || readOnly);
 
   // The page keys this component by song id, so the starting values are the song's.
   // svelte-ignore state_referenced_locally
@@ -54,9 +55,9 @@
   }
 </script>
 
-{#if !ui.demoMode || tags.length}
+{#if !locked || tags.length}
   <div class="song-tags" data-testid="song-tags">
-    {#if !ui.demoMode}<button
+    {#if !locked}<button
         class="icon-button glass song-star"
         class:on={favourite}
         data-testid="song-favourite"
@@ -71,7 +72,7 @@
       {#each tags as tag (tag)}
         <li class="tag-pill" data-testid="song-tag">
           <Icon name="tag" size={13} />{tag}
-          {#if !ui.demoMode}<button
+          {#if !locked}<button
               class="tag-remove"
               data-testid="song-tag-remove"
               aria-label={t("tags.remove", { tag })}
@@ -82,7 +83,7 @@
         </li>
       {/each}
     </ul>
-    {#if !ui.demoMode}<form
+    {#if !locked}<form
         class="tag-add"
         onsubmit={(event) => {
           event.preventDefault();

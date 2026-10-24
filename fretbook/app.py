@@ -25,6 +25,7 @@ from fretbook.api.bulk_routes import router as bulk_router
 from fretbook.api.calibration_routes import router as calibration_router
 from fretbook.api.demo_routes import router as demo_router
 from fretbook.api.lesson_routes import router as lesson_router
+from fretbook.api.library_routes import router as library_router
 from fretbook.api.llm_routes import router as llm_router
 from fretbook.api.metadata_routes import router as metadata_router
 from fretbook.api.middleware import BodyLimitMiddleware, SameOriginMiddleware
@@ -33,6 +34,7 @@ from fretbook.api.practice_routes import router as practice_router
 from fretbook.api.retune_routes import router as retune_router
 from fretbook.api.routes import router
 from fretbook.api.setlist_routes import router as setlist_router
+from fretbook.api.share_routes import router as share_router
 from fretbook.api.stem_routes import router as stem_router
 from fretbook.api.tag_routes import router as tag_router
 from fretbook.api.token_routes import router as token_router
@@ -53,6 +55,7 @@ from fretbook.jobs.registry import register_kinds
 from fretbook.jobs.runner import JobRunner
 from fretbook.llm.service import LlmService
 from fretbook.score.legacy import legacy_document, load_legacy_dir
+from fretbook.storage.libraries import LibraryStore
 from fretbook.storage.media import MediaStore, QuotaExceeded
 from fretbook.storage.repository import SongRepository
 from fretbook.storage.users import UserStore
@@ -172,6 +175,7 @@ def create_app(
         auth=build_auth(settings, users, transport=oidc_transport),
         fetcher=fetcher,
         llm=LlmService(settings, transport=llm_transport),
+        libraries=LibraryStore(settings, songs, media),
     )
 
     resetter = DemoResetter(ctx)
@@ -218,7 +222,8 @@ def create_app(
             "Single-user mode has no login: every request is the local user. "
             "With OIDC (FRETBOOK_OIDC_ISSUER set) a browser signs in through GET /auth/login, "
             "GET /auth/callback and POST /auth/logout, which are not JSON and not listed here; "
-            "every route but /api/health then answers 401 auth.required without a session cookie or an API token."
+            "every route but /api/health and, when FRETBOOK_SHARE_LINKS is on, /api/share/{token} "
+            "then answers 401 auth.required without a session cookie or an API token."
         ),
         lifespan=lifespan,
         openapi_tags=[
@@ -265,6 +270,17 @@ def create_app(
                 "description": "Export the whole library as a zip and restore one. Restore is a background job.",
             },
             {
+                "name": "libraries",
+                "description": "Personal and band libraries, membership, and copying or moving a song.",
+            },
+            {
+                "name": "sharing",
+                "description": (
+                    "Read-only links. Creating one needs FRETBOOK_SHARE_LINKS. "
+                    "GET /api/share/{token} does not need a session."
+                ),
+            },
+            {
                 "name": "jobs",
                 "description": "Background job status, progress keys, and errors.",
             },
@@ -296,6 +312,8 @@ def create_app(
         path_limits={RESTORE_PATH: settings.max_restore_bytes + 1024 * 1024},
     )
     app.include_router(router)
+    app.include_router(library_router)
+    app.include_router(share_router)
     app.include_router(backup_router)
     app.include_router(ascii_tab_router)
     app.include_router(midi_router)
@@ -320,7 +338,12 @@ def create_app(
         app.include_router(auth_routes)
 
     def signed_out(request: Request, full_path: str) -> Response | None:
-        """Send a browser without a session to sign in. Every page and asset is behind it."""
+        """Send a browser without a session to sign in. Every page and asset is behind it.
+
+        A read-only share page is the exception, and only when the operator has turned links on.
+        """
+        if settings.share_links and full_path.startswith("share/") and len(full_path) > len("share/"):
+            return None
         try:
             ctx.auth.authenticate(request)
         except HTTPException as exc:
@@ -347,7 +370,11 @@ def create_app(
         root = static.resolve()
         if candidate.is_file() and candidate.is_relative_to(root):
             return FileResponse(candidate)
-        return _index(settings)
+        page = _index(settings)
+        if settings.share_links and full_path.startswith("share/"):
+            page.headers["Cache-Control"] = "private, no-store"
+            page.headers["X-Robots-Tag"] = "noindex"
+        return page
 
     return app
 

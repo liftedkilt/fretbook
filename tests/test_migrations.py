@@ -868,6 +868,51 @@ def verify_v20(conn: sqlite3.Connection) -> None:
     assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
 
 
+def seed_v21(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        INSERT INTO users (id, external_subject, display_name, created_at)
+        VALUES ('user-v21', 'sub-v21', 'User V21', '2026-01-21T00:00:00Z')
+        """
+    )
+    conn.execute(
+        """
+        INSERT INTO songs (
+            id, owner_id, slug, title, artist, content_kind, source_kind, source_ref,
+            revision, bpm, measure_count, track_count, string_count, preferred_instrument,
+            preferred_track_id, has_sync, duration, document, chordpro, created_at, updated_at
+        ) VALUES (
+            'song-v21', 'user-v21', 'song-v21', 'Library Song', '', 'chords', 'manual', '{}',
+            1, 0, 0, 0, 0, '', '', 0, NULL, NULL, '{title: Library Song}',
+            '2026-01-21T00:00:00Z', '2026-01-21T00:00:00Z'
+        )
+        """
+    )
+    conn.commit()
+
+
+def verify_v21(conn: sqlite3.Connection) -> None:
+    library = conn.execute("SELECT kind, name FROM libraries WHERE id = 'user-v21'").fetchone()
+    assert tuple(library) == ("personal", "User V21")
+    member = conn.execute(
+        "SELECT role FROM library_members WHERE library_id = 'user-v21' AND user_id = 'user-v21'"
+    ).fetchone()
+    assert member["role"] == "edit"
+    song = conn.execute("SELECT title, owner_id FROM songs WHERE id = 'song-v21'").fetchone()
+    assert tuple(song) == ("Library Song", "user-v21")
+    conn.execute("UPDATE users SET display_name = 'Renamed V21' WHERE id = 'user-v21'")
+    assert conn.execute("SELECT name FROM libraries WHERE id = 'user-v21'").fetchone()[0] == "Renamed V21"
+    conn.execute(
+        "INSERT INTO libraries (id, kind, name, created_at) VALUES ('band-v21', 'band', 'Band', '2026-01-21T00:00:00Z')"
+    )
+    conn.execute("UPDATE songs SET owner_id = 'band-v21' WHERE id = 'song-v21'")
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute("DELETE FROM libraries WHERE id = 'band-v21'")
+    assert conn.execute("PRAGMA foreign_key_check").fetchall() == []
+    assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+    conn.rollback()
+
+
 SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.Connection], None]]] = {
     1: (seed_v1, verify_v1),
     2: (seed_v2, verify_v2),
@@ -889,6 +934,7 @@ SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.C
     18: (seed_v18, verify_v18),
     19: (seed_v19, verify_v19),
     20: (seed_v20, verify_v20),
+    21: (seed_v21, verify_v21),
 }
 
 

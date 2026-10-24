@@ -198,6 +198,8 @@ export interface SongQuery {
   difficulty_max?: number;
   limit?: number;
   cursor?: string;
+  /** Library to list. Omit it for the personal library. */
+  library?: string;
 }
 
 /** Songs in the whole library per filter, unaffected by search, tags and favourites. */
@@ -225,6 +227,32 @@ export interface SongDetail extends SongSummary {
   difficulty_tracks: TrackDifficulty[];
   /** Personal notes as Markdown. */
   notes: string;
+  /** Library that owns the song. `shared` on a public link. */
+  library_id?: string;
+  /** `view` can play the song and cannot change it. Missing means the caller can edit. */
+  library_role?: "view" | "edit";
+}
+
+export interface LibraryInfo {
+  id: string;
+  kind: "personal" | "band";
+  name: string;
+  role: "view" | "edit";
+  song_count: number;
+}
+
+export interface LibraryMember {
+  user_id: string;
+  display_name: string;
+  role: "view" | "edit";
+}
+
+export interface ShareLink {
+  id: string;
+  prefix: string;
+  created_at: string;
+  expires_at: string | null;
+  token?: string;
 }
 
 /** What `PATCH /api/songs/{id}/metadata` takes. A field left out stays; "" (or null for `year`) clears it. */
@@ -311,6 +339,8 @@ export interface Meta {
   demo_mode?: boolean;
   /** Online lookup of album, year and cover art is on (`FRETBOOK_METADATA_LOOKUP`). */
   metadata_lookup?: boolean;
+  /** Read-only song links are on (`FRETBOOK_SHARE_LINKS`). */
+  share_links?: boolean;
 }
 
 export interface Settings {

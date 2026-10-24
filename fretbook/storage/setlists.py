@@ -10,6 +10,7 @@ from typing import Any
 from fretbook.config import Settings
 from fretbook.db.connection import session
 from fretbook.db.migrate import utcnow
+from fretbook.storage.access import can_read
 
 MAX_ENTRIES = 500
 MAX_NAME = 200
@@ -149,13 +150,7 @@ def _write_entries(conn: sqlite3.Connection, owner_id: str, setlist_id: str, ent
     if len(entries) > MAX_ENTRIES:
         raise TooManyEntries
     wanted = sorted({entry.song_id for entry in entries})
-    owned = {
-        row["id"]
-        for row in conn.execute(
-            f"SELECT id FROM songs WHERE owner_id = ? AND id IN ({','.join('?' * len(wanted))})",
-            (owner_id, *wanted),
-        )
-    }
+    owned = {song_id for song_id in wanted if can_read(conn, owner_id, song_id)}
     missing = [song_id for song_id in wanted if song_id not in owned]
     if missing:
         raise UnknownSongs(missing)
@@ -189,10 +184,17 @@ def _load(conn: sqlite3.Connection, owner_id: str, setlist_id: str) -> dict[str,
         SELECT e.id, e.song_id, e.note, e.transpose,
                s.title, s.artist, s.content_kind, s.preferred_instrument, s.string_count
         FROM setlist_entries e
-        JOIN songs s ON s.id = e.song_id AND s.owner_id = ?
+        JOIN songs s ON s.id = e.song_id
+          AND (
+            s.owner_id = ?
+            OR EXISTS (
+              SELECT 1 FROM library_members m
+              WHERE m.library_id = s.owner_id AND m.user_id = ?
+            )
+          )
         WHERE e.setlist_id = ?
         ORDER BY e.position, e.id
         """,
-        (owner_id, setlist_id),
+        (owner_id, owner_id, setlist_id),
     ).fetchall()
     return {**dict(head), "entry_count": len(rows), "entries": [dict(row) for row in rows]}

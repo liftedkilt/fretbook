@@ -111,6 +111,8 @@ class Meta(BaseModel):
     """A read-only public demo (``FRETBOOK_DEMO_MODE``): hide the controls that change the library."""
     metadata_lookup: bool
     """Online lookup of album, year and cover art is on (``FRETBOOK_METADATA_LOOKUP``); show its button."""
+    share_links: bool
+    """Read-only song links are on (``FRETBOOK_SHARE_LINKS``). When false, creating a link is refused."""
 
 
 class Settings(BaseModel):
@@ -331,6 +333,10 @@ class SongDetail(SongSummary):
     preferred_track_id: str
     difficulty_tracks: list[TrackDifficulty]
     # Why each track got its level; a chord sheet has one entry, or none when it has no chords.
+    library_id: str = ""
+    """Library that owns the song. ``shared`` on a public link, which has no real id."""
+    library_role: Literal["view", "edit"] = "edit"
+    """What the caller may do. ``view`` can play the song and cannot change it."""
 
 
 class SongExport(BaseModel):
@@ -460,6 +466,39 @@ class ImportPreview(BaseModel):
     artist: str
     song_id: int
     tracks: list[SongsterrTrackChoice]
+
+
+class LibrarySummary(BaseModel):
+    """A library the caller belongs to. A personal library's ``id`` is the user's id."""
+
+    id: str
+    kind: Literal["personal", "band"]
+    name: str
+    role: Literal["view", "edit"]
+    song_count: int
+
+
+class LibraryMember(BaseModel):
+    """A band member. The email address is not returned."""
+
+    user_id: str
+    display_name: str
+    role: Literal["view", "edit"]
+
+
+class ShareLink(BaseModel):
+    """A live read-only link. The secret is only in the response that creates it."""
+
+    id: str
+    prefix: str
+    created_at: str
+    expires_at: str | None
+    token: str | None = None
+    """Present only when the link is created."""
+
+
+class ShareCreated(ShareLink):
+    token: str
 
 
 _KEYED = "Keyed error. `detail` is {key, message, params}."
