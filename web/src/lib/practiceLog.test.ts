@@ -3,7 +3,7 @@ import {
   addDays,
   agoDays,
   daysBetween,
-  formatDuration,
+  durationParts,
   goalProgress,
   heatLevel,
   heatmapWeeks,
@@ -207,13 +207,13 @@ describe("days", () => {
 });
 
 describe("goal, ring and durations", () => {
-  it("formats durations", () => {
-    expect(formatDuration(0)).toBe("0s");
-    expect(formatDuration(45)).toBe("45s");
-    expect(formatDuration(60)).toBe("1m");
-    expect(formatDuration(59 * 60 + 40)).toBe("1h 00m");
-    expect(formatDuration(3600 + 5 * 60)).toBe("1h 05m");
-    expect(formatDuration(-5)).toBe("0s");
+  it("splits durations into seconds, minutes, or hours and minutes", () => {
+    expect(durationParts(0)).toEqual({ unit: "seconds", seconds: 0 });
+    expect(durationParts(45)).toEqual({ unit: "seconds", seconds: 45 });
+    expect(durationParts(60)).toEqual({ unit: "minutes", minutes: 1 });
+    expect(durationParts(59 * 60 + 40)).toEqual({ unit: "hours", hours: 1, minutes: 0 });
+    expect(durationParts(3600 + 5 * 60)).toEqual({ unit: "hours", hours: 1, minutes: 5 });
+    expect(durationParts(-5)).toEqual({ unit: "seconds", seconds: 0 });
     expect(minutesOf(119)).toBe(1);
   });
 

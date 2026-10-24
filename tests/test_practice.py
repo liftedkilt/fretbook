@@ -285,3 +285,77 @@ def test_an_archive_from_before_the_practice_log_still_restores(tmp_path: Path) 
     with TestClient(create_app(Settings.for_tests(tmp_path / "dst"))) as target:
         job = _restore(target, out.getvalue())
         assert job["status"] == "done" and job["result"]["practice_sessions"] == 0
+
+
+def test_adopting_the_local_library_moves_its_practice_log(tmp_path: Path) -> None:
+    settings = Settings.for_tests(tmp_path / "adopt")
+    with TestClient(create_app(settings)) as client:
+        song = _song(client, "Local")
+        _log(client, song, 120)
+        client.put("/api/practice/goal", json={"daily_minutes": 40})
+        ctx = client.app.state.ctx
+        ctx.songs.ensure_user("ann", "Ann")
+        ctx.users.adopt_local("ann")
+        repo = PracticeRepository(settings)
+        assert repo.song_history("local", song) is None
+        history = repo.song_history("ann", song)
+        assert history is not None and history["total_seconds"] == 120
+        assert repo.get_goal("ann")["daily_minutes"] == 40
+        today = date.fromisoformat(_day())
+        assert repo.stats("ann", today)["songs_practised"] == 1
+        assert repo.stats("local", today)["songs_practised"] == 0
+
+
+def test_adopting_keeps_a_goal_the_user_already_set(tmp_path: Path) -> None:
+    settings = Settings.for_tests(tmp_path / "adopt-goal")
+    with TestClient(create_app(settings)) as client:
+        client.put("/api/practice/goal", json={"daily_minutes": 40})
+        ctx = client.app.state.ctx
+        ctx.songs.ensure_user("ann", "Ann")
+        repo = PracticeRepository(settings)
+        repo.set_goal("ann", 5, True)
+        ctx.users.adopt_local("ann")
+        assert repo.get_goal("ann")["daily_minutes"] == 5
+
+
+def test_restoring_a_session_id_another_user_holds_gives_it_a_new_id(tmp_path: Path) -> None:
+    settings = Settings.for_tests(tmp_path / "ids")
+    with TestClient(create_app(settings)) as client:
+        song = _song(client, "Mine")
+        ctx = client.app.state.ctx
+        ctx.songs.ensure_user("ann", "Ann")
+        ann_song = ctx.songs.create_song(
+            "ann", title="Hers", artist="", source_kind="manual", source_ref={}, chordpro=SHEET
+        )["id"]
+        repo = PracticeRepository(settings)
+        mine = SessionInput(song_id=song, day=_day(), duration_seconds=60, id="shared-id")
+        hers = SessionInput(song_id=ann_song, day=_day(), duration_seconds=90, id="shared-id")
+        assert repo.restore_session("local", mine) is True
+        # Same owner, same id: the same session, skipped.
+        assert repo.restore_session("local", mine) is False
+        # Another owner's session that happens to share the id is kept under a new one.
+        assert repo.restore_session("ann", hers) is True
+        history = repo.song_history("ann", ann_song)
+        assert history is not None and history["session_count"] == 1
+        assert history["sessions"][0]["id"] != "shared-id"
+        local = repo.song_history("local", song)
+        assert local is not None and [item["id"] for item in local["sessions"]] == ["shared-id"]
+
+
+def test_dashboard_titles_only_come_from_the_owners_own_songs(tmp_path: Path) -> None:
+    settings = Settings.for_tests(tmp_path / "join")
+    with TestClient(create_app(settings)) as client:
+        song = _song(client, "Mine")
+        _log(client, song)
+        # A session row whose owner no longer matches its song's owner adds nothing to that owner's dashboard.
+        conn = sqlite3.connect(settings.database_path)
+        try:
+            conn.execute(
+                "INSERT INTO users (id, display_name, created_at) VALUES ('bob', 'Bob', '2026-01-01T00:00:00Z')"
+            )
+            conn.execute("UPDATE songs SET owner_id = 'bob' WHERE id = ?", (song,))
+            conn.commit()
+        finally:
+            conn.close()
+        stats = PracticeRepository(settings).stats("local", date.fromisoformat(_day()))
+        assert stats["songs_practised"] == 0 and stats["recent"] == []

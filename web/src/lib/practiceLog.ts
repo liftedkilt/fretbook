@@ -184,13 +184,18 @@ export class PracticeTimer {
   }
 }
 
-/** "1h 05m", "12m", "45s": time as people say it. */
-export function formatDuration(seconds: number): string {
+/** A duration split for display: seconds under a minute, minutes under an hour, then hours and minutes. */
+export function durationParts(
+  seconds: number,
+):
+  | { unit: "seconds"; seconds: number }
+  | { unit: "minutes"; minutes: number }
+  | { unit: "hours"; hours: number; minutes: number } {
   const total = Math.max(0, Math.round(seconds));
-  if (total < 60) return `${total}s`;
+  if (total < 60) return { unit: "seconds", seconds: total };
   const minutes = Math.round(total / 60);
-  if (minutes < 60) return `${minutes}m`;
-  return `${Math.floor(minutes / 60)}h ${pad(minutes % 60)}m`;
+  if (minutes < 60) return { unit: "minutes", minutes };
+  return { unit: "hours", hours: Math.floor(minutes / 60), minutes: minutes % 60 };
 }
 
 /** Whole minutes, for the ring and the goal. */

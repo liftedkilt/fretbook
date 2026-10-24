@@ -149,6 +149,9 @@ class UserStore:
                 conn.execute("UPDATE songs SET owner_id = ?, slug = ? WHERE id = ?", (user_id, slug, row["id"]))
             conn.execute("UPDATE media SET owner_id = ? WHERE owner_id = ?", (user_id, LOCAL_USER))
             conn.execute("UPDATE setlists SET owner_id = ? WHERE owner_id = ?", (user_id, LOCAL_USER))
+            conn.execute("UPDATE practice_sessions SET owner_id = ? WHERE owner_id = ?", (user_id, LOCAL_USER))
+            # A goal the user already set wins; the library's own is left behind.
+            conn.execute("UPDATE OR IGNORE practice_goals SET owner_id = ? WHERE owner_id = ?", (user_id, LOCAL_USER))
         return len(rows)
 
     # --- personal API tokens --------------------------------------------------

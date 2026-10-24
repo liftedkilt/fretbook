@@ -17,7 +17,8 @@ from pathlib import Path
 DEFAULT_DIR = Path(__file__).resolve().parent.parent / "fretbook" / "db" / "migrations"
 NAME = re.compile(r"^(\d{3})_[a-z0-9_]+\.sql$")
 # Numbers held for an issue that has not merged yet, so the next migration can take a later one.
-# They may be missing without failing the "no gaps" check. Remove an entry once its file is on main.
+# They may be missing without failing the "no gaps" check. Remove an entry once its file is on main,
+# and update test_reserved_migration_number_may_be_missing in tests/test_ci_checks.py with it.
 RESERVED = {9: "#34 (separate worker process)"}
 
 

@@ -139,14 +139,14 @@ class PracticeRepository:
             songs = [
                 dict(row)
                 for row in conn.execute(
-                    f"""
+                    """
                     SELECT s.id AS song_id, s.title, s.artist, s.content_kind,
                            count(*) AS session_count, sum(p.duration_seconds) AS total_seconds,
                            max(p.started_at) AS last_practised, max(p.day) AS last_day,
                            max(p.speed) AS best_speed, max(p.score) AS best_score
                     FROM practice_sessions p JOIN songs s ON s.id = p.song_id
-                    WHERE p.owner_id = ? GROUP BY s.id
-                    ORDER BY max(p.started_at) DESC, s.id LIMIT {HISTORY_LIMIT * 20}
+                    WHERE p.owner_id = ? AND s.owner_id = p.owner_id GROUP BY s.id
+                    ORDER BY max(p.started_at) DESC, s.id
                     """,
                     (owner_id,),
                 )
@@ -167,13 +167,21 @@ class PracticeRepository:
         return {"sessions": sessions, "goal": goal}
 
     def restore_session(self, owner_id: str, item: SessionInput) -> bool:
-        """Put back a session from an archive. Returns ``False`` for one that is already here or whose song is not."""
+        """Put back a session from an archive. Returns ``False`` for one that is already here or whose song is not.
+
+        An id this owner already has means the same session, so it is skipped and restoring twice adds nothing.
+        An id another user holds is a different session that happens to share it, so it gets a fresh id.
+        """
         with self._session(immediate=True) as conn:
-            if item.id and conn.execute("SELECT 1 FROM practice_sessions WHERE id = ?", (item.id,)).fetchone():
-                return False
             if not _owns_song(conn, owner_id, item.song_id):
                 return False
-            _insert(conn, owner_id, item.id or uuid.uuid4().hex[:12], item)
+            new_id = item.id or uuid.uuid4().hex[:12]
+            taken = conn.execute("SELECT owner_id FROM practice_sessions WHERE id = ?", (new_id,)).fetchone()
+            if taken is not None:
+                if taken["owner_id"] == owner_id:
+                    return False
+                new_id = uuid.uuid4().hex[:12]
+            _insert(conn, owner_id, new_id, item)
         return True
 
     def restore_goal(self, owner_id: str, daily_minutes: int, weekly_summary: bool) -> None:

@@ -4,13 +4,13 @@
   import { t } from "../lib/i18n.svelte";
   import {
     agoDays,
-    formatDuration,
     goalProgress,
     heatmapWeeks,
     localDay,
     minutesOf,
     ringOffset,
   } from "../lib/practiceLog";
+  import { formatDuration } from "../lib/practiceText";
   import { followLink, hrefFor } from "../lib/router.svelte";
   import type { PracticeSongStats, PracticeStats } from "../lib/types";
 

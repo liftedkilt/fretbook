@@ -1025,6 +1025,9 @@
       "free": "Tocar livremente",
       "wait": "Modo espera",
       "scored": "Com pontuação"
-    }
+    },
+    "durationSeconds": "{count}s",
+    "durationMinutes": "{count}min",
+    "durationHours": "{hours}h {minutes}min"
   }
 }

@@ -1025,6 +1025,9 @@
       "free": "Free play",
       "wait": "Wait mode",
       "scored": "Scored"
-    }
+    },
+    "durationSeconds": "{count}s",
+    "durationMinutes": "{count}m",
+    "durationHours": "{hours}h {minutes}m"
   }
 }

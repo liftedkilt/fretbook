@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getSongPractice } from "../lib/api";
-  import { t } from "../lib/i18n.svelte";
-  import { formatDuration } from "../lib/practiceLog";
+  import { currentLocale, t } from "../lib/i18n.svelte";
+  import { formatDuration } from "../lib/practiceText";
   import { formatSpeedPercent } from "../lib/practice";
   import type { SongPractice } from "../lib/types";
 
@@ -28,7 +28,7 @@
     const date = new Date(iso);
     return Number.isNaN(date.getTime())
       ? iso
-      : date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+      : date.toLocaleString(currentLocale(), { dateStyle: "medium", timeStyle: "short" });
   }
 
   function what(session: SongPractice["sessions"][number]): string {
