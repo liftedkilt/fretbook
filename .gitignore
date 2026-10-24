@@ -31,3 +31,8 @@ web/playwright-report/
 htmlcov/
 web/coverage/
 site/
+
+# Python packaging
+dist/
+build/
+*.egg-info/

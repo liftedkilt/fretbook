@@ -12,15 +12,15 @@ revoke tokens; that takes a signed-in session. The API is described by
 
 ## `fretbook.cli`
 
-`python -m fretbook.cli` (installed as `fretbook-cli` where the package is pip-installed) wraps the common calls. It
-needs only Python, no extra packages, and reads `FRETBOOK_URL` (default `http://localhost:8137`) and `FRETBOOK_TOKEN`:
+`fretbook-cli` wraps the common calls. Run `pip install .` in a checkout to put it on your path (the Docker image
+has no console script; use `python -m fretbook.cli` there, as below). It needs only Python, no extra packages, and reads `FRETBOOK_URL` (default `http://localhost:8137`) and `FRETBOOK_TOKEN`:
 
 ```sh
 export FRETBOOK_URL=https://fretbook.example.com FRETBOOK_TOKEN=fb_...
-python -m fretbook.cli import song.gp5 https://www.songsterr.com/a/wsa/... ~/tabs   # files, links, and folders
-python -m fretbook.cli import --recursive --no-wait ~/tabs
-python -m fretbook.cli list "blue"                                                  # or: list --json
-python -m fretbook.cli export <song id> -f musicxml -o song.musicxml                # json (default), musicxml, midi, chordpro
+fretbook-cli import song.gp5 https://www.songsterr.com/a/wsa/... ~/tabs   # files, links, and folders
+fretbook-cli import --recursive --no-wait ~/tabs
+fretbook-cli list "blue"                                                  # or: list --json
+fretbook-cli export <song id> -f musicxml -o song.musicxml                # json (default), musicxml, midi, chordpro
 ```
 
 In Docker:
@@ -44,11 +44,10 @@ Drop files in `~/tabs/incoming`; every night upload them and move the ones that 
 ```sh
 #!/bin/sh
 # /opt/fretbook/import-incoming.sh
-export PYTHONPATH=/opt/fretbook
 cd ~/tabs/incoming || exit 1
 for f in *.gp *.gp3 *.gp4 *.gp5 *.gpx; do
   [ -e "$f" ] || continue
-  /opt/fretbook/.venv/bin/python -m fretbook.cli import "$f" && mv "$f" ../imported/
+  /opt/fretbook/.venv/bin/fretbook-cli import "$f" && mv "$f" ../imported/
 done
 ```
 
