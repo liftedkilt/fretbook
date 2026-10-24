@@ -132,7 +132,7 @@ def test_reset_clears_what_visitors_may_write(tmp_path: Path) -> None:
         song_id = client.get("/api/songs").json()["items"][0]["id"]
         assert client.put("/api/me/settings", json={"default_instrument": "guitar-6"}).status_code == 200
         progress = client.post(
-            "/api/courses/guitar-first-steps/lessons/01-the-open-strings/progress", json={"completed": True}
+            "/api/courses/guitar-first-steps/lessons/01-holding-and-tuning/progress", json={"completed": True}
         )
         assert progress.status_code == 200, progress.text
         session = client.post(

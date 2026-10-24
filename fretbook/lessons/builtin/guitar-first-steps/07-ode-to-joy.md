@@ -4,18 +4,18 @@ summary: Play the tune of Beethoven's "Ode to Joy" on the top two strings.
 level: notes
 order: 7
 ---
-"Ode to Joy" (Ludwig van Beethoven, 1824) is in the public domain. This is the tune on the first and second strings, in E minor's neighbour key of C... but you only need the notes you know already. Count four beats per bar and keep every note the same length, except the last note of each line, which is held for the whole bar.
+"Ode to Joy" (Ludwig van Beethoven, 1824) is in the public domain. You already know every note: **E**, **F** and **G** on the first string and **C** and **D** on the second. Play four beats to a bar, every note one beat long except the last two bars, where the first note of the bar is a beat and a half long.
 
 ```fretbook:tab
-e|-----------------------------------------0-1-1-0---------|
-B|-1-1-3-3-1-1-0-0-3-3-1-1-----------1-3-------------------|
+e|-0-0-1-3-|-3-1-0---|---------|-0-------|
+B|---------|-------3-|-1-1-3-0-|-----3-3-|
 ```
 
-That is the idea of the opening phrase: aim for an even tempo before you aim for speed. Use the metronome at 60 to start. Build up to 80 once it is smooth.
+Aim for an even tempo before you aim for speed. Use the metronome at 60 to start and build up to 80 once it is smooth.
 
 ```fretbook:exercise
-preset: pentatonicBox
-title: Fill the gaps with a scale drill
+preset: majorOctave
+title: A major scale for the same notes
 ```
 
 ```fretbook:pass
