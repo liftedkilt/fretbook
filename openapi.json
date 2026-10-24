@@ -3302,6 +3302,17 @@
       },
       "PracticeExercise": {
         "properties": {
+          "bpm": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bpm"
+          },
           "correct": {
             "title": "Correct",
             "type": "integer"
@@ -3322,10 +3333,33 @@
             "enum": [
               "fretboard",
               "interval",
-              "chord"
+              "chord",
+              "rhythm"
             ],
             "title": "Kind",
             "type": "string"
+          },
+          "mean_error_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mean Error Ms"
+          },
+          "pattern": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pattern"
           },
           "rounds": {
             "title": "Rounds",
@@ -3362,6 +3396,19 @@
       },
       "PracticeExerciseBody": {
         "properties": {
+          "bpm": {
+            "anyOf": [
+              {
+                "maximum": 1000.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bpm"
+          },
           "correct": {
             "default": 0,
             "maximum": 10000.0,
@@ -3385,10 +3432,36 @@
             "enum": [
               "fretboard",
               "interval",
-              "chord"
+              "chord",
+              "rhythm"
             ],
             "title": "Kind",
             "type": "string"
+          },
+          "mean_error_ms": {
+            "anyOf": [
+              {
+                "maximum": 5000.0,
+                "minimum": -5000.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mean Error Ms"
+          },
+          "pattern": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pattern"
           },
           "rounds": {
             "default": 0,
@@ -3448,7 +3521,8 @@
             "enum": [
               "fretboard",
               "interval",
-              "chord"
+              "chord",
+              "rhythm"
             ],
             "title": "Kind",
             "type": "string"

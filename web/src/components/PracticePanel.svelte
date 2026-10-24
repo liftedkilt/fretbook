@@ -22,6 +22,12 @@
     onchange: () => void;
   } = $props();
 
+  function balanceText(balance: number): string {
+    if (balance === 0) return t("practice.balanceRecording");
+    if (balance === 1) return t("practice.balanceSynth");
+    return `${percent(1 - balance)} / ${percent(balance)}`;
+  }
+
   const countOptions: CountInBars[] = [0, 1, 2];
 
   // Rendering must not write state, so a track nobody touched is only created when it is edited.
@@ -125,44 +131,63 @@
     <output>{percent(hasAudio ? practice.mix.audio : practice.mix.synth)}</output>
   </label>
   {#if hasAudio}
-    <p class="muted small">{t("practice.synthOff")}</p>
-  {:else}
-    {#each tracks as item (item.id)}
-      {@const mix = trackMix(practice, item.id)}
-      <div class="mix-row" data-testid={`mix-track-${item.id}`}>
-        <span class="mix-name">{item.name}</span>
-        <button
-          class="button"
-          aria-pressed={mix.mute}
-          aria-label={t("practice.muteTrack", { name: item.name })}
-          data-testid={`mute-${item.id}`}
-          onclick={() => {
-            edit(item.id, (target) => (target.mute = !target.mute));
-          }}>{t("practice.mute")}</button
-        >
-        <button
-          class="button"
-          aria-pressed={mix.solo}
-          aria-label={t("practice.soloTrack", { name: item.name })}
-          data-testid={`solo-${item.id}`}
-          onclick={() => {
-            edit(item.id, (target) => (target.solo = !target.solo));
-          }}>{t("practice.solo")}</button
-        >
-        <input
-          class="mix-track-volume"
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          value={mix.volume}
-          aria-label={t("practice.trackVolume", { name: item.name })}
-          oninput={(event) => {
-            const value = Number(event.currentTarget.value);
-            edit(item.id, (target) => (target.volume = value));
-          }}
-        />
-      </div>
-    {/each}
+    <label class="mix-slider">
+      <span>{t("practice.balance")}</span>
+      <input
+        type="range"
+        min="0"
+        max="1"
+        step="0.05"
+        value={practice.mix.balance}
+        aria-label={t("practice.balanceLabel")}
+        aria-valuetext={balanceText(practice.mix.balance)}
+        data-testid="mix-balance"
+        oninput={(event) => {
+          practice.mix.balance = Number(event.currentTarget.value);
+          onchange();
+        }}
+      />
+      <output>{balanceText(practice.mix.balance)}</output>
+    </label>
+    {#if practice.mix.balance === 0}
+      <p class="muted small">{t("practice.synthOff")}</p>
+    {/if}
   {/if}
+  {#each tracks as item (item.id)}
+    {@const mix = trackMix(practice, item.id)}
+    <div class="mix-row" data-testid={`mix-track-${item.id}`}>
+      <span class="mix-name">{item.name}</span>
+      <button
+        class="button"
+        aria-pressed={mix.mute}
+        aria-label={t("practice.muteTrack", { name: item.name })}
+        data-testid={`mute-${item.id}`}
+        onclick={() => {
+          edit(item.id, (target) => (target.mute = !target.mute));
+        }}>{t("practice.mute")}</button
+      >
+      <button
+        class="button"
+        aria-pressed={mix.solo}
+        aria-label={t("practice.soloTrack", { name: item.name })}
+        data-testid={`solo-${item.id}`}
+        onclick={() => {
+          edit(item.id, (target) => (target.solo = !target.solo));
+        }}>{t("practice.solo")}</button
+      >
+      <input
+        class="mix-track-volume"
+        type="range"
+        min="0"
+        max="1"
+        step="0.05"
+        value={mix.volume}
+        aria-label={t("practice.trackVolume", { name: item.name })}
+        oninput={(event) => {
+          const value = Number(event.currentTarget.value);
+          edit(item.id, (target) => (target.volume = value));
+        }}
+      />
+    </div>
+  {/each}
 </div>

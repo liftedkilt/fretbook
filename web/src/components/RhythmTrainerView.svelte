@@ -1,6 +1,7 @@
 <script lang="ts">
   import Icon from "./Icon.svelte";
   import ListenPanel from "./ListenPanel.svelte";
+  import { getSong, listSongs, recordPracticeExercise } from "../lib/api";
   import { Clicker } from "../lib/clicker";
   import { t } from "../lib/i18n.svelte";
   import { getLocalCalibration } from "../lib/listen/calibration";
@@ -8,12 +9,15 @@
   import { describeProblem, ListenError, startListening } from "../lib/listen/input";
   import type { ListenSession } from "../lib/listen/input";
   import { clampBpm, MAX_BPM, MIN_BPM } from "../lib/metronome";
+  import { localDay } from "../lib/practiceLog";
+  import { barBreakdown, errorTone, songRhythms, type SongRhythm } from "../lib/rhythm/bars";
   import {
     PATTERNS,
     cellCount,
     patternById,
     strumDirection,
     DEFAULT_PATTERN_ID,
+    type RhythmPattern,
   } from "../lib/rhythm/patterns";
   import {
     RhythmRun,
@@ -23,6 +27,7 @@
   } from "../lib/rhythm/run";
   import { histogram } from "../lib/rhythm/timing";
   import { followLink, hrefFor } from "../lib/router.svelte";
+  import type { ScoreDocument, SongSummary } from "../lib/types";
 
   const STORAGE_KEY = "fretbook.rhythm.settings";
   const BAR_CHOICES = [2, 4, 8];
@@ -58,21 +63,34 @@
   let result = $state<RhythmResult | null>(null);
   let error = $state("");
 
-  const pattern = $derived(patternById(patternId));
+  /** Where the rhythm comes from: the built-in patterns, or the bars of one of the player's tabs. */
+  let source = $state<"builtin" | "song">("builtin");
+  let songs = $state<SongSummary[]>([]);
+  let songId = $state("");
+  let songDoc = $state<ScoreDocument | null>(null);
+  let trackIndex = $state(0);
+  let songPatternId = $state("");
+  let songError = $state("");
+  let songsLoaded = false;
+
+  const rhythms = $derived<SongRhythm[]>(songDoc ? songRhythms(songDoc, trackIndex) : []);
+  const songPattern = $derived(
+    source === "song" ? rhythms.find((r) => r.pattern.id === songPatternId) : undefined,
+  );
+  const pattern = $derived<RhythmPattern>(
+    songPattern
+      ? { ...songPattern.pattern, label: songLabel(songPattern) }
+      : patternById(patternId),
+  );
+  /** What the shown results were played with, so changing a picker afterwards does not rewrite them. */
+  let played = $state<{ pattern: RhythmPattern; bars: number } | null>(null);
+  const breakdown = $derived(
+    result && played ? barBreakdown(played.pattern, played.bars, result.match.errors) : [],
+  );
   const cells = $derived(Array.from({ length: cellCount(pattern) }, (_, i) => i));
   const calibration = $derived(useMic ? getLocalCalibration("default", "default") : null);
   const bins = $derived(result ? histogram(result.match.errors) : []);
   const binMax = $derived(Math.max(1, ...bins.map((b) => b.count)));
-  /** Expected hits are listed in cell order, so each hit cell maps to its error by rank. */
-  const cellErrors = $derived.by(() => {
-    const map: Record<number, number | null> = {};
-    if (!result) return map;
-    const hitCells = cells.filter((c) => pattern.cells[c] === "x");
-    // Only the first scored bar is drawn; later bars repeat it in the summary.
-    hitCells.forEach((cell, i) => (map[cell] = result!.match.errors[i]));
-    return map;
-  });
-
   const clicker = new Clicker();
   let run: RhythmRun | null = null;
   let session: ListenSession | null = null;
@@ -90,12 +108,76 @@
     return pattern.cells[cell] === "x" ? "hit" : "rest";
   }
 
-  function errorClass(cell: number): string {
-    if (!(cell in cellErrors)) return "";
-    const error = cellErrors[cell];
-    if (error === null) return "missed";
-    if (Math.abs(error) <= 25) return "good";
-    return error < 0 ? "early" : "late";
+  function songLabel(rhythm: SongRhythm): string {
+    return t("rhythm.songBar", { bar: rhythm.firstBar, count: rhythm.count });
+  }
+
+  async function chooseSource(next: "builtin" | "song") {
+    source = next;
+    result = null;
+    if (next !== "song" || songsLoaded) return;
+    try {
+      const page = await listSongs({ limit: 200 });
+      songs = page.items.filter((song) => song.content_kind === "tab");
+      songsLoaded = true;
+    } catch {
+      songError = t("rhythm.songLoadFailed");
+    }
+  }
+
+  async function chooseSong(id: string) {
+    songId = id;
+    songDoc = null;
+    songPatternId = "";
+    trackIndex = 0;
+    songError = "";
+    result = null;
+    if (!id) return;
+    try {
+      const song = await getSong(id);
+      if (songId !== id) return;
+      if ("document" in song && song.document) {
+        const doc = song.document as ScoreDocument;
+        songDoc = doc;
+        trackIndex = Math.max(
+          0,
+          doc.tracks.findIndex((track) => track.preferred),
+        );
+        songPatternId = songRhythms(doc, trackIndex)[0]?.pattern.id ?? "";
+      }
+      if (!songDoc) songError = t("rhythm.songLoadFailed");
+    } catch {
+      if (songId === id) songError = t("rhythm.songLoadFailed");
+    }
+  }
+
+  function chooseTrack(index: number) {
+    trackIndex = index;
+    songPatternId = (songDoc ? songRhythms(songDoc, index)[0]?.pattern.id : "") ?? "";
+    result = null;
+  }
+
+  /** What the log stores: a built-in pattern id, or `song:<id>:<first bar>`, so it needs no translation. */
+  function patternName(): string {
+    return songPattern ? `song:${songId}:${songPattern.firstBar}` : patternId;
+  }
+
+  function logRun(finished: RhythmResult, startedAt: number, tempo: number) {
+    const seconds = Math.round((Date.now() - startedAt) / 1000);
+    const { summary } = finished;
+    if (seconds < 1 || summary.expected === 0) return;
+    void recordPracticeExercise({
+      kind: "rhythm",
+      day: localDay(new Date(startedAt)),
+      started_at: new Date(startedAt).toISOString(),
+      duration_seconds: Math.min(seconds, 6 * 3600),
+      rounds: summary.expected,
+      correct: summary.hit,
+      score: Math.round((summary.hit / summary.expected) * 1000) / 10,
+      pattern: patternName(),
+      bpm: tempo,
+      mean_error_ms: summary.meanMs === null ? null : Math.round(summary.meanMs * 10) / 10,
+    });
   }
 
   function record(source: HitSource, timeMs = performance.now()) {
@@ -125,6 +207,9 @@
       }
     }
     micSession = session;
+    const startedAt = Date.now();
+    const runPattern = pattern;
+    const runBars = bars;
     const latency = useMic ? getLocalCalibration("default", "default") : null;
     run = new RhythmRun({
       pattern,
@@ -135,6 +220,8 @@
       latencyMs: latency ?? 0,
       onFinish: (finished) => {
         result = finished;
+        played = { pattern: runPattern, bars: runBars };
+        logRun(finished, startedAt, bpm);
         end();
       },
     });
@@ -206,22 +293,84 @@
 
   <div class="standalone-pickers">
     <label class="tool-field">
-      <span>{t("rhythm.pattern")}</span>
+      <span>{t("rhythm.source")}</span>
       <select
-        data-testid="rhythm-pattern"
-        value={patternId}
+        data-testid="rhythm-source"
+        value={source}
         disabled={running}
-        onchange={(event) => {
-          patternId = event.currentTarget.value;
-          result = null;
-          persist();
-        }}
+        onchange={(event) => chooseSource(event.currentTarget.value as "builtin" | "song")}
       >
-        {#each PATTERNS as option (option.id)}
-          <option value={option.id}>{t(option.labelKey)}</option>
-        {/each}
+        <option value="builtin">{t("rhythm.sourceBuiltin")}</option>
+        <option value="song">{t("rhythm.sourceSong")}</option>
       </select>
     </label>
+    {#if source === "song"}
+      <label class="tool-field">
+        <span>{t("rhythm.song")}</span>
+        <select
+          data-testid="rhythm-song"
+          value={songId}
+          disabled={running}
+          onchange={(event) => chooseSong(event.currentTarget.value)}
+        >
+          <option value="">{t("rhythm.chooseSong")}</option>
+          {#each songs as song (song.id)}
+            <option value={song.id}>{song.title}</option>
+          {/each}
+        </select>
+      </label>
+      {#if songDoc}
+        {#if songDoc.tracks.length > 1}
+          <label class="tool-field">
+            <span>{t("rhythm.track")}</span>
+            <select
+              data-testid="rhythm-track"
+              value={trackIndex}
+              disabled={running}
+              onchange={(event) => chooseTrack(Number(event.currentTarget.value))}
+            >
+              {#each songDoc.tracks as track, index (track.id)}
+                <option value={index}>{track.name}</option>
+              {/each}
+            </select>
+          </label>
+        {/if}
+        <label class="tool-field">
+          <span>{t("rhythm.songRhythm")}</span>
+          <select
+            data-testid="rhythm-song-rhythm"
+            value={songPatternId}
+            disabled={running || rhythms.length === 0}
+            onchange={(event) => {
+              songPatternId = event.currentTarget.value;
+              result = null;
+            }}
+          >
+            {#each rhythms as rhythm (rhythm.pattern.id)}
+              <option value={rhythm.pattern.id}>{songLabel(rhythm)}</option>
+            {/each}
+          </select>
+        </label>
+      {/if}
+    {:else}
+      <label class="tool-field">
+        <span>{t("rhythm.pattern")}</span>
+        <select
+          data-testid="rhythm-pattern"
+          value={patternId}
+          disabled={running}
+          onchange={(event) => {
+            patternId = event.currentTarget.value;
+            result = null;
+            persist();
+          }}
+        >
+          {#each PATTERNS as option (option.id)}
+            <option value={option.id}>{t(option.labelKey)}</option>
+          {/each}
+        </select>
+      </label>
+    {/if}
     <label class="tool-field">
       <span>{t("rhythm.tempo")}</span>
       <input
@@ -277,16 +426,25 @@
     />
   {/if}
   {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
+  {#if source === "song"}
+    {#if songError}
+      <p class="alert" role="alert" data-testid="rhythm-song-error">
+        <Icon name="alert" size={18} />{songError}
+      </p>
+    {:else if songDoc && rhythms.length === 0}
+      <p class="muted small" data-testid="rhythm-song-empty">{t("rhythm.songEmpty")}</p>
+    {/if}
+  {/if}
 
   <div
     class="rhythm-bar"
     data-testid="rhythm-bar"
     role="img"
-    aria-label={t("rhythm.barLabel", { pattern: t(pattern.labelKey) })}
+    aria-label={t("rhythm.barLabel", { pattern: pattern.label ?? t(pattern.labelKey) })}
   >
     {#each cells as cell (cell)}
       <div
-        class="rhythm-cell {cellState(cell)} {errorClass(cell)}"
+        class="rhythm-cell {cellState(cell)}"
         class:beat={cell % pattern.grid === 0}
         class:now={position !== null && !position.countIn && position.cell === cell}
         data-testid={`rhythm-cell-${cell}`}
@@ -413,6 +571,24 @@
         {/each}
       </div>
       <p class="muted small">{t("rhythm.histogramHint")}</p>
+      <h3>{t("rhythm.perBar")}</h3>
+      <ol class="rhythm-per-bar" data-testid="rhythm-per-bar">
+        {#each breakdown as row (row.bar)}
+          <li data-testid={`rhythm-bar-row-${row.bar}`}>
+            <span class="rhythm-bar-name">{t("rhythm.barNumber", { bar: row.bar + 1 })}</span>
+            <span class="rhythm-bar-cells" aria-hidden="true">
+              {#each row.cells as error, i (i)}
+                <span class="rhythm-bar-cell {errorTone(error)}" class:rest={error === undefined}
+                ></span>
+              {/each}
+            </span>
+            <span class="rhythm-bar-stat" data-testid={`rhythm-bar-stat-${row.bar}`}>
+              {row.hit}/{row.expected}
+              {#if row.meanMs !== null}· {ms(row.meanMs)} {t("rhythm.ms")}{/if}
+            </span>
+          </li>
+        {/each}
+      </ol>
     </section>
   {/if}
 </div>
@@ -447,16 +623,6 @@
   }
   .rhythm-cell.now {
     background: color-mix(in srgb, var(--accent, #4f8cff) 22%, transparent);
-  }
-  .rhythm-cell.good {
-    background: color-mix(in srgb, #2e9e5b 25%, transparent);
-  }
-  .rhythm-cell.early,
-  .rhythm-cell.late {
-    background: color-mix(in srgb, #d9822b 25%, transparent);
-  }
-  .rhythm-cell.missed {
-    background: color-mix(in srgb, #d04a4a 25%, transparent);
   }
   .rhythm-count {
     font-size: 0.8rem;
@@ -560,6 +726,51 @@
   }
   .rhythm-bin-bar.late {
     background: #d9822b;
+  }
+  .rhythm-per-bar {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.4rem;
+  }
+  .rhythm-per-bar li {
+    display: grid;
+    grid-template-columns: 4.5rem minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .rhythm-bar-cells {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+  .rhythm-bar-cell {
+    height: 14px;
+    border-radius: 3px;
+    background: var(--border);
+  }
+  .rhythm-bar-cell.rest {
+    background: transparent;
+    border: 1px dashed var(--border);
+  }
+  .rhythm-bar-cell.good {
+    background: #2e9e5b;
+  }
+  .rhythm-bar-cell.early {
+    background: #3b82c4;
+  }
+  .rhythm-bar-cell.late {
+    background: #d9822b;
+  }
+  .rhythm-bar-cell.missed {
+    background: #d04a4a;
+  }
+  .rhythm-bar-stat {
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-2);
   }
   .rhythm-bin-label {
     font-size: 0.7rem;

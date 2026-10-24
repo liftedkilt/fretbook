@@ -800,6 +800,44 @@ def verify_v18(conn: sqlite3.Connection) -> None:
     assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
 
 
+def seed_v19(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        INSERT INTO users (id, external_subject, display_name, created_at)
+        VALUES ('user-v19', 'sub-v19', 'User V19', '2026-01-19T00:00:00Z')
+        """
+    )
+    conn.execute(
+        "INSERT INTO practice_exercises (id, owner_id, kind, started_at, day, duration_seconds, rounds, correct, "
+        "score) "
+        "VALUES ('old', 'user-v19', 'chord', '2026-01-19T10:00:00+00:00', '2026-01-19', 90, 10, 7, 70)"
+    )
+    conn.commit()
+
+
+def verify_v19(conn: sqlite3.Connection) -> None:
+    # Games logged before rhythm runs keep their numbers; the rhythm columns start empty.
+    row = conn.execute("SELECT * FROM practice_exercises WHERE id = 'old'").fetchone()
+    assert (row["kind"], row["rounds"], row["correct"], row["score"]) == ("chord", 10, 7, 70)
+    assert (row["pattern"], row["bpm"], row["mean_error_ms"]) == (None, None, None)
+    conn.execute(
+        "INSERT INTO practice_exercises (id, owner_id, kind, started_at, day, duration_seconds, pattern, bpm, "
+        "mean_error_ms) VALUES ('r1', 'user-v19', 'rhythm', '2026-01-19T11:00:00+00:00', '2026-01-19', 60, "
+        "'eighths', 90, -4.5)"
+    )
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute(
+            "INSERT INTO practice_exercises (id, owner_id, kind, started_at, day, duration_seconds) "
+            "VALUES ('e2', 'user-v19', 'bogus', '2026-01-19T10:00:00+00:00', '2026-01-19', 90)"
+        )
+    indexes = [r[1] for r in conn.execute("PRAGMA index_list(practice_exercises)")]
+    assert "practice_exercises_day" in indexes
+    conn.execute("DELETE FROM users WHERE id = 'user-v19'")
+    assert conn.execute("SELECT count(*) FROM practice_exercises").fetchone()[0] == 0
+    conn.rollback()
+    assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+
+
 SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.Connection], None]]] = {
     1: (seed_v1, verify_v1),
     2: (seed_v2, verify_v2),
@@ -819,6 +857,7 @@ SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.C
     16: (seed_v16, verify_v16),
     17: (seed_v17, verify_v17),
     18: (seed_v18, verify_v18),
+    19: (seed_v19, verify_v19),
 }
 
 

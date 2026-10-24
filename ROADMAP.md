@@ -13,12 +13,6 @@ These are already being worked on. Coordinate with them before touching the same
 | UI redesign | In progress |
 | Importing tabs from YouTube lesson videos (design and spike: [docs/design/youtube-tab-import.md](docs/design/youtube-tab-import.md)) | [#6](https://github.com/liftedkilt/fretbook/issues/6) |
 
-## Essential
-
-### Synth alongside a recording
-
-Practice controls (metronome, count-in, mixer, pitch-preserving slowdown) are done, but while a recording plays the built-in synth is silent: alphaTab's external-media mode produces no synth sound. Play the synth next to the recording so the mixer can balance the two and mute or solo tracks over a recording.
-
 ## Nice to have
 
 ### Listening to you play

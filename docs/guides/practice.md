@@ -79,6 +79,18 @@ Play along by pressing **Space**, tapping the pad, or strumming a muted string w
 Each hit is matched to the nearest expected one, and the result shows how many you hit, the average error and spread
 in milliseconds, a histogram of early and late hits, and whether you tend to **rush** or **drag**.
 
+Under the summary, **Timing by bar** shows every bar of the run on its own row: each hit is coloured (green on the
+click, blue early, orange late, red missed) next to the bar's hit count and average error, so you can see whether you
+speed up or slow down as the run goes on.
+
+**Rhythm from → A song's bars** drills the rhythm of one of your tabs instead of a built-in pattern. Choose the song and
+track, then one of its distinct bar rhythms ("Bar 5 (3×)" is the first bar with that rhythm and how often it comes
+up). The notes of the bar are snapped to a quarter, eighth, triplet or sixteenth grid; bars that are empty, are not a
+whole number of beats, or are faster or looser than that grid are left out.
+
+A run you play to the end is added to the [practice log](#practice-log) as a rhythm session (its pattern, tempo, hit
+rate and average error); a run you stop early is not.
+
 Microphone hits are corrected by the round-trip latency from the [calibration](#scored-play-along) in Settings; taps and
 key presses are corrected by half of it (the output half). Without a calibration nothing is subtracted, so a laggy
 Bluetooth setup will look like dragging.

@@ -6,7 +6,8 @@
 Each row renders a score to audio with ``fretbook.audio.synth`` (kick on bar starts, snare, hats, the
 bass line), with bar starts known exactly, then compares the anchors ``propose`` returns. The error is
 ``|estimated - true|`` over every played bar start. Synthetic audio is easier than a recording: it shows
-that the alignment is right, not how a real mix behaves.
+that the alignment is right, not how a real mix behaves. Hand-checked real recordings listed in
+``tests/fixtures/autosync/recordings/manifest.json`` (see its README) are added as ``real:`` rows.
 """
 
 from __future__ import annotations
@@ -25,8 +26,10 @@ sys.path.insert(0, str(ROOT))
 
 from fretbook.audio.synth import bar_starts_for, build_document, render  # noqa: E402
 from fretbook.score.autosync import propose  # noqa: E402
+from fretbook.score.evalset import EvalSetError, evaluate_recording, load_manifest  # noqa: E402
 from fretbook.score.model import ScoreDocument  # noqa: E402
 
+RECORDINGS = ROOT / "tests" / "fixtures" / "autosync" / "recordings"
 RIFF = ROOT / "tests" / "fixtures" / "corpus" / "json" / "riff.tab.json"
 
 
@@ -148,11 +151,28 @@ def evaluate(case: Case, tracker: str = "auto") -> dict[str, float | str]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--quick", action="store_true")
+    parser.add_argument(
+        "--recordings", type=Path, default=RECORDINGS, help="folder with the real recordings' manifest.json"
+    )
     parser.add_argument("--tracker", choices=("steady", "flexible", "auto"), default="auto")
     args = parser.parse_args(argv)
     print("| Case | Bars marked | Median error | 95th percentile | Max | Within 50 ms | Confidence | Time |")
     print("| --- | --- | --- | --- | --- | --- | --- | --- |")
     results = [evaluate(case, args.tracker) for case in cases(args.quick)]
+    if not args.quick:
+        try:
+            recordings = load_manifest(args.recordings)
+        except EvalSetError as error:
+            print(f"error: {error}", file=sys.stderr)
+            return 1
+        for recording in recordings:
+            began = time.perf_counter()
+            try:
+                row = evaluate_recording(recording, args.tracker)
+                row["seconds"] = time.perf_counter() - began
+            except Exception as error:  # a failed row is a result too
+                row = {"name": f"real: {recording.entry.title}", "error": f"{type(error).__name__}: {error}"}
+            results.append(row)
     for row in results:
         if "error" in row:
             print(f"| {row['name']} | failed: {row['error']} | | | | | | |")

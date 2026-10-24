@@ -13,7 +13,9 @@ import {
   nextCountIn,
   parsePractice,
   preservePitch,
+  recordingGain,
   savePractice,
+  synthGain,
   trackMix,
   updateLoopHighestSpeed,
   type SavedLoop,
@@ -312,5 +314,31 @@ describe("formatSpeedPercent", () => {
     expect(formatSpeedPercent(1)).toBe("100%");
     expect(formatSpeedPercent(1.25)).toBe("125%");
     expect(formatSpeedPercent(90)).toBe("90%");
+  });
+});
+
+describe("recording and synth balance", () => {
+  it("defaults to the recording alone, so a song sounds as before", () => {
+    const { mix } = defaultPractice();
+    expect(mix.balance).toBe(0);
+    expect(recordingGain(mix)).toBe(1);
+    expect(synthGain(mix)).toBe(0);
+  });
+
+  it("plays both at full volume in the middle and the synth alone at the end", () => {
+    const mix = { ...defaultPractice().mix, balance: 0.5 };
+    expect(recordingGain(mix)).toBe(1);
+    expect(synthGain(mix)).toBe(1);
+    mix.balance = 1;
+    expect(recordingGain(mix)).toBe(0);
+    expect(synthGain(mix)).toBe(1);
+  });
+
+  it("scales by each volume and repairs a stored balance", () => {
+    const mix = { ...defaultPractice().mix, audio: 0.5, synth: 0.4, balance: 0.25 };
+    expect(recordingGain(mix)).toBeCloseTo(0.5);
+    expect(synthGain(mix)).toBeCloseTo(0.2);
+    expect(parsePractice({ mix: { balance: 7 } }).mix.balance).toBe(1);
+    expect(parsePractice({ mix: { balance: "x" } }).mix.balance).toBe(0);
   });
 });
