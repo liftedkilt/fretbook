@@ -1,0 +1,32 @@
+import { expect, test } from "./support/fixtures";
+
+test("generate an exercise, preview it, and save it to the library", async ({ page }) => {
+  await page.goto("/tools");
+  await page.getByTestId("tool-card-exercises").click();
+  await expect(page).toHaveURL("/tools/exercises");
+
+  await page.getByTestId("exercise-preset-pentatonicBox").click();
+  await expect(page.getByTestId("exercise-title")).toHaveText("A minor pentatonic, from fret 5");
+  await expect(page.getByTestId("tab-preview").locator("svg").first()).toBeVisible();
+
+  await page.getByTestId("exercise-kind-scale").click();
+  await page.getByTestId("exercise-scale").selectOption("dorian");
+  await page.getByTestId("exercise-root").selectOption({ label: "D" });
+  await expect(page.getByTestId("exercise-title")).toHaveText("D Dorian, from fret 5");
+
+  await page.getByTestId("exercise-save").click();
+  await expect(page).toHaveURL(/\/songs\/[^/]+$/);
+  await expect(page.getByTestId("player-score").locator("svg").first()).toBeVisible();
+
+  await page.goto("/");
+  await expect(page.getByTestId("song-title")).toHaveText("D Dorian, from fret 5");
+});
+
+test("chord changes show a drill for the chosen chords", async ({ page }) => {
+  await page.goto("/tools/exercises");
+  await page.getByTestId("exercise-instrument").selectOption("guitar-6");
+  await page.getByTestId("exercise-preset-openChordChanges").click();
+  await expect(page.getByTestId("exercise-title")).toHaveText("Chord changes: G – C – D – Em");
+  await page.getByTestId("exercise-chords").fill("G nope");
+  await expect(page.getByTestId("exercise-error")).toBeVisible();
+});
