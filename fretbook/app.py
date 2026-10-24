@@ -25,8 +25,8 @@ from fretbook.api.bulk_routes import router as bulk_router
 from fretbook.api.calibration_routes import router as calibration_router
 from fretbook.api.demo_routes import router as demo_router
 from fretbook.api.lesson_routes import router as lesson_router
-from fretbook.api.metadata_routes import router as metadata_router
 from fretbook.api.llm_routes import router as llm_router
+from fretbook.api.metadata_routes import router as metadata_router
 from fretbook.api.middleware import BodyLimitMiddleware, SameOriginMiddleware
 from fretbook.api.midi_routes import router as midi_router
 from fretbook.api.practice_routes import router as practice_router

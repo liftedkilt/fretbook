@@ -5247,6 +5247,7 @@ kbd {
 
 .facet select {
   min-width: 9rem;
+}
 
 .llm-form {
   display: grid;
