@@ -6,8 +6,7 @@ looks at magic bytes first and falls back to the extension for formats that
 have none (plain text).
 
 The kinds returned here are format names, not importer names. The registry maps
-them to importers; formats Fretbook cannot read yet (PDF, images) are still
-named so the UI can say so instead of "unrecognised".
+them to importers. PDF and images go to the optical music recognition importer.
 """
 
 from __future__ import annotations
@@ -43,6 +42,7 @@ SUPPORTED_LABELS = (
     "MIDI (.mid, .midi)",
     "Fretbook JSON",
     "audio files (.mp3, .wav, .ogg, .m4a, .flac, .webm)",
+    "sheet music (PDF or image, where the server has optical music recognition)",
 )
 
 HEAD_BYTES = 8192

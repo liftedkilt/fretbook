@@ -156,9 +156,18 @@ def _from_text(text: str, ctx: AppContext, user: Principal) -> JSONResponse:
 
 
 def _queue_file(ctx: AppContext, user: Principal, path: Path, filename: str, kind: str) -> JSONResponse:
+    job_kind = "import.file"
+    if kind == "omr":
+        # Sheet music needs Audiveris, which only a worker carries (see fretbook.importers.omr).
+        if "import.omr" not in ctx.jobs.live_worker_kinds():
+            path.unlink(missing_ok=True)
+            raise api_error(
+                409, "omr.noWorker", "reading sheet music needs a worker that has Audiveris; none is running"
+            )
+        job_kind = "import.omr"
     job_id = ctx.jobs.enqueue(
         user.user_id,
-        "import.file",
+        job_kind,
         {"path": str(path), "filename": filename, "kind": None, "prefer": _prefer(ctx, user)},
     )
     return JSONResponse({"job_id": job_id, "detected": kind}, status_code=202)
