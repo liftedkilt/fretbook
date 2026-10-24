@@ -31,6 +31,7 @@ import type {
   PracticeStats as ContractPracticeStats,
   Recommendations as ContractRecommendations,
   SessionsEnded,
+  TokensRevoked,
   SetlistDetail as ContractSetlistDetail,
   SetlistSummary as ContractSetlistSummary,
   Settings as ContractSettings,
@@ -767,6 +768,11 @@ export function listUsers(): Promise<AdminUser[]> {
 
 export function signOutUser(id: string): Promise<SessionsEnded> {
   return request(`/api/admin/users/${id}/sign-out`, { method: "POST" });
+}
+
+/** Revokes every API token of a user; sign-out ends sessions only. */
+export function revokeUserTokens(id: string): Promise<TokensRevoked> {
+  return request(`/api/admin/users/${id}/tokens`, { method: "DELETE" });
 }
 
 /** Moves the single-user library into the signed-in admin's own. */

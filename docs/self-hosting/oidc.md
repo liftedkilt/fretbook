@@ -125,7 +125,10 @@ make the provider send the group names in the claim.
 - Each user's library is private. Songs from single-user mode (and bass-tab-sync imports) belong to no signed-in user;
   an admin can move them into their own library from the Users page.
 - Each person makes their own API tokens under **Settings → API tokens**; see
-  [Scripts and the command line](../guides/cli.md).
+  [Scripts and the command line](../guides/cli.md). A token keeps working after its owner is signed out or removed
+  from the provider group, so the Users page shows each person's token count and an admin can revoke all of them
+  (**Revoke API tokens**; API: `GET`/`DELETE /api/admin/users/{id}/tokens`, `DELETE .../tokens/{token_id}`). Signing
+  someone out everywhere ends sessions only.
 - Sessions are stored on the server (the cookie holds a random token and the database only its hash). Cookies are
   `HttpOnly`, `SameSite=Lax`, and `Secure` when the redirect URI is https.
 - Report vulnerabilities as described in the

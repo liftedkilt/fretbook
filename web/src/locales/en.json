@@ -32,6 +32,16 @@
       "one": "Ended {count} session.",
       "other": "Ended {count} sessions."
     },
+    "tokens": {
+      "one": "{count} API token",
+      "other": "{count} API tokens"
+    },
+    "revokeTokens": "Revoke API tokens",
+    "confirmRevokeTokens": "Revoke every API token of {name}? Scripts using them stop working at once.",
+    "tokensRevoked": {
+      "one": "Revoked {count} API token.",
+      "other": "Revoked {count} API tokens."
+    },
     "adoptHeading": "Library from single-user mode",
     "adoptHint": {
       "one": "{count} song was added before sign-in was turned on. Nobody can see it until an admin moves it into a library.",
