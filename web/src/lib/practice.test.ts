@@ -13,7 +13,6 @@ import {
   nextCountIn,
   parsePractice,
   preservePitch,
-  recordLoopPracticeLog,
   savePractice,
   trackMix,
   updateLoopHighestSpeed,
@@ -303,48 +302,6 @@ describe("updateLoopHighestSpeed", () => {
 
     const notFound = updateLoopHighestSpeed(loops, "99", 1.2);
     expect(notFound.updated).toBe(false);
-  });
-});
-
-describe("recordLoopPracticeLog", () => {
-  it("does not throw when window is undefined", () => {
-    vi.stubGlobal("window", undefined);
-    expect(() =>
-      recordLoopPracticeLog("song-1", { id: "loop-1", name: "Riff" }, 0.8),
-    ).not.toThrow();
-  });
-
-  it("dispatches fretbook:practice-log-record event on window", () => {
-    let dispatched: unknown = null;
-    vi.stubGlobal("window", {
-      dispatchEvent: (event: unknown) => {
-        dispatched = event;
-        return true;
-      },
-    });
-    vi.stubGlobal(
-      "CustomEvent",
-      class CustomEvent {
-        type: string;
-        detail: unknown;
-        constructor(type: string, init?: { detail?: unknown }) {
-          this.type = type;
-          this.detail = init?.detail;
-        }
-      },
-    );
-
-    recordLoopPracticeLog("song-123", { id: "loop-1", name: "Riff" }, 0.85);
-
-    expect(dispatched).toMatchObject({
-      type: "fretbook:practice-log-record",
-      detail: {
-        songId: "song-123",
-        loopId: "loop-1",
-        loopName: "Riff",
-        speed: 0.85,
-      },
-    });
   });
 });
 

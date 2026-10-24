@@ -1691,6 +1691,444 @@
         "title": "Note",
         "type": "object"
       },
+      "PracticeDay": {
+        "properties": {
+          "day": {
+            "title": "Day",
+            "type": "string"
+          },
+          "seconds": {
+            "title": "Seconds",
+            "type": "integer"
+          },
+          "sessions": {
+            "title": "Sessions",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "day",
+          "seconds",
+          "sessions"
+        ],
+        "title": "PracticeDay",
+        "type": "object"
+      },
+      "PracticeGoal": {
+        "properties": {
+          "daily_minutes": {
+            "title": "Daily Minutes",
+            "type": "integer"
+          },
+          "weekly_summary": {
+            "title": "Weekly Summary",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "daily_minutes",
+          "weekly_summary"
+        ],
+        "title": "PracticeGoal",
+        "type": "object"
+      },
+      "PracticeGoalBody": {
+        "properties": {
+          "daily_minutes": {
+            "maximum": 720.0,
+            "minimum": 0.0,
+            "title": "Daily Minutes",
+            "type": "integer"
+          },
+          "weekly_summary": {
+            "default": true,
+            "title": "Weekly Summary",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "daily_minutes"
+        ],
+        "title": "PracticeGoalBody",
+        "type": "object"
+      },
+      "PracticeSession": {
+        "properties": {
+          "day": {
+            "title": "Day",
+            "type": "string"
+          },
+          "duration_seconds": {
+            "title": "Duration Seconds",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "loop_end": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Loop End"
+          },
+          "loop_name": {
+            "title": "Loop Name",
+            "type": "string"
+          },
+          "loop_start": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Loop Start"
+          },
+          "mode": {
+            "enum": [
+              "free",
+              "wait",
+              "scored"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "song_id": {
+            "title": "Song Id",
+            "type": "string"
+          },
+          "speed": {
+            "title": "Speed",
+            "type": "number"
+          },
+          "started_at": {
+            "title": "Started At",
+            "type": "string"
+          },
+          "track_id": {
+            "title": "Track Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "song_id",
+          "track_id",
+          "loop_name",
+          "loop_start",
+          "loop_end",
+          "started_at",
+          "day",
+          "duration_seconds",
+          "speed",
+          "mode",
+          "score"
+        ],
+        "title": "PracticeSession",
+        "type": "object"
+      },
+      "PracticeSessionBody": {
+        "properties": {
+          "day": {
+            "maxLength": 10,
+            "minLength": 10,
+            "title": "Day",
+            "type": "string"
+          },
+          "duration_seconds": {
+            "maximum": 21600.0,
+            "minimum": 1.0,
+            "title": "Duration Seconds",
+            "type": "integer"
+          },
+          "loop_end": {
+            "anyOf": [
+              {
+                "maximum": 100000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Loop End"
+          },
+          "loop_name": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Loop Name",
+            "type": "string"
+          },
+          "loop_start": {
+            "anyOf": [
+              {
+                "maximum": 100000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Loop Start"
+          },
+          "mode": {
+            "default": "free",
+            "enum": [
+              "free",
+              "wait",
+              "scored"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "song_id": {
+            "maxLength": 64,
+            "title": "Song Id",
+            "type": "string"
+          },
+          "speed": {
+            "default": 1.0,
+            "exclusiveMinimum": 0.0,
+            "maximum": 4.0,
+            "title": "Speed",
+            "type": "number"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "maxLength": 40,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "track_id": {
+            "default": "",
+            "maxLength": 64,
+            "title": "Track Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "song_id",
+          "day",
+          "duration_seconds"
+        ],
+        "title": "PracticeSessionBody",
+        "type": "object"
+      },
+      "PracticeSongStats": {
+        "properties": {
+          "artist": {
+            "title": "Artist",
+            "type": "string"
+          },
+          "best_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Score"
+          },
+          "best_speed": {
+            "title": "Best Speed",
+            "type": "number"
+          },
+          "content_kind": {
+            "enum": [
+              "tab",
+              "chords"
+            ],
+            "title": "Content Kind",
+            "type": "string"
+          },
+          "last_day": {
+            "title": "Last Day",
+            "type": "string"
+          },
+          "last_practised": {
+            "title": "Last Practised",
+            "type": "string"
+          },
+          "session_count": {
+            "title": "Session Count",
+            "type": "integer"
+          },
+          "song_id": {
+            "title": "Song Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "total_seconds": {
+            "title": "Total Seconds",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "song_id",
+          "title",
+          "artist",
+          "content_kind",
+          "session_count",
+          "total_seconds",
+          "last_practised",
+          "last_day",
+          "best_speed",
+          "best_score"
+        ],
+        "title": "PracticeSongStats",
+        "type": "object"
+      },
+      "PracticeStats": {
+        "properties": {
+          "best_scores": {
+            "items": {
+              "$ref": "#/components/schemas/PracticeSongStats"
+            },
+            "title": "Best Scores",
+            "type": "array"
+          },
+          "current_streak": {
+            "title": "Current Streak",
+            "type": "integer"
+          },
+          "goal": {
+            "$ref": "#/components/schemas/PracticeGoal"
+          },
+          "heatmap": {
+            "items": {
+              "$ref": "#/components/schemas/PracticeDay"
+            },
+            "title": "Heatmap",
+            "type": "array"
+          },
+          "longest_streak": {
+            "title": "Longest Streak",
+            "type": "integer"
+          },
+          "recent": {
+            "items": {
+              "$ref": "#/components/schemas/PracticeSongStats"
+            },
+            "title": "Recent",
+            "type": "array"
+          },
+          "songs_practised": {
+            "title": "Songs Practised",
+            "type": "integer"
+          },
+          "stale": {
+            "items": {
+              "$ref": "#/components/schemas/PracticeSongStats"
+            },
+            "title": "Stale",
+            "type": "array"
+          },
+          "today": {
+            "title": "Today",
+            "type": "string"
+          },
+          "today_seconds": {
+            "title": "Today Seconds",
+            "type": "integer"
+          },
+          "total_seconds": {
+            "title": "Total Seconds",
+            "type": "integer"
+          },
+          "week": {
+            "$ref": "#/components/schemas/PracticeWeek"
+          }
+        },
+        "required": [
+          "today",
+          "goal",
+          "today_seconds",
+          "current_streak",
+          "longest_streak",
+          "total_seconds",
+          "songs_practised",
+          "heatmap",
+          "week",
+          "recent",
+          "best_scores",
+          "stale"
+        ],
+        "title": "PracticeStats",
+        "type": "object"
+      },
+      "PracticeWeek": {
+        "properties": {
+          "days_practised": {
+            "title": "Days Practised",
+            "type": "integer"
+          },
+          "goal_days": {
+            "title": "Goal Days",
+            "type": "integer"
+          },
+          "previous_seconds": {
+            "title": "Previous Seconds",
+            "type": "integer"
+          },
+          "seconds": {
+            "title": "Seconds",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "seconds",
+          "previous_seconds",
+          "days_practised",
+          "goal_days"
+        ],
+        "title": "PracticeWeek",
+        "type": "object"
+      },
       "PreviewBody": {
         "properties": {
           "url": {
@@ -2254,6 +2692,68 @@
           "counts"
         ],
         "title": "SongPage",
+        "type": "object"
+      },
+      "SongPractice": {
+        "properties": {
+          "best_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Score"
+          },
+          "best_speed": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Speed"
+          },
+          "last_practised": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Practised"
+          },
+          "session_count": {
+            "title": "Session Count",
+            "type": "integer"
+          },
+          "sessions": {
+            "items": {
+              "$ref": "#/components/schemas/PracticeSession"
+            },
+            "title": "Sessions",
+            "type": "array"
+          },
+          "total_seconds": {
+            "title": "Total Seconds",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "session_count",
+          "total_seconds",
+          "best_speed",
+          "best_score",
+          "last_practised",
+          "sessions"
+        ],
+        "title": "SongPractice",
         "type": "object"
       },
       "SongSummary": {
@@ -5092,6 +5592,369 @@
         ]
       }
     },
+    "/api/practice/goal": {
+      "get": {
+        "operationId": "get_goal_api_practice_goal_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PracticeGoal"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Get Goal",
+        "tags": [
+          "practice"
+        ]
+      },
+      "put": {
+        "operationId": "set_goal_api_practice_goal_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PracticeGoalBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PracticeGoal"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Set Goal",
+        "tags": [
+          "practice"
+        ]
+      }
+    },
+    "/api/practice/sessions": {
+      "post": {
+        "operationId": "record_session_api_practice_sessions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PracticeSessionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PracticeSession"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Record Session",
+        "tags": [
+          "practice"
+        ]
+      }
+    },
+    "/api/practice/stats": {
+      "get": {
+        "operationId": "practice_stats_api_practice_stats_get",
+        "parameters": [
+          {
+            "description": "The player's local date, YYYY-MM-DD.",
+            "in": "query",
+            "name": "today",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 10,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The player's local date, YYYY-MM-DD.",
+              "title": "Today"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PracticeStats"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Practice Stats",
+        "tags": [
+          "practice"
+        ]
+      }
+    },
     "/api/setlists": {
       "get": {
         "operationId": "list_setlists_api_setlists_get",
@@ -7097,6 +7960,98 @@
         ]
       }
     },
+    "/api/songs/{song_id}/practice": {
+      "get": {
+        "operationId": "song_practice_api_songs__song_id__practice_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "song_id",
+            "required": true,
+            "schema": {
+              "title": "Song Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SongPractice"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Song Practice",
+        "tags": [
+          "practice"
+        ]
+      }
+    },
     "/api/songs/{song_id}/sync": {
       "patch": {
         "description": "Set the opening tempo and tapped bar anchors on a tab.",
@@ -7764,6 +8719,10 @@
     {
       "description": "Ordered lists of songs with a note and a chord-sheet transpose per entry.",
       "name": "setlists"
+    },
+    {
+      "description": "Practice log: sessions, the daily goal, the dashboard, and a song's history.",
+      "name": "practice"
     },
     {
       "description": "Start a background import. Poll GET /api/jobs/{job_id}.",

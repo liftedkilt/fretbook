@@ -455,7 +455,9 @@
       "songFailed": "Não foi possível restaurar {title}.",
       "mediaFailed": "Não foi possível restaurar um arquivo de {title}.",
       "setlistEntriesDropped": "{count} músicas de {name} não puderam voltar ao repertório.",
-      "setlistFailed": "Não foi possível restaurar o repertório {name}."
+      "setlistFailed": "Não foi possível restaurar o repertório {name}.",
+      "practiceDropped": "Não foi possível restaurar {count} sessões de prática.",
+      "practiceGoalFailed": "Não foi possível restaurar a meta diária de prática."
     },
     "import": {
       "failed": "A importação falhou.",
@@ -546,6 +548,9 @@
       "notFound": "Esse repertório não foi encontrado.",
       "unknownSong": "Uma música do repertório não está na sua biblioteca.",
       "tooManyEntries": "Um repertório comporta no máximo {limit} músicas."
+    },
+    "practice": {
+      "badDay": "Essa data não é válida."
     }
   },
   "ui": {
@@ -989,5 +994,58 @@
   },
   "job": {
     "echo": "Repetindo o trabalho"
+  },
+  "practiceLog": {
+    "nav": "Prática",
+    "heading": "Diário de prática",
+    "today": "hoje",
+    "yesterday": "ontem",
+    "daysAgo": {
+      "one": "há {count} dia",
+      "other": "há {count} dias"
+    },
+    "ofGoal": "de {minutes} min",
+    "minutesToday": "min hoje",
+    "dailyGoal": "Meta diária",
+    "minutes": "minutos",
+    "weeklySummary": "Mostrar um resumo semanal",
+    "saveGoal": "Salvar meta",
+    "dayStreak": {
+      "one": "dia seguido",
+      "other": "dias seguidos"
+    },
+    "longestStreak": "maior sequência",
+    "songsPractised": "músicas praticadas",
+    "totalTime": "tempo tocado",
+    "thisWeek": "Esta semana",
+    "weekDays": {
+      "one": "{count} dia praticado",
+      "other": "{count} dias praticados"
+    },
+    "weekGoalDays": {
+      "one": "meta cumprida em {count} dia",
+      "other": "meta cumprida em {count} dias"
+    },
+    "firstWeek": "sua primeira semana de prática",
+    "vsLastWeek": "{percent}% em relação à semana passada",
+    "empty": "Nada registrado ainda. Abra uma tablatura e toque: o tempo que você passa tocando é registrado aqui automaticamente.",
+    "heatmap": "Minutos por dia",
+    "heatmapLabel": "Calendário dos dias em que você praticou, mais escuro para mais tempo",
+    "recent": "Praticadas recentemente",
+    "bestScores": "Melhores pontuações",
+    "stale": "Músicas que você não toca há um tempo",
+    "songHeading": "Histórico de prática",
+    "songSummary": "{sessions} sessões, {time}",
+    "bestSpeed": "Melhor velocidade: {speed}",
+    "bestScore": "Melhor pontuação: {score}%",
+    "bars": "compassos {from}–{to}",
+    "mode": {
+      "free": "Tocar livremente",
+      "wait": "Modo espera",
+      "scored": "Com pontuação"
+    },
+    "durationSeconds": "{count}s",
+    "durationMinutes": "{count}min",
+    "durationHours": "{hours}h {minutes}min"
   }
 }

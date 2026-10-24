@@ -28,6 +28,7 @@ from fretbook.config import Settings
 from fretbook.db.connection import session
 from fretbook.db.migrate import utcnow
 from fretbook.storage.media import MediaStore
+from fretbook.storage.practice import PracticeRepository
 from fretbook.storage.repository import SongRepository
 from fretbook.storage.setlists import SetlistRepository
 
@@ -155,6 +156,8 @@ def write_archive(
             }
             for setlist in SetlistRepository(settings).export_all(owner_id)
         ]
+        # Additive too. Sessions name their song by archive id; a single user's goal rides along.
+        manifest["practice"] = PracticeRepository(settings).export_all(owner_id)
         if users:
             manifest["users"] = users
         archive.writestr(MANIFEST, json.dumps(manifest, ensure_ascii=False, indent=2))

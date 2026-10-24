@@ -508,6 +508,51 @@ def verify_v9(conn: sqlite3.Connection) -> None:
     assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
 
 
+def seed_v10(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        INSERT INTO users (id, external_subject, display_name, created_at)
+        VALUES ('user-v10', 'sub-v10', 'User V10', '2026-01-10T00:00:00Z')
+        """
+    )
+    conn.execute(
+        """
+        INSERT INTO songs (
+            id, owner_id, slug, title, artist, content_kind, source_kind, source_ref,
+            revision, bpm, measure_count, track_count, string_count, preferred_instrument,
+            preferred_track_id, has_sync, duration, document, chordpro, created_at, updated_at
+        ) VALUES (
+            'song-v10', 'user-v10', 'song-v10', 'Warm Up', '', 'chords', 'manual', '{}',
+            1, 0, 0, 0, 0, '', '', 0, NULL, NULL, '[G]Hi', '2026-01-10T00:00:00Z', '2026-01-10T00:00:00Z'
+        )
+        """
+    )
+    conn.commit()
+
+
+def verify_v10(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        "INSERT INTO practice_sessions (id, owner_id, song_id, started_at, day, duration_seconds) "
+        "VALUES ('p1', 'user-v10', 'song-v10', '2026-01-10T10:00:00+00:00', '2026-01-10', 300)"
+    )
+    row = conn.execute("SELECT speed, mode, score, loop_name FROM practice_sessions WHERE id = 'p1'").fetchone()
+    assert (row["speed"], row["mode"], row["score"], row["loop_name"]) == (1, "free", None, "")
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute(
+            "INSERT INTO practice_sessions (id, owner_id, song_id, started_at, day, duration_seconds, mode) "
+            "VALUES ('p2', 'user-v10', 'song-v10', '2026-01-10T10:00:00+00:00', '2026-01-10', 60, 'bogus')"
+        )
+    conn.execute("INSERT INTO practice_goals (owner_id) VALUES ('user-v10')")
+    assert conn.execute("SELECT daily_minutes, weekly_summary FROM practice_goals").fetchone()[:] == (15, 1)
+    # Deleting the song takes its sessions with it, and deleting the user takes the goal.
+    conn.execute("DELETE FROM songs WHERE id = 'song-v10'")
+    assert conn.execute("SELECT count(*) FROM practice_sessions").fetchone()[0] == 0
+    conn.execute("DELETE FROM users WHERE id = 'user-v10'")
+    assert conn.execute("SELECT count(*) FROM practice_goals").fetchone()[0] == 0
+    conn.rollback()
+    assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+
+
 SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.Connection], None]]] = {
     1: (seed_v1, verify_v1),
     2: (seed_v2, verify_v2),
@@ -518,6 +563,7 @@ SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.C
     7: (seed_v7, verify_v7),
     8: (seed_v8, verify_v8),
     9: (seed_v9, verify_v9),
+    10: (seed_v10, verify_v10),
 }
 
 
