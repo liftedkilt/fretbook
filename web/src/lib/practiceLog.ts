@@ -13,6 +13,43 @@ export const MERGE_PAUSE_MS = 60_000;
 /** The server refuses more than six hours in one session; one hour is plenty to cut at. */
 export const MAX_SESSION_SECONDS = 3600;
 
+/** In wait mode, time stuck on one note with no input counts as practice for this long, then stops. */
+export const WAIT_IDLE_MS = 120_000;
+/** On a chord sheet, time without a key, tap or scroll counts for this long, then stops. */
+export const SHEET_IDLE_MS = 300_000;
+
+/**
+ * Calls `onIdle` once, `ms` after the last `arm`. Arm it again on every sign of life, and
+ * `disarm` it when the thing it watches ends. Timers are injectable so it is tested without a clock.
+ */
+export class IdleWatch {
+  private handle: unknown = null;
+  private readonly setTimer: NonNullable<TimerOptions["setTimer"]>;
+  private readonly clearTimer: NonNullable<TimerOptions["clearTimer"]>;
+
+  constructor(
+    private readonly ms: number,
+    private readonly onIdle: () => void,
+    options: Pick<TimerOptions, "setTimer" | "clearTimer"> = {},
+  ) {
+    this.setTimer = options.setTimer ?? ((fn, delay) => setTimeout(fn, delay));
+    this.clearTimer = options.clearTimer ?? ((handle) => clearTimeout(handle as number));
+  }
+
+  arm(): void {
+    this.disarm();
+    this.handle = this.setTimer(() => {
+      this.handle = null;
+      this.onIdle();
+    }, this.ms);
+  }
+
+  disarm(): void {
+    if (this.handle !== null) this.clearTimer(this.handle);
+    this.handle = null;
+  }
+}
+
 const pad = (value: number) => String(value).padStart(2, "0");
 
 /** A date as the player's own calendar day, `YYYY-MM-DD`. */

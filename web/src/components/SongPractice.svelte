@@ -5,12 +5,13 @@
   import { formatSpeedPercent } from "../lib/practice";
   import type { SongPractice } from "../lib/types";
 
-  let { songId }: { songId: string } = $props();
+  let { songId, reload = 0 }: { songId: string; reload?: number } = $props();
 
   let history = $state<SongPractice | null>(null);
 
   $effect(() => {
     const id = songId;
+    void reload;
     let cancel = false;
     history = null;
     // The history is a nicety: if it cannot load the page simply goes without.

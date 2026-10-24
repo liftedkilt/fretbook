@@ -50,7 +50,7 @@
   import { buildWaitSteps, stepIndexAt, type WaitStep } from "../lib/listen/wait";
   import { WaitRun } from "../lib/listen/waitRun";
   import { followPlayed, playedBars } from "../lib/playback";
-  import { PracticeTimer } from "../lib/practiceLog";
+  import { IdleWatch, PracticeTimer, WAIT_IDLE_MS } from "../lib/practiceLog";
   import {
     ClickScheduler,
     calcNextSpeed,
@@ -415,26 +415,42 @@
     });
   });
 
+  // Stuck on one note with no input for a couple of minutes: stop counting until the player moves on.
+  let waitIdle = $state(false);
+  $effect(() => {
+    if (!waitOn || waitState !== "waiting") return;
+    void waitStep;
+    const watch = new IdleWatch(WAIT_IDLE_MS, () => (waitIdle = true));
+    watch.arm();
+    return () => {
+      watch.disarm();
+      waitIdle = false;
+    };
+  });
+
   // In wait mode the synth stops on each note, so waiting for the player to play it still counts.
   $effect(() => {
     const loop = loopA != null && loopB != null;
     const named = loop
       ? practice.loops.find((l) => l.id === activeLoopId || (l.a === loopA && l.b === loopB))
       : undefined;
-    practiceTimer.update(playing || (waitOn && (waitState === "waiting" || waitState === "hit")), {
-      songId: song.id,
-      trackId,
-      loopName: named?.name ?? "",
-      loopStart: loop ? loopA : null,
-      loopEnd: loop ? loopB : null,
-      mode: scoreOn ? "scored" : waitOn ? "wait" : "free",
-      speed: rate,
-      // The latest pass's accuracy, as a percent with one decimal.
-      score:
-        scoreOn && scoreSummary && scoreSummary.graded > 0
-          ? Math.round(scoreSummary.accuracy * 1000) / 10
-          : null,
-    });
+    practiceTimer.update(
+      playing || (waitOn && ((waitState === "waiting" && !waitIdle) || waitState === "hit")),
+      {
+        songId: song.id,
+        trackId,
+        loopName: named?.name ?? "",
+        loopStart: loop ? loopA : null,
+        loopEnd: loop ? loopB : null,
+        mode: scoreOn ? "scored" : waitOn ? "wait" : "free",
+        speed: rate,
+        // The latest pass's accuracy, as a percent with one decimal.
+        score:
+          scoreOn && scoreSummary && scoreSummary.graded > 0
+            ? Math.round(scoreSummary.accuracy * 1000) / 10
+            : null,
+      },
+    );
   });
 
   onMount(() => {
