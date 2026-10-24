@@ -6014,7 +6014,7 @@ export interface operations {
                 limit?: number;
                 /** @description Defaults to the natural order of `sort`. */
                 order?: ("asc" | "desc") | null;
-                /** @description Words matched as prefixes against title and artist. */
+                /** @description Words matched as prefixes against title, artist, chord-sheet lyrics and tags. */
                 q?: string;
                 sort?: "title" | "artist" | "added" | "updated" | "opened" | "difficulty";
                 /** @description Repeat to require several tags; a song needs all of them. */

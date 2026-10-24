@@ -69,6 +69,68 @@ def test_search_follows_renames_and_deletes(client: TestClient) -> None:
     assert _titles(client, q="fresh") == []
 
 
+LYRICS_SHEET = "{title: Hidden}\n{start_of_chorus}\n[Am]Take me [F]down to the paradise [C]city\n{end_of_chorus}\n"
+
+
+def test_search_finds_chord_sheet_lyrics_but_not_chords_or_directives(client: TestClient) -> None:
+    body = {"content_kind": "chords", "title": "Sheet", "artist": "", "chordpro": LYRICS_SHEET}
+    client.post("/api/songs", json=body)
+    _tab(client, "Other")
+
+    assert _titles(client, q="paradise city") == ["Sheet"]
+    assert _titles(client, q="para") == ["Sheet"]
+    assert _titles(client, q="take me down") == ["Sheet"]
+    assert _titles(client, q="Am") == []
+    assert _titles(client, q="chorus") == []
+    assert _titles(client, q="hidden") == []
+
+
+def test_lyrics_follow_edits_and_survive_renames(client: TestClient) -> None:
+    song_id = client.post(
+        "/api/songs", json={"content_kind": "chords", "title": "Sheet", "artist": "", "chordpro": "[C]first words"}
+    ).json()["id"]
+    song = client.get(f"/api/songs/{song_id}").json()
+    edit = {"title": "Sheet", "artist": "", "revision": song["revision"], "chordpro": "[C]second words"}
+    assert client.put(f"/api/songs/{song_id}", json=edit).status_code == 200
+    assert _titles(client, q="first") == [] and _titles(client, q="second") == ["Sheet"]
+
+    song = client.get(f"/api/songs/{song_id}").json()
+    rename = {**edit, "title": "Renamed", "revision": song["revision"], "chordpro": song["chordpro"]}
+    assert client.put(f"/api/songs/{song_id}", json=rename).status_code == 200
+    assert _titles(client, q="second") == ["Renamed"]
+    client.delete(f"/api/songs/{song_id}")
+    assert _titles(client, q="second") == []
+
+
+def test_search_finds_tags_and_follows_tag_changes(client: TestClient) -> None:
+    a = _tab(client, "Alpha")
+    b = _chords(client, "Beta")
+    assert client.put(f"/api/songs/{a}/tags", json={"tags": ["Campfire", "slow jam"]}).status_code == 200
+    client.put(f"/api/songs/{b}/tags", json={"tags": ["Campfire"]})
+
+    assert _titles(client, q="campfire", sort="title") == ["Alpha", "Beta"]
+    assert _titles(client, q="slow") == ["Alpha"]
+    client.put(f"/api/songs/{a}/tags", json={"tags": ["other"]})
+    assert _titles(client, q="campfire") == ["Beta"]
+    assert _titles(client, q="slow") == []
+    client.delete(f"/api/songs/{b}")
+    assert _titles(client, q="campfire") == []
+
+
+def test_startup_indexes_lyrics_of_existing_sheets(tmp_path: Path) -> None:
+    settings = Settings.for_tests(tmp_path)
+    with TestClient(create_app(settings)) as client:
+        song_id = _chords(client, "Old Sheet")
+        conn = sqlite3.connect(settings.database_path)
+        conn.execute("UPDATE songs SET lyrics_indexed = 0 WHERE id = ?", (song_id,))
+        conn.execute("UPDATE songs_fts SET lyrics = '' WHERE song_id = ?", (song_id,))
+        conn.commit()
+        conn.close()
+        assert _titles(client, q="hello") == []
+    with TestClient(create_app(settings)) as client:
+        assert _titles(client, q="hello") == ["Old Sheet"]
+
+
 def test_sort_keys_and_order(client: TestClient) -> None:
     a = _tab(client, "beta", "Zed")
     b = _tab(client, "Alpha", "")
