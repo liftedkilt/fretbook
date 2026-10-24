@@ -586,6 +586,13 @@
     },
     "offline": {
       "unavailable": "Você está offline e isto não está salvo neste dispositivo."
+    },
+    "autosync": {
+      "noFfmpeg": "Este servidor não consegue ler esse formato de áudio porque o ffmpeg não está instalado.",
+      "decodeFailed": "Não foi possível ler o arquivo de áudio.",
+      "tooShort": "O áudio é curto demais para encontrar uma pulsação.",
+      "noBeat": "Nenhuma pulsação regular foi encontrada neste áudio.",
+      "noMatch": "As batidas encontradas no áudio não combinam com esta tablatura."
     }
   },
   "ui": {
@@ -1535,5 +1542,34 @@
       "gallop": "Galope",
       "tripletRests": "Tercinas com pausas"
     }
+  },
+  "autoSync": {
+    "button": "Sincronização automática",
+    "buttonHint": "Estimar as marcas dos compassos a partir do áudio",
+    "title": "Sincronização automática",
+    "subtitle": "Estima onde cada compasso começa ouvindo a pulsação do áudio.",
+    "queued": "Aguardando para começar…",
+    "working": "Ouvindo o áudio…",
+    "decoding": "Lendo o áudio",
+    "tracking": "Encontrando as batidas e associando-as aos compassos",
+    "noResult": "A estimativa terminou sem resultado.",
+    "timeout": "A estimativa demorou demais. Tente novamente.",
+    "retry": "Tentar de novo",
+    "close": "Fechar",
+    "summary": "{marks} marcas de compasso encontradas, com {confidence}% de confiança. O áudio toca a cerca de {bpm} BPM.",
+    "check": "Vale conferir depois de aceitar: compassos {bars}.",
+    "checkMore": "E mais {count}.",
+    "allClear": "Todas as marcas estão sobre uma batida clara.",
+    "replaces": {
+      "one": "Aceitar substitui a sua marca atual ({count}).",
+      "other": "Aceitar substitui as suas {count} marcas atuais."
+    },
+    "startAt": "Começar no compasso",
+    "preview": "Ouvir com clique",
+    "stop": "Parar",
+    "previewHint": "Toca o áudio com um clique em cada batida e um clique mais agudo na primeira batida de cada compasso. Se os cliques acompanham a música, aceite.",
+    "accept": "Aceitar marcas",
+    "discard": "Descartar",
+    "acceptHint": "Depois de aceitar, corrija as marcas fora do lugar com os botões de marcar, ajustar e limpar, como antes."
   }
 }

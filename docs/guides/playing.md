@@ -29,6 +29,25 @@ A recording and a score only line up if you tell Fretbook where each bar starts.
 2. Press **T** at the start of each bar, against the audio. Those are the *sync marks*.
 3. Use Loop A/B, speed and the nudge buttons to line up a stretch that drifts.
 
+#### Auto-sync
+
+Instead of tapping every bar, press **Auto-sync** in the Sync marks group of the Sync & audio panel (it needs a tab with
+audio). The server listens for the beat in the recording, matches it to the score's bars (time signatures, repeats
+and tempo changes included) and proposes a mark for every bar. Nothing is saved yet:
+
+- The sheet tells you how many marks it found, how confident it is, and which bars are worth checking.
+- **Preview with click** plays the recording with a click on every beat and a higher click on the first beat of each bar,
+  from the bar you choose (it starts at the first bar worth checking). If the clicks sit on the music, the marks are right.
+- **Accept marks** saves them, replacing any marks you had. **Discard** leaves the song as it was.
+
+After accepting, fix a bar that is off the usual way: play to it, press **T**, or use the nudge and clear buttons.
+
+Auto-sync works best on a recording with a clear, steady pulse and a bass or kick that lands on the first beat of
+the bar. It assumes the recording follows the score's bar structure (the same bars, repeats and order) and that the
+first strong sound is the first bar; an intro or count-in that the tab does not have throws the marks off, so
+trim the audio or fix the first marks and the rest by hand. A recording that speeds up and slows down a lot, or has a long rubato passage, will come out with low-confidence
+marks there. Reading formats other than WAV needs `ffmpeg`, which the Docker image includes.
+
 Songsterr imports that carry sync data already have marks. Importing the same song again keeps yours. The metronome
 and count-in follow the marks.
 

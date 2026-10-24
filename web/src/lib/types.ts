@@ -344,6 +344,21 @@ export interface BulkImportAccepted {
   jobs?: BulkImportJobItem[];
 }
 
+/** Bar marks estimated from the audio. Nothing is saved until the anchors go to `patchSync`. */
+export interface AutoSyncProposal {
+  /** Played bar index to seconds in the audio. */
+  anchors: Record<string, number>;
+  /** 0 to 1 for each anchor. */
+  confidence: Record<string, number>;
+  overall: number;
+  /** Quarter notes per minute measured in the audio. */
+  tempo_bpm: number;
+  beat_count: number;
+  audio_seconds: number;
+  /** Played bars whose mark is worth checking. */
+  low_confidence: number[];
+}
+
 export interface Job {
   id: string;
   kind: string;
@@ -351,6 +366,7 @@ export interface Job {
   label?: string;
   result: {
     song_id?: string;
+    autosync?: AutoSyncProposal | null;
     slug?: string;
     content_kind?: ContentKind;
     warnings?: Keyed[];

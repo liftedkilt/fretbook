@@ -117,10 +117,16 @@ def onset_envelope(samples: Floats, sample_rate: int = SAMPLE_RATE) -> Envelope:
     samples = np.concatenate([np.zeros(PAD), samples])
     window = np.hanning(FRAME)
     count = 1 + (samples.size - FRAME) // HOP
-    index = np.arange(FRAME)[None, :] + HOP * np.arange(count)[:, None]
-    spectrum = np.abs(np.fft.rfft(samples[index] * window, axis=1))
-    edges = np.unique(np.geomspace(2, spectrum.shape[1] - 1, BANDS + 1).astype(int))
-    bands = np.stack([spectrum[:, lo:hi].sum(axis=1) for lo, hi in zip(edges[:-1], edges[1:], strict=True)], axis=1)
+    edges = np.unique(np.geomspace(2, FRAME // 2 - 1, BANDS + 1).astype(int))
+    bands = np.empty((count, edges.size - 1))
+    # In blocks of frames: all of them at once would be a (frames x 1024) matrix, gigabytes for a long recording.
+    for first in range(0, count, 2048):
+        last = min(count, first + 2048)
+        index = np.arange(FRAME)[None, :] + HOP * np.arange(first, last)[:, None]
+        spectrum = np.abs(np.fft.rfft(samples[index] * window, axis=1))
+        bands[first:last] = np.stack(
+            [spectrum[:, lo:hi].sum(axis=1) for lo, hi in zip(edges[:-1], edges[1:], strict=True)], axis=1
+        )
     logged = np.log1p(100 * bands / (bands.max() + 1e-12))
     flux = np.concatenate([np.zeros((1, logged.shape[1])), np.maximum(logged[1:] - logged[:-1], 0)])
     low_bands = max(1, int(np.searchsorted(edges * sample_rate / FRAME, LOW_HZ)))

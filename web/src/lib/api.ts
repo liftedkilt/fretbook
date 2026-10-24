@@ -407,6 +407,11 @@ export function convertTrack(id: string, body: ConvertBody): Promise<ConvertOutc
   return view(request<unknown>(`/api/songs/${id}/convert`, json("POST", body)));
 }
 
+/** Queue an estimate of the bar marks from the song's audio; wait for the job and read `result.autosync`. */
+export function startAutoSync(id: string): Promise<JobAccepted> {
+  return request<JobAccepted>(`/api/songs/${id}/autosync`, { method: "POST" });
+}
+
 export function patchSync(
   id: string,
   body: { bpm: number; anchors: Record<string, number> },

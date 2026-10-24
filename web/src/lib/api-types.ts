@@ -758,6 +758,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/songs/{song_id}/autosync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Autosync
+         * @description Queue an estimate of the bar marks from the song's audio.
+         *
+         *     The finished job's ``result.autosync`` holds the proposed anchors and a confidence for each. Nothing is
+         *     saved: accept a proposal by sending its anchors to ``PATCH /api/songs/{song_id}/sync``.
+         */
+        post: operations["start_autosync_api_songs__song_id__autosync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/songs/{song_id}/convert": {
         parameters: {
             query?: never;
@@ -1232,6 +1255,30 @@ export interface components {
             job_id: string;
         };
         /**
+         * AutoSyncProposal
+         * @description Bar marks estimated from the audio. Nothing is saved until the anchors go to ``PATCH /api/songs/{id}/sync``.
+         */
+        AutoSyncProposal: {
+            /** Anchors */
+            anchors: {
+                [key: string]: number;
+            };
+            /** Audio Seconds */
+            audio_seconds: number;
+            /** Beat Count */
+            beat_count: number;
+            /** Confidence */
+            confidence: {
+                [key: string]: number;
+            };
+            /** Low Confidence */
+            low_confidence: number[];
+            /** Overall */
+            overall: number;
+            /** Tempo Bpm */
+            tempo_bpm: number;
+        };
+        /**
          * Bar
          * @description One song-level bar (alphaTab's master bar).
          */
@@ -1675,6 +1722,7 @@ export interface components {
         };
         /** JobResult */
         JobResult: {
+            autosync?: components["schemas"]["AutoSyncProposal"] | null;
             /** Content Kind */
             content_kind?: ("tab" | "chords") | null;
             /** Copied */
@@ -2651,6 +2699,7 @@ export type AsciiTabPreview = components['schemas']['AsciiTabPreview'];
 export type AudioCalibration = components['schemas']['AudioCalibration'];
 export type AudioCalibrationBody = components['schemas']['AudioCalibrationBody'];
 export type AutoImportAccepted = components['schemas']['AutoImportAccepted'];
+export type AutoSyncProposal = components['schemas']['AutoSyncProposal'];
 export type Bar = components['schemas']['Bar'];
 export type Beat = components['schemas']['Beat'];
 export type BodyImportAutoApiImportsAutoPost = components['schemas']['Body_import_auto_api_imports_auto_post'];
@@ -6302,6 +6351,82 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SongDetail"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    start_autosync_api_songs__song_id__autosync_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                song_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAccepted"];
                 };
             };
             /** @description Keyed error. `detail` is {key, message, params}. */
