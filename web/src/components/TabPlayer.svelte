@@ -68,6 +68,7 @@
     type ScoreSummary,
     type SectionScore,
   } from "../lib/listen/scored";
+  import { colourScoreGrades } from "../lib/alphatab/gradeColors";
   import { ScoredRun } from "../lib/listen/scoredRun";
   import { buildWaitSteps, stepIndexAt, type WaitStep } from "../lib/listen/wait";
   import { WaitRun } from "../lib/listen/waitRun";
@@ -850,6 +851,23 @@
     api.updateSettings();
     api.render();
   });
+
+  // Scored grades colour the notation too; redraws are batched because grades arrive note by note.
+  let gradeRedraw = 0;
+  $effect(() => {
+    const grades = scoreGrades;
+    const index = trackIndex;
+    if (!scoreReady) return;
+    untrack(() => {
+      const api = player.api;
+      const target = api?.score?.tracks[index];
+      if (!api || !target) return;
+      if (!colourScoreGrades(target, grades, playedBars(song.document.bars))) return;
+      window.clearTimeout(gradeRedraw);
+      gradeRedraw = window.setTimeout(() => player.api?.render(), 120);
+    });
+  });
+  $effect(() => () => window.clearTimeout(gradeRedraw));
 
   function clearLoop() {
     loopA = null;
