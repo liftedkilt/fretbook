@@ -1,11 +1,20 @@
 <script lang="ts">
   import Icon from "./Icon.svelte";
   import LessonBlocks from "./LessonBlocks.svelte";
-  import { ApiError, checkLesson, getLesson, openLesson, reportLessonProgress } from "../lib/api";
+  import {
+    ApiError,
+    checkLesson,
+    getLesson,
+    listSongs,
+    openLesson,
+    reportLessonProgress,
+  } from "../lib/api";
   import type { LessonDetail, LessonProgressResult } from "../lib/api-types";
   import { t } from "../lib/i18n.svelte";
+  import { lessonQuery, lessonSongPath } from "../lib/lessonRun";
   import { coursePath, lessonPath } from "../lib/lessons";
   import { followLink, hrefFor } from "../lib/router.svelte";
+  import type { SongSummary } from "../lib/types";
   import { ui } from "../lib/ui.svelte";
 
   let { course, lesson }: { course: string; lesson: string } = $props();
@@ -62,6 +71,24 @@
   }
 
   const condition = $derived(detail?.pass_condition ?? null);
+
+  // A lesson that is not tied to a library song is played on a song the learner picks, and the player reports back.
+  let songs = $state<SongSummary[]>([]);
+  let picked = $state("");
+  const playable = $derived(condition !== null && !condition.song);
+
+  $effect(() => {
+    if (!playable) return;
+    let current = true;
+    listSongs({ sort: "opened", order: "desc", limit: 100 })
+      .then((page) => {
+        if (current) songs = page.items.filter((item) => item.content_kind !== "chords");
+      })
+      .catch(() => undefined);
+    return () => {
+      current = false;
+    };
+  });
 
   function report(event: SubmitEvent) {
     event.preventDefault();
@@ -197,6 +224,33 @@
             <span>{t("lessons.report")}</span>
           </button>
         </form>
+      {/if}
+
+      {#if playable && songs.length}
+        <div class="lesson-report" data-testid="lesson-play">
+          <label class="tool-field">
+            <span>{t("lessonRun.pick")}</span>
+            <select bind:value={picked} data-testid="lesson-song-pick">
+              <option value="">{t("lessonRun.pickPlaceholder")}</option>
+              {#each songs as item (item.id)}
+                <option value={item.id}
+                  >{item.artist ? `${item.title} · ${item.artist}` : item.title}</option
+                >
+              {/each}
+            </select>
+          </label>
+          {#if picked}
+            <a
+              class="button"
+              data-testid="lesson-play-link"
+              href={hrefFor(`/songs/${encodeURIComponent(picked)}`) +
+                lessonQuery({ course, lesson })}
+              onclick={(event) => followLink(event, lessonSongPath(picked, { course, lesson }))}
+            >
+              <Icon name="play" size={18} /><span>{t("lessonRun.play")}</span>
+            </a>
+          {/if}
+        </div>
       {/if}
 
       {#if outcome === "missed"}

@@ -17,8 +17,10 @@ For working through a song of your own the way a teacher would set it, use the p
 5. **Make it a habit.** Set a daily goal and watch the [practice log](practice.md#practice-log). Collect a rehearsal in
    a [setlist](playing.md#setlists).
 
-A lesson can send you straight to a [generated exercise](exercises.md) or to a song in your library, and **Check my
-practice** reads your [practice log](practice.md#practice-log) to see whether you reached the lesson's goal.
+A lesson can send you straight to a [generated exercise](exercises.md) or to a song in your library. To pass a
+lesson, pick a song on the lesson page and play it from there: a whole-song scored run or a wait-mode run played
+through is reported to the lesson at once, and the player tells you whether it passed. A lesson tied to one song is
+checked with **Check my practice**, which reads your [practice log](practice.md#practice-log).
 
 Recognising tabs in lesson videos is planned and tracked in the
 [roadmap](https://github.com/liftedkilt/fretbook/blob/main/ROADMAP.md); this page will grow with it.

@@ -124,6 +124,7 @@ class _PracticeSession(BaseModel):
     speed: float = Field(default=1.0, gt=0, le=4, allow_inf_nan=False)
     mode: Literal["free", "wait", "scored"] = "free"
     score: float | None = Field(default=None, ge=0, le=100, allow_inf_nan=False)
+    completed: bool = False
 
 
 class _PracticeExercise(BaseModel):

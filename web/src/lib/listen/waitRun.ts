@@ -3,6 +3,9 @@ import type { PitchEvent } from "./engine";
 import type { ListenSession, ListenOptions } from "./input";
 import { DEFAULT_WAIT_OPTIONS, WaitMatcher, type WaitOptions, type WaitStep } from "./wait";
 
+/** A run counts as played through when this share of the steps were played (the rest may have been skipped). */
+export const COMPLETE_HIT_SHARE = 0.8;
+
 export interface WaitRunOptions {
   steps: WaitStep[];
   /** Opens the microphone; `startListening` in the app, a fake in tests. */
@@ -30,6 +33,9 @@ export class WaitRun {
   /** Index of the last step handled; steps up to here do not stop the cursor again. */
   private passed = -1;
   private hintTimer: ReturnType<typeof setTimeout> | undefined;
+  /** Steps handled, and those of them played, since the run last started from the first step. */
+  private readonly handled = new Set<number>();
+  private readonly played = new Set<number>();
   hits = 0;
 
   constructor(private readonly options: WaitRunOptions) {
@@ -43,6 +49,18 @@ export class WaitRun {
 
   get total(): number {
     return this.options.steps.length;
+  }
+
+  /**
+   * True when the run went through every step of the track from the first one (a jump forward leaves a gap) and
+   * played at least `COMPLETE_HIT_SHARE` of them, so skipping the odd note the microphone missed still counts.
+   * Check it when the song ends: starting the run again from the top resets it.
+   */
+  get completed(): boolean {
+    const total = this.total;
+    return (
+      total > 0 && this.handled.size === total && this.played.size >= total * COMPLETE_HIT_SHARE
+    );
   }
 
   /** The step the cursor is waiting on, or -1. */
@@ -82,6 +100,10 @@ export class WaitRun {
     this.release();
     const first = this.options.steps.findIndex((step) => step.tick >= tick);
     this.passed = (first < 0 ? this.options.steps.length : first) - 1;
+    if (first === 0) {
+      this.handled.clear();
+      this.played.clear();
+    }
   }
 
   /**
@@ -121,7 +143,11 @@ export class WaitRun {
     const step = this.options.steps[index];
     this.release();
     this.passed = index;
-    if (hit) this.hits += 1;
+    this.handled.add(index);
+    if (hit) {
+      this.hits += 1;
+      this.played.add(index);
+    }
     this.options.onHit(step, index);
   }
 

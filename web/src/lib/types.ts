@@ -432,6 +432,8 @@ export interface PracticeSessionDraft {
   speed: number;
   mode: PracticeMode;
   score: number | null;
+  /** A wait-mode run that played the whole song through, from the first bar, with no loop. */
+  completed?: boolean;
 }
 
 export interface PracticeSession extends PracticeSessionDraft {

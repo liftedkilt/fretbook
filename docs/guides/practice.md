@@ -87,7 +87,8 @@ Bluetooth setup will look like dragging.
 
 The time you spend playing a tab is logged automatically, per song, track and loop, with the speed and the mode (free
 play, wait mode, scored play-along with its accuracy). A pause shorter than a minute stays in the same session, and
-stretches under five seconds are not logged.
+stretches under five seconds are not logged. A wait-mode session is flagged **completed** when you played the whole
+song through (every note of the track from the first one, no loop); [lessons](../lessons.md#pass-conditions) use that flag.
 
 The **Practice** page shows a progress ring for the day's minutes against your daily goal (default 15; 0 turns it off),
 the current and longest streak, songs practised, a calendar heatmap, a weekly summary, recently practised songs, best

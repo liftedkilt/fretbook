@@ -43,6 +43,7 @@ class SessionInput:
     speed: float = 1.0
     mode: str = "free"
     score: float | None = None
+    completed: bool = False
     id: str | None = None
 
 
@@ -287,8 +288,8 @@ def _insert(conn: sqlite3.Connection, owner_id: str, new_id: str, item: SessionI
     conn.execute(
         """
         INSERT INTO practice_sessions (id, owner_id, song_id, track_id, loop_name, loop_start, loop_end,
-                                       started_at, day, duration_seconds, speed, mode, score)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                       started_at, day, duration_seconds, speed, mode, score, completed)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             new_id,
@@ -304,6 +305,8 @@ def _insert(conn: sqlite3.Connection, owner_id: str, new_id: str, item: SessionI
             max(0.05, min(MAX_SPEED, item.speed)),
             mode,
             item.score,
+            # Only a wait-mode run can be finished.
+            int(item.completed and mode == "wait"),
         ),
     )
 
@@ -345,6 +348,7 @@ def _session_dict(row: sqlite3.Row) -> dict[str, Any]:
         "speed": row["speed"],
         "mode": row["mode"],
         "score": row["score"],
+        "completed": bool(row["completed"]),
     }
 
 

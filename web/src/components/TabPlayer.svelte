@@ -16,6 +16,7 @@
   import StemMixer from "./StemMixer.svelte";
   import AutoSyncSheet from "./AutoSyncSheet.svelte";
   import RetuneSheet from "./RetuneSheet.svelte";
+  import LessonRunBanner from "./LessonRunBanner.svelte";
   import ScorePanel from "./ScorePanel.svelte";
   import ScoreResults from "./ScoreResults.svelte";
   import ShortcutHelp from "./ShortcutHelp.svelte";
@@ -69,6 +70,7 @@
   import { buildWaitSteps, stepIndexAt, type WaitStep } from "../lib/listen/wait";
   import { WaitRun } from "../lib/listen/waitRun";
   import { followPlayed, playedBars } from "../lib/playback";
+  import { parseLessonParam } from "../lib/lessonRun";
   import { IdleWatch, PracticeTimer, WAIT_IDLE_MS } from "../lib/practiceLog";
   import {
     ClickScheduler,
@@ -128,6 +130,9 @@
     onSession: (session, keepalive) => void recordPracticeSession(session, keepalive),
   });
   const scheduler = new ClickScheduler();
+  // Opened from a lesson (`?lesson=<course>/<lesson>`): scored and wait-mode results go to that lesson.
+  const lessonRef = typeof location === "undefined" ? null : parseLessonParam(location.search);
+  let lessonBanner = $state<LessonRunBanner>();
 
   let tapIndex = $state(0);
   let loopA = $state<number | null>(null);
@@ -386,6 +391,11 @@
         return;
       }
       if (!waitRun) return;
+      // Played through from the first note, not looped: it goes to the practice log and to the lesson.
+      if (waitRun.completed && (loopA == null || loopB == null)) {
+        practiceTimer.complete();
+        void lessonBanner?.report({ kind: "wait" });
+      }
       waitState = "done";
       waitStep = null;
       waitRun.seek(0);
@@ -1113,6 +1123,15 @@
       best,
     };
     scoreResultsOpen = true;
+    if (played && summary.graded > 0) {
+      void lessonBanner?.report({
+        kind: "scored",
+        accuracy: summary.accuracy * 100,
+        songBpm: song.document.bpm,
+        rate,
+        wholeSong: !loop && summary.total >= scoredSteps.length,
+      });
+    }
   }
 
   function stopScore() {
@@ -1247,6 +1266,7 @@
   class:stage={handsFree.stage}
   class:has-fretboard={practice.fretboard.on}
 >
+  {#if lessonRef}<LessonRunBanner bind:this={lessonBanner} lesson={lessonRef} />{/if}
   <header class="song-header">
     <a class="back-link" href={hrefFor("/")} onclick={(event) => followLink(event, "/")}
       ><Icon name="back" size={18} />{t("app.back")}</a

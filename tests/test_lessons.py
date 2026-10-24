@@ -394,10 +394,16 @@ def test_a_wait_lesson_tied_to_a_song_needs_a_whole_song_wait_session(client: Te
         body = {"song_id": song, "day": date.today().isoformat(), "duration_seconds": 60, **extra}
         assert client.post("/api/practice/sessions", json=body).status_code in (200, 201)
 
-    log(mode="wait", loop_start=2, loop_end=3)
+    log(mode="wait", loop_start=2, loop_end=3, completed=True)
     log(mode="scored", score=100)
     assert client.post(check).json()["passed"] is False
+    # A few seconds of wait mode is not playing the song.
     log(mode="wait")
+    assert client.post(check).json()["passed"] is False
+    # The flag means nothing outside wait mode.
+    log(mode="free", completed=True)
+    assert client.post(check).json()["passed"] is False
+    log(mode="wait", completed=True)
     assert client.post(check).json()["passed"] is True
 
 

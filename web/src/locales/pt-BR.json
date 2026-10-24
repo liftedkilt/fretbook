@@ -1860,5 +1860,20 @@
       "other": "{count} músicas de demonstração removidas."
     },
     "banner": "Esta é uma demonstração somente leitura. Explore e toque; as alterações não são salvas e a biblioteca é restaurada toda noite."
+  },
+  "lessonRun": {
+    "back": "Voltar para {title}",
+    "unavailable": "Não foi possível carregar esta lição, então os resultados daqui não são enviados.",
+    "askWait": "Toque a música inteira no modo de espera, desde a primeira nota, para passar nesta lição.",
+    "askScore": "Toque a música inteira no modo pontuado com pelo menos {score}% de acertos.",
+    "askScoreBpm": "Toque a música inteira no modo pontuado com pelo menos {score}% de acertos a {bpm} BPM ou mais.",
+    "noCondition": "Esta lição é marcada como concluída na própria página.",
+    "songBound": "Esta lição é verificada no seu registro de prática: toque a música dela e depois use Verificar minha prática na página da lição.",
+    "passed": "Lição concluída!",
+    "missed": "Ainda não. Tente de novo.",
+    "error": "Não foi possível salvar o resultado na lição. Verifique a conexão e toque de novo.",
+    "pick": "Pratique em uma música",
+    "pickPlaceholder": "Escolha uma música…",
+    "play": "Abrir no player"
   }
 }

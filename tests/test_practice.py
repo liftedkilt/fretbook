@@ -57,6 +57,16 @@ def test_record_and_read_back_a_session(client: TestClient) -> None:
     assert [item["id"] for item in history["sessions"]] == [session["id"]]
 
 
+def test_only_a_wait_session_can_be_completed(client: TestClient) -> None:
+    song = _song(client, "Alpha")
+    assert _log(client, song, mode="wait").json()["completed"] is False
+    assert _log(client, song, mode="wait", completed=True).json()["completed"] is True
+    assert _log(client, song, mode="scored", score=90, completed=True).json()["completed"] is False
+    assert _log(client, song, completed=True).json()["completed"] is False
+    flags = [item["completed"] for item in client.get(f"/api/songs/{song}/practice").json()["sessions"]]
+    assert sorted(flags) == [False, False, False, True]
+
+
 def test_a_score_only_counts_for_scored_sessions(client: TestClient) -> None:
     song = _song(client, "Alpha")
     assert _log(client, song, mode="free", score=90).json()["score"] is None
@@ -217,19 +227,21 @@ def test_backup_round_trip_keeps_the_practice_log(tmp_path: Path) -> None:
         alpha = _song(source, "Alpha")
         _log(source, alpha, 300, mode="scored", score=80, speed=0.9, loop_name="Riff")
         _log(source, alpha, 120, offset=-1)
+        _log(source, alpha, 90, mode="wait", completed=True)
         source.put("/api/practice/goal", json={"daily_minutes": 25, "weekly_summary": False})
         archive = source.get("/api/library/export").content
         with zipfile.ZipFile(io.BytesIO(archive)) as zf:
             manifest = json.loads(zf.read("manifest.json"))
         assert manifest["format_version"] == 1
-        assert len(manifest["practice"]["sessions"]) == 2
+        assert len(manifest["practice"]["sessions"]) == 3
+        assert [item["completed"] for item in manifest["practice"]["sessions"]].count(True) == 1
         assert manifest["practice"]["goal"] == {"daily_minutes": 25, "weekly_summary": False}
         expected = source.get(f"/api/songs/{alpha}/practice").json()
 
         with TestClient(create_app(Settings.for_tests(tmp_path / "dst"))) as target:
             job = _restore(target, archive)
             assert job["status"] == "done", job
-            assert job["result"]["practice_sessions"] == 2
+            assert job["result"]["practice_sessions"] == 3
             assert target.get("/api/practice/goal").json() == {"daily_minutes": 25, "weekly_summary": False}
             restored = target.get(f"/api/songs/{alpha}/practice").json()
             assert restored == expected
@@ -237,7 +249,14 @@ def test_backup_round_trip_keeps_the_practice_log(tmp_path: Path) -> None:
             # The same archive again adds nothing.
             again = _restore(target, archive)
             assert again["result"]["practice_sessions"] == 0
-            assert target.get(f"/api/songs/{alpha}/practice").json()["session_count"] == 2
+            assert target.get(f"/api/songs/{alpha}/practice").json()["session_count"] == 3
+
+
+def test_a_session_in_an_older_archive_restores_as_not_completed() -> None:
+    from fretbook.backup.restore import _PracticeSession
+
+    session = {"id": "old1", "song_id": "s", "day": "2026-01-01", "duration_seconds": 60, "mode": "wait"}
+    assert _PracticeSession.model_validate(session).completed is False
 
 
 def test_restore_drops_sessions_for_songs_that_did_not_come_back_and_bad_ones(tmp_path: Path) -> None:

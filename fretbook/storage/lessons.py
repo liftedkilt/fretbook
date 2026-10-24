@@ -93,16 +93,17 @@ class LessonProgressRepository:
         return _progress(row)
 
     def best_practice(self, owner_id: str, song_id: str) -> dict[str, Any]:
-        """Whole-song runs of a library song from the practice log: scored runs, and whether wait mode was used.
+        """Whole-song runs of a library song from the practice log: scored runs, and whether wait mode was finished.
 
-        A looped section does not count: looping the easy bars must not pass a lesson about the song.
+        A looped section does not count: looping the easy bars must not pass a lesson about the song. Neither does a
+        wait session the player left unfinished: only one flagged ``completed`` shows the song was played through.
         """
         with self._session() as conn:
             song = conn.execute("SELECT bpm FROM songs WHERE id = ? AND owner_id = ?", (song_id, owner_id)).fetchone()
             if song is None:
                 return {"found": False, "runs": [], "waited": False}
             rows = conn.execute(
-                "SELECT mode, speed, score FROM practice_sessions "
+                "SELECT mode, speed, score, completed FROM practice_sessions "
                 "WHERE owner_id = ? AND song_id = ? AND loop_start IS NULL AND loop_end IS NULL",
                 (owner_id, song_id),
             ).fetchall()
@@ -112,7 +113,11 @@ class LessonProgressRepository:
             for row in rows
             if row["mode"] == "scored" and row["score"] is not None
         ]
-        return {"found": True, "runs": runs, "waited": any(row["mode"] == "wait" for row in rows)}
+        return {
+            "found": True,
+            "runs": runs,
+            "waited": any(row["mode"] == "wait" and row["completed"] for row in rows),
+        }
 
     def export_all(self, owner_id: str) -> list[dict[str, Any]]:
         """One user's progress for the backup. Lessons are files, so rows are keyed by course and lesson id."""
