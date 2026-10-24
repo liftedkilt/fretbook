@@ -173,4 +173,29 @@ describe("PracticeView", () => {
     expect(list).toHaveTextContent("83%");
     expect(screen.queryByTestId("practice-empty")).toBeNull();
   });
+
+  it("lists recent rhythm runs with pattern, tempo, hit rate and timing", async () => {
+    const run = {
+      kind: "rhythm" as const,
+      day: "2026-03-10",
+      duration_seconds: 60,
+      rounds: 8,
+      correct: 6,
+      score: 75,
+    };
+    mockStats.mockResolvedValue(
+      stats({
+        rhythm_runs: [
+          { ...run, pattern: "eighths", bpm: 80, mean_error_ms: 12.4 },
+          { ...run, pattern: "song:s1:3", bpm: 90, song_id: "s1", song_title: "My Riff", bar: 3 },
+        ],
+      }),
+    );
+    render(PracticeView);
+    const list = await screen.findByTestId("practice-list-rhythm-runs");
+    expect(list).toHaveTextContent("75% hit");
+    expect(list).toHaveTextContent("80 BPM");
+    expect(list).toHaveTextContent("12 ms avg late");
+    expect(list).toHaveTextContent("My Riff, bar 3");
+  });
 });

@@ -91,6 +91,14 @@ class PracticeExercise(BaseModel):
     mean_error_ms: float | None = None
 
 
+class PracticeRhythmRun(PracticeExercise):
+    song_id: str | None = None
+    """For a run over a song's bars: the song, when it still exists."""
+    song_title: str | None = None
+    bar: int | None = None
+    """For a run over a song's bars: the first bar (1-based) of the rhythm."""
+
+
 class PracticeExerciseStats(BaseModel):
     kind: ExerciseKind
     session_count: int
@@ -172,6 +180,8 @@ class PracticeStats(BaseModel):
     """Songs practised before, but not in the last two weeks, longest ago first."""
     exercises: list[PracticeExerciseStats]
     """Trainer games played, one row per game; their time is already in the totals above."""
+    rhythm_runs: list[PracticeRhythmRun] = []
+    """The latest rhythm trainer runs, newest first."""
 
 
 class SuggestedSong(BaseModel):

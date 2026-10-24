@@ -1243,7 +1243,17 @@
     "durationSeconds": "{count}s",
     "durationMinutes": "{count}min",
     "durationHours": "{hours}h {minutes}min",
-    "exercises": "Jogos de treino"
+    "exercises": "Jogos de treino",
+    "rhythmRuns": {
+      "heading": "Últimas rodadas de ritmo",
+      "songBar": "{title}, compasso {bar}",
+      "songGone": "Compasso de música {bar}",
+      "hitRate": "{percent}% de acertos",
+      "tempo": "{bpm} BPM",
+      "meanError": "{ms} ms em média",
+      "early": "adiantado",
+      "late": "atrasado"
+    }
   },
   "difficulty": {
     "heading": "Dificuldade",
