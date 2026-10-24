@@ -54,3 +54,48 @@ test("an imported song starts with tags suggested from its instrument", async ({
   await page.goto("/");
   await expect(page.getByTestId("song-card-tags")).toBeVisible();
 });
+
+test("rename, merge and delete a tag from the library", async ({ page, seed }) => {
+  const one = await seed.create({ title: "One", artist: "Band" });
+  const two = await seed.create({ title: "Two", artist: "Band" });
+  for (const [song, tags] of [
+    [one, ["funk", "jazz"]],
+    [two, ["jazz", "blues"]],
+  ] as const) {
+    await page.goto(`/songs/${song.id}`);
+    for (const tag of tags) {
+      await page.getByTestId("song-tag-input").fill(tag);
+      await page.getByTestId("song-tag-input").press("Enter");
+    }
+    await expect(page.getByTestId("song-tag")).toHaveCount(2);
+  }
+
+  await page.goto("/");
+  await page.getByTestId("library-manage-tags").click();
+  const row = (tag: string) => page.getByTestId("manage-tag").filter({ hasText: tag });
+
+  // Rename.
+  await row("funk").getByTestId("manage-tag-rename").click();
+  await page.getByTestId("manage-tag-name").fill("groove");
+  await page.getByTestId("manage-tag-save").click();
+  await expect(page.getByTestId("manage-tags-notice")).toContainText("groove");
+  await expect(row("groove")).toBeVisible();
+  await expect(row("funk")).toHaveCount(0);
+
+  // Merge "blues" into "jazz": song Two keeps one jazz tag.
+  await row("blues").getByTestId("manage-tag-rename").click();
+  await page.getByTestId("manage-tag-name").fill("jazz");
+  await expect(page.getByTestId("manage-tag-merge")).toBeVisible();
+  await page.getByTestId("manage-tag-save").click();
+  await expect(row("blues")).toHaveCount(0);
+  await expect(row("jazz")).toContainText("2");
+
+  // Delete.
+  await row("groove").getByTestId("manage-tag-delete").click();
+  await page.getByTestId("manage-tag-confirm").click();
+  await expect(row("groove")).toHaveCount(0);
+
+  await page.goto(`/songs/${two.id}`);
+  await expect(page.getByTestId("song-tag")).toHaveCount(1);
+  await expect(page.getByTestId("song-tag")).toHaveText(/jazz/);
+});

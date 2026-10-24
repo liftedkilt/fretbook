@@ -1060,6 +1060,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tags/{tag}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Tag
+         * @description Remove a tag from all the caller's songs.
+         */
+        delete: operations["delete_tag_api_tags__tag__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Rename Tag
+         * @description Rename a tag on all the caller's songs, or merge it into another tag that has the new name.
+         *
+         *     The tag is matched ignoring case. A song that ends up with the tag twice keeps one.
+         */
+        patch: operations["rename_tag_api_tags__tag__patch"];
+        trace?: never;
+    };
     "/api/tags/add": {
         parameters: {
             query?: never;
@@ -2200,6 +2226,11 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** RenameTagBody */
+        RenameTagBody: {
+            /** Name */
+            name: string;
+        };
         /** ReplaceEntriesBody */
         ReplaceEntriesBody: {
             /** Entries */
@@ -2661,6 +2692,11 @@ export interface components {
             /** Updated */
             updated: number;
         };
+        /** TagsChanged */
+        TagsChanged: {
+            /** Updated */
+            updated: number;
+        };
         /** Track */
         Track: {
             /** Bars */
@@ -2832,6 +2868,7 @@ export type PracticeWeek = components['schemas']['PracticeWeek'];
 export type PreviewBody = components['schemas']['PreviewBody'];
 export type Recommendations = components['schemas']['Recommendations'];
 export type RenameSetlistBody = components['schemas']['RenameSetlistBody'];
+export type RenameTagBody = components['schemas']['RenameTagBody'];
 export type ReplaceEntriesBody = components['schemas']['ReplaceEntriesBody'];
 export type ReviewSong = components['schemas']['ReviewSong'];
 export type RevisitLoop = components['schemas']['RevisitLoop'];
@@ -2860,6 +2897,7 @@ export type SyncBody = components['schemas']['SyncBody'];
 export type SyncMap = components['schemas']['SyncMap'];
 export type TagCount = components['schemas']['TagCount'];
 export type TagsAdded = components['schemas']['TagsAdded'];
+export type TagsChanged = components['schemas']['TagsChanged'];
 export type Track = components['schemas']['Track'];
 export type TrackBar = components['schemas']['TrackBar'];
 export type TrackDifficulty = components['schemas']['TrackDifficulty'];
@@ -7745,6 +7783,162 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TagCount"][];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    delete_tag_api_tags__tag__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tag: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagsChanged"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    rename_tag_api_tags__tag__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tag: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenameTagBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagsChanged"];
                 };
             };
             /** @description Keyed error. `detail` is {key, message, params}. */

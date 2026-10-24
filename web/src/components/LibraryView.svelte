@@ -1,6 +1,7 @@
 <script lang="ts">
   import Cover from "./Cover.svelte";
   import Icon from "./Icon.svelte";
+  import ManageTagsSheet from "./ManageTagsSheet.svelte";
   import RecentImports from "./RecentImports.svelte";
   import { addTags, deleteSong } from "../lib/api";
   import { t } from "../lib/i18n.svelte";
@@ -103,6 +104,7 @@
   let selected = $state<string[]>([]);
   let bulkTag = $state("");
   let bulkNotice = $state("");
+  let managingTags = $state(false);
 
   function toggleSelecting() {
     selecting = !selecting;
@@ -264,6 +266,13 @@
             <Icon name="tag" size={13} />{item.tag}<span class="chip-count">{item.count}</span>
           </button>
         {/each}
+        <button
+          class="chip"
+          data-testid="library-manage-tags"
+          onclick={() => (managingTags = true)}
+        >
+          {t("manageTags.open")}
+        </button>
       </div>
     {/if}
 
@@ -467,3 +476,5 @@
     </div>
   {/if}
 </section>
+
+<ManageTagsSheet open={managingTags} onclose={() => (managingTags = false)} />

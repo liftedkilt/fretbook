@@ -36,6 +36,7 @@ import type {
   SongTags as ContractSongTags,
   TagCount as ContractTagCount,
   TagsAdded,
+  TagsChanged,
 } from "./api-types";
 import { keyed } from "./i18n.svelte";
 import type { EditBase } from "./offline/merge";
@@ -259,6 +260,23 @@ export async function setSongTags(id: string, tags: string[]): Promise<string[]>
     queueOp({ kind: "tags", songId: id, tags });
     return tags;
   }
+}
+
+/** Rename a tag on every song, or merge it into the tag that already has the new name. Resolves to the songs changed. */
+export async function renameTag(tag: string, name: string): Promise<number> {
+  const body = await request<TagsChanged>(
+    `/api/tags/${encodeURIComponent(tag)}`,
+    json("PATCH", { name }),
+  );
+  return body.updated;
+}
+
+/** Remove a tag from every song. Resolves to the songs changed. */
+export async function deleteTag(tag: string): Promise<number> {
+  const body = await request<TagsChanged>(`/api/tags/${encodeURIComponent(tag)}`, {
+    method: "DELETE",
+  });
+  return body.updated;
 }
 
 /** Add tags to many songs at once. Resolves to how many songs were updated. */
