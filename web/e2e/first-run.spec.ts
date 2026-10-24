@@ -68,6 +68,41 @@ test("a demo instance is read-only", async ({ browser }) => {
     await expect(page.getByTestId("add-song")).toHaveCount(0);
     await expect(page.getByTestId("add-song-hero")).toHaveCount(0);
 
+    // None of the controls the server would refuse are offered.
+    for (const id of [
+      "song-star",
+      "song-edit",
+      "song-add-to-setlist",
+      "song-delete",
+      "library-select",
+      "library-manage-tags",
+    ]) {
+      await expect(page.getByTestId(id)).toHaveCount(0);
+    }
+
+    await page.getByTestId("song-title").filter({ hasText: "Walking Home" }).click();
+    await expect(page.getByTestId("player-play")).toBeVisible();
+    for (const id of ["song-favourite", "song-tag-input", "song-edit-link", "player-tap"]) {
+      await expect(page.getByTestId(id)).toHaveCount(0);
+    }
+    await page.getByTestId("export-menu").click();
+    await expect(page.getByTestId("export-pdf")).toBeVisible();
+    await expect(page.getByTestId("song-add-to-setlist")).toHaveCount(0);
+
+    await page.goto("/");
+    await page.getByTestId("song-title").filter({ hasText: "Porch Light" }).click();
+    await expect(page.getByTestId("song-edit-link")).toHaveCount(0);
+    await expect(page.getByTestId("song-favourite")).toHaveCount(0);
+
+    await page.goto("/setlists");
+    await expect(page.getByTestId("setlist-new-name")).toHaveCount(0);
+
+    await page.goto("/");
+    await page.getByTestId("open-settings").click();
+    await expect(page.getByTestId("calibration-setting")).toBeVisible();
+    await expect(page.getByTestId("api-tokens")).toHaveCount(0);
+    await page.keyboard.press("Escape");
+
     const refused = await page.request.post(`${server.url}/api/songs`, {
       data: { title: "Nope", artist: "", preset: "bass-4" },
     });

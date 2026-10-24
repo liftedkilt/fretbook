@@ -337,3 +337,38 @@ def test_a_score_that_no_longer_validates_is_left_without_a_level(tmp_path: Path
     assert repo.refresh_difficulty() == 0, "a broken score is not retried on every start"
     with closing(sqlite3.connect(settings.database_path)) as conn, conn:
         assert conn.execute("SELECT difficulty FROM songs WHERE id = ?", (song["id"],)).fetchone()[0] is None
+
+
+def _barres(chordpro: str) -> float:
+    measure = {item.key: item.measure for item in difficulty.estimate_chordpro(chordpro)[0].factors}
+    return measure["barres"]
+
+
+def test_barre_detection_uses_the_voicing_the_diagram_shows() -> None:
+    from fretbook.chords.voicings import best_voicing, needs_barre
+
+    assert best_voicing("F") == (1, 3, 3, 2, 1, 1)
+    assert needs_barre(best_voicing("F"))  # type: ignore[arg-type]
+    assert not needs_barre(best_voicing("G"))  # type: ignore[arg-type]
+    assert best_voicing("N.C.") is None
+    assert _barres("[F]one [F#m]two [G]three [C]four") == 2
+    assert _barres("[G]one [C]two [Em]three [Am]four") == 0
+
+
+def test_a_define_overrides_the_generated_shape() -> None:
+    plain = "[B]one [G]two"
+    barre_b = plain + "\n{define: B base-fret 2 frets x 1 3 3 3 1}"
+    open_b = plain + "\n{define: B frets x 2 1 0 2 x}"
+    assert _barres(barre_b) == 1
+    assert _barres(open_b) == 0
+    # A define for another number of strings is ignored in favour of the generated shape.
+    assert _barres(plain + "\n{define: G base-fret 1 frets 1 3 3 3}") == _barres(plain)
+
+
+def test_parse_define_reads_both_forms() -> None:
+    from fretbook.chords.voicings import parse_define
+
+    assert parse_define("Am base-fret 1 frets x 0 2 2 1 0 fingers 0 0 2 3 1 0") == ("Am", (None, 0, 2, 2, 1, 0))
+    assert parse_define("F 1 1 3 3 2 1 1") == ("F", (1, 3, 3, 2, 1, 1))
+    assert parse_define("Bm base-fret 2 frets x 1 3 3 2 1") == ("Bm", (None, 2, 4, 4, 3, 2))
+    assert parse_define("nonsense") is None

@@ -205,14 +205,16 @@
           {/each}
         </select>
       </label>
-      <button
-        class="chip select-toggle"
-        data-testid="library-select"
-        aria-pressed={selecting}
-        onclick={toggleSelecting}
-      >
-        {t("tags.select")}
-      </button>
+      {#if !ui.demoMode}
+        <button
+          class="chip select-toggle"
+          data-testid="library-select"
+          aria-pressed={selecting}
+          onclick={toggleSelecting}
+        >
+          {t("tags.select")}
+        </button>
+      {/if}
       <button
         class="icon-button glass sort-order"
         data-testid="library-order"
@@ -272,13 +274,15 @@
             <Icon name="tag" size={13} />{item.tag}<span class="chip-count">{item.count}</span>
           </button>
         {/each}
-        <button
-          class="chip"
-          data-testid="library-manage-tags"
-          onclick={() => (managingTags = true)}
-        >
-          {t("manageTags.open")}
-        </button>
+        {#if !ui.demoMode}
+          <button
+            class="chip"
+            data-testid="library-manage-tags"
+            onclick={() => (managingTags = true)}
+          >
+            {t("manageTags.open")}
+          </button>
+        {/if}
       </div>
     {/if}
 
@@ -444,47 +448,49 @@
               />
             </label>
           {/if}
-          <div class="song-actions" class:starred={song.favourite}>
-            <button
-              class="icon-button glass song-star"
-              class:on={song.favourite}
-              data-testid="song-star"
-              aria-pressed={song.favourite}
-              onclick={() => void toggleStar(song)}
-              aria-label={`${song.favourite ? t("tags.unfavourite") : t("tags.favourite")}: ${song.title}`}
-              title={song.favourite ? t("tags.unfavourite") : t("tags.favourite")}
-            >
-              <Icon name={song.favourite ? "starFilled" : "star"} size={16} />
-            </button>
-            <a
-              class="icon-button glass"
-              data-testid="song-edit"
-              href={hrefFor(`/songs/${song.id}/edit`)}
-              onclick={(event) => followLink(event, `/songs/${song.id}/edit`)}
-              aria-label={`${t("library.edit")}: ${song.title}`}
-              title={t("library.edit")}
-            >
-              <Icon name="edit" size={16} />
-            </a>
-            <button
-              class="icon-button glass"
-              data-testid="song-add-to-setlist"
-              onclick={() => (pickerSong = { id: song.id, title: song.title })}
-              aria-label={`${t("setlists.addToSetlist")}: ${song.title}`}
-              title={t("setlists.addToSetlist")}
-            >
-              <Icon name="list" size={16} />
-            </button>
-            <button
-              class="icon-button glass"
-              data-testid="song-delete"
-              onclick={() => void remove(song)}
-              aria-label={`${t("library.delete")}: ${song.title}`}
-              title={t("library.delete")}
-            >
-              <Icon name="trash" size={16} />
-            </button>
-          </div>
+          {#if !ui.demoMode}
+            <div class="song-actions" class:starred={song.favourite}>
+              <button
+                class="icon-button glass song-star"
+                class:on={song.favourite}
+                data-testid="song-star"
+                aria-pressed={song.favourite}
+                onclick={() => void toggleStar(song)}
+                aria-label={`${song.favourite ? t("tags.unfavourite") : t("tags.favourite")}: ${song.title}`}
+                title={song.favourite ? t("tags.unfavourite") : t("tags.favourite")}
+              >
+                <Icon name={song.favourite ? "starFilled" : "star"} size={16} />
+              </button>
+              <a
+                class="icon-button glass"
+                data-testid="song-edit"
+                href={hrefFor(`/songs/${song.id}/edit`)}
+                onclick={(event) => followLink(event, `/songs/${song.id}/edit`)}
+                aria-label={`${t("library.edit")}: ${song.title}`}
+                title={t("library.edit")}
+              >
+                <Icon name="edit" size={16} />
+              </a>
+              <button
+                class="icon-button glass"
+                data-testid="song-add-to-setlist"
+                onclick={() => (pickerSong = { id: song.id, title: song.title })}
+                aria-label={`${t("setlists.addToSetlist")}: ${song.title}`}
+                title={t("setlists.addToSetlist")}
+              >
+                <Icon name="list" size={16} />
+              </button>
+              <button
+                class="icon-button glass"
+                data-testid="song-delete"
+                onclick={() => void remove(song)}
+                aria-label={`${t("library.delete")}: ${song.title}`}
+                title={t("library.delete")}
+              >
+                <Icon name="trash" size={16} />
+              </button>
+            </div>
+          {/if}
         </article>
       {/each}
     </div>

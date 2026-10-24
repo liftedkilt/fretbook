@@ -5,6 +5,7 @@
   import { t } from "../lib/i18n.svelte";
   import { TRACKS, coursePath, lessonPath } from "../lib/lessons";
   import { followLink, hrefFor } from "../lib/router.svelte";
+  import { ui } from "../lib/ui.svelte";
 
   let data = $state<CourseList | null>(null);
   let error = $state("");
@@ -85,7 +86,7 @@
     </a>
   {/if}
 
-  {#if data?.can_edit}
+  {#if data?.can_edit && !ui.demoMode}
     <div class="lesson-admin" data-testid="lessons-admin">
       <a
         class="button"

@@ -82,16 +82,16 @@
     window.scrollTo({ top: 0 });
   });
 
+  // The phone tab bar carries the + button, so the top bar only adds one where there is no tab bar.
+  const hasTabbar = $derived(isLibrary || isTools || isSetlists || isPractice || isLessonsHome);
+
   function pickSection(id: LibraryFilter) {
     ui.filter = id;
     if (!isLibrary) navigate("/");
   }
 </script>
 
-<div
-  class="shell"
-  class:shell-library={isLibrary || isTools || isSetlists || isPractice || isLessonsHome}
->
+<div class="shell" class:shell-library={hasTabbar}>
   <aside class="sidebar">
     <a class="brand" href={hrefFor("/")} onclick={(event) => followLink(event, "/")}>
       <img src="favicon.svg" alt={t("app.title")} width="36" height="36" />
@@ -273,7 +273,7 @@
       >
         <Icon name="settings" />
       </button>
-      {#if !ui.demoMode}
+      {#if !ui.demoMode && !hasTabbar}
         <button
           class="icon-button primary"
           data-testid="add-song-topbar"
@@ -337,8 +337,8 @@
     {/if}
   </main>
 
-  {#if isLibrary || isTools || isSetlists || isPractice || isLessonsHome}
-    <nav class="tabbar" aria-label={t("nav.main")}>
+  {#if hasTabbar}
+    <nav class="tabbar" class:no-add={ui.demoMode} aria-label={t("nav.main")}>
       <a
         class="tab-item"
         data-testid="tab-library"
@@ -384,9 +384,6 @@
       >
         <Icon name="wrench" /><span>{t("tools.heading")}</span>
       </a>
-      <button class="tab-item" onclick={() => openSheet("settings")}>
-        <Icon name="settings" /><span>{t("settings.heading")}</span>
-      </button>
     </nav>
   {/if}
 </div>

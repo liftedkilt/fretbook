@@ -105,8 +105,9 @@ difficulty (easiest first; songs without a level come last) and filtered to easy
 or hard (7–10), and the song page has a **Difficulty** section listing each track's level and what contributes most.
 A chord sheet is rated from its chords instead: how many different chords it uses, how many of them are barre chords
 or extended chords (ninths, diminished, added notes and the like), and how often the chord changes from line to line.
-A sheet with no chords has no level. Barre chords are recognised by name (anything that is not a common open shape),
-not from the diagram shown on the page.
+A sheet with no chords has no level. A chord counts as a barre chord when its shape needs one: the sheet's own
+`{define:}` fingering if it has one for six strings, otherwise the first shape the chord diagram offers for a guitar in
+standard tuning.
 
 It is a heuristic, not a verdict: it cannot see how the music sounds or how you fret it. Changing a song's tempo or
 notes updates its level, and songs saved before this feature are rated when the server starts.
