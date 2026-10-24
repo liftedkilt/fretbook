@@ -92,7 +92,7 @@ stretches under five seconds are not logged.
 The **Practice** page shows a progress ring for the day's minutes against your daily goal (default 15; 0 turns it off),
 the current and longest streak, songs practised, a calendar heatmap, a weekly summary, recently practised songs, best
 scores, and songs you have not played in two weeks. Days follow your browser's local midnight. Trainer games count toward the day's minutes, the streak and the heatmap, and are listed on the Practice page; the
-song log is part of the library backup (trainer games are not yet).
+practice log, trainer games included, is part of the library backup.
 
 ## Difficulty and what to practise next
 

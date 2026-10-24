@@ -462,6 +462,7 @@
       "setlistEntriesDropped": "{count} songs of {name} could not be put back in the setlist.",
       "setlistFailed": "Could not restore the setlist {name}.",
       "practiceDropped": "{count} practice sessions could not be put back.",
+      "exercisesDropped": "{count} trainer games could not be put back.",
       "practiceGoalFailed": "Could not restore the daily practice goal."
     },
     "import": {

@@ -55,6 +55,7 @@ class ExerciseInput:
     correct: int = 0
     score: float | None = None
     started_at: str | None = None
+    id: str | None = None
 
 
 class UnknownSong(Exception):
@@ -100,27 +101,8 @@ class PracticeRepository:
     def record_exercise(self, owner_id: str, item: ExerciseInput) -> dict[str, Any]:
         """Store one trainer round (a fretboard, interval or chord game)."""
         new_id = uuid.uuid4().hex[:12]
-        kind = item.kind if item.kind in EXERCISE_KINDS else "fretboard"
-        rounds = max(0, item.rounds)
         with self._session(immediate=True) as conn:
-            conn.execute(
-                """
-                INSERT INTO practice_exercises (id, owner_id, kind, started_at, day, duration_seconds,
-                                                rounds, correct, score)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    new_id,
-                    owner_id,
-                    kind,
-                    _started_at(item.started_at),
-                    parse_day(item.day).isoformat(),
-                    max(MIN_SECONDS, min(MAX_SECONDS, item.duration_seconds)),
-                    rounds,
-                    max(0, min(rounds, item.correct)),
-                    item.score,
-                ),
-            )
+            _insert_exercise(conn, owner_id, new_id, item)
             row = conn.execute("SELECT * FROM practice_exercises WHERE id = ?", (new_id,)).fetchone()
         return _exercise_dict(row)
 
@@ -238,17 +220,21 @@ class PracticeRepository:
         return build(songs, scored, today)
 
     def export_all(self, owner_id: str | None) -> dict[str, Any]:
-        """Sessions (of one owner, or of all) and, for one owner, their goal, for the backup archive."""
+        """Sessions and trainer games (of one owner, or of all) and, for one owner, their goal, for the backup."""
         with self._session() as conn:
             where, args = (" WHERE owner_id = ?", (owner_id,)) if owner_id else ("", ())
             sessions = [
                 _session_dict(row)
                 for row in conn.execute(f"SELECT * FROM practice_sessions{where} ORDER BY started_at, id", args)
             ]
+            exercises = [
+                _exercise_dict(row)
+                for row in conn.execute(f"SELECT * FROM practice_exercises{where} ORDER BY started_at, id", args)
+            ]
             goal = None
             if owner_id and conn.execute("SELECT 1 FROM practice_goals WHERE owner_id = ?", (owner_id,)).fetchone():
                 goal = _goal(conn, owner_id)
-        return {"sessions": sessions, "goal": goal}
+        return {"sessions": sessions, "exercises": exercises, "goal": goal}
 
     def restore_session(self, owner_id: str, item: SessionInput) -> bool:
         """Put back a session from an archive. Returns ``False`` for one that is already here or whose song is not.
@@ -266,6 +252,21 @@ class PracticeRepository:
                     return False
                 new_id = uuid.uuid4().hex[:12]
             _insert(conn, owner_id, new_id, item)
+        return True
+
+    def restore_exercise(self, owner_id: str, item: ExerciseInput) -> bool:
+        """Put back a trainer game from an archive. Returns ``False`` for one this owner already has.
+
+        Ids work as for :meth:`restore_session`: the same owner's id is the same game, another user's gets a fresh id.
+        """
+        with self._session(immediate=True) as conn:
+            new_id = item.id or uuid.uuid4().hex[:12]
+            taken = conn.execute("SELECT owner_id FROM practice_exercises WHERE id = ?", (new_id,)).fetchone()
+            if taken is not None:
+                if taken["owner_id"] == owner_id:
+                    return False
+                new_id = uuid.uuid4().hex[:12]
+            _insert_exercise(conn, owner_id, new_id, item)
         return True
 
     def restore_goal(self, owner_id: str, daily_minutes: int, weekly_summary: bool) -> None:
@@ -302,6 +303,29 @@ def _insert(conn: sqlite3.Connection, owner_id: str, new_id: str, item: SessionI
             max(MIN_SECONDS, min(MAX_SECONDS, item.duration_seconds)),
             max(0.05, min(MAX_SPEED, item.speed)),
             mode,
+            item.score,
+        ),
+    )
+
+
+def _insert_exercise(conn: sqlite3.Connection, owner_id: str, new_id: str, item: ExerciseInput) -> None:
+    kind = item.kind if item.kind in EXERCISE_KINDS else "fretboard"
+    rounds = max(0, item.rounds)
+    conn.execute(
+        """
+        INSERT INTO practice_exercises (id, owner_id, kind, started_at, day, duration_seconds,
+                                        rounds, correct, score)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            new_id,
+            owner_id,
+            kind,
+            _started_at(item.started_at),
+            parse_day(item.day).isoformat(),
+            max(MIN_SECONDS, min(MAX_SECONDS, item.duration_seconds)),
+            rounds,
+            max(0, min(rounds, item.correct)),
             item.score,
         ),
     )

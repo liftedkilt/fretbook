@@ -14,7 +14,7 @@ from fastapi.testclient import TestClient
 
 from fretbook.app import create_app
 from fretbook.config import Settings
-from fretbook.storage.practice import PracticeRepository, SessionInput, UnknownSong, streaks
+from fretbook.storage.practice import ExerciseInput, PracticeRepository, SessionInput, UnknownSong, streaks
 
 SHEET = "{title: Hello}\n[G]Hello [C]friend\n"
 
@@ -410,3 +410,89 @@ def test_trainer_time_adds_to_song_time(client: TestClient) -> None:
     stats = client.get("/api/practice/stats", params={"today": _day()}).json()
     assert stats["today_seconds"] == 720
     assert stats["heatmap"][-1]["sessions"] == 2
+
+
+def _rewrite_manifest(archive: bytes, change) -> bytes:
+    with zipfile.ZipFile(io.BytesIO(archive)) as zf:
+        members = {name: zf.read(name) for name in zf.namelist()}
+    manifest = json.loads(members["manifest.json"])
+    change(manifest)
+    members["manifest.json"] = json.dumps(manifest).encode()
+    out = io.BytesIO()
+    with zipfile.ZipFile(out, "w") as zf:
+        for name, data in members.items():
+            zf.writestr(name, data)
+    return out.getvalue()
+
+
+def test_backup_round_trip_keeps_trainer_games(tmp_path: Path) -> None:
+    with TestClient(create_app(Settings.for_tests(tmp_path / "src"))) as source:
+        _exercise(source, kind="fretboard", rounds=20, correct=15, score=75)
+        _exercise(source, offset=-2, kind="chord", duration_seconds=300)
+        expected = source.get(f"/api/practice/stats?today={_day()}").json()["exercises"]
+        archive = source.get("/api/library/export").content
+        with zipfile.ZipFile(io.BytesIO(archive)) as zf:
+            manifest = json.loads(zf.read("manifest.json"))
+        assert sorted(item["kind"] for item in manifest["practice"]["exercises"]) == ["chord", "fretboard"]
+
+        with TestClient(create_app(Settings.for_tests(tmp_path / "dst"))) as target:
+            job = _restore(target, archive)
+            assert job["status"] == "done", job
+            assert job["result"]["practice_exercises"] == 2
+            assert target.get(f"/api/practice/stats?today={_day()}").json()["exercises"] == expected
+
+            again = _restore(target, archive)
+            assert again["result"]["practice_exercises"] == 0
+            assert (
+                sum(
+                    item["session_count"]
+                    for item in target.get(f"/api/practice/stats?today={_day()}").json()["exercises"]
+                )
+                == 2
+            )
+
+
+def test_restore_drops_bad_trainer_games_and_gives_a_fresh_id_when_another_user_holds_it(tmp_path: Path) -> None:
+    with TestClient(create_app(Settings.for_tests(tmp_path / "src"))) as source:
+        _exercise(source)
+        archive = source.get("/api/library/export").content
+    good = json.loads(zipfile.ZipFile(io.BytesIO(archive)).read("manifest.json"))["practice"]["exercises"][0]
+
+    def change(manifest: dict) -> None:
+        manifest["practice"]["exercises"] = [
+            good,
+            {**good, "id": "badkind", "kind": "drums"},
+            {**good, "id": "baddur", "duration_seconds": 0},
+            {**good, "id": "badday", "day": "soon"},
+            "not even an object",
+        ]
+
+    with TestClient(create_app(Settings.for_tests(tmp_path / "dst"))) as target:
+        job = _restore(target, _rewrite_manifest(archive, change))
+        assert job["status"] == "done", job
+        assert job["result"]["practice_exercises"] == 1
+        assert [w["key"] for w in job["result"]["warnings"]] == ["backup.exercisesDropped"]
+        assert job["result"]["warnings"][0]["params"] == {"count": 4}
+
+
+def test_restoring_a_trainer_game_id_another_user_holds_gives_it_a_new_id(tmp_path: Path) -> None:
+    settings = Settings.for_tests(tmp_path / "ids")
+    with TestClient(create_app(settings)) as client:
+        client.app.state.ctx.songs.ensure_user("ann", "Ann")
+        repo = PracticeRepository(settings)
+        item = ExerciseInput(kind="chord", day=_day(), duration_seconds=60, id="shared-id")
+        assert repo.restore_exercise("local", item) is True
+        assert repo.restore_exercise("local", item) is False  # same owner, same game
+        assert repo.restore_exercise("ann", item) is True  # another owner's game keeps a new id
+        ids = {owner: repo.export_all(owner)["exercises"][0]["id"] for owner in ("local", "ann")}
+        assert ids["local"] == "shared-id" and ids["ann"] != "shared-id"
+
+
+def test_an_archive_without_trainer_games_still_restores(tmp_path: Path) -> None:
+    with TestClient(create_app(Settings.for_tests(tmp_path / "src"))) as source:
+        _song(source, "Alpha")
+        archive = source.get("/api/library/export").content
+    old = _rewrite_manifest(archive, lambda manifest: manifest["practice"].pop("exercises"))
+    with TestClient(create_app(Settings.for_tests(tmp_path / "dst"))) as target:
+        job = _restore(target, old)
+        assert job["status"] == "done" and job["result"]["practice_exercises"] == 0
