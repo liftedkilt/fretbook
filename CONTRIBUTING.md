@@ -33,6 +33,15 @@ CI runs the same commands:
 cd web && npm run lint && npm run format:check && npm run api-types:check && npm run check && npm test && npm run build
 ```
 
+To run the full set the way CI does, from the repository root, with Docker and the [Dagger](https://docs.dagger.io) CLI v0.21.11 (the version in `dagger.json`):
+
+```sh
+curl -fsSL https://dl.dagger.io/dagger/install.sh | DAGGER_VERSION=0.21.11 BIN_DIR="$HOME/.local/bin" sh
+dagger call ci
+```
+
+`dagger call ci` runs backend (Python 3.12 with coverage, and 3.13), frontend, OpenAPI, repo-checks, the ui-only path guard, the Playwright suite, and the dependency audit concurrently in one engine session. Python dependencies are installed with uv from the same requirements files; pip, uv, npm, and the Playwright browsers each have a cache volume, so a second run skips the downloads. `dagger call lint` runs only Ruff. The ui-only guard is the same script as CI: without the label it passes. To run it against a pull request locally, pass `--labels ui-only --base-sha <base> --head-sha <head>`. Coverage HTML (and Playwright traces, when the suite fails) can be exported after a run with `dagger call reports export --path ./ci-out`.
+
 The `repo-checks` CI job also runs two cheap guards you can run locally:
 
 ```sh
@@ -104,7 +113,9 @@ The Python tests fail on an unclosed database connection, and check that the Eng
 
 ## CI and branch protection
 
-`.github/workflows/ci.yml` runs `backend` (Python 3.12 and 3.13), `frontend`, `openapi`, `repo-checks`, `ui-only`, `e2e` and `audit` (`pip-audit` and `npm audit --omit=dev --audit-level=high`), each with a timeout. A final `ci-ok` job `needs:` all of them and fails if any did not succeed, so it is the one check to require; add new CI jobs to its `needs:` list. `.github/workflows/codeql.yml` runs CodeQL on Python and JavaScript/TypeScript for every pull request, every push to `main`, and weekly. Report vulnerabilities as described in [SECURITY.md](SECURITY.md). A new push to a pull request cancels the superseded run (pushes to branches are never cancelled).
+`.github/workflows/ci.yml` runs those checks as one Dagger function (`dagger call ci`) so they share a warm engine and run concurrently. Same-repository pushes and pull requests use the self-hosted runner labelled `dagger`. There is one runner, so parallelism comes from Dagger, not from extra GitHub jobs. Pull requests opened from a fork never run on that runner: the workflow installs the Dagger CLI and runs the same function on a GitHub-hosted runner. `pr-title` stays on a GitHub-hosted runner because it only reads the pull request title. Image publish (`.github/workflows/docker.yml`, including Trivy), releases, CodeQL, and unblocking are unchanged and stay on GitHub-hosted runners.
+
+`ci-ok` is still the check to require. It fails unless `pr-title` succeeded and exactly one of `dagger` and `dagger-fork` succeeded (the other is skipped, because a run is either same-repository or a fork). A failure, cancellation, or a skipped check that did not run does not make `ci-ok` green. Add a new CI job to its `needs:` list and to `scripts/check_ci_ok.py`. `.github/workflows/codeql.yml` runs CodeQL on Python and JavaScript/TypeScript for every pull request, every push to `main`, and weekly. Report vulnerabilities as described in [SECURITY.md](SECURITY.md). A new push to the same ref cancels the run it supersedes, including pushes to `main`, so the single runner does not queue stale work.
 
 Suggested branch-protection settings for `main`:
 

@@ -5,239 +5,189 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
 
-# A new push to a pull request cancels the run it supersedes. Pushes to
-# branches (including main) always run to completion.
+# One self-hosted runner. Cancel the run a newer push to the same ref
+# supersedes, so stale work does not sit in the queue.
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
-  backend:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.12", "3.13"]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: pip
-      - run: pip install -r requirements-dev.txt
-      # Guitar Pro is read on the server by alphaTab under Node; the tests need the bundled converter.
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-      - name: Build the Guitar Pro converter
-        working-directory: web
-        run: npm ci && npm run build:gp-cli
-      - run: ruff check fretbook tests
-      - run: ruff format --check fretbook tests
-      - run: mypy
-      - name: Run the tests
-        if: matrix.python-version != '3.12'
-        run: python -m pytest
-      # Coverage is measured once, on 3.12. The floor is `fail_under` in pyproject.toml.
-      - name: Run the tests with coverage
-        if: matrix.python-version == '3.12'
-        run: python -m pytest --cov --cov-report=term --cov-report=html
-      - name: Coverage summary
-        if: always() && matrix.python-version == '3.12'
-        run: |
-          {
-            echo "### Server coverage"
-            echo
-            python -m coverage report --skip-covered --format=markdown 2>/dev/null || echo "No coverage data."
-          } >> "$GITHUB_STEP_SUMMARY"
-      - name: Upload the server coverage report
-        if: always() && matrix.python-version == '3.12'
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-server
-          path: htmlcov/
-          if-no-files-found: ignore
-          retention-days: 14
-
-  frontend:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: web
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run format:check
-      - name: Generated API types are current
-        run: npm run api-types:check
-      - run: npm run check
-      # The floor is `test.coverage.thresholds` in web/vite.config.ts.
-      - name: Run the tests with coverage
-        run: npm run test:coverage
-      - name: Coverage summary
-        if: always()
-        run: |
-          {
-            echo "### Web coverage"
-            echo
-            echo '```'
-            node -e 'const t=require("./coverage/coverage-summary.json").total;for(const k of ["lines","statements","functions","branches"])console.log(k.padEnd(11)+t[k].pct+"% ("+t[k].covered+"/"+t[k].total+")")' 2>/dev/null || echo "No coverage data."
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-      - name: Upload the web coverage report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-web
-          path: web/coverage/
-          if-no-files-found: ignore
-          retention-days: 14
-      - run: npm run build
-
-  openapi:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-      - run: pip install -r requirements.txt
-      - name: Committed OpenAPI contract is current
-        run: python -m fretbook.openapi --check
-
-  repo-checks:
-    # Cheap guards for files that parallel pull requests collide on.
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - name: Migration numbers are unique and have no gaps
-        run: python3 scripts/check_migrations.py
-      - name: Locale files are valid and consistently formatted
-        run: python3 scripts/check_locales.py
-
   pr-title:
-    # Release notes are built from squash-merged PR titles. Passes on pushes.
+    # Reads the pull request title only, so it stays on a GitHub-hosted runner.
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: PR title is a Conventional Commit
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: python3 scripts/check_pr_title.py
 
-  ui-only:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
+  dagger:
+    # Never run fork pull request code on the privileged self-hosted runner.
+    if: "github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository"
+    runs-on: [self-hosted, dagger]
+    permissions:
+      contents: read
+      actions: write
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-      - name: ui-only label stays inside web/
+          persist-credentials: false
+      - name: Dagger CLI
+        run: dagger version
+      - name: Run the checks
         env:
+          OTEL_RESOURCE_ATTRIBUTES: github.repository=${{ github.repository }},github.ref=${{ github.ref_name }},github.sha=${{ github.sha }},github.run_id=${{ github.run_id }},github.actor=${{ github.actor }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
-        run: bash scripts/check_ui_only.sh
-
-  e2e:
-    # Playwright drives Chromium against a real `python -m fretbook` serving the built web app.
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+          REPOSITORY: ${{ github.repository }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          args=(--repository "$REPOSITORY" --run-id "$RUN_ID")
+          if [ -n "${LABELS}" ]; then args+=(--labels "$LABELS"); fi
+          if [ -n "${BASE_SHA}" ]; then args+=(--base-sha "$BASE_SHA"); fi
+          if [ -n "${HEAD_SHA}" ]; then args+=(--head-sha "$HEAD_SHA"); fi
+          if [ -n "${HEAD_REPOSITORY}" ]; then args+=(--head-repository "$HEAD_REPOSITORY"); fi
+          dagger call --progress=plain ci "${args[@]}" | tee "${RUNNER_TEMP}/ci-summary.md"
+      - name: Coverage summary
+        if: success()
+        run: |
+          if [ -f "${RUNNER_TEMP}/ci-summary.md" ]; then
+            cat "${RUNNER_TEMP}/ci-summary.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Export reports
+        if: always()
+        env:
+          OTEL_RESOURCE_ATTRIBUTES: github.repository=${{ github.repository }},github.ref=${{ github.ref_name }},github.sha=${{ github.sha }},github.run_id=${{ github.run_id }},github.actor=${{ github.actor }}
+          RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          rm -rf ci-out
+          dagger call --progress=plain reports --run-id "$RUN_ID" export --path=ci-out
+      - name: Upload the server coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          python-version: "3.12"
-          cache: pip
-      - run: pip install -r requirements.txt
-      - uses: actions/setup-node@v4
+          name: coverage-server
+          path: ci-out/htmlcov/
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Upload the web coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-      - run: npm ci
-        working-directory: web
-      - name: Cache Playwright browsers
-        id: playwright-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('web/package-lock.json') }}
-      - name: Install Chromium and its system libraries
-        working-directory: web
-        run: npx playwright install --with-deps chromium
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-      - name: Install Chromium's system libraries (browser came from the cache)
-        working-directory: web
-        run: npx playwright install-deps chromium
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-      - name: Type-check the e2e project
-        working-directory: web
-        run: npm run check:e2e
-      - name: Build the web app and run the e2e suite
-        working-directory: web
-        run: npm run e2e
+          name: coverage-web
+          path: ci-out/web-coverage/
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Upload traces and videos
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-failures
-          path: |
-            web/test-results/
-            web/playwright-report/
+          path: ci-out/playwright/
+          if-no-files-found: ignore
           retention-days: 7
 
-  audit:
-    # Known-vulnerable dependencies. Runs against the lockfile and requirements,
-    # so it can start failing on an unchanged tree when a new advisory lands.
+  dagger-fork:
+    # Same functions, on a GitHub-hosted runner, for pull requests from forks.
+    if: "github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository"
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: write
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
-          cache: pip
-      - name: pip-audit on requirements.txt
+          persist-credentials: false
+      - name: Install the Dagger CLI
         run: |
-          pip install pip-audit
-          pip-audit -r requirements.txt
-      - uses: actions/setup-node@v4
+          set -euo pipefail
+          mkdir -p "$HOME/.local/bin"
+          curl -fsSL https://dl.dagger.io/dagger/install.sh | DAGGER_VERSION=0.21.11 BIN_DIR="$HOME/.local/bin" sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/dagger" version
+      - name: Run the checks
+        env:
+          OTEL_RESOURCE_ATTRIBUTES: github.repository=${{ github.repository }},github.ref=${{ github.ref_name }},github.sha=${{ github.sha }},github.run_id=${{ github.run_id }},github.actor=${{ github.actor }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          REPOSITORY: ${{ github.repository }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          args=(--repository "$REPOSITORY" --run-id "$RUN_ID")
+          if [ -n "${LABELS}" ]; then args+=(--labels "$LABELS"); fi
+          if [ -n "${BASE_SHA}" ]; then args+=(--base-sha "$BASE_SHA"); fi
+          if [ -n "${HEAD_SHA}" ]; then args+=(--head-sha "$HEAD_SHA"); fi
+          if [ -n "${HEAD_REPOSITORY}" ]; then args+=(--head-repository "$HEAD_REPOSITORY"); fi
+          dagger call --progress=plain ci "${args[@]}" | tee "${RUNNER_TEMP}/ci-summary.md"
+      - name: Coverage summary
+        if: success()
+        run: |
+          if [ -f "${RUNNER_TEMP}/ci-summary.md" ]; then
+            cat "${RUNNER_TEMP}/ci-summary.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Export reports
+        if: always()
+        env:
+          OTEL_RESOURCE_ATTRIBUTES: github.repository=${{ github.repository }},github.ref=${{ github.ref_name }},github.sha=${{ github.sha }},github.run_id=${{ github.run_id }},github.actor=${{ github.actor }}
+          RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          rm -rf ci-out
+          dagger call --progress=plain reports --run-id "$RUN_ID" export --path=ci-out
+      - name: Upload the server coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          node-version: "22"
-      - name: npm audit (production dependencies, high and critical)
-        working-directory: web
-        run: npm audit --omit=dev --audit-level=high
+          name: coverage-server
+          path: ci-out/htmlcov/
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Upload the web coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-web
+          path: ci-out/web-coverage/
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Upload traces and videos
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-failures
+          path: ci-out/playwright/
+          if-no-files-found: ignore
+          retention-days: 7
 
   ci-ok:
-    # The single check to require in branch protection. Add every new job to
-    # `needs` so the required check keeps covering it without editing the
-    # branch-protection settings.
+    # The single check to require in branch protection. A skipped Dagger job
+    # is success only when it is the unused fork or same-repo path and the
+    # other one succeeded. Any failure, cancellation, or skipped check fails.
     if: always()
-    needs: [backend, frontend, openapi, repo-checks, pr-title, ui-only, e2e, audit]
+    needs: [pr-title, dagger, dagger-fork]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Every job succeeded
         env:
           NEEDS: ${{ toJSON(needs) }}
-        run: |
-          echo "$NEEDS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
-          if echo "$NEEDS" | jq -e 'any(.[]; .result != "success")' > /dev/null; then
-            echo "::error::At least one required job did not succeed (failed, cancelled or skipped)."
-            exit 1
-          fi
+        run: python3 scripts/check_ci_ok.py
