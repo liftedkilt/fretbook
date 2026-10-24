@@ -188,6 +188,7 @@ def meta(ctx: AppContext = Depends(_ctx), _user: Principal = Depends(_user)) -> 
             "exporters": ["json", "musicxml", "chordpro", "pdf"],
             "instruments": presets_payload(),
             "ytdlp": asdict(ytdlp_status(ctx.settings)),
+            "worker_kinds": ctx.jobs.live_worker_kinds(),
         }
     )
 
@@ -692,19 +693,19 @@ def list_jobs(
     jobs = ctx.jobs.list_jobs(user.user_id, status=status)
     for job in jobs:
         job["label"] = _job_label(job)
-        for private in ("owner_id", "payload", "attempts"):
+        for private in ("owner_id", "payload", "attempts", "worker_id"):
             job.pop(private, None)
     return _json(jobs)
 
 
 @router.get("/api/jobs/{job_id}", response_model=Job, tags=["jobs"], responses=AUTH_RESPONSES)
 def get_job(job_id: str, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> JSONResponse:
-    """Job status. `owner_id`, `payload`, and `attempts` are not returned."""
+    """Job status. `owner_id`, `payload`, `attempts`, and `worker_id` are not returned."""
     job = ctx.jobs.get(user.user_id, job_id)
     if job is None:
         raise api_error(404, "job.notFound", "job not found")
     job["label"] = _job_label(job)
-    for private in ("owner_id", "payload", "attempts"):
+    for private in ("owner_id", "payload", "attempts", "worker_id"):
         job.pop(private, None)
     return _json(job)
 

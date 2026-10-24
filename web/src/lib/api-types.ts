@@ -289,7 +289,7 @@ export interface paths {
         };
         /**
          * Get Job
-         * @description Job status. `owner_id`, `payload`, and `attempts` are not returned.
+         * @description Job status. `owner_id`, `payload`, `attempts`, and `worker_id` are not returned.
          */
         get: operations["get_job_api_jobs__job_id__get"];
         put?: never;
@@ -1473,6 +1473,8 @@ export interface components {
             tagline: string;
             /** Version */
             version: string;
+            /** Worker Kinds */
+            worker_kinds: string[];
             ytdlp: components["schemas"]["YtDlpStatus"];
         };
         /** Note */

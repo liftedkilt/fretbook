@@ -972,6 +972,9 @@
     "reset": "Reiniciar",
     "selectLoop": "Repetições salvas…"
   },
+  "job": {
+    "echo": "Repetindo o trabalho"
+  },
   "chordDiagrams": {
     "heading": "Diagramas de acordes",
     "toolTitle": "Biblioteca de acordes",

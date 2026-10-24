@@ -105,6 +105,8 @@ class Meta(BaseModel):
     exporters: list[str]
     instruments: list[InstrumentPreset]
     ytdlp: YtDlpStatus
+    worker_kinds: list[str]
+    """Job kinds that a separate worker process is claiming right now. Hide features whose kind is missing."""
 
 
 class Settings(BaseModel):

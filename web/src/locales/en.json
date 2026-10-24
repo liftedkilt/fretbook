@@ -972,6 +972,9 @@
     "reset": "Reset",
     "selectLoop": "Saved loops…"
   },
+  "job": {
+    "echo": "Echoing the job"
+  },
   "chordDiagrams": {
     "heading": "Chord diagrams",
     "toolTitle": "Chord library",
