@@ -35,5 +35,6 @@ test("playing through with scoring on ends in a results screen that can loop a s
 
   await page.getByTestId("score-practise").click();
   await expect(results).not.toBeVisible();
-  await expect(page.getByRole("button", { name: "Loop A" })).toBeVisible();
+  // The weakest bars are now the loop.
+  await expect(page.locator(".scrubber-loop")).toBeVisible();
 });

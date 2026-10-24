@@ -140,6 +140,24 @@ describe("Scorer", () => {
     expect(s.stepGrades.filter((grade) => grade === "missed")).toHaveLength(1);
   });
 
+  it("keeps the notes after a wrong attack open for their own attacks", () => {
+    const s = scorer([step(1, 40), step(1.2, 40), step(1.4, 40), step(2, 40)]);
+    s.push(attack(1, 45), identity);
+    s.push(attack(1.2, 40), identity);
+    expect(s.stepGrades.slice(0, 2)).toEqual(["wrong", "hit"]);
+    s.push(attack(1.4, 40), identity);
+    expect(s.stepGrades.slice(0, 3)).toEqual(["wrong", "hit", "hit"]);
+    expect(s.stepGrades[3]).toBeNull();
+  });
+
+  it("does the same when the pitch of the first attack arrives after the next onset", () => {
+    const s = scorer([step(1, 40), step(1.2, 40), step(2, 40)]);
+    s.push(attack(1, null), identity);
+    s.push(attack(1.2, 40), identity);
+    expect(s.stepGrades).toEqual([null, "hit", null]);
+    expect(s.summary().extras).toBe(1);
+  });
+
   it("lets a dead note accept any attack", () => {
     const s = scorer([step(1, null)]);
     s.push(attack(1.02, null), identity);

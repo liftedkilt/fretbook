@@ -166,15 +166,7 @@ export class Scorer {
   /** The playback clock reached `now`: close what can no longer be played. */
   advance(now: number, changed: number[] = []): number[] {
     const pending = this.pending;
-    if (pending && now - pending.at > this.options.settleSeconds) {
-      this.pending = null;
-      const open = pending.candidates.filter((index) => this.grades[index] === null);
-      if (pending.heard && open.length > 0) {
-        this.assign(this.nearest(open, pending.at), "wrong", changed);
-      } else {
-        this.extras += 1;
-      }
-    }
+    if (pending && now - pending.at > this.options.settleSeconds) this.expirePending(changed);
     const held = new Set(this.pending?.candidates ?? []);
     for (let index = 0; index < this.steps.length; index += 1) {
       if (this.grades[index] !== null || !this.inRange[index] || held.has(index)) continue;
@@ -182,6 +174,17 @@ export class Scorer {
         this.assign(index, "missed", changed);
     }
     return changed;
+  }
+
+  /** The attack waiting for its pitch got none that fits: wrong if a pitch was heard, else an extra. */
+  private expirePending(changed: number[]): void {
+    const pending = this.pending;
+    if (!pending) return;
+    this.pending = null;
+    const open = pending.candidates.filter((index) => this.grades[index] === null);
+    if (pending.heard && open.length > 0)
+      this.assign(this.nearest(open, pending.at), "wrong", changed);
+    else this.extras += 1;
   }
 
   /** The pass is over: everything still open was not played. */
@@ -225,7 +228,8 @@ export class Scorer {
   }
 
   private attack(at: number, changed: number[]): void {
-    if (this.pending) this.advance(at + this.options.settleSeconds + 1, changed);
+    // A new attack ends the one still waiting for its pitch; nothing else is decided by it.
+    this.expirePending(changed);
     if (
       at < this.range.from - this.options.outerWindow ||
       at > this.range.to + this.options.outerWindow

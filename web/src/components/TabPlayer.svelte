@@ -863,6 +863,21 @@
     applyPractice();
   }
 
+  // `currentSeconds` is only repainted every 50 ms (and per synth event), which would read every
+  // note a little early against a 100 ms hit window: scoring asks the clocks directly.
+  let clockStamp = 0;
+  $effect(() => {
+    void currentSeconds;
+    clockStamp = performance.now();
+  });
+
+  function songNow(): number {
+    if (song.has_audio && audioEl) return audioEl.currentTime;
+    return playing
+      ? currentSeconds + ((performance.now() - clockStamp) / 1000) * rate
+      : currentSeconds;
+  }
+
   /** The part of the song a scored pass covers: the loop, or from `bar` to the end. */
   function scoreRange(bar: number): { from: number; to: number } {
     const starts = highwayStarts(song.document, song.has_audio);
@@ -885,7 +900,7 @@
       steps: scoredSteps,
       barCount,
       listen: startListening,
-      songTime: () => currentSeconds,
+      songTime: songNow,
       rate: () => rate,
       latencySeconds: (latency ?? 0) / 1000,
       onGrades: (changed, grades, summary) => {

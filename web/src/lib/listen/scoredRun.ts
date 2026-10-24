@@ -88,7 +88,7 @@ export class ScoredRun {
     this.done = true;
     const changed = scorer.finish();
     const summary = scorer.summary();
-    this.options.onGrades(changed, scorer.stepGrades, summary);
+    if (changed.length > 0) this.options.onGrades(changed, scorer.stepGrades, summary);
     this.options.onComplete(summary);
     return summary;
   }
