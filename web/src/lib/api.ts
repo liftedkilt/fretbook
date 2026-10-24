@@ -521,6 +521,14 @@ export function saveSetlistEntries(
   return request<ContractSetlistDetail>(`/api/setlists/${id}/entries`, json("PUT", { entries }));
 }
 
+/** Append one song to the end of a setlist. */
+export function addSetlistEntry(id: string, songId: string): Promise<SetlistDetail> {
+  return request<ContractSetlistDetail>(
+    `/api/setlists/${id}/entries`,
+    json("POST", { song_id: songId, note: "", transpose: 0 }),
+  );
+}
+
 export function deleteSetlist(id: string): Promise<void> {
   return request(`/api/setlists/${id}`, { method: "DELETE" });
 }

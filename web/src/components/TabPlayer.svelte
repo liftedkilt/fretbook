@@ -9,6 +9,7 @@
   import Icon from "./Icon.svelte";
   import LoopPanel from "./LoopPanel.svelte";
   import Menu from "./Menu.svelte";
+  import SetlistPicker from "./SetlistPicker.svelte";
   import OfflineToggle from "./OfflineToggle.svelte";
   import PracticePanel from "./PracticePanel.svelte";
   import StemMixer from "./StemMixer.svelte";
@@ -95,6 +96,7 @@
   import { openTuner, setNotation, setPlayerView, ui } from "../lib/ui.svelte";
 
   let { song: initial }: { song: TabSong } = $props();
+  let pickerOpen = $state(false);
 
   // The player owns its copy: taps, BPM edits, and uploads change it in place.
   let song = $state(untrack(() => initial));
@@ -1277,6 +1279,9 @@
         >
           <Icon name="tuner" size={18} /><span>{t("tuner.open")}</span>
         </button>
+        <button data-testid="song-add-to-setlist" onclick={() => (pickerOpen = true)}>
+          <Icon name="list" size={18} /><span>{t("setlists.addToSetlist")}</span>
+        </button>
         <Menu label={t("player.export")} icon="download" testid="export-menu">
           {#snippet children(close)}
             <button
@@ -1722,5 +1727,9 @@
     onclose={() => (scoreResultsOpen = false)}
     onagain={playScoreAgain}
     onpractise={practiseSection}
+  />
+  <SetlistPicker
+    song={pickerOpen ? { id: song.id, title: song.title } : null}
+    onclose={() => (pickerOpen = false)}
   />
 </div>
