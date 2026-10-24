@@ -12,6 +12,8 @@ import type {
   ConvertReport,
   CourseDetail,
   CourseList,
+  DemoChange,
+  DemoLibrary,
   ErrorDetail,
   ImportPreview as ContractImportPreview,
   Job as ContractJob,
@@ -772,6 +774,20 @@ export function signOutUser(id: string): Promise<SessionsEnded> {
 /** Moves the single-user library into the signed-in admin's own. */
 export function adoptLocal(): Promise<SongsMoved> {
   return request("/api/admin/adopt-local", { method: "POST" });
+}
+
+export function getDemo(): Promise<DemoLibrary> {
+  return request<DemoLibrary>("/api/demo");
+}
+
+/** Add the bundled demo songs that are missing. */
+export function addDemo(): Promise<DemoChange> {
+  return request<DemoChange>("/api/demo", { method: "POST" });
+}
+
+/** Remove the bundled demo songs; the user's own songs stay. */
+export function removeDemo(): Promise<DemoChange> {
+  return request<DemoChange>("/api/demo", { method: "DELETE" });
 }
 
 export function listCourses(): Promise<CourseList> {

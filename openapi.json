@@ -1444,6 +1444,98 @@
         "title": "CreateTokenBody",
         "type": "object"
       },
+      "DemoChange": {
+        "properties": {
+          "changed": {
+            "title": "Changed",
+            "type": "integer"
+          },
+          "installed": {
+            "title": "Installed",
+            "type": "integer"
+          },
+          "songs": {
+            "items": {
+              "$ref": "#/components/schemas/DemoSongInfo"
+            },
+            "title": "Songs",
+            "type": "array"
+          }
+        },
+        "required": [
+          "songs",
+          "installed",
+          "changed"
+        ],
+        "title": "DemoChange",
+        "type": "object"
+      },
+      "DemoLibrary": {
+        "properties": {
+          "installed": {
+            "title": "Installed",
+            "type": "integer"
+          },
+          "songs": {
+            "items": {
+              "$ref": "#/components/schemas/DemoSongInfo"
+            },
+            "title": "Songs",
+            "type": "array"
+          }
+        },
+        "required": [
+          "songs",
+          "installed"
+        ],
+        "title": "DemoLibrary",
+        "type": "object"
+      },
+      "DemoSongInfo": {
+        "properties": {
+          "artist": {
+            "title": "Artist",
+            "type": "string"
+          },
+          "has_audio": {
+            "title": "Has Audio",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "song_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Song Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "artist",
+          "kind",
+          "has_audio",
+          "song_id"
+        ],
+        "title": "DemoSongInfo",
+        "type": "object"
+      },
       "DifficultyFactor": {
         "description": "One reason for a track's level.",
         "properties": {
@@ -2570,6 +2662,10 @@
             ],
             "title": "Commit"
           },
+          "demo_mode": {
+            "title": "Demo Mode",
+            "type": "boolean"
+          },
           "exporters": {
             "items": {
               "type": "string"
@@ -2616,7 +2712,8 @@
           "exporters",
           "instruments",
           "ytdlp",
-          "worker_kinds"
+          "worker_kinds",
+          "demo_mode"
         ],
         "title": "Meta",
         "type": "object"
@@ -6603,6 +6700,248 @@
         "summary": "Put Course Source",
         "tags": [
           "lessons"
+        ]
+      }
+    },
+    "/api/demo": {
+      "delete": {
+        "description": "Remove the demo songs and their audio. Songs the caller made or imported are kept.",
+        "operationId": "remove_demo_api_demo_delete",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoChange"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Remove Demo",
+        "tags": [
+          "demo"
+        ]
+      },
+      "get": {
+        "description": "The demo songs and which of them are in the caller's library.",
+        "operationId": "get_demo_api_demo_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoLibrary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Get Demo",
+        "tags": [
+          "demo"
+        ]
+      },
+      "post": {
+        "description": "Add the demo songs that are missing. Adding twice changes nothing.",
+        "operationId": "add_demo_api_demo_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoChange"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Add Demo",
+        "tags": [
+          "demo"
         ]
       }
     },
@@ -13194,6 +13533,10 @@
     {
       "description": "Courses and lessons, per-user progress, and (for admins) writing lessons and importing packs.",
       "name": "lessons"
+    },
+    {
+      "description": "The bundled demo songs: add them to the library or remove them again.",
+      "name": "demo"
     },
     {
       "description": "Start a background import. Poll GET /api/jobs/{job_id}.",

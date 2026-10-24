@@ -101,15 +101,17 @@
       </span>
     </a>
 
-    <button
-      class="primary new-button"
-      data-testid="add-song"
-      onclick={() => openSheet("add")}
-      aria-label={t("add.button")}
-      title={t("add.button")}
-    >
-      <Icon name="plus" /><span class="rail-hide">{t("add.button")}</span>
-    </button>
+    {#if !ui.demoMode}
+      <button
+        class="primary new-button"
+        data-testid="add-song"
+        onclick={() => openSheet("add")}
+        aria-label={t("add.button")}
+        title={t("add.button")}
+      >
+        <Icon name="plus" /><span class="rail-hide">{t("add.button")}</span>
+      </button>
+    {/if}
 
     <nav class="side-nav" aria-label={t("library.filters")}>
       <p class="side-label rail-hide">{t("library.heading")}</p>
@@ -271,19 +273,24 @@
       >
         <Icon name="settings" />
       </button>
-      <button
-        class="icon-button primary"
-        data-testid="add-song-topbar"
-        onclick={() => openSheet("add")}
-        aria-label={t("add.button")}
-      >
-        <Icon name="plus" />
-      </button>
+      {#if !ui.demoMode}
+        <button
+          class="icon-button primary"
+          data-testid="add-song-topbar"
+          onclick={() => openSheet("add")}
+          aria-label={t("add.button")}
+        >
+          <Icon name="plus" />
+        </button>
+      {/if}
     </div>
   </header>
 
   <main class="content">
     <OfflineStatus />
+    {#if ui.demoMode}<p class="notice" role="status" data-testid="demo-banner">
+        <Icon name="info" size={18} />{t("demo.banner")}
+      </p>{/if}
     {#if ui.error}<p class="alert" role="alert"><Icon name="alert" size={18} />{ui.error}</p>{/if}
     {#if isLibrary}
       <LibraryView />
@@ -350,13 +357,15 @@
       >
         <Icon name="list" /><span>{t("setlists.nav")}</span>
       </a>
-      <button
-        class="tab-item tab-add"
-        onclick={() => openSheet("add")}
-        aria-label={t("add.button")}
-      >
-        <span><Icon name="plus" size={26} /></span>
-      </button>
+      {#if !ui.demoMode}
+        <button
+          class="tab-item tab-add"
+          onclick={() => openSheet("add")}
+          aria-label={t("add.button")}
+        >
+          <span><Icon name="plus" size={26} /></span>
+        </button>
+      {/if}
       <a
         class="tab-item"
         data-testid="tab-practice"

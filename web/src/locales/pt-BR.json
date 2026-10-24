@@ -635,6 +635,9 @@
       "packNoCourse": "O curso {course} não tem course.md.",
       "badPack": "Não foi possível importar esse pacote.",
       "packTooManyLessons": "Esse pacote tem lições demais (o limite é {limit})."
+    },
+    "demo": {
+      "readOnly": "Esta é uma demonstração somente leitura, então a biblioteca não pode ser alterada."
     }
   },
   "ui": {
@@ -1805,5 +1808,39 @@
       "nextSong": "Próxima música do repertório",
       "previousSong": "Música anterior do repertório"
     }
+  },
+  "firstRun": {
+    "title": "Bem-vindo ao Fretbook",
+    "subtitle": "Sua biblioteca está vazia. Escolha por onde começar; você pode voltar a qualquer uma destas opções depois.",
+    "importTitle": "Traga uma música",
+    "importBody": "Cole um link do Songsterr, do Ultimate Guitar ou do YouTube, solte um arquivo Guitar Pro, MusicXML, MIDI ou ChordPro ou uma pasta inteira, cole uma tablatura em texto ou comece uma tablatura em branco.",
+    "demoTitle": "Experimente as músicas de demonstração",
+    "demoBody": "Três músicas originais: uma tablatura de baixo com áudio e sincronização, uma tablatura de guitarra e uma cifra. Remova-as quando quiser em Configurações.",
+    "demoButton": "Adicionar as músicas de demonstração",
+    "demoAdding": "Adicionando…",
+    "instrumentTitle": "Escolha seu instrumento",
+    "instrumentBody": "Novas tablaturas, partes adicionadas e importações começam neste instrumento.",
+    "tunerTitle": "Afine o instrumento",
+    "tunerBody": "Confira a afinação com o microfone antes de tocar.",
+    "tunerButton": "Abrir o afinador",
+    "courseTitle": "Aprenda o básico",
+    "courseBody": "Um curso curto para iniciantes no seu instrumento, com lições para tocar junto.",
+    "courseButton": "Começar o curso para iniciantes"
+  },
+  "demo": {
+    "heading": "Músicas de demonstração",
+    "hint": "Três músicas originais que acompanham o Fretbook. Removê-las nunca afeta as suas próprias músicas.",
+    "add": "Adicionar as músicas de demonstração",
+    "remove": "Remover as músicas de demonstração",
+    "confirmRemove": "Remover as músicas de demonstração da sua biblioteca?",
+    "added": {
+      "one": "{count} música de demonstração adicionada.",
+      "other": "{count} músicas de demonstração adicionadas."
+    },
+    "removed": {
+      "one": "{count} música de demonstração removida.",
+      "other": "{count} músicas de demonstração removidas."
+    },
+    "banner": "Esta é uma demonstração somente leitura. Explore e toque; as alterações não são salvas e a biblioteca é restaurada toda noite."
   }
 }

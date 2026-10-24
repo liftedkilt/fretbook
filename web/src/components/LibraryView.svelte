@@ -1,5 +1,6 @@
 <script lang="ts">
   import Cover from "./Cover.svelte";
+  import FirstRun from "./FirstRun.svelte";
   import Icon from "./Icon.svelte";
   import ManageTagsSheet from "./ManageTagsSheet.svelte";
   import RecentImports from "./RecentImports.svelte";
@@ -163,9 +164,11 @@
         {t("library.count", { count: countFor(ui.filter) })}
       </p>
     </div>
-    <button class="primary hero-add" data-testid="add-song-hero" onclick={() => openSheet("add")}
-      ><Icon name="plus" />{t("add.button")}</button
-    >
+    {#if !ui.demoMode}
+      <button class="primary hero-add" data-testid="add-song-hero" onclick={() => openSheet("add")}
+        ><Icon name="plus" />{t("add.button")}</button
+      >
+    {/if}
   </header>
 
   <RecentImports />
@@ -330,16 +333,15 @@
       {/each}
     </div>
   {:else if countFor("all") === 0}
-    <div class="empty-state" data-testid="library-empty">
-      <span class="empty-art"><Icon name="sparkle" size={34} /></span>
-      <h2 class="display">{t("library.emptyTitle")}</h2>
-      <p class="muted">{t("library.empty")}</p>
-      <div class="empty-actions">
-        <button class="primary" onclick={() => openSheet("add")}
-          ><Icon name="plus" />{t("add.button")}</button
-        >
+    {#if ui.demoMode}
+      <div class="empty-state" data-testid="library-empty">
+        <span class="empty-art"><Icon name="sparkle" size={34} /></span>
+        <h2 class="display">{t("library.emptyTitle")}</h2>
+        <p class="muted">{t("demo.banner")}</p>
       </div>
-    </div>
+    {:else}
+      <FirstRun />
+    {/if}
   {:else if ui.songs.length === 0}
     <div class="empty-state compact" data-testid="library-filter-empty">
       <span class="empty-art"><Icon name="search" size={30} /></span>
