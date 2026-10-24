@@ -19,6 +19,7 @@ const song = {
   id: "s1",
   title: "Riff",
   favourite: false,
+  difficulty: null,
   tags: ["funk"],
 } as unknown as SongDetail;
 

@@ -21,6 +21,7 @@ import type {
   PracticeSession as ContractPracticeSession,
   PracticeSessionBody as ContractPracticeSessionBody,
   PracticeStats as ContractPracticeStats,
+  Recommendations as ContractRecommendations,
   SessionsEnded,
   SetlistDetail as ContractSetlistDetail,
   SetlistSummary as ContractSetlistSummary,
@@ -54,6 +55,7 @@ import type {
   PracticeSession,
   PracticeSessionDraft,
   PracticeStats,
+  Recommendations,
   ScoreDocument,
   Settings,
   SetlistDetail,
@@ -87,6 +89,7 @@ type _matchesContract = [
   AssertAssignable<ContractPracticeSession, PracticeSession>,
   AssertAssignable<ContractPracticeStats, PracticeStats>,
   AssertAssignable<ContractPracticeGoal, PracticeGoal>,
+  AssertAssignable<ContractRecommendations, Recommendations>,
   AssertAssignable<ContractSongPractice, SongPractice>,
   // The draft is what the browser sends, so it must fit the request body.
   AssertAssignable<PracticeSessionDraft, ContractPracticeSessionBody>,
@@ -387,6 +390,12 @@ export async function recordPracticeSession(
 
 export function getPracticeStats(today: string): Promise<PracticeStats> {
   return request<ContractPracticeStats>(`/api/practice/stats?today=${encodeURIComponent(today)}`);
+}
+
+export function getRecommendations(today: string): Promise<Recommendations> {
+  return request<ContractRecommendations>(
+    `/api/practice/recommendations?today=${encodeURIComponent(today)}`,
+  );
 }
 
 export function savePracticeGoal(goal: PracticeGoal): Promise<PracticeGoal> {

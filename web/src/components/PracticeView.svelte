@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from "./Icon.svelte";
+  import Recommendations from "./Recommendations.svelte";
   import { getPracticeStats, savePracticeGoal } from "../lib/api";
   import { t } from "../lib/i18n.svelte";
   import {
@@ -217,6 +218,8 @@
         {/each}
       </div>
     </div>
+
+    <Recommendations />
 
     <div class="lists">
       {#each [{ id: "recent", labelKey: "practiceLog.recent", rows: stats.recent }, { id: "scores", labelKey: "practiceLog.bestScores", rows: stats.best_scores }, { id: "stale", labelKey: "practiceLog.stale", rows: stats.stale }] as list (list.id)}
