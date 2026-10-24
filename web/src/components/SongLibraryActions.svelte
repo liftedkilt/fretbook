@@ -220,4 +220,10 @@
     gap: 0.5rem;
     margin: 0 0 1rem;
   }
+
+  /* Full screen keeps only the score and the dock. This stays in the component so it does not
+     depend on the shared stylesheet. */
+  :global(:root[data-fullscreen]) .song-library-actions {
+    display: none;
+  }
 </style>
