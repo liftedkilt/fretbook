@@ -30,6 +30,7 @@
   import { t } from "../lib/i18n.svelte";
   import { followLink, hrefFor } from "../lib/router.svelte";
   import type { SongDetail } from "../lib/types";
+  import { ui } from "../lib/ui.svelte";
 
   let { song, initialTranspose = 0 }: { song: SongDetail; initialTranspose?: number } = $props();
 
@@ -198,28 +199,32 @@
       </div>
       <div class="hero-actions">
         <OfflineToggle kind="song" id={song.id} title={song.title} compact />
-        <a
-          class="button"
-          data-testid="song-edit-link"
-          href={hrefFor(`/songs/${song.id}/edit`)}
-          onclick={(event) => followLink(event, `/songs/${song.id}/edit`)}
-        >
-          <Icon name="edit" size={18} /><span>{t("player.edit")}</span>
-        </a>
+        {#if !ui.demoMode}
+          <a
+            class="button"
+            data-testid="song-edit-link"
+            href={hrefFor(`/songs/${song.id}/edit`)}
+            onclick={(event) => followLink(event, `/songs/${song.id}/edit`)}
+          >
+            <Icon name="edit" size={18} /><span>{t("player.edit")}</span>
+          </a>
+        {/if}
         <Menu label={t("player.export")} icon="download" testid="export-menu">
           {#snippet children(close)}
-            <button
-              class="menu-item"
-              data-testid="song-add-to-setlist"
-              role="menuitem"
-              onclick={() => {
-                close();
-                pickerOpen = true;
-              }}
-            >
-              <Icon name="list" size={18} />
-              {t("setlists.addToSetlist")}
-            </button>
+            {#if !ui.demoMode}
+              <button
+                class="menu-item"
+                data-testid="song-add-to-setlist"
+                role="menuitem"
+                onclick={() => {
+                  close();
+                  pickerOpen = true;
+                }}
+              >
+                <Icon name="list" size={18} />
+                {t("setlists.addToSetlist")}
+              </button>
+            {/if}
             <button
               class="menu-item"
               data-testid="export-pdf"

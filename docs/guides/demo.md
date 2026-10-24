@@ -24,7 +24,8 @@ Set `FRETBOOK_DEMO_MODE=true` to run a read-only demo, for example behind a link
 - Every write to `/api` is refused with `403 demo.readOnly`: imports, uploads, edits, deletes, tags, setlists, API
   tokens and backups. Visitors can still open songs, play, change their default instrument, and record practice and
   lesson progress; the reset clears those too (practice log, lesson progress, setlists and the default instrument).
-- The web app shows a notice and hides the **New** buttons. Other controls that change the library (delete, star,
-  tags, the editor, setlists, restore) still show and answer with the read-only message.
+- The web app shows a notice and hides every control that would change the library: the **New** buttons, delete,
+  star, tags, the editor, setlist editing, lesson and course editing, sync marks, stems, API tokens and restore.
+  Anything missed still answers with the read-only message.
 
 Demo mode is meant for single-user mode (no sign-in). Run it with its own `FRETBOOK_DATA_DIR`.

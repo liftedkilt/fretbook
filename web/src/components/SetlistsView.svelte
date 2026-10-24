@@ -3,6 +3,7 @@
   import { createSetlist, deleteSetlist, listSetlists } from "../lib/api";
   import { t } from "../lib/i18n.svelte";
   import { followLink, hrefFor, navigate } from "../lib/router.svelte";
+  import { ui } from "../lib/ui.svelte";
   import { setlistPath } from "../lib/setlists";
   import type { SetlistSummary } from "../lib/types";
 
@@ -55,19 +56,19 @@
     </div>
   </header>
 
-  <form class="setlist-new" onsubmit={create}>
-    <label class="visually-hidden" for="new-setlist">{t("setlists.newLabel")}</label>
-    <input
-      id="new-setlist"
-      data-testid="setlist-new-name"
-      bind:value={name}
-      maxlength="200"
-      placeholder={t("setlists.newPlaceholder")}
-    />
-    <button class="primary" type="submit" data-testid="setlist-create" disabled={!name.trim()}>
-      <Icon name="plus" size={18} />{t("setlists.create")}
-    </button>
-  </form>
+  {#if !ui.demoMode}<form class="setlist-new" onsubmit={create}>
+      <label class="visually-hidden" for="new-setlist">{t("setlists.newLabel")}</label>
+      <input
+        id="new-setlist"
+        data-testid="setlist-new-name"
+        bind:value={name}
+        maxlength="200"
+        placeholder={t("setlists.newPlaceholder")}
+      />
+      <button class="primary" type="submit" data-testid="setlist-create" disabled={!name.trim()}>
+        <Icon name="plus" size={18} />{t("setlists.create")}
+      </button>
+    </form>{/if}
 
   {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
 
@@ -91,14 +92,14 @@
             <strong>{setlist.name}</strong>
             <span class="muted">{t("setlists.count", { count: setlist.entry_count })}</span>
           </a>
-          <button
-            class="icon-button glass"
-            onclick={() => void remove(setlist)}
-            aria-label={`${t("setlists.delete")}: ${setlist.name}`}
-            title={t("setlists.delete")}
-          >
-            <Icon name="trash" size={16} />
-          </button>
+          {#if !ui.demoMode}<button
+              class="icon-button glass"
+              onclick={() => void remove(setlist)}
+              aria-label={`${t("setlists.delete")}: ${setlist.name}`}
+              title={t("setlists.delete")}
+            >
+              <Icon name="trash" size={16} />
+            </button>{/if}
         </li>
       {/each}
     </ul>
