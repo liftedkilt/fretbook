@@ -5,6 +5,7 @@
   import ChordLibraryView from "./components/ChordLibraryView.svelte";
   import Cover from "./components/Cover.svelte";
   import EditorView from "./components/EditorView.svelte";
+  import ExercisesView from "./components/ExercisesView.svelte";
   import Icon from "./components/Icon.svelte";
   import LibraryView from "./components/LibraryView.svelte";
   import PracticeView from "./components/PracticeView.svelte";
@@ -40,6 +41,7 @@
   const isToolsTuner = $derived(path === "/tools/tuner" || path === "/tools/tuner/");
   const isToolsMetronome = $derived(path === "/tools/metronome" || path === "/tools/metronome/");
   const isToolsChords = $derived(path === "/tools/chords" || path === "/tools/chords/");
+  const isToolsExercises = $derived(path === "/tools/exercises" || path === "/tools/exercises/");
   const isToolsActive = $derived(path.startsWith("/tools"));
   const isLibrary = $derived(path === "/");
   const isAdmin = $derived(ui.me?.role === "admin");
@@ -268,6 +270,8 @@
       <StandaloneMetronomeView />
     {:else if isToolsChords}
       <ChordLibraryView />
+    {:else if isToolsExercises}
+      <ExercisesView />
     {:else if path === "/admin" && isAdmin && ui.me}
       <AdminView self={ui.me.user_id} />
     {:else if path === "/admin" && !ui.me}
