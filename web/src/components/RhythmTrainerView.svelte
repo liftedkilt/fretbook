@@ -77,7 +77,11 @@
   const songPattern = $derived(
     source === "song" ? rhythms.find((r) => r.pattern.id === songPatternId) : undefined,
   );
-  const pattern = $derived<RhythmPattern>(songPattern?.pattern ?? patternById(patternId));
+  const pattern = $derived<RhythmPattern>(
+    songPattern
+      ? { ...songPattern.pattern, label: songLabel(songPattern) }
+      : patternById(patternId),
+  );
   /** What the shown results were played with, so changing a picker afterwards does not rewrite them. */
   let played = $state<{ pattern: RhythmPattern; bars: number } | null>(null);
   const breakdown = $derived(
@@ -153,10 +157,9 @@
     result = null;
   }
 
+  /** What the log stores: a built-in pattern id, or `song:<id>:<first bar>`, so it needs no translation. */
   function patternName(): string {
-    if (!songPattern) return patternId;
-    const song = songs.find((item) => item.id === songId);
-    return `${song?.title ?? songId} (bar ${songPattern.firstBar})`;
+    return songPattern ? `song:${songId}:${songPattern.firstBar}` : patternId;
   }
 
   function logRun(finished: RhythmResult, startedAt: number, tempo: number) {
