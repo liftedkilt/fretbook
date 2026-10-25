@@ -7,7 +7,10 @@ entirely, set `FRETBOOK_DOWNLOAD_AUDIO=false`.
 Fretbook helps in three ways:
 
 - **Version.** `GET /api/meta` reports the yt-dlp version, its release date, its age in days, and whether it is stale
-  (older than 30 days). **Settings** shows the same and warns when it is stale.
+  (older than 30 days). The app shows the same and warns when it is stale. Where depends on who you are:
+    - Signed-in administrators: **Admin → System**, next to the shared assistant settings.
+    - The single-user operator (no sign-in, so no admin role, and the admin API returns 403): **Settings → Instance**.
+    - Signed-in members do not see it. The running app version is under **Settings → About** for everyone.
 - **Explained failures.** When a download fails, the import result says why: YouTube asked for a sign-in or bot check,
   the video is unavailable, it is blocked in the server's country, or yt-dlp is out of date. Each message suggests
   uploading an mp3 on the song page instead. The tab is always saved.
