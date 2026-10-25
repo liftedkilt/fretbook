@@ -16,7 +16,7 @@
   import SetlistPlayView from "./components/SetlistPlayView.svelte";
   import SetlistsView from "./components/SetlistsView.svelte";
   import SetlistView from "./components/SetlistView.svelte";
-  import SettingsSheet from "./components/SettingsSheet.svelte";
+  import SettingsView from "./components/SettingsView.svelte";
   import ShareView from "./components/ShareView.svelte";
   import SongView from "./components/SongView.svelte";
   import RhythmTrainerView from "./components/RhythmTrainerView.svelte";
@@ -60,6 +60,7 @@
   const isToolsActive = $derived(path.startsWith("/tools"));
   const isLibrary = $derived(path === "/");
   const isAdmin = $derived(ui.me?.role === "admin");
+  const isSettings = $derived(path === "/settings" || path === "/settings/");
 
   const sections: { id: LibraryFilter; icon: string; key: string }[] = [
     { id: "all", icon: "library", key: "library.filterAll" },
@@ -87,7 +88,10 @@
   // Scroll to the top when the page changes, as a full navigation would.
   $effect(() => {
     void path;
-    window.scrollTo({ top: 0 });
+    const id = location.hash.replace(/^#/, "");
+    const target = id ? document.getElementById(id) : null;
+    if (target) target.scrollIntoView();
+    else window.scrollTo({ top: 0 });
   });
 
   // The phone tab bar carries the + button, so the top bar only adds one where there is no tab bar.
@@ -263,14 +267,16 @@
         </a>
       {/if}
 
-      <button
+      <a
         class="side-link side-settings"
         data-testid="open-settings"
-        onclick={() => openSheet("settings")}
+        href={hrefFor("/settings")}
+        aria-current={isSettings ? "page" : undefined}
+        onclick={(event) => followLink(event, "/settings")}
         title={t("settings.heading")}
       >
         <Icon name="settings" size={19} /><span class="rail-hide">{t("settings.heading")}</span>
-      </button>
+      </a>
     </aside>
 
     <header class="topbar">
@@ -327,6 +333,8 @@
         <ChordLibraryView />
       {:else if isToolsExercises}
         <ExercisesView />
+      {:else if isSettings}
+        <SettingsView />
       {:else if path === "/admin" && isAdmin && ui.me}
         <AdminView self={ui.me.user_id} />
       {:else if path === "/admin" && !ui.me}
@@ -410,7 +418,6 @@
   </div>
 
   <AddSheet />
-  <SettingsSheet />
   <TunerSheet />
   <CalibrationSheet />
 {/if}

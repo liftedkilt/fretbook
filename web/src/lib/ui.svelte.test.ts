@@ -16,6 +16,7 @@ vi.mock("./api", () => ({
   saveSettings: (...args: unknown[]) => saveSettings(...args),
 }));
 
+import { navigate } from "./router.svelte";
 import {
   closeSheet,
   countFor,
@@ -62,10 +63,20 @@ beforeEach(() => {
 
 describe("sheets", () => {
   it("opens and closes sheets", () => {
-    openSheet("settings");
-    expect(ui.sheet).toBe("settings");
+    openSheet("add");
+    expect(ui.sheet).toBe("add");
     closeSheet();
     expect(ui.sheet).toBe("");
+  });
+
+  it("opens settings on its page", () => {
+    ui.sheet = "add";
+    openSheet("settings");
+    expect(ui.sheet).toBe("");
+    // The library suite also runs this file under Node, where there is no document to navigate.
+    if (typeof document === "undefined") return;
+    expect(window.location.pathname).toBe("/settings");
+    navigate("/");
   });
 
   it("opens the tuner with or without a song's tuning", () => {

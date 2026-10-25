@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/svelte";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { InstrumentPreset, Me } from "../lib/types";
 import { ui } from "../lib/ui.svelte";
-import SettingsSheet from "./SettingsSheet.svelte";
+import SettingsView from "./SettingsView.svelte";
 
 const mockSaveSettings = vi.fn();
 const mockImportLibrary = vi.fn();
@@ -21,6 +21,8 @@ vi.mock("../lib/api", () => ({
   listLlmNotices: async () => [],
   importLibrary: (...args: unknown[]) => mockImportLibrary(...args),
   waitForJob: (...args: unknown[]) => mockWaitForJob(...args),
+  getCalibration: async () => null,
+  saveCalibration: async () => undefined,
   getDemo: () => mockGetDemo(),
   addDemo: () => mockAddDemo(),
   removeDemo: () => mockRemoveDemo(),
@@ -57,7 +59,7 @@ const mockPresets: InstrumentPreset[] = [
   },
 ];
 
-describe("SettingsSheet", () => {
+describe("SettingsView", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     ui.sheet = "settings";
@@ -74,7 +76,7 @@ describe("SettingsSheet", () => {
     mockAddDemo.mockResolvedValueOnce({ songs: [], installed: 3, changed: 3 });
     mockRemoveDemo.mockResolvedValueOnce({ songs: [], installed: 0, changed: 3 });
     vi.spyOn(window, "confirm").mockReturnValue(true);
-    render(SettingsSheet);
+    render(SettingsView);
 
     await fireEvent.click(await screen.findByTestId("demo-add"));
     expect(await screen.findByText("Added 3 demo songs.")).toBeInTheDocument();
@@ -86,19 +88,19 @@ describe("SettingsSheet", () => {
 
   it("offers removal when the demo songs are already there, and not in demo mode", async () => {
     mockGetDemo.mockResolvedValue({ songs: [], installed: 3 });
-    const { unmount } = render(SettingsSheet);
+    const { unmount } = render(SettingsView);
     expect(await screen.findByTestId("demo-remove")).toBeInTheDocument();
     unmount();
 
     ui.demoMode = true;
-    render(SettingsSheet);
+    render(SettingsView);
     expect(screen.queryByTestId("demo-settings")).not.toBeInTheDocument();
   });
 
   it("renders default instrument options and updates when changed", async () => {
     mockSaveSettings.mockResolvedValueOnce({ default_instrument: "guitar-6" });
 
-    render(SettingsSheet);
+    render(SettingsView);
 
     const instrumentSelect = screen.getByRole("combobox", { name: /default instrument/i });
     expect(instrumentSelect).toHaveValue("bass-4");
@@ -112,7 +114,7 @@ describe("SettingsSheet", () => {
   it("displays error when saving default instrument fails", async () => {
     mockSaveSettings.mockRejectedValueOnce(new Error("Network failure"));
 
-    render(SettingsSheet);
+    render(SettingsView);
 
     const instrumentSelect = screen.getByRole("combobox", { name: /default instrument/i });
     await fireEvent.change(instrumentSelect, { target: { value: "guitar-6" } });
@@ -122,7 +124,7 @@ describe("SettingsSheet", () => {
   });
 
   it("switches theme when theme buttons are clicked", async () => {
-    render(SettingsSheet);
+    render(SettingsView);
 
     const darkBtn = screen.getByRole("radio", { name: /dark/i });
     await fireEvent.click(darkBtn);
@@ -144,7 +146,7 @@ describe("SettingsSheet", () => {
     };
     ui.me = me;
 
-    render(SettingsSheet);
+    render(SettingsView);
 
     expect(screen.getByTestId("account-name")).toHaveTextContent("Fret Master");
     expect(screen.getByText(/player@example.com/)).toBeInTheDocument();
@@ -153,7 +155,7 @@ describe("SettingsSheet", () => {
   });
 
   it("offers a library download and hides the export-everything link from non-admins", () => {
-    render(SettingsSheet);
+    render(SettingsView);
 
     expect(screen.getByTestId("backup-export")).toHaveAttribute("href", "/api/library/export");
     expect(screen.queryByTestId("backup-export-all")).not.toBeInTheDocument();
@@ -169,7 +171,7 @@ describe("SettingsSheet", () => {
       settings: { default_instrument: "bass-4" },
     };
 
-    render(SettingsSheet);
+    render(SettingsView);
 
     expect(screen.getByTestId("backup-export-all")).toHaveAttribute(
       "href",
@@ -183,7 +185,7 @@ describe("SettingsSheet", () => {
       status: "done",
       result: { imported: 3, skipped: 1, copied: 0, failed: 0, warnings: [] },
     });
-    render(SettingsSheet);
+    render(SettingsView);
 
     await fireEvent.click(screen.getByRole("radio", { name: /keep both/i }));
     const file = new File(["zip"], "lib.zip", { type: "application/zip" });
@@ -197,7 +199,7 @@ describe("SettingsSheet", () => {
 
   it("shows the server's message when a restore is refused", async () => {
     mockImportLibrary.mockRejectedValueOnce(new Error("That file is not a Fretbook backup."));
-    render(SettingsSheet);
+    render(SettingsView);
 
     const file = new File(["nope"], "x.zip");
     await fireEvent.change(screen.getByTestId("backup-file"), { target: { files: [file] } });
@@ -206,7 +208,7 @@ describe("SettingsSheet", () => {
   });
 
   it("renders calibration section and opens calibration sheet on button click", async () => {
-    render(SettingsSheet);
+    render(SettingsView);
 
     expect(screen.getByTestId("calibration-setting")).toBeInTheDocument();
     expect(screen.getByTestId("settings-offset-slider")).toBeInTheDocument();
@@ -215,5 +217,76 @@ describe("SettingsSheet", () => {
     await fireEvent.click(openBtn);
 
     expect(ui.sheet).toBe("calibration");
+  });
+
+  it("links to the docs and the changelog from About", () => {
+    ui.version = "1.2.3";
+    ui.commit = "abcdef123456";
+    render(SettingsView);
+
+    const about = screen.getByTestId("about-setting");
+    expect(about).toHaveTextContent("Version 1.2.3");
+    expect(about).toHaveTextContent("Build abcdef1");
+    expect(screen.getByTestId("about-docs")).toHaveAttribute(
+      "href",
+      "https://github.com/liftedkilt/fretbook/tree/main/docs",
+    );
+    expect(screen.getByTestId("about-changelog")).toHaveAttribute(
+      "href",
+      "https://github.com/liftedkilt/fretbook/blob/main/CHANGELOG.md",
+    );
+  });
+
+  it("remembers the default input device", async () => {
+    Object.defineProperty(navigator, "mediaDevices", {
+      configurable: true,
+      value: {
+        enumerateDevices: async () => [{ kind: "audioinput", deviceId: "mic-1", label: "USB Mic" }],
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      },
+    });
+    render(SettingsView);
+
+    const select = await screen.findByTestId("input-device-default");
+    expect(select).toHaveTextContent("USB Mic");
+    await fireEvent.change(select, { target: { value: "mic-1" } });
+    expect(localStorage.getItem("fretbook.listen.device")).toBe("mic-1");
+  });
+
+  it("shows server-wide status to the single-user operator only", async () => {
+    ui.ytdlp = {
+      version: "2026.01.01",
+      released: "2026-01-01",
+      age_days: 2,
+      stale: false,
+      auto_update: false,
+      cookies: false,
+    };
+    ui.me = {
+      user_id: "local",
+      display_name: "Local",
+      email: "",
+      authenticated: false,
+      role: "user",
+      settings: { default_instrument: "bass-4" },
+    };
+    const { unmount } = render(SettingsView);
+    expect(await screen.findByTestId("ytdlp-setting")).toHaveTextContent("2026.01.01");
+    expect(screen.getByTestId("settings-section-instance")).toBeInTheDocument();
+    unmount();
+
+    ui.me = {
+      user_id: "member",
+      display_name: "Member",
+      email: "m@example.com",
+      authenticated: true,
+      role: "admin",
+      settings: { default_instrument: "bass-4" },
+    };
+    render(SettingsView);
+    expect(screen.queryByTestId("ytdlp-setting")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("settings-nav-instance")).not.toBeInTheDocument();
+    expect(screen.getByTestId("settings-nav-audio")).toBeInTheDocument();
   });
 });

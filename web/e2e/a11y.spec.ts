@@ -48,6 +48,7 @@ for (const scheme of ["light", "dark"] as const) {
         "/tools/metronome",
         "/tools/rhythm",
         "/tools/chords",
+        "/settings",
         "/lessons",
         "/lessons/guitar-first-steps",
         "/lessons/guitar-first-steps/02-the-open-strings",
@@ -74,10 +75,7 @@ for (const scheme of ["light", "dark"] as const) {
       const found: string[] = [];
 
       await page.goto("/");
-      for (const [trigger, sheet] of [
-        ["open-settings", "settings-sheet"],
-        ["add-song", "add-sheet"],
-      ]) {
+      for (const [trigger, sheet] of [["add-song", "add-sheet"]]) {
         await page.getByTestId(trigger).click();
         await expect(page.getByTestId(sheet)).toBeVisible();
         found.push(...(await violations(page, sheet)));
@@ -154,10 +152,10 @@ for (const scheme of ["light", "dark"] as const) {
 
 test("sheets trap focus, close on Escape and give focus back", async ({ page }) => {
   await page.goto("/");
-  const opener = page.getByTestId("open-settings");
+  const opener = page.getByTestId("add-song");
   await opener.focus();
   await page.keyboard.press("Enter");
-  const sheet = page.getByTestId("settings-sheet");
+  const sheet = page.getByTestId("add-sheet");
   await expect(sheet).toBeVisible();
 
   // Tab far more times than the sheet has controls. The page behind is inert, so focus either

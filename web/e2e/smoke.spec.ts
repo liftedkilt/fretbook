@@ -82,13 +82,13 @@ test.describe("container smoke flows", () => {
     await page.getByTestId("open-settings").click();
     await page.getByTestId("language-select").selectOption("pt-BR");
     await expect(page.locator("html")).toHaveAttribute("lang", "pt-BR");
-    await page.keyboard.press("Escape");
+    await page.goto("/");
     await expect(page.getByTestId("library-count")).not.toHaveText(englishCount);
 
     await page.getByTestId("open-settings").click();
     await page.getByTestId("language-select").selectOption("en");
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
-    await page.keyboard.press("Escape");
+    await page.goto("/");
     await expect(page.getByTestId("library-count")).toHaveText(englishCount);
   });
 });

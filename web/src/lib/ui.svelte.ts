@@ -10,6 +10,7 @@ import {
   setFavourite,
 } from "./api";
 import { levelQuery } from "./difficulty";
+import { navigate } from "./router.svelte";
 import type {
   InstrumentPreset,
   LibraryCounts,
@@ -349,6 +350,13 @@ export function defaultFamily(): InstrumentPreset["family"] {
 }
 
 export function openSheet(sheet: Sheet): void {
+  // Settings is a page. This call stays so older links and tests still open it.
+  if (sheet === "settings") {
+    ui.sheet = "";
+    ui.addForLesson = null;
+    if (typeof document !== "undefined") navigate("/settings");
+    return;
+  }
   ui.sheet = sheet;
   ui.addForLesson = null;
 }

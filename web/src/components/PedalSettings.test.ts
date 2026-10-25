@@ -10,8 +10,12 @@ describe("PedalSettings", () => {
     resetPedals();
   });
 
-  it("reassigns a key, remembers it, and restores the defaults", async () => {
+  it("starts collapsed on a summary, then reassigns a key and restores the defaults", async () => {
     render(PedalSettings);
+    expect(screen.getByTestId("pedal-summary")).toHaveTextContent("Page Down: Next page · …");
+    expect(screen.queryByTestId("pedal-ArrowRight")).not.toBeInTheDocument();
+
+    await fireEvent.click(screen.getByTestId("pedal-toggle"));
     const select = screen.getByTestId("pedal-ArrowRight") as HTMLSelectElement;
     expect(select.value).toBe("default");
     await fireEvent.change(select, { target: { value: "nextSong" } });

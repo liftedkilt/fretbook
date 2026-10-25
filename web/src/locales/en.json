@@ -67,6 +67,38 @@
     "themeDark": "Dark",
     "themeLight": "Light"
   },
+  "settingsPage": {
+    "subtitle": "Preferences for this browser and this account.",
+    "navLabel": "Settings sections",
+    "sections": {
+      "general": "General",
+      "audio": "Audio and microphone",
+      "pedals": "Pedals and shortcuts",
+      "library": "Library",
+      "tokens": "API tokens",
+      "assistant": "Assistant",
+      "instance": "Instance",
+      "about": "About"
+    },
+    "audioHint": "Latency compensation and the microphone used for listening.",
+    "inputDefault": "Default input",
+    "inputDefaultHint": "Used by the tuner, wait mode, and scored play-along. Names appear after the microphone has been allowed once.",
+    "offsetMs": "{offset} ms",
+    "pedalPair": "{key}: {action}",
+    "pedalKey": "Key",
+    "pedalAction": "Action",
+    "showPedals": "Show pedal assignments",
+    "hidePedals": "Hide pedal assignments",
+    "shortcutsHeading": "Keyboard shortcuts",
+    "shortcutsHint": "These work in the player. A page-turner pedal can send the same keys.",
+    "shortcutKey": "Key",
+    "shortcutAction": "Action",
+    "showShortcuts": "Show keyboard shortcuts",
+    "hideShortcuts": "Hide keyboard shortcuts",
+    "docs": "Documentation",
+    "changelog": "Changelog",
+    "instanceHint": "These apply to the whole server. With sign-in, only an administrator sees them, on the Admin page."
+  },
   "about": {
     "label": "About Fretbook",
     "version": "Version {version}",
