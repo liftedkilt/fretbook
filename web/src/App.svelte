@@ -53,7 +53,6 @@
   const isLibrary = $derived(path === "/");
   const isAdmin = $derived(ui.me?.role === "admin");
   const isSettings = $derived(path === "/settings" || path === "/settings/");
-  const isSettings = $derived(path === "/settings" || path === "/settings/");
 
   $effect(() => {
     // A public share page must not call the signed-in API: a 401 would send the visitor to log in.
@@ -140,8 +139,6 @@
         <ChordLibraryView />
       {:else if isToolsExercises}
         <ExercisesView />
-      {:else if isSettings}
-        <SettingsView />
       {:else if isSettings}
         <SettingsView />
       {:else if path === "/admin" && isAdmin && ui.me}
