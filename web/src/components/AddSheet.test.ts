@@ -13,6 +13,7 @@ const mockImportFile = vi.fn();
 const mockImportAuto = vi.fn();
 const mockInspectMidi = vi.fn();
 const mockImportMidi = vi.fn();
+const mockImportTranscribe = vi.fn();
 const mockImportDocument = vi.fn();
 const mockWaitForJob = vi.fn();
 const mockListSongs = vi.fn();
@@ -35,6 +36,7 @@ vi.mock("../lib/api", () => ({
   importAuto: (...args: unknown[]) => mockImportAuto(...args),
   inspectMidi: (...args: unknown[]) => mockInspectMidi(...args),
   importMidi: (...args: unknown[]) => mockImportMidi(...args),
+  importTranscribe: (...args: unknown[]) => mockImportTranscribe(...args),
   importDocument: (...args: unknown[]) => mockImportDocument(...args),
   waitForJob: (...args: unknown[]) => mockWaitForJob(...args),
   listSongs: (...args: unknown[]) => mockListSongs(...args),
@@ -314,6 +316,48 @@ describe("AddSheet", () => {
       await fireEvent.change(screen.getByTestId("any-file-input"), { target: { files: [file] } });
 
       await vi.waitFor(() => expect(mockImportAuto).toHaveBeenCalledWith({ file }));
+    });
+
+    it("asks for stem, instrument and grid for an audio file, then transcribes it", async () => {
+      mockImportTranscribe.mockResolvedValue({ job_id: "job-9" });
+      mockWaitForJob.mockResolvedValue({
+        status: "done",
+        result: { song_id: "song-9", warnings: [] },
+      });
+      const file = new File([new Uint8Array([1, 2, 3])], "take.mp3", { type: "audio/mpeg" });
+      render(AddSheet);
+      await fireEvent.change(screen.getByTestId("any-file-input"), { target: { files: [file] } });
+
+      expect(await screen.findByTestId("transcribe-import")).toBeInTheDocument();
+      expect(mockImportAuto).not.toHaveBeenCalled();
+      await fireEvent.change(screen.getByTestId("transcribe-import-stem"), {
+        target: { value: "bass" },
+      });
+      await fireEvent.change(screen.getByTestId("transcribe-import-grid"), {
+        target: { value: "8" },
+      });
+      await fireEvent.click(screen.getByTestId("transcribe-import-submit"));
+
+      await vi.waitFor(() =>
+        expect(mockImportTranscribe).toHaveBeenCalledWith(file, {
+          stem: "bass",
+          preset: "bass-4",
+          grid: 8,
+        }),
+      );
+    });
+
+    it("offers audio transcription under More ways and shows a worker error", async () => {
+      mockImportTranscribe.mockRejectedValueOnce(new Error("No worker is running."));
+      const file = new File([new Uint8Array([1])], "take.wav");
+      render(AddSheet);
+      await fireEvent.change(screen.getByTestId("add-audio-input"), { target: { files: [file] } });
+      await fireEvent.click(await screen.findByTestId("transcribe-import-submit"));
+
+      expect(await screen.findByTestId("add-error")).toHaveTextContent("No worker");
+      expect(screen.getByTestId("transcribe-import")).toBeInTheDocument();
+      await fireEvent.click(screen.getByText("Cancel"));
+      expect(screen.queryByTestId("transcribe-import")).toBeNull();
     });
 
     it("asks which parts and instruments to use for a MIDI file, then imports them", async () => {

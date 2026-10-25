@@ -796,6 +796,19 @@ export function importMidi(file: File, options: MidiImportOptions): Promise<JobA
   return request<JobAccepted>("/api/imports/midi", { method: "POST", body: data });
 }
 
+/** Queue the transcription of an uploaded audio file into a new song with a draft tab. */
+export function importTranscribe(
+  file: File,
+  options: { stem: "mix" | "bass" | "guitar"; preset?: string; grid: number },
+): Promise<JobAccepted> {
+  const data = new FormData();
+  data.append("file", file);
+  data.append("stem", options.stem);
+  if (options.preset) data.append("preset", options.preset);
+  data.append("grid", String(options.grid));
+  return request<JobAccepted>("/api/imports/transcribe", { method: "POST", body: data });
+}
+
 /** Queue an import of whatever was dropped, pasted or linked. Send exactly one of `file`, `text` or `url`. */
 export function importAuto(input: {
   file?: File;

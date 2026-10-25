@@ -832,6 +832,8 @@
     "more": "Mais opções",
     "midi": "Arquivo MIDI",
     "midiHint": "Escolha as partes e os instrumentos",
+    "audio": "Gravação de áudio",
+    "audioHint": "Transcreva em uma tablatura rascunho",
     "back": "Voltar para Adicionar qualquer coisa"
   },
   "universal": {
@@ -1979,6 +1981,7 @@
     "buttonHint": "Transcrever a gravação em uma faixa de tablatura rascunho",
     "hint": "Transcreva notas polifônicas da gravação em uma nova faixa com digitação automática e marcas de sincronização.",
     "start": "Transcrever",
+    "fileHint": "Transcreva {name} em uma nova música com uma faixa de tablatura rascunho e marcas de sincronização.",
     "close": "Fechar",
     "cancel": "Cancelar",
     "timeout": "A transcrição demorou muito. Tente novamente.",

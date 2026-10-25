@@ -832,6 +832,8 @@
     "more": "More ways",
     "midi": "MIDI file",
     "midiHint": "Pick the parts and instruments",
+    "audio": "Audio recording",
+    "audioHint": "Transcribe it into a draft tab",
     "back": "Back to Add anything"
   },
   "universal": {
@@ -1979,6 +1981,7 @@
     "buttonHint": "Transcribe the recording into a draft tab track",
     "hint": "Transcribe polyphonic notes from the recording into a new tab track with automatic fingering and sync marks.",
     "start": "Transcribe",
+    "fileHint": "Transcribe {name} into a new song with a draft tab track and sync marks.",
     "close": "Close",
     "cancel": "Cancel",
     "timeout": "Transcription took too long. Try again.",
