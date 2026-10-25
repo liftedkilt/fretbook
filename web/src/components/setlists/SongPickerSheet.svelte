@@ -111,7 +111,6 @@
             data-testid="setlist-result"
             aria-pressed={on}
             aria-disabled={done}
-            aria-label={done ? t("setlists.pickerAlready", { title: song.title }) : undefined}
             onclick={() => toggle(song)}
           >
             <Cover
@@ -125,6 +124,7 @@
             <span class="result-text">
               <strong>{song.title}</strong>
               <span class="muted">{song.artist || "—"}</span>
+              {#if done}<span class="visually-hidden">{t("setlists.pickerAlready")}</span>{/if}
             </span>
             <span class="check" aria-hidden="true">
               {#if on}<Icon name="check" size={18} />{/if}
@@ -149,6 +149,22 @@
 </Sheet>
 
 <style>
+  .search {
+    position: relative;
+    display: block;
+  }
+  .search :global(.icon) {
+    position: absolute;
+    left: var(--sp-3);
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-3);
+    pointer-events: none;
+  }
+  .search input {
+    width: 100%;
+    padding-left: calc(var(--sp-3) + 18px + var(--sp-2));
+  }
   .results {
     list-style: none;
     margin: var(--sp-3) 0;

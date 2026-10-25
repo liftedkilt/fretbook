@@ -492,10 +492,11 @@
                     class="note-text"
                     class:empty={!row.note}
                     data-testid="setlist-entry-note-text"
-                    aria-label={t("setlists.note", { title: row.title })}
                     onclick={() => editNote(row)}
                   >
-                    {row.note || t("setlists.addNote")}
+                    {row.note || t("setlists.addNote")}<span class="visually-hidden">
+                      ({row.title})</span
+                    >
                   </button>
                 {/if}
               </div>
