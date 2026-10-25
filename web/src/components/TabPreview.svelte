@@ -69,7 +69,7 @@
     data-testid="tab-preview"
     role="region"
     tabindex="0"
-    aria-label={title || t("asciiTab.preview")}
+    aria-label={title || t("asciiTab.previewRegion")}
     bind:this={host}
   ></div>
 {/if}
