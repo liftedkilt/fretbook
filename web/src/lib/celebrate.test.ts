@@ -28,7 +28,6 @@ import {
   subscribePracticeMarks,
   writeMemory,
   type Celebration,
-  type CelebrationMemory,
   type PracticeSnapshot,
 } from "./celebrate";
 
