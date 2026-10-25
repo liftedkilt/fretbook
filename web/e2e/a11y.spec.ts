@@ -153,6 +153,39 @@ for (const scheme of ["light", "dark"] as const) {
       expect(found).toEqual([]);
     });
 
+    test("the lessons and course overflow menus have no axe violations", async ({ page }) => {
+      const found: string[] = [];
+      for (const [path, trigger] of [
+        ["/lessons", "lessons-admin"],
+        ["/lessons/guitar-first-steps", "course-admin"],
+      ]) {
+        await page.goto(path);
+        await page.getByTestId(trigger).click();
+        await expect(page.getByRole("menu")).toBeVisible();
+        found.push(...(await violations(page, `${path} menu`)));
+      }
+      expect(found).toEqual([]);
+    });
+
+    test("the lessons index and course page have no axe violations part-way through", async ({
+      page,
+    }) => {
+      for (const id of ["01-holding-and-tuning", "02-the-open-strings"]) {
+        const done = await page.request.post(
+          `/api/courses/guitar-first-steps/lessons/${id}/progress`,
+          { data: { wait_completed: true, score: 90, bpm: 100 } },
+        );
+        expect(done.ok()).toBe(true);
+      }
+      const found: string[] = [];
+      for (const path of ["/lessons", "/lessons/guitar-first-steps"]) {
+        await page.goto(path);
+        await page.waitForLoadState("networkidle");
+        found.push(...(await violations(page, `${path} (in progress)`)));
+      }
+      expect(found).toEqual([]);
+    });
+
     test("the setlist overflow menu has no axe violations", async ({ page }) => {
       const made = await page.request.post("/api/setlists", { data: { name: "Friday" } });
       expect(made.ok()).toBeTruthy();

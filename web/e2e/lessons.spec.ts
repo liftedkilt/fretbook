@@ -8,14 +8,19 @@ test("work through a built-in course: lessons unlock, progress is kept, and cont
   await expect(page).toHaveURL(/\/lessons$/);
   await expect(page.getByTestId("course-card-guitar-first-steps")).toBeVisible();
   await expect(page.getByTestId("course-card-bass-first-steps")).toBeVisible();
+  // Nothing opened yet: a start-here card, not "continue".
+  await expect(page.getByTestId("lessons-start-here")).toBeVisible();
+  await expect(page.getByTestId("lessons-continue")).toHaveCount(0);
   await expect(page.getByTestId("course-card-guitar-first-steps")).toContainText(
     "0 of 20 lessons done",
   );
 
   await page.getByTestId("course-card-guitar-first-steps").click();
-  await expect(page.getByTestId("lesson-row-02-the-open-strings")).toContainText(
+  await expect(page.getByTestId("lesson-row-01-holding-and-tuning")).toContainText("Up next");
+  await expect(page.getByTestId("lesson-row-02-the-open-strings")).not.toContainText(
     "Finish the lesson before this one",
   );
+  await expect(page.getByRole("img", { name: /^Locked: The open strings/ })).toBeVisible();
 
   await page.getByTestId("course-continue").click();
   await expect(page.getByRole("heading", { name: "Holding and tuning" })).toBeVisible();
@@ -82,7 +87,8 @@ test("work through a built-in course: lessons unlock, progress is kept, and cont
 
 test("write a course and a lesson in the app, with a live preview", async ({ page }) => {
   await page.goto("/lessons");
-  await page.getByRole("link", { name: "New course" }).click();
+  await page.getByTestId("lessons-admin").click();
+  await page.getByRole("menuitem", { name: "New course" }).click();
   await page
     .getByTestId("lesson-source")
     .fill(
@@ -93,7 +99,8 @@ test("write a course and a lesson in the app, with a live preview", async ({ pag
   await expect(page).toHaveURL(/\/lessons\/my-own$/);
   await expect(page.getByRole("heading", { name: "My own course" })).toBeVisible();
 
-  await page.getByRole("link", { name: "New lesson" }).click();
+  await page.getByTestId("course-admin").click();
+  await page.getByRole("menuitem", { name: "New lesson" }).click();
   await page
     .getByTestId("lesson-source")
     .fill("---\ntitle: Hello bass\nlevel: start\n---\nPlay **slowly**.\n");

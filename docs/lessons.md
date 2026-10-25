@@ -34,7 +34,7 @@ A file with a mistake never stops the others loading. The Lessons page lists eve
 
 With sign-in (OIDC), **administrators** add and edit lessons; everyone else can only read and play them. Without sign-in the one person using the server is the administrator. Progress is always **per user**.
 
-In the app: **Lessons → New course**, or a course's **New lesson** / **Edit lesson**. The editor is a Markdown text box with a live preview that is produced by the server's own parser, so what you see is what gets saved, and a mistake is reported with its line before you can save it. **Import a lesson pack** adds a zip (see below).
+In the app: the **⋯** menu on **Lessons** (**New course**, **Import a lesson pack**) and on a course page (**Edit course**, **New lesson**, **Import a lesson pack**), or a lesson's **Edit lesson**. The editor is a Markdown text box with a live preview that is produced by the server's own parser, so what you see is what gets saved, and a mistake is reported with its line before you can save it. **Import a lesson pack** adds a zip (see below).
 
 ## A lesson file
 
@@ -140,7 +140,7 @@ my-pack.zip
     my-course/02-second.md
 ```
 
-**Lessons → Import a lesson pack** adds it to your lessons folder (a lesson for a course you already have needs no `course.md`). The whole pack is checked first and nothing is added if any file has a mistake. Packs are limited to 10 MB and 500 lessons, and other files in the zip are ignored. You can also unzip a pack into the lessons folder yourself.
+**⋯ → Import a lesson pack** on Lessons adds it to your lessons folder (a lesson for a course you already have needs no `course.md`). The whole pack is checked first and nothing is added if any file has a mistake. Packs are limited to 10 MB and 500 lessons, and other files in the zip are ignored. You can also unzip a pack into the lessons folder yourself.
 
 ## Backups
 
