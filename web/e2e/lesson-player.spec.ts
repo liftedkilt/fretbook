@@ -97,6 +97,7 @@ test("a learner with an empty library imports a song from the lesson and plays i
   await page.goto("/lessons/play-along/riff");
   await expect(page.getByTestId("lesson-song-pick")).toHaveCount(0);
   await page.getByTestId("lesson-import").click();
+  await page.getByTestId("add-more-toggle").click();
   await page.getByTestId("add-mode-file").click();
   await page.getByTestId("add-file-input").setInputFiles(fixture("practice-riff.musicxml"));
 

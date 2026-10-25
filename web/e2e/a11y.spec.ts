@@ -137,6 +137,7 @@ for (const scheme of ["light", "dark"] as const) {
       await page.keyboard.press("Escape");
 
       await page.getByTestId("add-song").click();
+      await page.getByTestId("add-more-toggle").click();
       await page.getByTestId("add-mode-file").click();
       await page.getByTestId("add-file-input").setInputFiles({
         name: "bad-riff.musicxml",

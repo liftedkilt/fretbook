@@ -14,6 +14,7 @@ const TAB = [
 test("paste ASCII tab, preview it, and save it as a song", async ({ page }) => {
   await page.goto("/");
   await page.getByTestId("add-song").click();
+  await page.getByTestId("add-more-toggle").click();
   await page.getByTestId("add-mode-paste").click();
   await expect(page.getByTestId("paste-submit")).toBeDisabled();
 
@@ -31,6 +32,7 @@ test("paste ASCII tab, preview it, and save it as a song", async ({ page }) => {
 test("pasted chords over lyrics are saved as a chord sheet", async ({ page }) => {
   await page.goto("/");
   await page.getByTestId("add-song").click();
+  await page.getByTestId("add-more-toggle").click();
   await page.getByTestId("add-mode-paste").click();
   await page.getByTestId("paste-title").fill("Pasted Chords");
   await page.getByTestId("paste-text").fill("C        G\nHello big world\n");
@@ -45,6 +47,7 @@ test("pasted chords over lyrics are saved as a chord sheet", async ({ page }) =>
 test("an uploaded .tab file becomes a tab with estimated rhythm", async ({ page }) => {
   await page.goto("/");
   await page.getByTestId("add-song").click();
+  await page.getByTestId("add-more-toggle").click();
   await page.getByTestId("add-mode-file").click();
   await page.getByTestId("add-file-input").setInputFiles({
     name: "upload-riff.tab",

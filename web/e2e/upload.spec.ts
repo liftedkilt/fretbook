@@ -7,6 +7,7 @@ test("upload a MusicXML file and open it", async ({ page, seed }) => {
   await expect(page.getByTestId("library-empty")).toBeVisible();
 
   await page.getByTestId("add-song").click();
+  await page.getByTestId("add-more-toggle").click();
   await page.getByTestId("add-mode-file").click();
   await page.getByTestId("add-file-input").setInputFiles(fixture("practice-riff.musicxml"));
 
@@ -24,6 +25,7 @@ test("upload a MusicXML file and open it", async ({ page, seed }) => {
 test("a file that is not a score is refused with a message", async ({ page }) => {
   await page.goto("/");
   await page.getByTestId("add-song").click();
+  await page.getByTestId("add-more-toggle").click();
   await page.getByTestId("add-mode-file").click();
   await page.getByTestId("add-file-input").setInputFiles({
     name: "notes.musicxml",
@@ -37,6 +39,7 @@ test("a file that is not a score is refused with a message", async ({ page }) =>
 test("failed import appears in recent imports and can be dismissed", async ({ page }) => {
   await page.goto("/");
   await page.getByTestId("add-song").click();
+  await page.getByTestId("add-more-toggle").click();
   await page.getByTestId("add-mode-file").click();
   await page.getByTestId("add-file-input").setInputFiles({
     name: "bad-riff.musicxml",
@@ -67,6 +70,7 @@ test("bulk upload multiple files at once shows progress and imports all songs", 
   await expect(page.getByTestId("library-empty")).toBeVisible();
 
   await page.getByTestId("add-song").click();
+  await page.getByTestId("add-more-toggle").click();
   await page.getByTestId("add-mode-file").click();
   await page
     .getByTestId("add-file-input")
@@ -97,6 +101,7 @@ test("bulk upload a zip archive extracts and imports all scores with archive nam
 
   await page.goto("/");
   await page.getByTestId("add-song").click();
+  await page.getByTestId("add-more-toggle").click();
   await page.getByTestId("add-mode-file").click();
   await page.getByTestId("add-file-input").setInputFiles({
     name: "my-pack.zip",

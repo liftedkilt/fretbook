@@ -34,6 +34,7 @@ test.describe("container smoke flows", () => {
   test("library loads, imports MusicXML tab and renders score", async ({ page }) => {
     await page.goto("/");
     await page.getByTestId("add-song").click();
+    await page.getByTestId("add-more-toggle").click();
     await page.getByTestId("add-mode-file").click();
     await page.getByTestId("add-file-input").setInputFiles(fixture("practice-riff.musicxml"));
 
