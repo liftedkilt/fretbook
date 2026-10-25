@@ -343,7 +343,7 @@ def test_finishing_every_lesson_opens_the_next_course(client: TestClient) -> Non
 
 
 def test_continue_returns_to_the_lesson_opened_last_then_moves_on(client: TestClient) -> None:
-    assert client.get("/api/courses").json()["resume"]["lesson_id"] == "a"
+    assert client.get("/api/courses").json()["resume"] is None
     assert client.post("/api/courses/c/lessons/free/open").status_code == 204
     resume = client.get("/api/courses").json()["resume"]
     assert (resume["course_id"], resume["lesson_id"], resume["lesson_title"]) == ("c", "free", "Free")
@@ -636,3 +636,17 @@ def test_backup_round_trip_keeps_lesson_progress(client: TestClient, tmp_path: P
         job = _restore(target, out.getvalue())
         assert job["status"] == "done" and job["result"]["lesson_progress"] == 0
         assert [w["key"] for w in job["result"]["warnings"]] == ["backup.lessonProgressDropped"]
+
+
+def test_course_path_carries_time_estimates_and_stars(client: TestClient) -> None:
+    fresh = client.get("/api/courses/c").json()
+    lessons = [lesson for level in fresh["levels"] for lesson in level["lessons"]]
+    assert all(lesson["minutes"] >= 1 and lesson["stars"] == 0 for lesson in lessons)
+    assert fresh["stars"] == 0 and fresh["max_stars"] == 3 * len(lessons)
+    assert fresh["minutes_left"] == sum(lesson["minutes"] for lesson in lessons)
+    client.post("/api/courses/c/lessons/free/progress", json={"wait_completed": True})
+    done = client.get("/api/courses/c").json()
+    free = next(lesson for level in done["levels"] for lesson in level["lessons"] if lesson["id"] == "free")
+    assert free["stars"] == 1
+    assert done["stars"] == 1
+    assert done["minutes_left"] == fresh["minutes_left"] - free["minutes"]

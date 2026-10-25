@@ -2590,6 +2590,10 @@ export interface components {
             levels: components["schemas"]["CourseLevel"][];
             /** Locked */
             locked: boolean;
+            /** Max Stars */
+            max_stars: number;
+            /** Minutes Left */
+            minutes_left: number;
             /** Next Lesson Id */
             next_lesson_id: string | null;
             /** Requires */
@@ -2599,6 +2603,8 @@ export interface components {
              * @enum {string}
              */
             source: "builtin" | "user";
+            /** Stars */
+            stars: number;
             /** Summary */
             summary: string;
             /** Title */
@@ -2638,6 +2644,10 @@ export interface components {
             lesson_count: number;
             /** Locked */
             locked: boolean;
+            /** Max Stars */
+            max_stars: number;
+            /** Minutes Left */
+            minutes_left: number;
             /** Next Lesson Id */
             next_lesson_id: string | null;
             /** Requires */
@@ -2647,6 +2657,8 @@ export interface components {
              * @enum {string}
              */
             source: "builtin" | "user";
+            /** Stars */
+            stars: number;
             /** Summary */
             summary: string;
             /** Title */
@@ -3139,6 +3151,9 @@ export interface components {
             has_pass_condition: boolean;
             /** Id */
             id: string;
+            /** Minutes */
+            minutes: number;
+            pass_condition: components["schemas"]["LessonPassCondition"] | null;
             /** Requires */
             requires: string[];
             /**
@@ -3146,6 +3161,8 @@ export interface components {
              * @enum {string}
              */
             source: "builtin" | "user";
+            /** Stars */
+            stars: number;
             /**
              * Status
              * @enum {string}
