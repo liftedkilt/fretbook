@@ -129,8 +129,8 @@ test("write a course and a lesson in the app, with a live preview", async ({ pag
 
 test("lesson pages look right on a phone", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 700 });
-  await page.goto("/tools");
-  await page.getByTestId("tool-card-lessons").click();
+  await page.goto("/");
+  await page.getByTestId("tab-lessons").click();
   await expect(page.getByTestId("lessons-view")).toBeVisible();
   await page.getByTestId("course-card-bass-first-steps").click();
   await page.getByTestId("course-continue").click();

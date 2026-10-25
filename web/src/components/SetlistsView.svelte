@@ -1,6 +1,7 @@
 <script lang="ts">
   import Icon from "./Icon.svelte";
   import Page from "./ui/Page.svelte";
+  import LibrarySwitch from "./shell/LibrarySwitch.svelte";
   import PageHeader from "./ui/PageHeader.svelte";
   import { createSetlist, deleteSetlist, listSetlists } from "../lib/api";
   import { t } from "../lib/i18n.svelte";
@@ -52,6 +53,7 @@
 
 <Page width="page">
   <section class="setlists-page">
+    <LibrarySwitch active="setlists" />
     <PageHeader title={t("setlists.heading")} eyebrow={t("setlists.nav")} />
 
     {#if !ui.demoMode}<form class="setlist-new" onsubmit={create}>

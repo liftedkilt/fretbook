@@ -789,8 +789,9 @@
     "beatUnit": "Beat unit"
   },
   "nav": {
-    "recent": "Recently updated",
-    "main": "Main"
+    "main": "Main",
+    "songs": "Songs",
+    "librarySwitch": "Library section"
   },
   "add": {
     "button": "New",
@@ -1947,9 +1948,6 @@
     "eyebrow": "Learn",
     "heading": "Lessons",
     "subtitle": "Courses for guitar and bass. Each lesson opens the next, and your progress is saved.",
-    "toolTitle": "Lessons",
-    "toolDescription": "Step-by-step courses for guitar and bass with progress and unlocks.",
-    "openTool": "Open lessons",
     "empty": "There are no courses yet. An administrator can add some, or drop a lesson pack into the lessons folder.",
     "continue": "Continue where you left off",
     "start": "Start the course",

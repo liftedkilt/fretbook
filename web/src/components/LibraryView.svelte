@@ -1,6 +1,7 @@
 <script lang="ts">
   import FirstRun from "./FirstRun.svelte";
   import Icon from "./Icon.svelte";
+  import LibrarySwitch from "./shell/LibrarySwitch.svelte";
   import LibraryPicker from "./LibraryPicker.svelte";
   import ManageTagsSheet from "./ManageTagsSheet.svelte";
   import RecentImports from "./RecentImports.svelte";
@@ -199,21 +200,13 @@
 <Page width="wide">
   <section class="library">
     <LibraryPicker />
+    <LibrarySwitch active="songs" />
     <PageHeader
       title={ui.filter === "all" ? t("library.welcome") : heading}
       eyebrow={t("library.heading")}
       subtitle={t("library.count", { count: countFor(ui.filter) })}
       subtitleTestId="library-count"
     >
-      {#snippet actions()}
-        {#if !ui.demoMode}
-          <button
-            class="primary hero-add"
-            data-testid="add-song-hero"
-            onclick={() => openSheet("add")}><Icon name="plus" />{t("add.button")}</button
-          >
-        {/if}
-      {/snippet}
     </PageHeader>
 
     <RecentImports />
