@@ -31,7 +31,13 @@
   import { navigate } from "../lib/router.svelte";
   import { tuningLabel } from "../lib/tuning";
   import type { MidiInspection } from "../lib/api-types";
-  import type { AsciiTabPreview, ImportPreview, InstrumentPreset, Job } from "../lib/types";
+  import type {
+    AsciiTabPreview,
+    DuplicateAction,
+    ImportPreview,
+    InstrumentPreset,
+    Job,
+  } from "../lib/types";
   import { closeSheet, defaultFamily, refreshSongs, ui } from "../lib/ui.svelte";
 
   type Mode = "any" | "link" | "file" | "paste" | "tab" | "chords";
@@ -67,17 +73,15 @@
   let pastePreview = $state<AsciiTabPreview | null>(null);
   let pasteBusy = $state(false);
   let pasteError = $state("");
+  let duplicates = $state<DuplicateAction>("skip");
 
   const open = $derived(ui.sheet === "add");
   const chosenPreset = $derived(preset || ui.defaultInstrument);
 
-  const modes: { id: Mode; icon: string; label: string; hint: string }[] = $derived([
-    { id: "any", icon: "sparkle", label: t("universal.mode"), hint: t("universal.modeHint") },
+  const moreWays: { id: Mode; icon: string; label: string; hint: string }[] = $derived([
     { id: "link", icon: "link", label: t("add.link"), hint: t("add.linkHint") },
     { id: "file", icon: "upload", label: t("add.file"), hint: t("add.fileHint") },
     { id: "paste", icon: "file", label: t("asciiTab.mode"), hint: t("asciiTab.modeHint") },
-    { id: "tab", icon: "tab", label: t("add.tab"), hint: t("add.tabHint") },
-    { id: "chords", icon: "chords", label: t("add.chords"), hint: t("add.chordsHint") },
   ]);
 
   const gridOptions: { value: Grid; label: string }[] = $derived([
@@ -86,6 +90,12 @@
     { value: 16, label: t("asciiTab.grid16") },
     { value: 32, label: t("asciiTab.grid32") },
   ]);
+
+  function choose(next: Mode) {
+    mode = next;
+    error = "";
+    notice = "";
+  }
 
   function message(err: unknown): string {
     if (err instanceof ApiError || err instanceof Error) return err.message;
@@ -320,7 +330,7 @@
       closeSheet();
       await processBulkImport({
         files: input.files,
-        duplicates: input.duplicates,
+        duplicates: input.duplicates ?? duplicates,
         tags: input.tags,
         family: defaultFamily(),
       });
@@ -396,28 +406,17 @@
   testid="add-sheet"
   onclose={closeSheet}
 >
-  <div class="mode-grid" role="tablist" aria-label={t("add.heading")}>
-    {#each modes as item (item.id)}
-      <button
-        class="mode-card"
-        data-testid={`add-mode-${item.id}`}
-        role="tab"
-        aria-selected={mode === item.id}
-        onclick={() => {
-          mode = item.id;
-          error = "";
-        }}
-      >
-        <span class="mode-icon"><Icon name={item.icon} /></span>
-        <span class="mode-text">
-          <strong>{item.label}</strong>
-          <small>{item.hint}</small>
-        </span>
-      </button>
-    {/each}
-  </div>
-
   <div class="sheet-section">
+    {#if mode !== "any"}
+      <button
+        class="ghost add-back"
+        type="button"
+        data-testid="add-back"
+        onclick={() => choose("any")}
+      >
+        <Icon name="back" size={18} />{t("add.back")}
+      </button>
+    {/if}
     {#if mode === "any"}
       {#if midi}
         <MidiImport
@@ -428,7 +427,82 @@
           oncancel={() => (midi = null)}
         />
       {:else}
-        <UniversalAdd busy={Boolean(busy)} onadd={(input) => void submitAny(input)} />
+        <UniversalAdd busy={Boolean(busy)} {duplicates} onadd={(input) => void submitAny(input)} />
+        <div class="add-quick">
+          <button
+            class="add-quick-button"
+            type="button"
+            data-testid="add-mode-tab"
+            onclick={() => choose("tab")}
+          >
+            <Icon name="tab" size={18} />{t("add.tab")}
+          </button>
+          <button
+            class="add-quick-button"
+            type="button"
+            data-testid="add-mode-chords"
+            onclick={() => choose("chords")}
+          >
+            <Icon name="chords" size={18} />{t("add.chords")}
+          </button>
+        </div>
+        <details class="add-more" data-testid="add-more">
+          <summary data-testid="add-more-toggle">{t("add.more")}</summary>
+          <div class="add-more-list">
+            {#each moreWays as item (item.id)}
+              <button
+                class="add-more-item"
+                type="button"
+                data-testid={`add-mode-${item.id}`}
+                onclick={() => choose(item.id)}
+              >
+                <Icon name={item.icon} size={18} />
+                <span><strong>{item.label}</strong><small>{item.hint}</small></span>
+              </button>
+            {/each}
+            <label class="add-more-item">
+              <Icon name="listMusic" size={18} />
+              <span><strong>{t("add.midi")}</strong><small>{t("add.midiHint")}</small></span>
+              <input
+                class="visually-hidden"
+                data-testid="add-midi-input"
+                type="file"
+                accept=".mid,.midi"
+                disabled={Boolean(busy)}
+                onchange={(event) => {
+                  const file = event.currentTarget.files?.[0];
+                  event.currentTarget.value = "";
+                  if (file) void openMidi(file);
+                }}
+              />
+            </label>
+            <fieldset class="duplicate-bar">
+              <legend>{t("bulk.duplicates")}</legend>
+              <label class="radio-label">
+                <input type="radio" bind:group={duplicates} value="skip" data-testid="dup-skip" />
+                <span>{t("bulk.skip")}</span>
+              </label>
+              <label class="radio-label">
+                <input
+                  type="radio"
+                  bind:group={duplicates}
+                  value="keep_both"
+                  data-testid="dup-keep"
+                />
+                <span>{t("bulk.keepBoth")}</span>
+              </label>
+              <label class="radio-label">
+                <input
+                  type="radio"
+                  bind:group={duplicates}
+                  value="replace"
+                  data-testid="dup-replace"
+                />
+                <span>{t("bulk.replace")}</span>
+              </label>
+            </fieldset>
+          </div>
+        </details>
       {/if}
     {:else if mode === "link"}
       <form
@@ -764,3 +838,86 @@
 {#if busy && !open}
   <div class="toast" role="status"><span class="spinner"></span>{busy}</div>
 {/if}
+
+<style>
+  .add-quick {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-2, 0.5rem);
+    margin-top: var(--s-3, 0.75rem);
+  }
+
+  .add-quick-button {
+    justify-content: center;
+  }
+
+  .add-back {
+    margin-bottom: var(--s-3, 0.75rem);
+  }
+
+  .add-more {
+    margin-top: var(--s-3, 0.75rem);
+  }
+
+  .add-more summary {
+    cursor: pointer;
+    color: var(--text-2);
+    font-weight: 600;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+
+  .add-more-list {
+    display: grid;
+    gap: var(--s-2, 0.5rem);
+  }
+
+  .add-more-item {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.75rem;
+    min-height: 48px;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: var(--surface-2);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .add-more-item span {
+    display: grid;
+    min-width: 0;
+  }
+
+  .add-more-item small {
+    color: var(--text-2);
+  }
+
+  .duplicate-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: var(--surface-2);
+    font-size: 0.875rem;
+  }
+
+  .duplicate-bar legend {
+    padding: 0 0.25rem;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .radio-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    cursor: pointer;
+  }
+</style>

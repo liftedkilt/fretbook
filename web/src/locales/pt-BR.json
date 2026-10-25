@@ -828,14 +828,18 @@
     "chords": "Cifra",
     "chordsHint": "Cole acordes sobre a letra",
     "dropTitle": "Solte um arquivo aqui",
-    "browse": "Escolher arquivo"
+    "browse": "Escolher arquivo",
+    "more": "Mais opções",
+    "midi": "Arquivo MIDI",
+    "midiHint": "Escolha as partes e os instrumentos",
+    "back": "Voltar para Adicionar qualquer coisa"
   },
   "universal": {
-    "heading": "Solte um arquivo, cole um texto ou um link",
+    "heading": "Solte arquivos, uma pasta ou um .zip, ou cole um link, uma tablatura ou uma cifra",
     "hint": "O Fretbook descobre o que é.",
     "placeholder": "Cole um link, uma tablatura, uma cifra…",
     "drop": "Solte um arquivo aqui, ou escolha um",
-    "browse": "Escolher um arquivo",
+    "browse": "Escolher arquivos",
     "submit": "Adicionar",
     "empty": "Adicione um arquivo, um texto ou um link primeiro.",
     "supported": "O Fretbook lê Guitar Pro, MusicXML, ChordPro, tablatura ASCII, MIDI, JSON do Fretbook e arquivos de áudio, e links do Songsterr, do YouTube, de arquivos diretos ou de páginas com uma tablatura.",

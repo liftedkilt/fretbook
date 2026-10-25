@@ -11,12 +11,15 @@
     | { text: string }
     | { url: string };
 
-  let { busy, onadd }: { busy: boolean; onadd: (input: AddInput) => void } = $props();
+  let {
+    busy,
+    onadd,
+    duplicates = "skip",
+  }: { busy: boolean; onadd: (input: AddInput) => void; duplicates?: DuplicateAction } = $props();
 
   let value = $state("");
   let dragging = $state(false);
   let empty = $state(false);
-  let duplicates = $state<DuplicateAction>("skip");
 
   function submit() {
     const found = classifyPaste(value);
@@ -77,7 +80,7 @@
     <span class="dropzone-icon"><Icon name="upload" size={28} /></span>
     <strong>{t("universal.drop")}</strong>
     <small class="muted">{t("bulk.dropHint")}</small>
-    <span class="button">{t("universal.browse")}</span>
+    <span class="button primary">{t("universal.browse")}</span>
     <input
       class="visually-hidden"
       data-testid="any-file-input"
@@ -87,24 +90,6 @@
       onchange={handleFileSelect}
     />
   </label>
-
-  <div class="span-2 duplicate-bar">
-    <span class="duplicate-label">{t("bulk.duplicates")}:</span>
-    <div class="duplicate-radios">
-      <label class="radio-label">
-        <input type="radio" bind:group={duplicates} value="skip" data-testid="dup-skip" />
-        <span>{t("bulk.skip")}</span>
-      </label>
-      <label class="radio-label">
-        <input type="radio" bind:group={duplicates} value="keep_both" data-testid="dup-keep" />
-        <span>{t("bulk.keepBoth")}</span>
-      </label>
-      <label class="radio-label">
-        <input type="radio" bind:group={duplicates} value="replace" data-testid="dup-replace" />
-        <span>{t("bulk.replace")}</span>
-      </label>
-    </div>
-  </div>
 
   <label class="field span-2">
     <span>{t("universal.heading")}</span>
@@ -127,33 +112,3 @@
     </button>
   </div>
 </form>
-
-<style>
-  .duplicate-bar {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 0.5rem 0.75rem;
-    background: var(--surface-2);
-    border: 1px solid var(--line);
-    border-radius: var(--r-md);
-    font-size: 0.875rem;
-  }
-
-  .duplicate-label {
-    font-weight: 500;
-    color: var(--muted);
-  }
-
-  .duplicate-radios {
-    display: flex;
-    gap: 1rem;
-  }
-
-  .radio-label {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    cursor: pointer;
-  }
-</style>

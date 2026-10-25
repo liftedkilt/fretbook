@@ -104,7 +104,7 @@ describe("AddSheet", () => {
     ui.defaultInstrument = "bass-4";
   });
 
-  it("renders all import mode options", () => {
+  it("leads with Add anything and folds the other importers under More ways", () => {
     render(AddSheet);
 
     expect(screen.getByTestId("add-mode-link")).toBeInTheDocument();
@@ -112,7 +112,7 @@ describe("AddSheet", () => {
     expect(screen.getByTestId("add-mode-tab")).toBeInTheDocument();
     expect(screen.getByTestId("add-mode-chords")).toBeInTheDocument();
 
-    expect(screen.getByTestId("add-mode-any")).toBeInTheDocument();
+    expect(screen.getByTestId("add-more")).not.toHaveAttribute("open");
 
     // The Add box is the default mode
     expect(screen.getByTestId("any-text")).toBeInTheDocument();
