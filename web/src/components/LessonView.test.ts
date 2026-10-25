@@ -6,6 +6,7 @@ import { ui } from "../lib/ui.svelte";
 import LessonView from "./LessonView.svelte";
 
 const mockGet = vi.fn();
+const mockCourse = vi.fn();
 const mockOpen = vi.fn();
 const mockReport = vi.fn();
 const mockCheck = vi.fn();
@@ -13,6 +14,7 @@ const mockSongs = vi.fn();
 
 vi.mock("../lib/api", async (original) => ({
   ...(await original<typeof import("../lib/api")>()),
+  getCourse: (...args: unknown[]) => mockCourse(...args),
   getLesson: (...args: unknown[]) => mockGet(...args),
   openLesson: (...args: unknown[]) => mockOpen(...args),
   reportLessonProgress: (...args: unknown[]) => mockReport(...args),
@@ -48,6 +50,30 @@ const lesson = (extra = {}) => ({
   ...extra,
 });
 
+const summary = (id: string, status: string) => ({
+  id,
+  title: id,
+  summary: "",
+  status,
+  source: "builtin",
+  requires: [],
+  has_pass_condition: false,
+});
+
+const course = (
+  levels = [
+    ["l1", "available"],
+    ["l2", "locked"],
+    ["l3", "locked"],
+  ],
+) => ({
+  id: "g1",
+  title: "Guitar one",
+  levels: [
+    { id: "basics", title: "Basics", lessons: levels.map(([id, status]) => summary(id, status)) },
+  ],
+});
+
 const result = (passed: boolean, extra = {}) => ({
   passed,
   progress: progress({ completed: passed, attempts: 1, ...extra }),
@@ -60,6 +86,7 @@ describe("LessonView", () => {
     mockOpen.mockResolvedValue(undefined);
     mockGet.mockResolvedValue(lesson());
     mockSongs.mockResolvedValue({ items: [] });
+    mockCourse.mockResolvedValue(course());
     localStorage.clear();
     ui.sheet = "";
     ui.addForLesson = null;
@@ -231,5 +258,50 @@ describe("LessonView", () => {
     await screen.findByTestId("lesson-check");
     expect(screen.queryByTestId("lesson-song-pick")).toBeNull();
     expect(mockSongs).not.toHaveBeenCalled();
+  });
+
+  it("shows where the lesson sits, with a locked next step until it is passed", async () => {
+    mockReport.mockResolvedValue(result(true));
+    render(LessonView, { course: "g1", lesson: "l1" });
+    expect(await screen.findByText("Basics · Lesson 1 of 3")).toBeInTheDocument();
+    expect(screen.queryByTestId("lesson-previous")).toBeNull();
+    const locked = await screen.findByTestId("lesson-step-next");
+    expect(locked).toHaveTextContent("Pass this lesson to unlock the next one.");
+    expect(locked.querySelector("button")).toBeDisabled();
+
+    await fireEvent.click(screen.getByTestId("lesson-complete"));
+    await waitFor(() =>
+      expect(screen.getByTestId("lesson-step-next")).toHaveAttribute("href", "/lessons/g1/l2"),
+    );
+  });
+
+  it("links to the previous lesson, and has no next step on the last one", async () => {
+    mockCourse.mockResolvedValue(
+      course([
+        ["l1", "completed"],
+        ["l2", "completed"],
+        ["l3", "available"],
+      ]),
+    );
+    render(LessonView, { course: "g1", lesson: "l3" });
+    expect(await screen.findByText("Basics · Lesson 3 of 3")).toBeInTheDocument();
+    expect(screen.getByTestId("lesson-previous")).toHaveAttribute("href", "/lessons/g1/l2");
+    expect(screen.queryByTestId("lesson-step-next")).toBeNull();
+  });
+
+  it("makes playing the exercise the primary action, and self-reporting a ghost", async () => {
+    mockGet.mockResolvedValue(
+      lesson({
+        pass_condition: { type: "wait", song: "" },
+        blocks: [{ kind: "exercise", text: "", params: { preset: "warmup" } }],
+      }),
+    );
+    render(LessonView, { course: "g1", lesson: "l1" });
+    const play = await screen.findByTestId("lesson-play-link");
+    expect(play).toHaveClass("primary");
+    expect(play).toHaveTextContent("Play the exercise in wait mode");
+    expect(play).toHaveAttribute("href", "/tools/exercises?preset=warmup");
+    expect(screen.getByTestId("lesson-report-wait")).toHaveClass("ghost");
+    expect(screen.getByTestId("lesson-report-wait")).toHaveTextContent("I’ve done this");
   });
 });
