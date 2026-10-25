@@ -1,6 +1,6 @@
 # Song details and cover art
 
-Every song can carry a few details beside its title and artist. Open a song and press **Edit details**.
+Every song can carry a few details beside its title and artist. Open a song, open the **⋯** menu next to the title and choose **Song details**.
 
 | Detail | What it is |
 | --- | --- |
@@ -9,7 +9,7 @@ Every song can carry a few details beside its title and artist. Open a song and 
 | **Notes** | Your own notes in Markdown: `**bold**`, `*italic*`, `` `code` ``, headings, lists and `http(s)` links. Raw HTML is shown as text. |
 | **Cover art** | A PNG, JPEG or WebP image up to 5 MB. Without one, the app draws a cover from the song. |
 
-The details show on the song page and, for key and genre, on the library cards. The library has **Key** and **Genre** menus that filter through the server, next to the difficulty and tag filters. They only appear once a song has a key or a genre. A song's [difficulty](playing.md) is estimated automatically; nothing here changes it.
+The key shows beside the title; genre, album, year and notes show in a **Details** section under the score. Key and genre also show on the library cards. The library has **Key** and **Genre** menus that filter through the server, next to the difficulty and tag filters. They only appear once a song has a key or a genre. A song's [difficulty](playing.md) is estimated automatically; nothing here changes it.
 
 Saving details does not change the song's revision, so it never conflicts with an edit made in the tab editor. Details are part of the [library backup](../self-hosting/backups.md): the cover art, genre, album, year, notes and a key you chose come back on restore.
 
