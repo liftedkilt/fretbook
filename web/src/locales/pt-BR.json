@@ -825,7 +825,7 @@
     "fileHint": "Guitar Pro, MusicXML, ChordPro, tablatura em texto",
     "tab": "Tablatura em branco",
     "tabHint": "Escreva uma tablatura do zero",
-    "chords": "Cifra",
+    "chords": "Cifra em branco",
     "chordsHint": "Cole acordes sobre a letra",
     "dropTitle": "Solte um arquivo aqui",
     "browse": "Escolher arquivo",

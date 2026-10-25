@@ -96,6 +96,10 @@ for (const scheme of ["light", "dark"] as const) {
         await page.getByTestId(trigger).click();
         await expect(page.getByTestId(sheet)).toBeVisible();
         found.push(...(await violations(page, sheet)));
+        if (sheet === "add-sheet") {
+          await page.getByTestId("add-more-toggle").click();
+          found.push(...(await violations(page, "add-sheet-more-ways")));
+        }
         await page.keyboard.press("Escape");
         await expect(page.getByTestId(sheet)).toBeHidden();
       }

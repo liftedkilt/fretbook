@@ -825,7 +825,7 @@
     "fileHint": "Guitar Pro, MusicXML, ChordPro, ASCII tab",
     "tab": "Blank tab",
     "tabHint": "Write a tab from scratch",
-    "chords": "Chord sheet",
+    "chords": "Blank chord sheet",
     "chordsHint": "Paste chords over lyrics",
     "dropTitle": "Drop a file here",
     "browse": "Choose a file",
