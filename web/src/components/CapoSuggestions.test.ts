@@ -9,16 +9,22 @@ describe("CapoSuggestions", () => {
     expect(screen.getByTestId("capo-option-3")).toHaveTextContent("Capo 3: play G, C, D, Em");
   });
 
-  it("says so when the chords are already easy", () => {
+  it("shows nothing when the chords are already easy", () => {
     render(CapoSuggestions, { props: { chords: ["G", "C", "D"], capo: 0, flats: false } });
-    expect(screen.getByTestId("capo-none")).toBeInTheDocument();
+    expect(screen.queryByTestId("capo-suggestions")).toBeNull();
+  });
+
+  it("can be dismissed", async () => {
+    render(CapoSuggestions, { props: { chords: ["Bb", "Eb", "F", "Gm"], capo: 0, flats: false } });
+    await fireEvent.click(screen.getByTestId("capo-dismiss"));
+    expect(screen.queryByTestId("capo-suggestions")).toBeNull();
   });
 
   it("works from the sounding chords when the sheet already has a capo", () => {
     // G, C, D, Em with capo 3 sound as Bb, Eb, F, Gm; the shapes are already open, so there is nothing better.
     render(CapoSuggestions, { props: { chords: ["G", "C", "D", "Em"], capo: 3, flats: false } });
     expect(screen.queryByTestId("capo-option-3")).toBeNull();
-    expect(screen.getByTestId("capo-none")).toBeInTheDocument();
+    expect(screen.queryByTestId("capo-suggestions")).toBeNull();
   });
 
   it("applies a suggestion and offers an undo once one is applied", async () => {

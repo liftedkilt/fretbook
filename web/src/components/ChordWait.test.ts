@@ -61,6 +61,8 @@ describe("ChordWait", () => {
     expect(startListening).toHaveBeenCalledWith(
       expect.objectContaining({ deviceId: "scarlett", channel: 1 }),
     );
+    expect(screen.queryByTestId("listen-meter")).toBeNull();
+    await fireEvent.click(screen.getByTestId("chord-wait-input"));
     expect(screen.getByTestId("listen-meter")).toHaveAttribute("aria-valuenow", "0");
     (options as { onLevel?: (level: { rms: number; peak: number }) => void }).onLevel?.({
       rms: 1,
@@ -70,9 +72,9 @@ describe("ChordWait", () => {
     expect(screen.getByTestId("listen-meter")).toHaveAttribute("aria-valuenow", "100");
   });
 
-  it("says when a sheet has no chords", () => {
+  it("offers nothing when a sheet has no chords", () => {
     setup("just words");
-    expect(screen.getByTestId("chord-wait-empty")).toBeTruthy();
+    expect(screen.queryByTestId("chord-wait")).toBeNull();
     expect(screen.queryByTestId("chord-wait-toggle")).toBeNull();
   });
 

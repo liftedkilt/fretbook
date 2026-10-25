@@ -22,16 +22,16 @@
   }
 </script>
 
-<ul class="chord-strip" data-testid="chord-strip">
+<ul class="chord-strip strip" data-testid="chord-strip">
   {#each entries as entry (entry.name)}
-    <li class="chord-card" data-testid="chord-card">
+    <li class="chord-card card" data-testid="chord-card">
       <p class="chord-card-name" data-testid="strip-chord-name">{entry.name}</p>
       {#if entry.voicing}
         <ChordDiagram voicing={entry.voicing} {strings} name={entry.name} />
         {#if entry.voicing.source === "define"}
           <p class="chord-card-note">{t("chordDiagrams.fromSong")}</p>
         {/if}
-        <div class="chord-card-controls no-print">
+        <div class="chord-card-controls controls no-print">
           <button
             class="icon-button ghost"
             data-testid="voicing-prev"
@@ -65,3 +65,43 @@
     </li>
   {/each}
 </ul>
+
+<style>
+  /* One row that scrolls sideways; the pager and strum show on hover or focus (always on touch). */
+  .strip {
+    flex-wrap: nowrap;
+    gap: var(--sp-2);
+    overflow-x: auto;
+    padding-bottom: var(--sp-1);
+    scroll-snap-type: x proximity;
+  }
+
+  .card {
+    flex: 0 0 auto;
+    width: 6.5rem;
+    scroll-snap-align: start;
+  }
+
+  .controls {
+    flex-wrap: nowrap;
+    opacity: 0;
+    transition: opacity 120ms ease;
+  }
+
+  .card:hover .controls,
+  .card:focus-within .controls {
+    opacity: 1;
+  }
+
+  @media (hover: none) {
+    .controls {
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .controls {
+      transition: none;
+    }
+  }
+</style>

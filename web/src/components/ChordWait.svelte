@@ -46,6 +46,8 @@
   let channel = $state(getSavedChannel(savedDevice));
   let level = $state(0);
   let session = $state<ListenSession | null>(null);
+  let inputOpen = $state(false);
+  const inputId = `chord-wait-input-${Math.random().toString(36).slice(2, 8)}`;
 
   const chord = $derived(built.steps[current]?.label ?? "");
 
@@ -121,33 +123,55 @@
   $effect(() => () => run?.stop());
 </script>
 
-<section class="panel-group wait-chords no-print" data-testid="chord-wait">
-  <h3>{t("chordWait.title")}</h3>
-  {#if built.steps.length === 0}
-    <p class="muted small" data-testid="chord-wait-empty">{t("chordWait.noChords")}</p>
-  {:else}
-    <p class="muted small">{t("chordWait.about")}</p>
-    <div class="mix-row">
-      <button class="button" data-testid="chord-wait-toggle" aria-pressed={on} onclick={toggle}
-        ><Icon name="hourglass" size={16} />{on
-          ? t("chordWait.stop")
-          : t("chordWait.start")}</button
+{#if built.steps.length > 0}
+  <div class="wait no-print" data-testid="chord-wait">
+    <button
+      class="toggle"
+      data-testid="chord-wait-toggle"
+      aria-pressed={on}
+      title={t("chordWait.about")}
+      onclick={toggle}
+    >
+      <Icon name="hourglass" size={16} /><span class="float-label"
+        >{on ? t("chordWait.stop") : t("chordWait.start")}</span
       >
-    </div>
-    <ListenPanel
-      {session}
-      {deviceId}
-      {channel}
-      {level}
-      onDevice={(next) => (deviceId = next)}
-      onChannel={(next) => (channel = next)}
-    />
-    {#if error}<p class="alert" role="alert" data-testid="chord-wait-error">
+    </button>
+    {#if on || error}
+      <button
+        class="icon-button ghost"
+        data-testid="chord-wait-input"
+        aria-expanded={inputOpen}
+        aria-controls={inputId}
+        aria-label={t("chordPage.waitInput")}
+        title={t("chordPage.waitInput")}
+        onclick={() => (inputOpen = !inputOpen)}><Icon name="mic" size={18} /></button
+      >
+    {/if}
+    {#if inputOpen && (on || error)}
+      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+      <div
+        class="popover"
+        id={inputId}
+        role="group"
+        aria-label={t("chordPage.waitInput")}
+        onkeydown={(event) => event.key === "Escape" && (inputOpen = false)}
+      >
+        <ListenPanel
+          {session}
+          {deviceId}
+          {channel}
+          {level}
+          onDevice={(next) => (deviceId = next)}
+          onChannel={(next) => (channel = next)}
+        />
+      </div>
+    {/if}
+    {#if error}<p class="note alert" role="alert" data-testid="chord-wait-error">
         <Icon name="alert" size={18} />{error}
       </p>{/if}
     {#if on}
       <div
-        class="wait-status"
+        class="note wait-status"
         data-testid="chord-wait-status"
         data-state={phase}
         data-hits={hits}
@@ -174,5 +198,51 @@
         {/if}
       </div>
     {/if}
-  {/if}
-</section>
+  </div>
+{/if}
+
+<style>
+  .wait {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  /* The dock is fixed to the bottom, so the status and the input popover open upward from it. */
+  .note {
+    position: fixed;
+    left: calc(var(--side-w) + (100vw - var(--side-w)) / 2);
+    bottom: calc(18px + 56px + var(--sp-2) + var(--safe-b));
+    z-index: 41;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2);
+    max-width: calc(100vw - var(--side-w) - 24px);
+    margin: 0;
+    padding: var(--sp-2) var(--sp-3);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    box-shadow: var(--shadow-md);
+    transform: translateX(-50%);
+  }
+
+  .wait-status[data-state="done"] {
+    border-color: var(--success);
+  }
+
+  .popover {
+    position: fixed;
+    left: calc(var(--side-w) + (100vw - var(--side-w)) / 2);
+    bottom: calc(18px + 56px + var(--sp-2) + var(--safe-b));
+    z-index: 42;
+    width: min(22rem, calc(100vw - var(--side-w) - 24px));
+    padding: var(--sp-3);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    box-shadow: var(--shadow-md);
+    transform: translateX(-50%);
+  }
+</style>

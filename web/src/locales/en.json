@@ -1270,6 +1270,11 @@
     "reset": "Reset",
     "selectLoop": "Saved loops…"
   },
+  "chordPage": {
+    "dismissCapo": "Dismiss capo suggestion",
+    "useCapo": "Use capo {capo}",
+    "waitInput": "Microphone input"
+  },
   "chordWait": {
     "option": "Check chords by their notes together",
     "playChord": "Play the chord: {notes}",

@@ -1,10 +1,12 @@
 <script lang="ts">
+  import Icon from "./Icon.svelte";
   import { suggestCapos } from "../lib/capo";
   import { transposeChord } from "../lib/chordpro";
   import { t } from "../lib/i18n.svelte";
 
   // `chords` are the shapes as displayed; a capo already on the sheet sounds that many frets higher.
   // `applied` is set while a suggestion is in effect; `onapply` puts one on, `onundo` goes back to the sheet's capo.
+  // Only the best suggestion is shown, as one line above the sheet that can be dismissed.
   let {
     chords,
     capo,
@@ -21,53 +23,63 @@
     onundo?: () => void;
   } = $props();
 
-  const options = $derived(
+  let dismissed = $state(false);
+
+  const best = $derived(
     suggestCapos(
       chords.map((chord) => transposeChord(chord, capo, flats)),
       flats,
       3,
       capo,
-    ),
+    )[0],
   );
 </script>
 
-{#if chords.length}
-  <section class="capo-suggestions no-print" data-testid="capo-suggestions">
-    <h2 class="chord-diagrams-title">{t("retune.capoHeading")}</h2>
+{#if chords.length && (applied || (best && !dismissed))}
+  <div class="capo-line no-print" data-testid="capo-suggestions" role="status">
     {#if applied}
-      <p class="hint" data-testid="capo-applied">{t("retune.capoApplied", { capo })}</p>
+      <span class="text" data-testid="capo-applied">{t("retune.capoApplied", { capo })}</span>
       <button class="button" data-testid="capo-undo" onclick={() => onundo?.()}>
         {t("retune.capoUndo")}
       </button>
+    {:else if best}
+      <span class="text" data-testid={`capo-option-${best.capo}`}
+        >{t("retune.capoOption", { capo: best.capo, shapes: best.shapes.join(", ") })}</span
+      >
+      {#if onapply}
+        <button
+          class="button"
+          data-testid={`capo-apply-${best.capo}`}
+          onclick={() => onapply(best.capo)}>{t("chordPage.useCapo", { capo: best.capo })}</button
+        >
+      {/if}
+      <button
+        class="icon-button ghost"
+        data-testid="capo-dismiss"
+        aria-label={t("chordPage.dismissCapo")}
+        onclick={() => (dismissed = true)}><Icon name="close" size={16} /></button
+      >
     {/if}
-    {#if options.length}
-      <p class="hint">{t("retune.capoHint")}</p>
-      <ul>
-        {#each options as option (option.capo)}
-          <li data-testid={`capo-option-${option.capo}`}>
-            {t("retune.capoOption", { capo: option.capo, shapes: option.shapes.join(", ") })}
-            {#if onapply}
-              <button
-                class="button"
-                data-testid={`capo-apply-${option.capo}`}
-                onclick={() => onapply(option.capo)}>{t("retune.capoApply")}</button
-              >
-            {/if}
-          </li>
-        {/each}
-      </ul>
-    {:else}
-      <p class="hint" data-testid="capo-none">{t("retune.capoNone")}</p>
-    {/if}
-  </section>
+  </div>
 {/if}
 
 <style>
-  .capo-suggestions {
-    margin: 1rem 0;
+  .capo-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2) var(--sp-3);
+    padding: var(--sp-1) var(--sp-3);
+    margin-bottom: var(--sp-3);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    background: var(--surface);
+    color: var(--text-2);
+    font-size: 0.9rem;
   }
-  ul {
-    margin: 0.3rem 0 0;
-    padding-left: 1.2rem;
+
+  .text {
+    flex: 1 1 12rem;
+    min-width: 0;
   }
 </style>

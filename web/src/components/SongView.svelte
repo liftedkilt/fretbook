@@ -48,11 +48,14 @@
   <Page width="wide">
     {#if song.content_kind === "chords"}
       <ChordSheetView {song} initialTranspose={transpose} readOnly={!editable} />
-      <DifficultyPanel tracks={song.difficulty_tracks} preferredId="chords" chords />
-      {#key song.id}
-        <ChordPractice songId={song.id} onlogged={() => (logged += 1)} />
-      {/key}
-      <SongPractice songId={song.id} reload={logged} />
+      <!-- The same width and left edge as the sheet above. -->
+      <div class="chords-lower">
+        <DifficultyPanel tracks={song.difficulty_tracks} preferredId="chords" chords />
+        {#key song.id}
+          <ChordPractice songId={song.id} onlogged={() => (logged += 1)} />
+        {/key}
+        <SongPractice songId={song.id} reload={logged} />
+      </div>
     {:else}
       {#key song.id}
         <TabPlayer song={song as TabSong} readOnly={!editable} />
@@ -62,3 +65,9 @@
     {/if}
   </Page>
 {/if}
+
+<style>
+  .chords-lower {
+    max-width: 920px;
+  }
+</style>

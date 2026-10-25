@@ -1270,6 +1270,11 @@
     "reset": "Reiniciar",
     "selectLoop": "Repetições salvas…"
   },
+  "chordPage": {
+    "dismissCapo": "Dispensar sugestão de capotraste",
+    "useCapo": "Usar capotraste {capo}",
+    "waitInput": "Entrada do microfone"
+  },
   "chordWait": {
     "option": "Verificar acordes pelas notas em conjunto",
     "playChord": "Toque o acorde: {notes}",
