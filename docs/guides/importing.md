@@ -92,10 +92,10 @@ every guitar and bass part with suggested instruments.
 - **Default instrument** (top of the library) is a per-user setting. It is the preset for new tabs and added tracks, and
   decides which Songsterr parts start checked.
 - **Tags and favourites.** Free-form tags (per user, up to 30 of 40 characters) and a favourite star, edited on the song
-  page. In the library, pick several tag chips to show songs that have all of them, turn on *Favourites*, or use *Select*
+  page: press the star, and add tags with the **+ Tag** chip (on a phone, tags are in **Song details** in the **⋯** menu). In the library, pick several tag chips to show songs that have all of them, turn on *Favourites*, or use *Select*
   to tag many songs at once. A new import starts with tags the file gives away, such as the instrument, an alternate
   tuning like Drop D, the capo, and the key of a chord sheet.
-- **Transpose, retune or convert** a tab with **Transpose or retune** on the song page. A preview shows the new part and
+- **Transpose, retune or convert** a tab with the **Transpose** button on the song page (it opens **Transpose or retune**). A preview shows the new part and
   what had to give; then save it as a new track next to the original or replace the track. Choose to transpose by
   semitones, retune keeping the pitches (standard to Drop D or Eb, a different capo, 4 to 5-string bass, 6 to 7-string
   guitar), retune keeping the shapes (the frets stay and the pitch changes, capo-style), convert to another instrument,
@@ -103,7 +103,7 @@ every guitar and bass part with suggested instruments.
   falls off the neck, or a chord that no longer fits the hand, is placed again, a pitch the instrument cannot reach moves
   by an octave and the preview names the bars, and a natural harmonic that moves becomes a plain note. Type your own
   tuning as note names (`E4 B3 G3 D3 A2 D2`) or pick an instrument. The API is `POST /api/songs/{id}/convert`.
-- **Export** a song as MusicXML, MIDI, ChordPro, Fretbook JSON or PDF from its export menu.
+- **Export** a song as MusicXML, MIDI, ChordPro, Fretbook JSON or PDF with **Export…** in the song's **⋯** menu.
 
 ## Chord sheets
 

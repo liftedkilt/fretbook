@@ -14,7 +14,7 @@ by name, not by email. **View** can open the songs and log practice. **Edit** ca
 band. A person who is not a member cannot see that the band or its songs exist.
 
 The switcher at the top of the library chooses which library you are looking at. New blank songs are created in
-the library you have selected. Imports stay in your personal library. On a song you can edit, **Copy or move**
+the library you have selected. Imports stay in your personal library. On a song you can edit, **Copy or move** in the song's **⋯** menu
 sends it to another library you can edit. A copy is a new song. A move keeps the same song and its files.
 
 Your personal backup is still your own library. It does not include band songs. An administrator's export of
@@ -27,7 +27,7 @@ a deployment may sit behind a proxy that is supposed to require a login for ever
 that proxy has to allow unauthenticated requests to `/share/` and `/api/share/`. See
 [Reverse proxy and HTTPS](../self-hosting/reverse-proxy.md).
 
-An editor opens the song and chooses **Share link**. Fretbook shows the full link once. It stores only a hash of
+An editor opens the song and chooses **Share** in the song's **⋯** menu. Fretbook shows the full link once. It stores only a hash of
 the token, which is long and random and starts with `sh_`. You can set a lifetime in days, or leave it blank.
 **Revoke** stops the link immediately. A revoked, expired, or unknown link all look the same to a visitor: the
 song is not available. There is a limit of 20 active links per song.
