@@ -2447,5 +2447,28 @@
     "minutes": "{n} min",
     "hours": "{h}h",
     "hoursMinutes": "{h}h {m}min"
+  },
+  "celebrations": {
+    "goalTitle": "Meta diária cumprida",
+    "goalDetail": {
+      "one": "Sequência de {count} dia",
+      "other": "Sequência de {count} dias"
+    },
+    "streakTitle": {
+      "one": "Sequência de {count} dia",
+      "other": "Sequência de {count} dias"
+    },
+    "streak": {
+      "3": "Três dias seguidos.",
+      "7": "Uma semana inteira de prática.",
+      "14": "Duas semanas de prática.",
+      "30": "Um mês de prática.",
+      "50": "Cinquenta dias seguidos.",
+      "100": "Cem dias de prática."
+    },
+    "newBest": "Novo recorde",
+    "newBestDelta": "Novo recorde · +{delta}",
+    "courseTitle": "Curso concluído",
+    "courseTime": "Tempo total {time}"
   }
 }

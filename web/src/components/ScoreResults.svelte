@@ -1,5 +1,6 @@
 <script lang="ts">
   import Sheet from "./Sheet.svelte";
+  import { personalBestPoints } from "../lib/celebrate";
   import { t } from "../lib/i18n.svelte";
   import {
     barAccuracy,
@@ -37,6 +38,9 @@
 
   const percent = (value: number) => Math.round(value * 100);
   const stars = $derived(summary ? starsFor(summary.accuracy, summary.graded) : 0);
+  const bestDelta = $derived(
+    summary && isBest ? personalBestPoints(summary.accuracy, best?.accuracy ?? null) : null,
+  );
   const weakest = $derived(summary ? weakestSpan(summary.bars) : null);
 
   /** A bar's colour runs from green (all notes) to red (none). */
@@ -55,7 +59,9 @@
 >
   {#if summary}
     <div class="score-hero">
-      <p class="score-percent" data-testid="score-overall">{percent(summary.accuracy)}%</p>
+      <p class="score-percent" class:best={isBest} data-testid="score-overall">
+        {percent(summary.accuracy)}%
+      </p>
       <p class="score-stars" role="img" aria-label={t("scored.stars", { count: stars })}>
         {#each [1, 2, 3] as star (star)}<span class:lit={star <= stars} aria-hidden="true">★</span
           >{/each}
@@ -64,7 +70,13 @@
         {t("scored.overall")} · {t("scored.bestStreak", { count: summary.bestStreak })}
       </p>
       {#if isBest}
-        <p class="score-best" data-testid="score-new-best">{t("scored.newBest")}</p>
+        <p class="score-best" data-testid="score-new-best">
+          <span class="score-badge">
+            {bestDelta === null
+              ? t("celebrations.newBest")
+              : t("celebrations.newBestDelta", { delta: bestDelta })}
+          </span>
+        </p>
       {:else if best}
         <p class="muted small" data-testid="score-best">
           {t("scored.personalBest", { percent: percent(best.accuracy) })}
@@ -149,6 +161,13 @@
     font-weight: 700;
     margin: 0;
   }
+  .score-percent.best {
+    font-family: var(--font-display);
+    font-size: var(--fs-hero-num);
+    font-weight: 400;
+    line-height: 1.02;
+    animation: hero-in 1.2s var(--ease);
+  }
   .score-stars {
     font-size: 1.8rem;
     margin: 0;
@@ -161,9 +180,30 @@
     color: var(--warn);
   }
   .score-best {
-    color: var(--success);
-    font-weight: 600;
-    margin: 4px 0 0;
+    margin: var(--sp-2) 0 0;
+  }
+  .score-badge {
+    display: inline-block;
+    padding: var(--sp-1) var(--sp-3);
+    border-radius: var(--r-pill);
+    background: var(--grad);
+    color: var(--accent-ink);
+    font-size: var(--fs-sm);
+    font-weight: 650;
+    box-shadow: var(--glow);
+  }
+  @keyframes hero-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .score-percent.best {
+      animation: none;
+    }
   }
   .score-counts {
     list-style: none;

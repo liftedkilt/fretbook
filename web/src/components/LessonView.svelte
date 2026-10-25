@@ -1,4 +1,5 @@
 <script lang="ts">
+  import CheckDraw from "./CheckDraw.svelte";
   import Icon from "./Icon.svelte";
   import LessonBlocks from "./LessonBlocks.svelte";
   import Page from "./ui/Page.svelte";
@@ -13,6 +14,7 @@
     reportLessonProgress,
   } from "../lib/api";
   import type { CourseDetail, LessonDetail, LessonProgressResult } from "../lib/api-types";
+  import { markLessonPassed } from "../lib/celebrate";
   import { t } from "../lib/i18n.svelte";
   import { lessonSongPath, recallLessonSong, rememberLessonSong } from "../lib/lessonRun";
   import { coursePath, lessonPath } from "../lib/lessons";
@@ -27,6 +29,7 @@
   let locked = $state(false);
   let busy = $state(false);
   let outcome = $state<"passed" | "missed" | null>(null);
+  let justPassed = $state(false);
   // A number input binds to a number, or null while it is empty.
   let score = $state<number | null>(null);
   let bpm = $state<number | null>(null);
@@ -37,6 +40,7 @@
     error = "";
     locked = false;
     outcome = null;
+    justPassed = false;
     score = bpm = null;
     picked = "";
     getLesson(wantedCourse, wantedLesson)
@@ -53,6 +57,7 @@
 
   function absorb(result: LessonProgressResult) {
     if (!detail) return;
+    const wasCompleted = detail.progress.completed;
     detail = {
       ...detail,
       status: result.progress.completed ? "completed" : detail.status,
@@ -60,6 +65,8 @@
       next_lesson_id: result.next_lesson_id,
     };
     outcome = result.passed ? "passed" : "missed";
+    justPassed = result.passed && result.progress.completed && !wasCompleted;
+    if (justPassed) markLessonPassed(course, lesson);
   }
 
   async function run(action: () => Promise<LessonProgressResult>) {
@@ -208,8 +215,13 @@
         <h2 id="lesson-pass-heading" class="field-label">{t("lessons.passHeading")}</h2>
 
         {#if detail.progress.completed}
-          <p class="lesson-done" role="status" data-testid="lesson-done">
-            <Icon name="check" size={18} />
+          <p
+            class="lesson-done"
+            role="status"
+            data-testid="lesson-done"
+            data-draw={justPassed ? "true" : undefined}
+          >
+            <CheckDraw draw={justPassed} size={18} />
             {t("lessons.completed")}
             {#if detail.progress.best_score !== null}
               · {t("lessons.bestScore", { score: Math.round(detail.progress.best_score) })}
@@ -347,26 +359,33 @@
       </section>
 
       {#if detail.progress.completed}
-        <nav class="lesson-next">
-          {#if detail.next_lesson_id}
-            <a
-              class="button primary"
-              data-testid="lesson-next"
-              href={hrefFor(lessonPath(course, detail.next_lesson_id))}
-              onclick={(event) => followLink(event, lessonPath(course, detail!.next_lesson_id!))}
-            >
-              <span>{t("lessons.next")}</span><Icon name="forward" size={18} />
-            </a>
-          {:else}
-            <a
-              class="button"
-              href={hrefFor(coursePath(course))}
-              onclick={(event) => followLink(event, coursePath(course))}
-            >
-              <span>{t("lessons.backToCourse")}</span>
-            </a>
-          {/if}
-        </nav>
+        <div
+          class="next-card"
+          class:arrive={justPassed}
+          data-testid="lesson-next-card"
+          data-arrive={justPassed ? "true" : undefined}
+        >
+          <nav class="lesson-next">
+            {#if detail.next_lesson_id}
+              <a
+                class="button primary"
+                data-testid="lesson-next"
+                href={hrefFor(lessonPath(course, detail.next_lesson_id))}
+                onclick={(event) => followLink(event, lessonPath(course, detail!.next_lesson_id!))}
+              >
+                <span>{t("lessons.next")}</span><Icon name="forward" size={18} />
+              </a>
+            {:else}
+              <a
+                class="button primary"
+                href={hrefFor(coursePath(course))}
+                onclick={(event) => followLink(event, coursePath(course))}
+              >
+                <span>{t("lessons.backToCourse")}</span>
+              </a>
+            {/if}
+          </nav>
+        </div>
       {/if}
 
       {#if step}
@@ -411,6 +430,41 @@
 <style>
   .reading {
     max-width: var(--page-narrow);
+  }
+
+  .next-card {
+    max-width: var(--page-narrow);
+    margin-top: var(--sp-4);
+    padding: var(--sp-4);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: var(--surface);
+  }
+
+  .next-card.arrive {
+    animation: next-arrive 1.2s var(--ease);
+  }
+
+  .lesson-next {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  @keyframes next-arrive {
+    from {
+      opacity: 0;
+      transform: translateY(var(--sp-3));
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .next-card.arrive {
+      animation: none;
+    }
   }
 
   .lesson-steps {

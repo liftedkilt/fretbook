@@ -63,8 +63,28 @@ describe("ScoreResults", () => {
 
   it("announces a new personal best, or shows the one to beat", () => {
     const { unmount } = render(ScoreResults, { props: props({ isBest: true }) });
-    expect(screen.getByTestId("score-new-best")).toBeTruthy();
+    expect(screen.getByTestId("score-new-best")).toHaveTextContent("New best");
+    expect(screen.getByTestId("score-new-best")).not.toHaveTextContent("+");
+    expect(screen.getByTestId("score-overall")).toHaveClass("best");
     unmount();
+    const risen = render(ScoreResults, {
+      props: props({
+        isBest: true,
+        best: {
+          at: 1,
+          accuracy: 0.64,
+          stars: 1,
+          hits: 6,
+          total: 10,
+          extras: 0,
+          bestStreak: 4,
+          loop: "full",
+          speed: 80,
+        },
+      }),
+    });
+    expect(screen.getByTestId("score-new-best")).toHaveTextContent("New best · +6");
+    risen.unmount();
     render(ScoreResults, {
       props: props({
         loop: { from: 1, to: 3 },

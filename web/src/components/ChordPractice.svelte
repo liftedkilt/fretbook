@@ -2,9 +2,11 @@
   import { onMount } from "svelte";
 
   import Icon from "./Icon.svelte";
-  import { recordPracticeSession } from "../lib/api";
+  import { getPracticeStats, recordPracticeSession } from "../lib/api";
+  import { onPracticeLogged, snapshotFromStats } from "../lib/celebrate";
   import { t } from "../lib/i18n.svelte";
-  import { IdleWatch, PracticeTimer, SHEET_IDLE_MS } from "../lib/practiceLog";
+  import { IdleWatch, localDay, PracticeTimer, SHEET_IDLE_MS } from "../lib/practiceLog";
+  import { routePath } from "../lib/router.svelte";
 
   let { songId, onlogged }: { songId: string; onlogged?: () => void } = $props();
 
@@ -16,7 +18,12 @@
 
   const timer = new PracticeTimer({
     onSession: (session, keepalive) => {
-      void recordPracticeSession(session, keepalive).then(() => onlogged?.());
+      void recordPracticeSession(session, keepalive).then(() => {
+        onlogged?.();
+        onPracticeLogged(keepalive, routePath() === "/practice", () =>
+          getPracticeStats(localDay(new Date())).then(snapshotFromStats),
+        );
+      });
     },
   });
   const watch = new IdleWatch(SHEET_IDLE_MS, () => (idle = true));

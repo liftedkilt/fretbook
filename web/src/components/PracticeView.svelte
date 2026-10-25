@@ -8,6 +8,12 @@
   import PageHeader from "./ui/PageHeader.svelte";
   import { lessonPath } from "../lib/lessons";
   import { getPracticeStats, savePracticeGoal } from "../lib/api";
+  import {
+    PRACTICE_LOGGED,
+    presentPractice,
+    snapshotFromStats,
+    subscribePracticeMarks,
+  } from "../lib/celebrate";
   import { t } from "../lib/i18n.svelte";
   import { agoDays, goalProgress, localDay, minutesOf, ringOffset } from "../lib/practiceLog";
   import { formatDuration } from "../lib/practiceText";
@@ -20,18 +26,43 @@
 
   let stats = $state<PracticeStats | null>(null);
   let error = $state("");
+  let glowGoal = $state(false);
+  let pulseStreak = $state(false);
 
   function fail(err: unknown) {
     error = err instanceof Error ? err.message : t("error.generic");
   }
 
+  function absorb(loaded: PracticeStats) {
+    stats = loaded;
+    presentPractice(snapshotFromStats(loaded), true);
+  }
+
   $effect(() => {
-    getPracticeStats(localDay(new Date()))
-      .then((loaded) => {
-        stats = loaded;
-      })
-      .catch(fail);
+    let current = true;
+    const refresh = () => {
+      getPracticeStats(localDay(new Date()))
+        .then((loaded) => {
+          if (current) absorb(loaded);
+        })
+        .catch((err) => {
+          if (current) fail(err);
+        });
+    };
+    refresh();
+    window.addEventListener(PRACTICE_LOGGED, refresh);
+    return () => {
+      current = false;
+      window.removeEventListener(PRACTICE_LOGGED, refresh);
+    };
   });
+
+  $effect(() =>
+    subscribePracticeMarks((marks) => {
+      if (marks.glowGoal) glowGoal = true;
+      if (marks.pulseStreak) pulseStreak = true;
+    }),
+  );
 
   const progress = $derived(
     stats ? goalProgress(stats.today_seconds, stats.goal.daily_minutes) : 0,
@@ -46,7 +77,10 @@
     error = "";
     try {
       const saved = await savePracticeGoal(goal);
-      if (stats) stats = { ...stats, goal: saved };
+      if (stats) {
+        stats = { ...stats, goal: saved };
+        presentPractice(snapshotFromStats(stats), true);
+      }
     } catch (err) {
       fail(err);
     }
@@ -201,7 +235,13 @@
     {:else}
       <div class="today card" data-testid="practice-goal-card">
         {#if stats.goal.daily_minutes > 0}
-          <div class="ring" data-testid="practice-ring" data-progress={progress.toFixed(2)}>
+          <div
+            class="ring"
+            class:glow={glowGoal}
+            data-testid="practice-ring"
+            data-progress={progress.toFixed(2)}
+            data-celebrate={glowGoal ? "goal" : undefined}
+          >
             <svg viewBox="0 0 120 120" width="132" height="132" aria-hidden="true">
               <circle class="track" cx="60" cy="60" r={RADIUS} />
               <circle
@@ -248,7 +288,12 @@
       </div>
 
       <div class="tiles">
-        <div class="tile streak" data-testid="practice-streak">
+        <div
+          class="tile streak"
+          class:pulse={pulseStreak}
+          data-testid="practice-streak"
+          data-celebrate={pulseStreak ? "streak" : undefined}
+        >
           <span class="tile-icon"><Icon name="flame" size={20} /></span>
           <span class="tile-value">{stats.current_streak}</span>
           <span class="tile-label"
@@ -477,6 +522,36 @@
   }
   .streak .tile-value {
     color: var(--accent-text);
+  }
+  .ring.glow {
+    animation: goal-glow 1.2s var(--ease);
+  }
+  .streak.pulse .tile-icon {
+    animation: streak-pulse 1.2s var(--ease);
+  }
+  @keyframes goal-glow {
+    0%,
+    100% {
+      box-shadow: none;
+    }
+    45% {
+      box-shadow: var(--glow);
+    }
+  }
+  @keyframes streak-pulse {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.08);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ring.glow,
+    .streak.pulse .tile-icon {
+      animation: none;
+    }
   }
   .tile-label {
     font-size: var(--fs-sm);
