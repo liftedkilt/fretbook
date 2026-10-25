@@ -67,6 +67,38 @@
     "themeDark": "Escuro",
     "themeLight": "Claro"
   },
+  "settingsPage": {
+    "subtitle": "Preferências deste navegador e desta conta.",
+    "navLabel": "Seções de configurações",
+    "sections": {
+      "general": "Geral",
+      "audio": "Áudio e microfone",
+      "pedals": "Pedais e atalhos",
+      "library": "Biblioteca",
+      "tokens": "Tokens de API",
+      "assistant": "Assistente",
+      "instance": "Instância",
+      "about": "Sobre"
+    },
+    "audioHint": "Compensação de latência e o microfone usado para ouvir.",
+    "inputDefault": "Entrada padrão",
+    "inputDefaultHint": "Usada pelo afinador, pelo modo de espera e pela execução avaliada. Os nomes aparecem depois que o microfone é permitido uma vez.",
+    "offsetMs": "{offset} ms",
+    "pedalPair": "{key}: {action}",
+    "pedalKey": "Tecla",
+    "pedalAction": "Ação",
+    "showPedals": "Mostrar pedais",
+    "hidePedals": "Ocultar pedais",
+    "shortcutsHeading": "Atalhos de teclado",
+    "shortcutsHint": "Funcionam no player. Um pedal de virar página pode enviar as mesmas teclas.",
+    "shortcutKey": "Tecla",
+    "shortcutAction": "Ação",
+    "showShortcuts": "Mostrar atalhos de teclado",
+    "hideShortcuts": "Ocultar atalhos de teclado",
+    "docs": "Documentação",
+    "changelog": "Registro de alterações",
+    "instanceHint": "Isto vale para o servidor inteiro. Com login, só um administrador vê estes itens, na página de administração."
+  },
   "about": {
     "label": "Sobre o Fretbook",
     "version": "Versão {version}",

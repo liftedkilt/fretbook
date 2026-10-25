@@ -72,7 +72,7 @@ test("sign in through the provider, and each person sees only their own songs", 
   await expect(alicePage.getByTestId("library-empty")).toBeVisible();
   await alicePage.getByTestId("open-settings").click();
   await expect(alicePage.getByTestId("account-name")).toHaveText("Alice Example");
-  await alicePage.keyboard.press("Escape");
+  await alicePage.goto("/");
 
   const aliceSeed = new Seeder(alicePage.request);
   await aliceSeed.chordSheet();

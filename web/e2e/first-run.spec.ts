@@ -46,7 +46,7 @@ test("the demo songs can be added with one click and removed again", async ({ pa
   page.once("dialog", (dialog) => void dialog.accept());
   await page.getByTestId("demo-remove").click();
   await expect(page.getByTestId("demo-add")).toBeVisible();
-  await page.keyboard.press("Escape");
+  await page.goto("/");
   await expect(page.getByTestId("song-card")).toHaveCount(1);
   await expect(page.getByTestId("song-title")).toHaveText("My Own Song");
 });
@@ -101,7 +101,6 @@ test("a demo instance is read-only", async ({ browser }) => {
     await page.getByTestId("open-settings").click();
     await expect(page.getByTestId("calibration-setting")).toBeVisible();
     await expect(page.getByTestId("api-tokens")).toHaveCount(0);
-    await page.keyboard.press("Escape");
 
     const refused = await page.request.post(`${server.url}/api/songs`, {
       data: { title: "Nope", artist: "", preset: "bass-4" },

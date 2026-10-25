@@ -3,12 +3,14 @@
   import AdminStorage from "./AdminStorage.svelte";
   import AdminSystem from "./AdminSystem.svelte";
   import Icon from "./Icon.svelte";
+  import LlmAdmin from "./LlmAdmin.svelte";
+  import YtDlpStatus from "./YtDlpStatus.svelte";
   import Page from "./ui/Page.svelte";
   import PageHeader from "./ui/PageHeader.svelte";
   import SegmentedControl from "./ui/SegmentedControl.svelte";
   import { ApiError, adoptLocal, listUsers, revokeUserTokens, signOutUser } from "../lib/api";
   import { t } from "../lib/i18n.svelte";
-  import { refreshSongs } from "../lib/ui.svelte";
+  import { refreshSongs, ui } from "../lib/ui.svelte";
   import type { AdminUser } from "../lib/types";
 
   let { self }: { self: string } = $props();
@@ -113,6 +115,12 @@
       <AdminJobs />
     {:else if tab === "system"}
       <AdminSystem />
+      {#if !ui.demoMode}
+        <div class="server">
+          <YtDlpStatus />
+          <LlmAdmin />
+        </div>
+      {/if}
     {:else}
       <section class="card">
         <div class="table-scroll">
@@ -174,3 +182,11 @@
     {/if}
   </div>
 </Page>
+
+<style>
+  .server {
+    display: grid;
+    gap: var(--sp-4);
+    margin-top: var(--sp-5);
+  }
+</style>

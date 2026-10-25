@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ui } from "../lib/ui.svelte";
 import AdminView from "./AdminView.svelte";
 
 const api = vi.hoisted(() => ({
@@ -42,6 +43,8 @@ const job = (id: string, status: string, label: string) => ({
 describe("AdminView dashboard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    ui.demoMode = false;
+    ui.ytdlp = null;
     vi.spyOn(window, "confirm").mockReturnValue(true);
     api.listUsers.mockResolvedValue([]);
     api.getAdminStorage.mockResolvedValue({
@@ -128,7 +131,15 @@ describe("AdminView dashboard", () => {
     await waitFor(() => expect(api.getAdminJobs).toHaveBeenLastCalledWith("error"));
   });
 
-  it("shows system information", async () => {
+  it("shows system information and the server-wide downloader status", async () => {
+    ui.ytdlp = {
+      version: "2026.01.01",
+      released: "2026-01-01",
+      age_days: 40,
+      stale: true,
+      auto_update: false,
+      cookies: false,
+    };
     render(AdminView, { self: "u1" });
     await fireEvent.click(screen.getByTestId("admin-tab-system"));
     const info = await screen.findByTestId("system-info");
@@ -136,5 +147,8 @@ describe("AdminView dashboard", () => {
     expect(info).toHaveTextContent("3.12.1");
     expect(info).toHaveTextContent("2026.01.01");
     expect(info).toHaveTextContent("5.0 GB / 10 GB");
+    const ytdlp = screen.getByTestId("ytdlp-setting");
+    expect(ytdlp).toHaveTextContent("2026.01.01");
+    expect(ytdlp).toHaveTextContent("40 days old");
   });
 });
