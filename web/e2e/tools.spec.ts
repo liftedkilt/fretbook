@@ -165,6 +165,9 @@ test.describe("Tools page: standalone tuner and metronome", () => {
       for (const [path, view, testid] of [
         ["/tools/metronome", "standalone-metronome-view", "metronome-toggle"],
         ["/tools/tuner", "standalone-tuner-view", "tuner-start"],
+        ["/tools/rhythm", "rhythm-trainer-view", "rhythm-start"],
+        ["/tools/trainer", "trainer-view", "trainer-start"],
+        ["/tools/exercises", "exercises-view", "exercise-save"],
       ]) {
         await page.goto(path);
         const start = page.getByTestId(view).getByTestId(testid);

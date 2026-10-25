@@ -849,6 +849,7 @@
     "modeHint": "Drop a file, paste text or a link"
   },
   "asciiTab": {
+    "preview": "Tab preview",
     "mode": "Paste tab",
     "modeHint": "ASCII tab or chords over lyrics",
     "paste": "Tab or chord text",
@@ -1292,7 +1293,9 @@
     "settings": "Settings",
     "tempo": "Tempo",
     "slower": "Slower",
-    "faster": "Faster"
+    "faster": "Faster",
+    "decrease": "Decrease",
+    "increase": "Increase"
   },
   "speedTrainer": {
     "title": "Speed trainer",

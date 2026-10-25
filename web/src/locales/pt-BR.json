@@ -849,6 +849,7 @@
     "modeHint": "Solte um arquivo, cole um texto ou um link"
   },
   "asciiTab": {
+    "preview": "Pré-visualização da tablatura",
     "mode": "Colar tablatura",
     "modeHint": "Tablatura em texto ou cifra",
     "paste": "Texto da tablatura ou cifra",
@@ -1292,7 +1293,9 @@
     "settings": "Ajustes",
     "tempo": "Andamento",
     "slower": "Mais devagar",
-    "faster": "Mais rápido"
+    "faster": "Mais rápido",
+    "decrease": "Diminuir",
+    "increase": "Aumentar"
   },
   "speedTrainer": {
     "title": "Treinador de velocidade",
