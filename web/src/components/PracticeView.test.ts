@@ -102,21 +102,48 @@ describe("PracticeView", () => {
     expect(mockStats.mock.calls[0][0]).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
-  it("saves the daily goal", async () => {
-    mockSaveGoal.mockResolvedValue({ daily_minutes: 20, weekly_summary: false });
+  it("saves the daily goal as soon as it changes", async () => {
+    mockSaveGoal.mockResolvedValue({ daily_minutes: 20, weekly_summary: true });
     render(PracticeView);
-    const input = (await screen.findByTestId("practice-goal-input")) as HTMLInputElement;
+    await fireEvent.click(await screen.findByTestId("practice-goal-chip"));
+    const input = screen.getByTestId("practice-goal-input") as HTMLInputElement;
+    expect(input.value).toBe("10");
     await fireEvent.input(input, { target: { value: "20" } });
-    await fireEvent.click(screen.getByTestId("practice-weekly-toggle"));
-    await fireEvent.click(screen.getByTestId("practice-goal-save"));
+    await fireEvent.change(input);
     await waitFor(() =>
-      expect(mockSaveGoal).toHaveBeenCalledWith({ daily_minutes: 20, weekly_summary: false }),
+      expect(mockSaveGoal).toHaveBeenCalledWith({ daily_minutes: 20, weekly_summary: true }),
     );
     await waitFor(() =>
       expect(screen.getByTestId("practice-ring")).toHaveAttribute("data-progress", "0.25"),
     );
-    // The weekly summary is switched off by the saved goal.
-    expect(screen.queryByTestId("practice-week")).toBeNull();
+  });
+
+  it("switches the weekly summary off from the goal popover", async () => {
+    mockSaveGoal.mockResolvedValue({ daily_minutes: 10, weekly_summary: false });
+    render(PracticeView);
+    await fireEvent.click(await screen.findByTestId("practice-goal-chip"));
+    await fireEvent.click(screen.getByTestId("practice-weekly-toggle"));
+    await waitFor(() =>
+      expect(mockSaveGoal).toHaveBeenCalledWith({ daily_minutes: 10, weekly_summary: false }),
+    );
+    await waitFor(() => expect(screen.queryByTestId("practice-week")).toBeNull());
+  });
+
+  it("hides the ring and the goal copy when the goal is off", async () => {
+    mockStats.mockResolvedValue(stats({ goal: { daily_minutes: 0, weekly_summary: true } }));
+    render(PracticeView);
+    expect(await screen.findByTestId("practice-today")).toHaveTextContent("5");
+    expect(screen.queryByTestId("practice-ring")).toBeNull();
+    expect(screen.getByTestId("practice-subtitle")).toHaveTextContent("5 min played today");
+    expect(screen.getByTestId("practice-goal-chip")).toHaveTextContent("Set a daily goal");
+  });
+
+  it("offers to continue the song practised last, and says how far the goal is", async () => {
+    render(PracticeView);
+    const link = await screen.findByTestId("practice-continue");
+    expect(link.getAttribute("href")).toContain("/songs/s1");
+    expect(screen.getByTestId("practice-subtitle")).toHaveTextContent("5 min to today's goal");
+    expect(screen.getByTestId("practice-best")).toHaveTextContent("88%");
   });
 
   it("explains an empty log and hides the lists", async () => {
@@ -133,6 +160,8 @@ describe("PracticeView", () => {
     );
     render(PracticeView);
     expect(await screen.findByTestId("practice-empty")).toBeInTheDocument();
+    expect(screen.getByTestId("practice-start")).toBeInTheDocument();
+    expect(screen.queryByTestId("practice-ring")).toBeNull();
     expect(screen.queryByTestId("practice-list-recent")).toBeNull();
   });
 
@@ -140,13 +169,6 @@ describe("PracticeView", () => {
     mockStats.mockRejectedValue(new Error("down"));
     render(PracticeView);
     expect(await screen.findByRole("alert")).toHaveTextContent("down");
-  });
-
-  it("with no goal the ring counts minutes and stays empty", async () => {
-    mockStats.mockResolvedValue(stats({ goal: { daily_minutes: 0, weekly_summary: true } }));
-    render(PracticeView);
-    await screen.findByTestId("practice-today");
-    expect(screen.getByTestId("practice-ring")).toHaveAttribute("data-progress", "0.00");
   });
 
   it("lists the trainer games, and a log of only trainer time is not empty", async () => {

@@ -13,6 +13,19 @@ async function noSidewaysScroll(page: import("@playwright/test").Page) {
 
 test("practice and the player stay within a phone and a tablet", async ({ page, seed }) => {
   const song = await seed.musicXmlTab();
+  // An empty log only shows its first step; the heatmap and lists need some history.
+  const now = new Date();
+  const pad = (value: number) => String(value).padStart(2, "0");
+  const logged = await page.request.post("/api/practice/sessions", {
+    data: {
+      song_id: song.id,
+      day: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
+      duration_seconds: 420,
+      speed: 1,
+      mode: "free",
+    },
+  });
+  expect(logged.ok()).toBeTruthy();
 
   for (const size of [
     { width: 375, height: 812 },
