@@ -1,4 +1,5 @@
 import { expect, test } from "./support/fixtures";
+import { menuItem } from "./support/song-page";
 
 // A 1×1 PNG.
 const PNG = Buffer.from(
@@ -14,7 +15,7 @@ test("set a song's details and notes, upload cover art, and filter the library b
   await seed.create({ title: "Pop Hook", artist: "Band" });
 
   await page.goto(`/songs/${blues.id}`);
-  await page.getByTestId("song-metadata-edit").click();
+  await menuItem(page, "song-metadata-edit");
   await expect(page.getByTestId("metadata-sheet")).toBeVisible();
   await page.getByTestId("metadata-key").selectOption("Am");
   await page.getByTestId("metadata-genre").fill("Blues");
@@ -58,7 +59,7 @@ test("set a song's details and notes, upload cover art, and filter the library b
 
   // Removing the cover goes back to the generated one.
   await page.goto(`/songs/${blues.id}`);
-  await page.getByTestId("song-metadata-edit").click();
+  await menuItem(page, "song-metadata-edit");
   await page.getByTestId("metadata-cover-remove").click();
   await expect(page.getByTestId("metadata-cover-remove")).toBeHidden();
   await page.getByTestId("metadata-save").click();
@@ -77,7 +78,7 @@ test("the key of a chord sheet comes from its {key} directive, and a chosen key 
   await expect(page.getByTestId("song-key")).toHaveText("E minor");
   await expect(page.getByTestId("song-key")).toHaveAttribute("title", /detected/);
 
-  await page.getByTestId("song-metadata-edit").click();
+  await menuItem(page, "song-metadata-edit");
   await expect(page.getByTestId("metadata-key")).toHaveValue("");
   await page.getByTestId("metadata-key").selectOption("Bb");
   await page.getByTestId("metadata-save").click();

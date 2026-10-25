@@ -1,95 +1,78 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { SongDetail } from "../lib/types";
 import { ui } from "../lib/ui.svelte";
 import SongTags from "./SongTags.svelte";
 
-const mockSetSongTags = vi.fn();
-const mockSetFavourite = vi.fn();
-const mockListSongs = vi.fn();
-
 vi.mock("../lib/api", () => ({
-  setSongTags: (...args: unknown[]) => mockSetSongTags(...args),
-  setFavourite: (...args: unknown[]) => mockSetFavourite(...args),
-  listSongs: (...args: unknown[]) => mockListSongs(...args),
   listTags: vi.fn().mockResolvedValue([]),
   getFacets: vi.fn().mockResolvedValue({ keys: [], genres: [] }),
 }));
 
-const song = {
-  id: "s1",
-  title: "Riff",
-  favourite: false,
-  difficulty: null,
-  tags: ["funk"],
-} as unknown as SongDetail;
-
 describe("SongTags", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    mockListSongs.mockResolvedValue({
-      items: [],
-      total: 0,
-      next_cursor: null,
-      counts: { all: 0, bass: 0, electric: 0, acoustic: 0, chords: 0, favourites: 0 },
-    });
     ui.tagList = [
       { tag: "funk", count: 2 },
       { tag: "Live", count: 1 },
     ];
   });
 
-  it("shows the song's tags", () => {
-    render(SongTags, { song });
+  it("shows the song's tags as chips", () => {
+    render(SongTags, { tags: ["funk"], onadd: vi.fn(), onremove: vi.fn() });
     expect(screen.getAllByTestId("song-tag")).toHaveLength(1);
     expect(screen.getByTestId("song-tag")).toHaveTextContent("funk");
   });
 
-  it("adds a tag and shows what the server stored", async () => {
-    mockSetSongTags.mockResolvedValue(["funk", "Warm up"]);
-    render(SongTags, { song });
+  it("opens an input from the + Tag chip and adds a trimmed tag", async () => {
+    const onadd = vi.fn();
+    render(SongTags, { tags: ["funk"], onadd, onremove: vi.fn() });
+    expect(screen.queryByTestId("song-tag-input")).toBeNull();
 
-    await fireEvent.input(screen.getByTestId("song-tag-input"), { target: { value: " Warm up " } });
-    await fireEvent.submit(screen.getByTestId("song-tag-input").closest("form") as HTMLFormElement);
+    await fireEvent.click(screen.getByTestId("song-tag-new"));
+    const input = screen.getByTestId("song-tag-input");
+    await waitFor(() => expect(input).toHaveFocus());
+    await fireEvent.input(input, { target: { value: " Warm up " } });
+    await fireEvent.submit(input.closest("form") as HTMLFormElement);
 
-    await waitFor(() => expect(mockSetSongTags).toHaveBeenCalledWith("s1", ["funk", "Warm up"]));
-    await waitFor(() => expect(screen.getAllByTestId("song-tag")).toHaveLength(2));
-    expect(screen.getByTestId("song-tag-input")).toHaveValue("");
+    await waitFor(() => expect(onadd).toHaveBeenCalledWith("Warm up"));
+    expect(input).toHaveValue("");
+  });
+
+  it("closes the input with Escape", async () => {
+    render(SongTags, { tags: [], onadd: vi.fn(), onremove: vi.fn() });
+    await fireEvent.click(screen.getByTestId("song-tag-new"));
+    await fireEvent.keyDown(screen.getByTestId("song-tag-input"), { key: "Escape" });
+    expect(screen.queryByTestId("song-tag-input")).toBeNull();
+    expect(screen.getByTestId("song-tag-new")).toBeInTheDocument();
   });
 
   it("removes a tag", async () => {
-    mockSetSongTags.mockResolvedValue([]);
-    render(SongTags, { song });
-
+    const onremove = vi.fn();
+    render(SongTags, { tags: ["funk"], onadd: vi.fn(), onremove });
     await fireEvent.click(screen.getByTestId("song-tag-remove"));
-    await waitFor(() => expect(mockSetSongTags).toHaveBeenCalledWith("s1", []));
-    await waitFor(() => expect(screen.queryAllByTestId("song-tag")).toHaveLength(0));
+    expect(onremove).toHaveBeenCalledWith("funk");
   });
 
-  it("suggests library tags the song does not have yet", () => {
-    const { container } = render(SongTags, { song });
+  it("suggests library tags the song does not have yet", async () => {
+    const { container } = render(SongTags, { tags: ["funk"], onadd: vi.fn(), onremove: vi.fn() });
+    await fireEvent.click(screen.getByTestId("song-tag-new"));
     const options = [...container.querySelectorAll("datalist option")].map(
       (option) => (option as HTMLOptionElement).value,
     );
     expect(options).toEqual(["Live"]);
   });
 
-  it("stars and unstars the song", async () => {
-    mockSetFavourite.mockResolvedValue(true);
-    render(SongTags, { song });
-
-    const star = screen.getByTestId("song-favourite");
-    expect(star).toHaveAttribute("aria-pressed", "false");
-    await fireEvent.click(star);
-    await waitFor(() => expect(star).toHaveAttribute("aria-pressed", "true"));
-    expect(mockSetFavourite).toHaveBeenCalledWith("s1", true);
-  });
-
-  it("explains a failed save", async () => {
-    mockSetSongTags.mockRejectedValue(new Error("nope"));
-    render(SongTags, { song });
-
-    await fireEvent.click(screen.getByTestId("song-tag-remove"));
-    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("nope"));
+  it("is read only when locked, and empty when there is nothing to show", () => {
+    const { unmount } = render(SongTags, {
+      tags: ["funk"],
+      locked: true,
+      onadd: vi.fn(),
+      onremove: vi.fn(),
+    });
+    expect(screen.getByTestId("song-tag")).toBeInTheDocument();
+    expect(screen.queryByTestId("song-tag-new")).toBeNull();
+    expect(screen.queryByTestId("song-tag-remove")).toBeNull();
+    unmount();
+    render(SongTags, { tags: [], locked: true, onadd: vi.fn(), onremove: vi.fn() });
+    expect(screen.queryByTestId("song-tags")).toBeNull();
   });
 });

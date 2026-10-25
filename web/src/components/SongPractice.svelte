@@ -80,8 +80,6 @@
 
 <style>
   .song-practice {
-    max-width: 960px;
-    margin: 1rem auto 2rem;
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: var(--r-md);

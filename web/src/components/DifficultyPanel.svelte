@@ -55,9 +55,6 @@
 {/if}
 
 <style>
-  .difficulty {
-    margin-top: 1rem;
-  }
   summary {
     cursor: pointer;
     font-weight: 600;

@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test";
 
 import { expect, test } from "./support/fixtures";
+import { menuItem } from "./support/song-page";
 
 async function addSongs(page: Page, titles: string[]) {
   await page.getByTestId("setlist-add-open").click();
@@ -213,8 +214,7 @@ test("add a song to a setlist from the library and from the song page", async ({
 
   // Song page: pick the existing setlist.
   await page.getByTestId("song-card").filter({ hasText: "Bravo" }).getByTestId("song-link").click();
-  await page.getByTestId("export-menu").click();
-  await page.getByTestId("song-add-to-setlist").click();
+  await menuItem(page, "song-add-to-setlist");
   await page.getByTestId("setlist-picker-item").filter({ hasText: "Friday gig" }).click();
   await expect(page.getByTestId("setlist-picker-done")).toContainText("Added Bravo to Friday gig.");
   await page.getByRole("link", { name: "Open" }).click();

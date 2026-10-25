@@ -2473,5 +2473,18 @@
     "newBestDelta": "New best · +{delta}",
     "courseTitle": "Course finished",
     "courseTime": "Total time {time}"
+  },
+  "songPage": {
+    "addTag": "Tag",
+    "cancelTag": "Cancel",
+    "transpose": "Transpose",
+    "keepOnDevice": "Keep on this device",
+    "removeFromDevice": "Remove from this device",
+    "export": "Export…",
+    "exportTitle": "Export",
+    "songDetails": "Song details",
+    "delete": "Delete song…",
+    "level": "Level {level}",
+    "details": "Details"
   }
 }

@@ -6,16 +6,9 @@
   import ChordSheet from "./ChordSheet.svelte";
   import ChordStrip from "./ChordStrip.svelte";
   import ChordWait from "./ChordWait.svelte";
-  import Cover from "./Cover.svelte";
-  import { coverSrc } from "../lib/cover";
   import Icon from "./Icon.svelte";
-  import Menu from "./Menu.svelte";
-  import OfflineToggle from "./OfflineToggle.svelte";
   import SetlistPicker from "./SetlistPicker.svelte";
-  import SongLibraryActions from "./SongLibraryActions.svelte";
-  import SongMetadata from "./SongMetadata.svelte";
-  import SongTags from "./SongTags.svelte";
-  import PageHeader from "./ui/PageHeader.svelte";
+  import SongHeader from "./SongHeader.svelte";
   import { parse } from "../lib/chordpro";
   import { loadChoice, saveChoice } from "../lib/chords/choice";
   import { buildEntries } from "../lib/chords/entries";
@@ -34,9 +27,7 @@
     stepScrollFactor,
   } from "../lib/handsFree.svelte";
   import { t } from "../lib/i18n.svelte";
-  import { followLink, hrefFor } from "../lib/router.svelte";
   import type { SongDetail } from "../lib/types";
-  import { ui } from "../lib/ui.svelte";
 
   let {
     song,
@@ -196,97 +187,44 @@
 </script>
 
 <div class="song-page chords-page" class:stage data-stage={stage}>
-  <PageHeader
-    class="song-header no-print"
-    title={song.title}
-    titleTestId="song-heading"
-    titleClass="song-heading"
+  <SongHeader
+    {song}
+    {readOnly}
     eyebrow={t("library.chordSheet")}
-    subtitle={song.artist}
-    backHref={readOnly ? "" : "/"}
-    backLabel={readOnly ? "" : t("app.back")}
-  >
-    {#snippet leading()}
-      <Cover
-        id={song.id}
-        title={song.title}
-        kind="chords"
-        size="lg"
-        src={coverSrc(song.cover_url)}
-      />
-    {/snippet}
-    {#snippet actions()}
-      <div class="hero-actions">
-        {#if !readOnly}
-          <OfflineToggle kind="song" id={song.id} title={song.title} compact />
-        {/if}
-        {#if !ui.demoMode && !readOnly}
-          <a
-            class="button"
-            data-testid="song-edit-link"
-            href={hrefFor(`/songs/${song.id}/edit`)}
-            onclick={(event) => followLink(event, `/songs/${song.id}/edit`)}
-          >
-            <Icon name="edit" size={18} /><span>{t("player.edit")}</span>
-          </a>
-        {/if}
-        {#if !readOnly}
-          <Menu label={t("player.export")} icon="download" testid="export-menu">
-            {#snippet children(close)}
-              {#if !ui.demoMode}
-                <button
-                  class="menu-item"
-                  data-testid="song-add-to-setlist"
-                  role="menuitem"
-                  onclick={() => {
-                    close();
-                    pickerOpen = true;
-                  }}
-                >
-                  <Icon name="listMusic" size={18} />
-                  {t("setlists.addToSetlist")}
-                </button>
-              {/if}
-              <button
-                class="menu-item"
-                data-testid="export-pdf"
-                role="menuitem"
-                disabled={exporting}
-                onclick={() => {
-                  close();
-                  void exportPdf();
-                }}
-              >
-                <Icon name="file" size={18} />{exporting
-                  ? t("player.exportingPdf")
-                  : t("player.exportPdf")}
-              </button>
-              <button
-                class="menu-item"
-                role="menuitem"
-                onclick={() => {
-                  close();
-                  window.print();
-                }}
-              >
-                <Icon name="print" size={18} />{t("chords.print")}
-              </button>
-              <a
-                class="menu-item"
-                data-testid="export-chordpro"
-                role="menuitem"
-                href={exportUrl("cho")}
-                onclick={close}><Icon name="chords" size={18} />{t("chords.exportChordPro")}</a
-              >
-              <a class="menu-item" role="menuitem" href={exportUrl("json")} onclick={close}
-                ><Icon name="download" size={18} />{t("player.exportJson")}</a
-              >
-            {/snippet}
-          </Menu>
-        {/if}
-      </div>
-    {/snippet}
-  </PageHeader>
+    facts={capo > 0 ? [{ label: t("player.capo", { fret: capo }) }] : []}
+    onsetlist={() => (pickerOpen = true)}
+    exportItems={[
+      {
+        id: "pdf",
+        label: exporting ? t("player.exportingPdf") : t("player.exportPdf"),
+        icon: "file",
+        testid: "export-pdf",
+        disabled: exporting,
+        onclick: () => void exportPdf(),
+      },
+      {
+        id: "print",
+        label: t("chords.print"),
+        icon: "print",
+        testid: "export-print",
+        onclick: () => window.print(),
+      },
+      {
+        id: "chordpro",
+        label: t("chords.exportChordPro"),
+        icon: "chords",
+        testid: "export-chordpro",
+        href: exportUrl("cho"),
+      },
+      {
+        id: "json",
+        label: t("player.exportJson"),
+        icon: "download",
+        testid: "export-json",
+        href: exportUrl("json"),
+      },
+    ]}
+  />
   {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
 
   {#if entries.length}
@@ -329,26 +267,6 @@
 
   <div class="paper chord-paper" style="font-size:{stage ? Math.max(size, 1.8) : size}rem">
     <ChordSheet text={song.chordpro ?? ""} transpose={shapeShift} {flats} active={activeChord} />
-  </div>
-
-  <div class="chord-details">
-    <SongTags {song} {readOnly} />
-    {#if !readOnly}<SongLibraryActions songId={song.id} />{/if}
-    <SongMetadata
-      {song}
-      {readOnly}
-      onchange={(saved) => {
-        Object.assign(song, {
-          key: saved.key,
-          key_detected: saved.key_detected,
-          genre: saved.genre,
-          album: saved.album,
-          year: saved.year,
-          notes: saved.notes,
-          cover_url: saved.cover_url,
-        });
-      }}
-    />
   </div>
 
   <div class="float-dock no-print" role="toolbar" aria-label={t("chords.controls")}>
@@ -491,11 +409,6 @@
     }
   }
 
-  .chord-details {
-    max-width: 920px;
-    margin-top: var(--sp-5);
-  }
-
   /* The header already names the song, so on a phone the sheet starts at its first line. */
   @media screen and (max-width: 560px) {
     .chord-paper :global(.chord-title),
@@ -517,5 +430,10 @@
   .capo-note {
     color: var(--text-3);
     font-size: 0.85rem;
+  }
+
+  /* The Details section after the sheet leaves room for the dock, so no gap sits above it. */
+  .chords-page {
+    padding-bottom: 0;
   }
 </style>

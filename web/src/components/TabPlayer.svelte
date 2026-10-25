@@ -2,27 +2,19 @@
   import * as alphaTab from "@coderline/alphatab";
   import { onMount, untrack } from "svelte";
 
-  import Cover from "./Cover.svelte";
-  import { coverSrc } from "../lib/cover";
   import DockSpeed from "./DockSpeed.svelte";
   import DockTextButton from "./DockTextButton.svelte";
   import Fretboard from "./Fretboard.svelte";
   import Highway from "./Highway.svelte";
   import Icon from "./Icon.svelte";
   import PlayerSheet from "./PlayerSheet.svelte";
-  import SongLibraryActions from "./SongLibraryActions.svelte";
-  import SongMetadata from "./SongMetadata.svelte";
-  import SongTags from "./SongTags.svelte";
-  import Chip from "./ui/Chip.svelte";
+  import SongHeader from "./SongHeader.svelte";
   import IconButton from "./ui/IconButton.svelte";
   import OverflowMenu from "./ui/OverflowMenu.svelte";
-  import PageHeader from "./ui/PageHeader.svelte";
   import SegmentedControl from "./ui/SegmentedControl.svelte";
   import Tooltip from "./ui/Tooltip.svelte";
   import { sectionMarks } from "../lib/playerSheet";
-  import Menu from "./Menu.svelte";
   import SetlistPicker from "./SetlistPicker.svelte";
-  import OfflineToggle from "./OfflineToggle.svelte";
   import FullscreenToggle from "./FullscreenToggle.svelte";
   import AutoSyncSheet from "./AutoSyncSheet.svelte";
   import TranscribeSheet from "./TranscribeSheet.svelte";
@@ -113,7 +105,7 @@
     recordScore,
     type ScoreRecord,
   } from "../lib/scoreLog";
-  import { followLink, hrefFor, routePath } from "../lib/router.svelte";
+  import { routePath } from "../lib/router.svelte";
   import { shortcutFor, stepRate, type ShortcutAction } from "../lib/shortcuts";
   import {
     barSeconds,
@@ -1483,56 +1475,69 @@
   class:has-fretboard={practice.fretboard.on}
 >
   {#if lessonRef}<LessonRunBanner bind:this={lessonBanner} lesson={lessonRef} />{/if}
-  <PageHeader
-    class="song-header"
-    title={song.title}
-    titleTestId="song-heading"
-    titleClass="song-heading"
+  <SongHeader
+    {song}
+    {readOnly}
     eyebrow={instrumentLabel(track.instrument)}
-    subtitle={song.artist}
-    backHref={readOnly ? "" : "/"}
-    backLabel={readOnly ? "" : t("app.back")}
+    strings={track.tuning_midi.length}
+    facts={[
+      { label: tuningLabel(track.tuning_midi) },
+      { label: track.capo > 0 ? t("player.capo", { fret: track.capo }) : t("player.noCapo") },
+      { label: t("library.tempo", { bpm: song.document.bpm }) },
+    ]}
+    factsAfter={[
+      { label: t("library.measures", { count: document_.bars.length }) },
+      ...(song.source_ref.rhythm_estimated
+        ? [
+            {
+              label: t("asciiTab.rhythmEstimated"),
+              testid: "rhythm-estimated-pill",
+              title: t("asciiTab.rhythmEstimatedHint"),
+            },
+          ]
+        : []),
+      ...(song.has_audio ? [{ label: t("library.audio"), accent: true, icon: "waveform" }] : []),
+    ]}
+    onretune={() => (retuneOpen = true)}
+    ontuner={() => openTuner({ tuning: track.tuning_midi, capo: track.capo })}
+    onsetlist={() => (pickerOpen = true)}
+    exportItems={[
+      {
+        id: "pdf",
+        label: exporting
+          ? t("player.exportingPdf")
+          : song.document.tracks.length > 1
+            ? t("player.exportPdfTrack", { name: track.name })
+            : t("player.exportPdf"),
+        icon: "file",
+        testid: "export-pdf",
+        disabled: exporting,
+        onclick: () => void exportPdf(),
+      },
+      {
+        id: "musicxml",
+        label: t("player.exportMusicXml"),
+        icon: "layers",
+        testid: "export-musicxml",
+        href: exportUrl("musicxml"),
+      },
+      {
+        id: "midi",
+        label: t("player.exportMidi"),
+        icon: "download",
+        testid: "export-midi",
+        href: exportUrl("mid"),
+      },
+      {
+        id: "json",
+        label: t("player.exportJson"),
+        icon: "download",
+        testid: "export-json",
+        href: exportUrl("json"),
+      },
+    ]}
   >
-    {#snippet leading()}
-      <Cover
-        id={song.id}
-        title={song.title}
-        strings={track.tuning_midi.length}
-        size="lg"
-        src={coverSrc(song.cover_url)}
-      />
-    {/snippet}
-    {#snippet below()}
-      <div class="pills">
-        <Chip variant="meta" label={tuningLabel(track.tuning_midi)} />
-        <Chip
-          variant="meta"
-          label={track.capo > 0 ? t("player.capo", { fret: track.capo }) : t("player.noCapo")}
-        />
-        <Chip variant="meta" label={t("library.tempo", { bpm: song.document.bpm })} />
-        <Chip variant="meta" label={t("library.measures", { count: document_.bars.length })} />
-        {#if song.source_ref.rhythm_estimated}
-          <Chip
-            variant="meta"
-            label={t("asciiTab.rhythmEstimated")}
-            testid="rhythm-estimated-pill"
-            title={t("asciiTab.rhythmEstimatedHint")}
-          />
-        {/if}
-        {#if song.has_audio}
-          <Chip variant="meta" accent icon="waveform" label={t("library.audio")} />
-        {/if}
-        {#if !readOnly}
-          <button
-            type="button"
-            class="button"
-            data-testid="song-retune"
-            onclick={() => (retuneOpen = true)}
-          >
-            <Icon name="sliders" size={16} />{t("retune.open")}
-          </button>
-        {/if}
-      </div>
+    {#snippet afterFacts()}
       {#if practice.loops.length > 0}
         <div
           class="song-saved-loops"
@@ -1571,117 +1576,44 @@
         </div>
       {/if}
     {/snippet}
-    {#snippet actions()}
-      <div class="hero-actions">
-        {#if !readOnly}
-          <OfflineToggle kind="song" id={song.id} title={song.title} compact />
-        {/if}
-        <FullscreenToggle placement="header" />
-        <SegmentedControl
-          label={t("highway.view")}
-          value={ui.playerView}
-          testid="player-view-switcher"
-          onchange={(next) => setPlayerView(next as typeof ui.playerView)}
-          options={[
-            { value: "tab", label: t("highway.tab"), testid: "player-view-tab" },
-            { value: "highway", label: t("highway.highway"), testid: "player-view-highway" },
-            { value: "split", label: t("highway.split"), testid: "player-view-split" },
-          ]}
-        />
-        {#if !ui.demoMode && !readOnly}
-          <a
-            class="button"
-            data-testid="song-edit-link"
-            href={hrefFor(`/songs/${song.id}/edit`)}
-            onclick={(event) => followLink(event, `/songs/${song.id}/edit`)}
-          >
-            <Icon name="edit" size={18} /><span>{t("player.edit")}</span>
-          </a>
-        {/if}
+  </SongHeader>
+  <div class="view-row" data-testid="player-view-row">
+    <SegmentedControl
+      label={t("highway.view")}
+      value={ui.playerView}
+      testid="player-view-switcher"
+      onchange={(next) => setPlayerView(next as typeof ui.playerView)}
+      options={[
+        { value: "tab", label: t("highway.tab"), testid: "player-view-tab" },
+        { value: "highway", label: t("highway.highway"), testid: "player-view-highway" },
+        { value: "split", label: t("highway.split"), testid: "player-view-split" },
+      ]}
+    />
+    <div class="view-chips">
+      {#if loopA != null && loopB != null}
         <button
-          data-testid="song-tuner"
-          onclick={() => openTuner({ tuning: track.tuning_midi, capo: track.capo })}
+          type="button"
+          class="view-chip"
+          data-testid="player-loop-chip"
+          title={t("player.syncPanel")}
+          onclick={() => (panelOpen = true)}
         >
-          <Icon name="tuningFork" size={18} /><span>{t("tuner.open")}</span>
+          <Icon name="repeat" size={14} />{t("player.loopRange", { a: loopA + 1, b: loopB + 1 })}
         </button>
-        {#if !readOnly}
-          <Menu label={t("player.export")} icon="download" testid="export-menu">
-            {#snippet children(close)}
-              {#if !ui.demoMode}
-                <button
-                  class="menu-item"
-                  data-testid="song-add-to-setlist"
-                  role="menuitem"
-                  onclick={() => {
-                    close();
-                    pickerOpen = true;
-                  }}
-                >
-                  <Icon name="listMusic" size={18} />
-                  {t("setlists.addToSetlist")}
-                </button>
-              {/if}
-              <button
-                class="menu-item"
-                data-testid="export-pdf"
-                role="menuitem"
-                disabled={exporting}
-                onclick={() => {
-                  close();
-                  void exportPdf();
-                }}
-              >
-                <Icon name="file" size={18} />
-                {exporting
-                  ? t("player.exportingPdf")
-                  : song.document.tracks.length > 1
-                    ? t("player.exportPdfTrack", { name: track.name })
-                    : t("player.exportPdf")}
-              </button>
-              <a
-                class="menu-item"
-                data-testid="export-musicxml"
-                role="menuitem"
-                href={exportUrl("musicxml")}
-                onclick={close}><Icon name="layers" size={18} />{t("player.exportMusicXml")}</a
-              >
-              <a
-                class="menu-item"
-                data-testid="export-midi"
-                role="menuitem"
-                href={exportUrl("mid")}
-                onclick={close}><Icon name="download" size={18} />{t("player.exportMidi")}</a
-              >
-              <a
-                class="menu-item"
-                data-testid="export-json"
-                role="menuitem"
-                href={exportUrl("json")}
-                onclick={close}><Icon name="download" size={18} />{t("player.exportJson")}</a
-              >
-            {/snippet}
-          </Menu>
-        {/if}
-      </div>
-    {/snippet}
-  </PageHeader>
-  <SongTags {song} {readOnly} />
-  {#if !readOnly}<SongLibraryActions songId={song.id} />{/if}
-  <SongMetadata
-    {song}
-    {readOnly}
-    onchange={(saved) => {
-      Object.assign(song, {
-        key: saved.key,
-        key_detected: saved.key_detected,
-        genre: saved.genre,
-        album: saved.album,
-        year: saved.year,
-        notes: saved.notes,
-        cover_url: saved.cover_url,
-      });
-    }}
-  />
+      {/if}
+      {#if rate !== 1}
+        <button
+          type="button"
+          class="view-chip"
+          data-testid="player-speed-chip"
+          title={t("player.syncPanel")}
+          onclick={() => (panelOpen = true)}
+        >
+          <Icon name="gauge" size={14} />{formatSpeedPercent(rate)}
+        </button>
+      {/if}
+    </div>
+  </div>
   {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
 
   <div class="player-body">
@@ -1982,7 +1914,7 @@
           pressed={follow}
           onclick={() => setFollow(!follow)}
         />
-        <FullscreenToggle placement="dock" />
+        <FullscreenToggle />
         <OverflowMenu
           label={t("player.more")}
           testid="player-more"
@@ -2123,6 +2055,55 @@
     }
 
     .scrubber-mark-label {
+      display: none;
+    }
+  }
+
+  /* The Details section after the score leaves room for the dock, so no gap sits above it. */
+  .player-page {
+    padding-bottom: 0;
+  }
+
+  /* The view switch sits directly above the score, with chips for the loop and speed in use. */
+  .view-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-3);
+  }
+
+  /* The active loop and speed, pushed to the right, each opening the practice panel. */
+  .view-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+    margin-left: auto;
+  }
+
+  .view-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
+    min-height: 36px;
+    padding: 0 var(--sp-3);
+    border: 1px solid var(--line);
+    border-radius: var(--r-pill);
+    background: var(--accent-soft);
+    color: var(--accent-text);
+    font-size: var(--fs-sm);
+    line-height: 1.45;
+    white-space: nowrap;
+  }
+
+  :global(:root[data-fullscreen]) .view-row,
+  .player-page.stage .view-row {
+    display: none;
+  }
+
+  /* Saved loops stay in the practice panel on a phone: they would push the music down. */
+  @media (max-width: 767px) {
+    .song-saved-loops {
       display: none;
     }
   }

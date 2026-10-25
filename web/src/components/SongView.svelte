@@ -1,8 +1,7 @@
 <script lang="ts">
   import ChordPractice from "./ChordPractice.svelte";
   import ChordSheetView from "./ChordSheetView.svelte";
-  import DifficultyPanel from "./DifficultyPanel.svelte";
-  import SongPractice from "./SongPractice.svelte";
+  import SongDetails from "./SongDetails.svelte";
   import TabPlayer from "./TabPlayer.svelte";
   import Page from "./ui/Page.svelte";
   import { getSong, markSongOpened } from "../lib/api";
@@ -50,18 +49,16 @@
       <ChordSheetView {song} initialTranspose={transpose} readOnly={!editable} />
       <!-- The same width and left edge as the sheet above. -->
       <div class="chords-lower">
-        <DifficultyPanel tracks={song.difficulty_tracks} preferredId="chords" chords />
         {#key song.id}
           <ChordPractice songId={song.id} onlogged={() => (logged += 1)} />
         {/key}
-        <SongPractice songId={song.id} reload={logged} />
+        <SongDetails {song} reload={logged} />
       </div>
     {:else}
       {#key song.id}
         <TabPlayer song={song as TabSong} readOnly={!editable} />
       {/key}
-      <DifficultyPanel tracks={song.difficulty_tracks} preferredId={song.preferred_track_id} />
-      <SongPractice songId={song.id} />
+      <SongDetails {song} />
     {/if}
   </Page>
 {/if}

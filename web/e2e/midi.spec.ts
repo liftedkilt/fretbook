@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { expect, test } from "./support/fixtures";
+import { openExport } from "./support/song-page";
 import { repoRoot } from "./support/paths";
 
 // A two-bar bass riff written for the repository's import corpus (CC0).
@@ -30,7 +31,7 @@ test("export an imported MIDI tab back to a .mid file", async ({ page }) => {
   await expect(page).toHaveURL(/\/songs\/[^/]+$/);
   await expect(page.getByTestId("player-score").locator("svg").first()).toBeVisible();
 
-  await page.getByTestId("export-menu").click();
+  await openExport(page);
   const [download] = await Promise.all([
     page.waitForEvent("download"),
     page.getByTestId("export-midi").click(),
