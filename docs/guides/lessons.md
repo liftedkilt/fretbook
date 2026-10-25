@@ -1,6 +1,6 @@
 # Learning a song (lessons)
 
-Fretbook has **courses of lessons** for guitar and bass (open **Lessons** in the sidebar, or **Tools → Lessons** on a
+Fretbook has **courses of lessons** for guitar and bass (open **Lessons** in the sidebar, or the **Lessons** tab on a
 phone): each lesson opens the next, the page remembers where you were, and you pass a lesson by reaching a score or
 finishing wait mode. How to write your own is in [Writing lessons](../lessons.md).
 
