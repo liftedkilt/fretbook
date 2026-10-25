@@ -17,7 +17,9 @@ test("transpose a tab, preview it, and save it as a new track", async ({ page, s
   const saved = await (await page.request.get(`/api/songs/${song.id}`)).json();
   expect(saved.document.tracks).toHaveLength(2);
   expect(saved.document.tracks[1].name).toMatch(/\(converted\)$/);
-  // The player switches to the new track in place.
+  // The track selector lives on the View tab. The player switches to the new track in place.
+  await page.getByTestId("player-panel-toggle").click();
+  await page.getByTestId("player-sheet-tab-view").click();
   await expect(page.getByRole("combobox", { name: "Track" })).toHaveValue(
     saved.document.tracks[1].id,
   );
