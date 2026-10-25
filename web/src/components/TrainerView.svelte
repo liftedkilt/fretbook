@@ -6,7 +6,9 @@
   import PageHeader from "./ui/PageHeader.svelte";
   import SegmentedControl from "./ui/SegmentedControl.svelte";
   import ListenPanel from "./ListenPanel.svelte";
-  import { recordPracticeExercise } from "../lib/api";
+  import { getPracticeStats, recordPracticeExercise } from "../lib/api";
+  import { onPracticeLogged, snapshotFromStats } from "../lib/celebrate";
+  import { routePath } from "../lib/router.svelte";
   import { getSavedChannel, getSavedDevice } from "../lib/listen/devicePrefs";
   import { ListenError, describeProblem, startListening, type ListenSession } from "../lib/listen";
   import type { ChromaEvent, PitchEvent } from "../lib/listen";
@@ -324,7 +326,11 @@
           rounds: result.summary.rounds,
           correct: result.summary.correct,
           score: result.summary.score,
-        });
+        }).then(() =>
+          onPracticeLogged(false, routePath() === "/practice", () =>
+            getPracticeStats(localDay(new Date())).then(snapshotFromStats),
+          ),
+        );
       }
     }
   }

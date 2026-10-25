@@ -3,7 +3,9 @@
   import Page from "./ui/Page.svelte";
   import PageHeader from "./ui/PageHeader.svelte";
   import ListenPanel from "./ListenPanel.svelte";
-  import { getSong, listSongs, recordPracticeExercise } from "../lib/api";
+  import { getPracticeStats, getSong, listSongs, recordPracticeExercise } from "../lib/api";
+  import { onPracticeLogged, snapshotFromStats } from "../lib/celebrate";
+  import { routePath } from "../lib/router.svelte";
   import { Clicker } from "../lib/clicker";
   import { t } from "../lib/i18n.svelte";
   import { getLocalCalibration } from "../lib/listen/calibration";
@@ -179,7 +181,11 @@
       pattern: patternName(),
       bpm: tempo,
       mean_error_ms: summary.meanMs === null ? null : Math.round(summary.meanMs * 10) / 10,
-    });
+    }).then(() =>
+      onPracticeLogged(false, routePath() === "/practice", () =>
+        getPracticeStats(localDay(new Date())).then(snapshotFromStats),
+      ),
+    );
   }
 
   function record(source: HitSource, timeMs = performance.now()) {

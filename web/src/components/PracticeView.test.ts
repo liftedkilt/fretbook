@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { resetCelebrations } from "../lib/celebrate";
 import type { PracticeStats } from "../lib/types";
 import PracticeView from "./PracticeView.svelte";
 
@@ -78,6 +79,8 @@ function stats(overrides: Partial<PracticeStats> = {}): PracticeStats {
 describe("PracticeView", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    resetCelebrations();
+    localStorage.removeItem("fretbook.celebrations");
     mockStats.mockResolvedValue(stats());
   });
 
@@ -85,7 +88,9 @@ describe("PracticeView", () => {
     render(PracticeView);
     expect(await screen.findByTestId("practice-today")).toHaveTextContent("5");
     expect(screen.getByTestId("practice-ring")).toHaveAttribute("data-progress", "0.50");
+    expect(screen.getByTestId("practice-ring")).not.toHaveAttribute("data-celebrate");
     expect(screen.getByTestId("practice-streak")).toHaveTextContent("3");
+    expect(screen.getByTestId("practice-streak")).toHaveAttribute("data-celebrate", "streak");
     expect(screen.getByTestId("practice-longest")).toHaveTextContent("5");
     expect(screen.getByTestId("practice-songs")).toHaveTextContent("2");
     expect(screen.getByTestId("practice-week")).toHaveTextContent("+100% on last week");
@@ -196,6 +201,17 @@ describe("PracticeView", () => {
     expect(screen.getByTestId("practice-start")).toBeInTheDocument();
     expect(screen.queryByTestId("practice-ring")).toBeNull();
     expect(screen.queryByTestId("practice-list-recent")).toBeNull();
+  });
+
+  it("glows the ring when the goal is first met, and not again the same day", async () => {
+    mockStats.mockResolvedValue(stats({ today_seconds: 600, current_streak: 6 }));
+    const first = render(PracticeView);
+    expect(await screen.findByTestId("practice-ring")).toHaveAttribute("data-celebrate", "goal");
+    expect(screen.getByTestId("practice-streak")).not.toHaveAttribute("data-celebrate");
+    first.unmount();
+    render(PracticeView);
+    expect(await screen.findByTestId("practice-ring")).not.toHaveAttribute("data-celebrate");
+    expect(screen.getByTestId("practice-streak")).not.toHaveAttribute("data-celebrate");
   });
 
   it("shows an error when the dashboard cannot load", async () => {

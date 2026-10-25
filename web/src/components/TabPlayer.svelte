@@ -30,7 +30,15 @@
   import LessonRunBanner from "./LessonRunBanner.svelte";
   import ScoreResults from "./ScoreResults.svelte";
   import ShortcutHelp from "./ShortcutHelp.svelte";
-  import { ApiError, getSong, patchSync, recordPracticeSession, uploadAudio } from "../lib/api";
+  import {
+    ApiError,
+    getPracticeStats,
+    getSong,
+    patchSync,
+    recordPracticeSession,
+    uploadAudio,
+  } from "../lib/api";
+  import { holdCelebrations, onPracticeLogged, snapshotFromStats } from "../lib/celebrate";
   import { AudioMedia } from "../lib/alphatab/audioHandler";
   import { planFollow, SynthFollower } from "../lib/alphatab/synthFollow";
   import { separateEffectBands } from "../lib/alphatab/display";
@@ -83,7 +91,7 @@
   import { waitFocus } from "../lib/listen/waitFretboard";
   import { followPlayed, playedBars } from "../lib/playback";
   import { parseLessonParam } from "../lib/lessonRun";
-  import { IdleWatch, PracticeTimer, WAIT_IDLE_MS } from "../lib/practiceLog";
+  import { IdleWatch, localDay, PracticeTimer, WAIT_IDLE_MS } from "../lib/practiceLog";
   import {
     ClickScheduler,
     calcNextSpeed,
@@ -105,7 +113,7 @@
     recordScore,
     type ScoreRecord,
   } from "../lib/scoreLog";
-  import { followLink, hrefFor } from "../lib/router.svelte";
+  import { followLink, hrefFor, routePath } from "../lib/router.svelte";
   import { shortcutFor, stepRate, type ShortcutAction } from "../lib/shortcuts";
   import {
     barSeconds,
@@ -151,7 +159,11 @@
   const practiceTimer = new PracticeTimer({
     onSession: (session, keepalive) => {
       if (readOnly) return;
-      void recordPracticeSession(session, keepalive);
+      void recordPracticeSession(session, keepalive).then(() => {
+        onPracticeLogged(keepalive, routePath() === "/practice", () =>
+          getPracticeStats(localDay(new Date())).then(snapshotFromStats),
+        );
+      });
     },
   });
   const scheduler = new ClickScheduler();
@@ -625,6 +637,12 @@
             : null,
       },
     );
+  });
+
+  // A toast waits until playback stops and the score sheet is gone, so it never covers the result.
+  $effect(() => {
+    holdCelebrations(playing || scoreResultsOpen);
+    return () => holdCelebrations(false);
   });
 
   onMount(() => {

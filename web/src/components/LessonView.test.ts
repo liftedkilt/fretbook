@@ -105,7 +105,8 @@ describe("LessonView", () => {
     await fireEvent.click(screen.getByTestId("lesson-complete"));
     expect(mockReport).toHaveBeenCalledWith("g1", "l1", { completed: true });
     expect(await screen.findByTestId("lesson-passed")).toBeInTheDocument();
-    expect(screen.getByTestId("lesson-done")).toBeInTheDocument();
+    expect(screen.getByTestId("lesson-done")).toHaveAttribute("data-draw", "true");
+    expect(screen.getByTestId("lesson-next-card")).toHaveAttribute("data-arrive", "true");
     expect(screen.getByTestId("lesson-next")).toHaveAttribute("href", "/lessons/g1/l2");
     expect(screen.queryByTestId("lesson-complete")).toBeNull();
   });
@@ -163,6 +164,8 @@ describe("LessonView", () => {
     render(LessonView, { course: "g1", lesson: "l1" });
     expect(await screen.findByTestId("lesson-edit")).toHaveAttribute("href", "/lessons/g1/l1/edit");
     expect(screen.queryByTestId("lesson-next")).toBeNull();
+    expect(screen.getByTestId("lesson-next-card")).not.toHaveAttribute("data-arrive");
+    expect(screen.getByTestId("lesson-done")).not.toHaveAttribute("data-draw");
     expect(screen.getByRole("link", { name: "Back to the course" })).toBeInTheDocument();
   });
 

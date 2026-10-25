@@ -1,4 +1,5 @@
 <script lang="ts">
+  import CheckDraw from "./CheckDraw.svelte";
   import CoursePathArt from "./CoursePathArt.svelte";
   import Icon from "./Icon.svelte";
   import Page from "./ui/Page.svelte";
@@ -7,6 +8,7 @@
   import type { OverflowItem } from "./ui/OverflowMenu.svelte";
   import { ApiError, deleteCourse, getCourse, importLessonPack, listCourses } from "../lib/api";
   import type { CourseDetail } from "../lib/api-types";
+  import { claimCourseAnimation, consumeLessonPassed, courseMinutes } from "../lib/celebrate";
   import { t } from "../lib/i18n.svelte";
   import { coursePath, formatMinutes, lessonPath, passText, trackLabelKey } from "../lib/lessons";
   import { followLink, hrefFor, navigate } from "../lib/router.svelte";
@@ -19,6 +21,10 @@
   let error = $state("");
   let notice = $state("");
   let fileInput = $state<HTMLInputElement | null>(null);
+  // The banner only slides in the first time a finished course is opened.
+  let animateBanner = $state(false);
+  // The lesson whose check draws in, once, after it is just passed.
+  let freshLessonId = $state<string | null>(null);
 
   function fail(err: unknown) {
     error = err instanceof Error ? err.message : t("error.generic");
@@ -26,13 +32,24 @@
 
   function load(wanted: string) {
     getCourse(wanted)
-      .then((found) => (course = found))
-      .catch(fail);
+      .then((found) => {
+        if (wanted !== id) return;
+        freshLessonId = consumeLessonPassed(found.id);
+        const done = found.lesson_count > 0 && found.completed_count === found.lesson_count;
+        animateBanner = done && claimCourseAnimation(found.id);
+        course = found;
+      })
+      .catch((err) => {
+        if (wanted !== id) return;
+        fail(err);
+      });
   }
 
   $effect(() => {
     const wanted = id;
     course = null;
+    animateBanner = false;
+    freshLessonId = null;
     error = notice = "";
     load(wanted);
     listCourses()
@@ -191,9 +208,26 @@
         </p>
       {/if}
 
+      {#if finished}
+        <div class="finished" class:arrive={animateBanner} data-testid="course-finished">
+          <CoursePathArt id={current.id} title={current.title} track={current.track} />
+          <div class="finished-copy">
+            <p class="eyebrow">{t("celebrations.courseTitle")}</p>
+            <p class="finished-title">{current.title}</p>
+            <p class="muted">
+              {t("celebrations.courseTime", {
+                time: formatMinutes(courseMinutes(current.levels)),
+              })}
+            </p>
+          </div>
+        </div>
+      {/if}
+
       <div class="layout">
         <aside class="side" data-testid="course-side">
-          <CoursePathArt id={current.id} title={current.title} track={current.track} />
+          {#if !finished}
+            <CoursePathArt id={current.id} title={current.title} track={current.track} />
+          {/if}
           <progress
             max="100"
             value={percent}
@@ -236,7 +270,9 @@
                   <li
                     class="step {lesson.status}"
                     class:next={isNext}
+                    class:celebrate={freshLessonId === lesson.id}
                     data-testid="lesson-row-{lesson.id}"
+                    data-celebrate={freshLessonId === lesson.id ? "lesson" : undefined}
                   >
                     <span
                       class="node"
@@ -246,7 +282,7 @@
                         : undefined}
                     >
                       {#if lesson.status === "completed"}
-                        <Icon name="check" size={16} />
+                        <CheckDraw draw={freshLessonId === lesson.id} size={16} />
                       {:else if lesson.status === "locked"}
                         <Icon name="lock" size={14} />
                       {:else}
@@ -485,7 +521,62 @@
     color: var(--warn);
   }
 
+  .finished {
+    display: grid;
+    gap: var(--sp-4);
+    padding: var(--sp-4);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: var(--surface);
+  }
+
+  .finished.arrive {
+    animation: course-arrive 1.2s var(--ease);
+  }
+
+  .eyebrow {
+    margin: 0;
+    font-size: var(--fs-eyebrow);
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent-text);
+  }
+
+  .finished-title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: var(--fs-title);
+    line-height: 1.1;
+  }
+
+  .finished .muted {
+    margin: 0;
+  }
+
+  @keyframes course-arrive {
+    from {
+      opacity: 0;
+      transform: translateY(var(--sp-3));
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .finished.arrive {
+      animation: none;
+    }
+  }
+
   @media (min-width: 900px) {
+    .finished {
+      grid-template-columns: 16rem minmax(0, 1fr);
+      align-items: center;
+    }
+
     .layout {
       grid-template-columns: minmax(0, 1fr) 20rem;
     }

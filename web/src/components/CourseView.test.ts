@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import CourseView from "./CourseView.svelte";
+import { markLessonPassed, resetCelebrations } from "../lib/celebrate";
 
 const mockGet = vi.fn();
 const mockList = vi.fn();
@@ -54,6 +55,8 @@ const course = (extra = {}) => ({
 describe("CourseView", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    resetCelebrations();
+    localStorage.removeItem("fretbook.celebrations");
     mockGet.mockResolvedValue(course());
     mockList.mockResolvedValue({ can_edit: false });
   });
@@ -95,9 +98,27 @@ describe("CourseView", () => {
     mockGet.mockResolvedValue(
       course({ completed_count: 3, next_lesson_id: null, minutes_left: 0, stars: 9 }),
     );
-    render(CourseView, { id: "g1" });
+    const view = render(CourseView, { id: "g1" });
     expect(await screen.findByText("Course complete")).toBeInTheDocument();
+    const banner = screen.getByTestId("course-finished");
+    expect(banner).toHaveTextContent("Course finished");
+    expect(banner).toHaveTextContent("Total time 18 min");
+    expect(banner).toHaveClass("arrive");
+    expect(screen.getByTestId("course-side").querySelector(".art")).toBeNull();
     expect(screen.queryByTestId("course-continue")).toBeNull();
+    view.unmount();
+    render(CourseView, { id: "g1" });
+    const again = await screen.findByTestId("course-finished");
+    expect(again).not.toHaveClass("arrive");
+  });
+
+  it("draws the check on the lesson that was just passed, and only once", async () => {
+    markLessonPassed("g1", "a");
+    const view = render(CourseView, { id: "g1" });
+    expect(await screen.findByTestId("lesson-row-a")).toHaveAttribute("data-celebrate", "lesson");
+    view.unmount();
+    render(CourseView, { id: "g1" });
+    expect(await screen.findByTestId("lesson-row-a")).not.toHaveAttribute("data-celebrate");
   });
 
   it("lets editors add, edit and delete", async () => {
