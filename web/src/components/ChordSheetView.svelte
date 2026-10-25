@@ -313,16 +313,18 @@
       aria-label={t("chordDiagrams.heading")}
     >
       <div class="chord-diagrams-head no-print">
-        <h2 class="chord-diagrams-title">{t("chordDiagrams.heading")}</h2>
         <ChordSetupPicker
+          compact
           instrument={setup.instrument.id}
           tuning={setup.tuning.id}
           onchange={changeSetup}
         />
+        {#if capo}
+          <span class="capo-note" data-testid="chord-capo"
+            >{t("chordDiagrams.capoNote", { fret: capo })}</span
+          >
+        {/if}
       </div>
-      {#if capo}
-        <p class="hint" data-testid="chord-capo">{t("chordDiagrams.capoNote", { fret: capo })}</p>
-      {/if}
       <ChordStrip
         {entries}
         strings={setup.tuning.strings.length}
@@ -340,14 +342,6 @@
     applied={appliedCapo !== null}
     onapply={(fret) => (appliedCapo = fret)}
     onundo={() => (appliedCapo = null)}
-  />
-
-  <ChordWait
-    text={song.chordpro ?? ""}
-    transpose={shapeShift}
-    {flats}
-    capo={appliedCapo ?? undefined}
-    onactive={(key) => (activeChord = key)}
   />
 
   <div class="paper chord-paper" style="font-size:{stage ? Math.max(size, 1.8) : size}rem">
@@ -392,6 +386,14 @@
         >{t("chords.flats")}</span
       >
     </button>
+    <span class="float-divider" aria-hidden="true"></span>
+    <ChordWait
+      text={song.chordpro ?? ""}
+      transpose={shapeShift}
+      {flats}
+      capo={appliedCapo ?? undefined}
+      onactive={(key) => (activeChord = key)}
+    />
     <span class="float-divider" aria-hidden="true"></span>
     <div class="float-group">
       <button
@@ -453,3 +455,23 @@
     onclose={() => (pickerOpen = false)}
   />
 </div>
+
+<style>
+  .chord-diagrams {
+    margin: 0 0 var(--sp-3);
+  }
+
+  .chord-diagrams-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--sp-1) var(--sp-3);
+    margin-bottom: var(--sp-1);
+  }
+
+  .capo-note {
+    color: var(--text-3);
+    font-size: 0.85rem;
+  }
+</style>
