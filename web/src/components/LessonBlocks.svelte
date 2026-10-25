@@ -65,7 +65,7 @@
     {:else if block.kind === "fretboard"}
       {@const found = neck(block)}
       <figure class="lesson-fretboard" data-testid="lesson-fretboard">
-        <Fretboard tuning={found.tuning} current={found.spots} label="names" />
+        <Fretboard tuning={found.tuning} current={found.spots} label="names" readout={false} />
       </figure>
     {:else if block.kind === "tab"}
       <pre
@@ -119,3 +119,53 @@
     {/if}
   {/each}
 </div>
+
+<style>
+  .lesson-prose {
+    max-width: min(var(--page-narrow), 70ch);
+    line-height: 1.65;
+  }
+
+  .lesson-prose > :global(* + *) {
+    margin-top: var(--sp-4);
+  }
+
+  .lesson-prose :global(h1),
+  .lesson-prose :global(h2),
+  .lesson-prose :global(h3),
+  .lesson-prose :global(h4) {
+    line-height: 1.25;
+  }
+
+  .lesson-prose > :global(* + h1),
+  .lesson-prose > :global(* + h2),
+  .lesson-prose > :global(* + h3),
+  .lesson-prose > :global(* + h4) {
+    margin-top: var(--sp-6);
+  }
+
+  .lesson-prose :global(ul),
+  .lesson-prose :global(ol) {
+    padding-left: var(--sp-5);
+  }
+
+  .lesson-prose :global(li + li) {
+    margin-top: var(--sp-1);
+  }
+
+  .lesson-prose :global(blockquote) {
+    margin-left: 0;
+    padding-left: var(--sp-4);
+    border-left: 3px solid var(--line-strong);
+    color: var(--text-2);
+  }
+
+  .lesson-prose :global(pre) {
+    overflow-x: auto;
+    padding: var(--sp-3) var(--sp-4);
+    border-radius: var(--r-sm);
+    border: 1px solid var(--line-strong);
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+  }
+</style>

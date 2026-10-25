@@ -23,6 +23,7 @@
     root = 0,
     leftHanded = false,
     tone = "now",
+    readout = true,
     onselect,
   }: {
     /** Open-string pitches, highest string first. 4 to 8 strings read best. */
@@ -37,6 +38,8 @@
     leftHanded?: boolean;
     /** How the lit notes are coloured: wait mode shows a hint, then green on a hit. */
     tone?: "now" | "wait" | "hint" | "hit";
+    /** Show the live "Now: …" line. A static diagram turns it off. */
+    readout?: boolean;
     /** When given, every fret of every string is a button that reports the tapped note. */
     onselect?: (note: FretNote) => void;
   } = $props();
@@ -178,11 +181,17 @@
       <text class="fret-number" x={x(dotPosition(fret, frets))} y={height - 3}>{fret}</text>
     {/each}
   </svg>
-  <figcaption class="muted small">
-    {#if capo > 0}<span data-testid="fretboard-capo">{t("fretboard.capo", { fret: capo })}</span>
-      ·
-    {/if}<span aria-live="polite" data-testid="fretboard-summary">{summary}</span>
-  </figcaption>
+  {#if readout || capo > 0}
+    <figcaption class="muted small">
+      {#if capo > 0}<span data-testid="fretboard-capo">{t("fretboard.capo", { fret: capo })}</span
+        >{/if}
+      {#if readout}
+        {#if capo > 0}
+          ·
+        {/if}<span aria-live="polite" data-testid="fretboard-summary">{summary}</span>
+      {/if}
+    </figcaption>
+  {/if}
 </figure>
 
 <style>

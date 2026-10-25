@@ -5163,20 +5163,6 @@ kbd {
   gap: 0.15rem;
 }
 
-.lesson-prose {
-  line-height: 1.6;
-  max-width: 46rem;
-}
-
-.lesson-prose pre {
-  overflow-x: auto;
-  padding: 0.8rem 1rem;
-  border-radius: var(--r-sm);
-  border: 1px solid var(--line-strong);
-  font-family: var(--font-mono);
-  font-size: 0.9rem;
-}
-
 .lesson-tab {
   overflow-x: auto;
   padding: 0.8rem 1rem;
