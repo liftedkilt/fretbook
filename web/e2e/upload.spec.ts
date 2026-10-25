@@ -47,6 +47,10 @@ test("failed import appears in recent imports and can be dismissed", async ({ pa
   await page.getByTestId("add-sheet-close").click();
 
   await expect(page.getByTestId("recent-imports-panel")).toBeVisible();
+  await expect(page.getByTestId("recent-imports-summary")).toHaveText("1 import needs attention");
+  // Failures fold into one banner; Review opens them.
+  await expect(page.getByTestId("job-label")).toBeHidden();
+  await page.getByTestId("recent-imports-review").click();
   await expect(page.getByTestId("job-label")).toHaveText("bad-riff.musicxml");
   await expect(page.getByTestId("job-retry")).toBeVisible();
   await expect(page.getByTestId("job-dismiss")).toBeVisible();

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { coverSrc, monogram, paletteFor, PALETTES } from "./cover";
+import { coverSrc, monogram, paletteFor, PALETTES, patternFor } from "./cover";
 
 describe("cover art", () => {
   it("gives the same song the same palette", () => {
@@ -21,5 +21,15 @@ describe("coverSrc", () => {
     expect(coverSrc(null)).toBeUndefined();
     expect(coverSrc("")).toBeUndefined();
     expect(coverSrc("api/songs/s1/cover?v=1")).toContain("api/songs/s1/cover?v=1");
+  });
+});
+
+describe("patternFor", () => {
+  it("is stable for an id and varies between ids", () => {
+    expect(patternFor("abc")).toEqual(patternFor("abc"));
+    const shapes = new Set(
+      Array.from({ length: 40 }, (_, index) => patternFor(`song-${index}`).shape),
+    );
+    expect(shapes.size).toBeGreaterThan(1);
   });
 });
