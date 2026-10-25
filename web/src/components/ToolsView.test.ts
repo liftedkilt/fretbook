@@ -17,5 +17,6 @@ describe("ToolsView", () => {
     expect(metronomeCard).toHaveAttribute("href", "/tools/metronome");
 
     expect(screen.getByTestId("tool-card-chords")).toHaveAttribute("href", "/tools/chords");
+    expect(screen.queryByTestId("tool-card-lessons")).not.toBeInTheDocument();
   });
 });

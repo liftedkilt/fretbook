@@ -126,19 +126,19 @@ test.describe("Tools page: standalone tuner and metronome", () => {
     await expect(metronomeView).toBeVisible();
 
     // BPM stepper adjustments
-    await metronomeView.getByTestId("metronome-bpm-plus-5").click();
-    await expect(metronomeView.getByTestId("metronome-bpm-display")).toContainText("125");
-    await expect(metronomeView.getByTestId("metronome-bpm-input")).toHaveValue("125");
+    await metronomeView.getByTestId("metronome-bpm-plus-1").click();
+    await expect(metronomeView.getByTestId("metronome-bpm-display")).toContainText("121");
+    await expect(metronomeView.getByTestId("metronome-bpm-input")).toHaveValue("121");
 
     // Change time signature to 3/4
-    await metronomeView.getByTestId("metronome-time-signature").selectOption("3/4");
+    await metronomeView.getByTestId("metronome-time-signature-3-4").click();
     await expect(metronomeView.getByTestId("metronome-beat-0")).toBeVisible();
     await expect(metronomeView.getByTestId("metronome-beat-1")).toBeVisible();
     await expect(metronomeView.getByTestId("metronome-beat-2")).toBeVisible();
     await expect(metronomeView.getByTestId("metronome-beat-3")).toHaveCount(0);
 
     // Subdivisions
-    await metronomeView.getByTestId("metronome-subdivisions").selectOption("2");
+    await metronomeView.getByTestId("metronome-subdivisions-2").click();
 
     // Accent toggle
     const accent = metronomeView.getByTestId("metronome-accent");
@@ -154,4 +154,24 @@ test.describe("Tools page: standalone tuner and metronome", () => {
     await toggle.click();
     await expect(toggle).toContainText("Start");
   });
+
+  for (const viewport of [
+    { width: 375, height: 812 },
+    { width: 768, height: 1024 },
+    { width: 1440, height: 900 },
+  ]) {
+    test(`Start is above the fold at ${viewport.width}x${viewport.height}`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      for (const [path, view, testid] of [
+        ["/tools/metronome", "standalone-metronome-view", "metronome-toggle"],
+        ["/tools/tuner", "standalone-tuner-view", "tuner-start"],
+      ]) {
+        await page.goto(path);
+        const start = page.getByTestId(view).getByTestId(testid);
+        await expect(start).toBeVisible();
+        const box = await start.boundingBox();
+        expect(box!.y + box!.height).toBeLessThanOrEqual(viewport.height);
+      }
+    });
+  }
 });

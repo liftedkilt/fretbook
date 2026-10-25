@@ -64,6 +64,11 @@
     min-width: 0;
   }
 
+  .slider-stepper :global(.icon-button) {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
   input {
     flex: 1;
     min-width: 0;

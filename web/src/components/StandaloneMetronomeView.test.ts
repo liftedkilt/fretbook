@@ -59,18 +59,17 @@ describe("StandaloneMetronomeView", () => {
     await fireEvent.click(screen.getByTestId("metronome-bpm-plus-1"));
     expect(screen.getByTestId("metronome-bpm-display")).toHaveTextContent("141");
 
-    await fireEvent.click(screen.getByTestId("metronome-bpm-minus-5"));
-    expect(screen.getByTestId("metronome-bpm-display")).toHaveTextContent("136");
+    await fireEvent.click(screen.getByTestId("metronome-bpm-minus-1"));
+    expect(screen.getByTestId("metronome-bpm-display")).toHaveTextContent("140");
   });
 
   it("updates visual beat count on time signature change", async () => {
     render(StandaloneMetronomeView);
 
-    const sigSelect = screen.getByTestId("metronome-time-signature");
-    await fireEvent.change(sigSelect, { target: { value: "3/4" } });
+    await fireEvent.click(screen.getByTestId("metronome-time-signature-3-4"));
     expect(screen.getAllByTestId(/metronome-beat-\d+/)).toHaveLength(3);
 
-    await fireEvent.change(sigSelect, { target: { value: "6/8" } });
+    await fireEvent.click(screen.getByTestId("metronome-time-signature-6-8"));
     expect(screen.getAllByTestId(/metronome-beat-\d+/)).toHaveLength(6);
   });
 

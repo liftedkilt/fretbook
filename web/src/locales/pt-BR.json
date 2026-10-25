@@ -1240,7 +1240,7 @@
   "tools": {
     "nav": "Ferramentas",
     "heading": "Ferramentas",
-    "subtitle": "Utilitários de prática para afinar e marcar o tempo.",
+    "subtitle": "Afine, marque o tempo e treine o ouvido.",
     "tuner": "Afinador",
     "tunerDescription": "Afine sua guitarra, baixo, ukulele ou qualquer instrumento com detecção de afinação e tons de referência.",
     "openTuner": "Abrir afinador",
@@ -1286,7 +1286,11 @@
       "openD": "Open D",
       "lowG": "Sol grave (Low G)",
       "custom": "Personalizada"
-    }
+    },
+    "settings": "Ajustes",
+    "tempo": "Andamento",
+    "slower": "Mais devagar",
+    "faster": "Mais rápido"
   },
   "speedTrainer": {
     "title": "Treinador de velocidade",

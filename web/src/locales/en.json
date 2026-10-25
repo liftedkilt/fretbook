@@ -1240,13 +1240,13 @@
   "tools": {
     "nav": "Tools",
     "heading": "Tools",
-    "subtitle": "Practice utilities to tune up and keep time.",
+    "subtitle": "Tune up, keep time and train your ear.",
     "tuner": "Tuner",
     "tunerDescription": "Tune your guitar, bass, ukulele or any instrument with pitch detection and reference tones.",
-    "openTuner": "Open Tuner",
+    "openTuner": "Open tuner",
     "metronome": "Metronome",
     "metronomeDescription": "Keep steady time with tap tempo, customizable time signatures, accents, and subdivisions.",
-    "openMetronome": "Open Metronome",
+    "openMetronome": "Open metronome",
     "back": "All tools",
     "instrument": "Instrument",
     "tuning": "Tuning",
@@ -1286,7 +1286,11 @@
       "openD": "Open D",
       "lowG": "Low G",
       "custom": "Custom"
-    }
+    },
+    "settings": "Settings",
+    "tempo": "Tempo",
+    "slower": "Slower",
+    "faster": "Faster"
   },
   "speedTrainer": {
     "title": "Speed trainer",
@@ -1688,7 +1692,7 @@
   "exercises": {
     "toolTitle": "Exercises",
     "toolDescription": "Generate scales, arpeggios, finger drills, chord-change and bass practice, ready to play along with.",
-    "openTool": "Open Exercises",
+    "openTool": "Open exercises",
     "heading": "Exercises",
     "subtitle": "Build a practice exercise from theory, preview the tab, and save it to your library to play it like any song.",
     "presetsHeading": "Preset drills",
@@ -1855,7 +1859,7 @@
   "rhythm": {
     "toolTitle": "Rhythm trainer",
     "toolDescription": "Tap, press Space or strum a muted string along with a click and see whether you rush or drag.",
-    "openTool": "Open Rhythm trainer",
+    "openTool": "Open rhythm trainer",
     "intro": "Pick a pattern, then play it along with the click after a one-bar count-in. The click marks the beats only, so you have to feel the subdivisions yourself.",
     "pattern": "Pattern",
     "tempo": "Tempo (BPM)",
