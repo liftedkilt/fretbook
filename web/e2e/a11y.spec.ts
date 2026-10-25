@@ -215,6 +215,23 @@ for (const scheme of ["light", "dark"] as const) {
       expect(found).toEqual([]);
     });
 
+    test("the chord sheet's wait mode and input popover have no axe violations", async ({
+      page,
+      seed,
+    }) => {
+      // Wait mode only needs a microphone to open; a denied one is shown as an error in the same place.
+      const sheet = await seed.create({ title: "Two Chords", chordpro: "[Bb]Hello [Eb]world" });
+      await page.goto(`/songs/${sheet.id}`);
+      const found: string[] = [];
+      await expect(page.getByTestId("capo-suggestions")).toBeVisible();
+      found.push(...(await violations(page, "chord sheet capo line")));
+      await page.getByTestId("chord-wait-toggle").click();
+      await page.getByTestId("chord-wait-input").click();
+      await expect(page.getByTestId("chord-wait").getByTestId("listen-panel")).toBeVisible();
+      found.push(...(await violations(page, "chord sheet input popover")));
+      expect(found).toEqual([]);
+    });
+
     test("the setlist overflow menu has no axe violations", async ({ page }) => {
       const made = await page.request.post("/api/setlists", { data: { name: "Friday" } });
       expect(made.ok()).toBeTruthy();

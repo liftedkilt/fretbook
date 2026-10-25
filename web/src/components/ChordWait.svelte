@@ -124,7 +124,12 @@
 </script>
 
 {#if built.steps.length > 0}
-  <div class="wait no-print" data-testid="chord-wait">
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div
+    class="wait no-print"
+    data-testid="chord-wait"
+    onkeydown={(event) => event.key === "Escape" && (inputOpen = false)}
+  >
     <button
       class="toggle"
       data-testid="chord-wait-toggle"
@@ -148,14 +153,7 @@
       >
     {/if}
     {#if inputOpen && (on || error)}
-      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-      <div
-        class="popover"
-        id={inputId}
-        role="group"
-        aria-label={t("chordPage.waitInput")}
-        onkeydown={(event) => event.key === "Escape" && (inputOpen = false)}
-      >
+      <div class="popover" id={inputId} role="group" aria-label={t("chordPage.waitInput")}>
         <ListenPanel
           {session}
           {deviceId}
@@ -208,17 +206,19 @@
     gap: 2px;
   }
 
-  /* The dock is fixed to the bottom, so the status and the input popover open upward from it. */
+  /* The dock is fixed to the bottom (and is the containing block here), so the status and the
+     input popover open upward from it. */
   .note {
-    position: fixed;
-    left: calc(var(--side-w) + (100vw - var(--side-w)) / 2);
-    bottom: calc(18px + 56px + var(--sp-2) + var(--safe-b));
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + var(--sp-2));
     z-index: 41;
+    width: max-content;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: var(--sp-2);
-    max-width: calc(100vw - var(--side-w) - 24px);
+    max-width: min(32rem, calc(100vw - 24px));
     margin: 0;
     padding: var(--sp-2) var(--sp-3);
     border: 1px solid var(--line-strong);
@@ -233,11 +233,11 @@
   }
 
   .popover {
-    position: fixed;
-    left: calc(var(--side-w) + (100vw - var(--side-w)) / 2);
-    bottom: calc(18px + 56px + var(--sp-2) + var(--safe-b));
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + var(--sp-2));
     z-index: 42;
-    width: min(22rem, calc(100vw - var(--side-w) - 24px));
+    width: min(22rem, calc(100vw - 24px));
     padding: var(--sp-3);
     border: 1px solid var(--line-strong);
     border-radius: var(--r-md);

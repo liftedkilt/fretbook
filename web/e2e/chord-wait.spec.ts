@@ -40,14 +40,23 @@ test("a chord sheet advances on the right chord until the sheet is done", async 
   const song = await seed.create({ title: "Two Chords", chordpro: "[C]Hello [G]world" });
   await page.goto(`/songs/${song.id}`);
 
+  await expect(page.getByTestId("chord-wait-input")).toBeHidden();
   await page.getByTestId("chord-wait-toggle").click();
   const status = page.getByTestId("chord-wait-status");
   await expect(status).toHaveAttribute("data-total", "2");
+
   await expect(status).toHaveAttribute("data-state", "waiting");
   await expect(status).toContainText("C");
   await expect(status).toHaveAttribute("data-hits", "2", { timeout: 50_000 });
   await expect(status).toHaveAttribute("data-state", "done");
   await expect(status).toContainText("Done: 2 of 2");
+
+  // The input device and level meter sit in a popover, only while waiting.
+  await expect(page.getByTestId("chord-wait").getByTestId("listen-panel")).toBeHidden();
+  await page.getByTestId("chord-wait-input").click();
+  await expect(page.getByTestId("chord-wait").getByTestId("listen-meter")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("chord-wait").getByTestId("listen-panel")).toBeHidden();
 });
 
 test("a chord sheet does not advance on the wrong chord, but can be skipped", async ({

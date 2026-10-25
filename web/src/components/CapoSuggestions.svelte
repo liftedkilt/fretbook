@@ -66,10 +66,9 @@
 <style>
   .capo-line {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
-    gap: var(--sp-2) var(--sp-3);
-    padding: var(--sp-1) var(--sp-3);
+    gap: var(--sp-2);
+    padding: var(--sp-1) var(--sp-2) var(--sp-1) var(--sp-3);
     margin-bottom: var(--sp-3);
     border: 1px solid var(--line);
     border-radius: var(--r-sm);
@@ -79,7 +78,13 @@
   }
 
   .text {
-    flex: 1 1 12rem;
+    flex: 1 1 0;
     min-width: 0;
+  }
+
+  .capo-line .button {
+    min-height: 36px;
+    padding-inline: var(--sp-3);
+    white-space: nowrap;
   }
 </style>
