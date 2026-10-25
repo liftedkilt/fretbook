@@ -290,6 +290,21 @@
     "playing": "Tocando",
     "paused": "Pausado"
   },
+  "playerSheet": {
+    "label": "Prática, áudio, sincronia e visualização",
+    "practice": "Prática",
+    "audio": "Áudio",
+    "sync": "Sincronia",
+    "view": "Visualização",
+    "mode": "Modo",
+    "freePlay": "Tocar livre",
+    "freePlayBlurb": "Toque no seu próprio ritmo.",
+    "scoreBlurb": "Cada nota é avaliada no tempo. Use fones de ouvido.",
+    "waitBlurb": "O cursor espera até você tocar cada nota.",
+    "speed": "Velocidade",
+    "audioSource": "Fonte de áudio",
+    "download": "Baixar áudio"
+  },
   "practice": {
     "metronome": "Metrônomo",
     "volume": "Volume",

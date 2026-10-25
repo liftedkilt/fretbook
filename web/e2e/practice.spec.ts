@@ -19,6 +19,7 @@ test("metronome, count-in and mixer settings are remembered per song", async ({ 
   await page.goto(`/songs/${song.id}`);
   await expect(page.getByTestId("player-score").locator("svg").first()).toBeVisible();
   await page.getByTestId("player-panel-toggle").click();
+  await page.getByTestId("player-sheet-tab-audio").click();
 
   const metronome = page.getByTestId("metronome-toggle");
   await expect(metronome).toHaveAttribute("aria-pressed", "false");
@@ -49,6 +50,7 @@ test("metronome, count-in and mixer settings are remembered per song", async ({ 
   await page.reload();
   await expect(page.getByTestId("player-score").locator("svg").first()).toBeVisible();
   await page.getByTestId("player-panel-toggle").click();
+  await page.getByTestId("player-sheet-tab-audio").click();
   await expect(page.getByTestId("metronome-toggle")).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByTestId("count-in-2")).toHaveAttribute("aria-checked", "true");
   await expect(
@@ -59,6 +61,7 @@ test("metronome, count-in and mixer settings are remembered per song", async ({ 
   const other = await seed.create({ title: "Other" });
   await page.goto(`/songs/${other.id}`);
   await page.getByTestId("player-panel-toggle").click();
+  await page.getByTestId("player-sheet-tab-audio").click();
   await expect(page.getByTestId("metronome-toggle")).toHaveAttribute("aria-pressed", "false");
 });
 
@@ -113,6 +116,7 @@ test("the recording's volume and the metronome work alongside the audio", async 
   await expect(page.getByTestId("player-score").locator("svg").first()).toBeVisible();
   const audio = page.getByTestId("player-audio");
   await page.getByTestId("player-panel-toggle").click();
+  await page.getByTestId("player-sheet-tab-audio").click();
 
   await page.getByTestId("mix-master").fill("0.4");
   await expect
@@ -142,6 +146,7 @@ test("the synth plays beside the recording, balanced by the mixer", async ({ pag
   const audio = page.getByTestId("player-audio");
   const stage = page.getByTestId("player-stage");
   await page.getByTestId("player-panel-toggle").click();
+  await page.getByTestId("player-sheet-tab-audio").click();
 
   // Only the recording to begin with: no second player is built.
   await expect(stage).toHaveAttribute("data-synth", "off");

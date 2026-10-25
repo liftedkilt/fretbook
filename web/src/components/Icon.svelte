@@ -29,6 +29,7 @@
    * | Loop                            | repeat                             |
    * | Mixer / audio                   | sliders                            |
    * | Sync marks                      | waveform                           |
+   * | View (player sheet)             | eye                                |
    * | Full screen                     | maximize / minimize                |
    * | Close / remove                  | close                              |
    * | Overflow menu                   | more                               |
