@@ -64,6 +64,23 @@ for (const scheme of ["light", "dark"] as const) {
       expect(found).toEqual([]);
     });
 
+    test("the phone and tablet navigation has no axe violations", async ({ page, seed }) => {
+      await seed.musicXmlTab();
+      const found: string[] = [];
+      for (const size of [
+        { width: 375, height: 812 },
+        { width: 768, height: 1024 },
+      ]) {
+        await page.setViewportSize(size);
+        for (const path of ["/", "/setlists", "/tools"]) {
+          await page.goto(path);
+          await page.waitForLoadState("networkidle");
+          found.push(...(await violations(page, `${path} at ${size.width}px`)));
+        }
+      }
+      expect(found).toEqual([]);
+    });
+
     test("the first-run welcome has no axe violations", async ({ page }) => {
       await page.goto("/");
       await expect(page.getByTestId("first-run-demo")).toBeVisible();
