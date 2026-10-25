@@ -19,11 +19,6 @@ These are already being worked on. Coordinate with them before touching the same
 
 Features that use the microphone to hear the instrument, in the order to build them. They all run in the browser and share one piece of pitch detection, which is built (`web/src/lib/listen/`) and now drives the tuner and wait mode. Browsers only allow the microphone on HTTPS pages (or `localhost`), so the README has to tell self-hosters to put Fretbook behind HTTPS to use them.
 
-
-### Importing and editing
-
-- More file formats, such as Power Tab (`.ptb`).
-
 ### Other
 
 - More languages. See [CONTRIBUTING.md](CONTRIBUTING.md#adding-a-locale).

@@ -30,6 +30,11 @@ def _zip(*names: str) -> bytes:
         ("musicxml/riff.timewise.musicxml", sniff.MUSICXML),
         ("chordpro/basic.cho", sniff.CHORDPRO),
         ("asciitab/standard-guitar.tab", sniff.ASCII_TAB),
+        ("musescore/riff.mscx", sniff.MUSESCORE),
+        ("musescore/riff.mscz", sniff.MUSESCORE),
+        ("abc/riff.abc", sniff.ABC),
+        ("tuxguitar/riff.tg", sniff.TUXGUITAR),
+        ("powertab/riff.ptb", sniff.POWER_TAB),
     ],
 )
 def test_corpus_files_are_recognised_by_content(path: str, kind: str) -> None:
@@ -52,6 +57,8 @@ def test_guitar_pro_container_magic() -> None:
 
 def test_zip_kinds_are_told_apart_by_member_names() -> None:
     assert sniff.sniff_bytes(_zip("META-INF/container.xml", "score.xml")).kind == sniff.MXL
+    assert sniff.sniff_bytes(_zip("META-INF/container.xml", "score.mscx")).kind == sniff.MUSESCORE
+    assert sniff.sniff_bytes(_zip("content.xml", "version.txt")).kind == sniff.TUXGUITAR
     assert sniff.sniff_bytes(_zip("manifest.json", "songs/a/song.json")).kind == sniff.FRETBOOK_ARCHIVE
     assert sniff.sniff_bytes(_zip("readme.txt")).kind is None
     assert sniff.sniff_bytes(b"PK\x03\x04 not really a zip").kind is None
@@ -88,6 +95,8 @@ def test_text_kinds() -> None:
     assert sniff.sniff_text("{title: Hello}\n[G]Hello [C]there\n") == sniff.CHORDPRO
     assert sniff.sniff_text("G        C\nHello my friend\n") == sniff.CHORDS_OVER_LYRICS
     assert sniff.sniff_text("e|-0---3---|\nB|---------|\nG|---------|\nD|---------|\n") == sniff.ASCII_TAB
+    assert sniff.sniff_text('<museScore version="3.02"><Score/></museScore>') == sniff.MUSESCORE
+    assert sniff.sniff_text("X:1\nT:Test\nM:4/4\nK:C\nC D E F|\n") == sniff.ABC
 
 
 @pytest.mark.parametrize(

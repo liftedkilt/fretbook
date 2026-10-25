@@ -19,11 +19,18 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from fretbook.chords import chordpro
+from fretbook.importers.abc import looks_like_abc
 from fretbook.importers.ascii_tab import looks_like_ascii_tab
+from fretbook.importers.powertab import is_powertab
+from fretbook.importers.tuxguitar import is_tuxguitar_v1
 
 GUITAR_PRO = "guitarpro"
+POWER_TAB = "powertab"
+TUXGUITAR = "tuxguitar"
+MUSESCORE = "musescore"
 MUSICXML = "musicxml"
 MXL = "mxl"
+ABC = "abc"
 MIDI = "midi"
 CHORDPRO = "chordpro"
 CHORDS_OVER_LYRICS = "chords-over-lyrics"
@@ -36,7 +43,11 @@ AUDIO = "audio"
 
 SUPPORTED_LABELS = (
     "Guitar Pro (.gp, .gp3, .gp4, .gp5, .gpx)",
+    "Power Tab (.ptb)",
+    "TuxGuitar (.tg)",
+    "MuseScore (.mscz, .mscx)",
     "MusicXML (.musicxml, .xml, .mxl)",
+    "ABC (.abc)",
     "ChordPro and chords over lyrics",
     "ASCII tab",
     "MIDI (.mid, .midi)",
@@ -60,8 +71,9 @@ _AUDIO_SUFFIX = {
     "webm": ".webm",
 }
 _MUSICXML_ROOT = re.compile(rb"<score-(?:partwise|timewise)[\s>]")
+_MUSESCORE_ROOT = re.compile(rb"<museScore[\s>]")
 _GP_EXTENSIONS = {".gp", ".gp3", ".gp4", ".gp5", ".gpx"}
-_XML_EXTENSIONS = {".musicxml", ".xml"}
+_XML_EXTENSIONS = {".musicxml", ".xml", ".mscx"}
 
 
 @dataclass(frozen=True)
@@ -96,6 +108,10 @@ def _zip_kind(data: bytes) -> str | None:
         return None
     if "Content/score.gpif" in names:
         return GUITAR_PRO
+    if "content.xml" in names and "version.txt" in names:
+        return TUXGUITAR
+    if any(name.lower().endswith(".mscx") for name in names):
+        return MUSESCORE
     if "META-INF/container.xml" in names:
         return MXL
     if "manifest.json" in names:
@@ -120,10 +136,16 @@ def sniff_text(text: str) -> str | None:
             or {"bars", "tracks"} <= payload.keys()
         ):
             return FRETBOOK_JSON
-    if stripped.startswith("<") and _MUSICXML_ROOT.search(stripped[:HEAD_BYTES].encode("utf-8", "ignore")):
-        return MUSICXML
+    if stripped.startswith("<"):
+        xml_head = stripped[:HEAD_BYTES].encode("utf-8", "ignore")
+        if _MUSICXML_ROOT.search(xml_head):
+            return MUSICXML
+        if _MUSESCORE_ROOT.search(xml_head):
+            return MUSESCORE
     if looks_like_ascii_tab(text):
         return ASCII_TAB
+    if looks_like_abc(text):
+        return ABC
     if chordpro.looks_like_chordpro(text):
         return CHORDPRO
     lines = text.splitlines()[:400]
@@ -155,6 +177,10 @@ def sniff_bytes(data: bytes, filename: str | None = None) -> Sniffed:
     suffix = Path(filename or "").suffix.lower()
     if head.startswith(b"\x18FICHIER GUITAR PRO") or head[:4] in {b"BCFZ", b"BCFS"}:
         return Sniffed(GUITAR_PRO)
+    if is_powertab(head):
+        return Sniffed(POWER_TAB)
+    if is_tuxguitar_v1(head):
+        return Sniffed(TUXGUITAR)
     if head.startswith(b"PK\x03\x04"):
         return Sniffed(_zip_kind(data))
     if head.startswith(b"MThd"):
@@ -166,7 +192,7 @@ def sniff_bytes(data: bytes, filename: str | None = None) -> Sniffed:
     if head.startswith(b"RIFF") and head[8:12] == b"WEBP":
         return Sniffed(IMAGE)
     audio = _audio(head)
-    if audio and not (audio == "mp3" and suffix in _GP_EXTENSIONS | _XML_EXTENSIONS | {".txt"}):
+    if audio and not (audio == "mp3" and suffix in _GP_EXTENSIONS | _XML_EXTENSIONS | {".txt", ".abc"}):
         return Sniffed(AUDIO, _AUDIO_SUFFIX[audio])
     text = _decode(data[: MAX_TEXT_CHARS * 2])
     if text is None:

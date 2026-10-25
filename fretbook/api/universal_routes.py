@@ -32,6 +32,8 @@ MAX_URL_CHARS = 2000
 _SINGLE_URL = re.compile(r"^https?://\S+$", re.IGNORECASE)
 _TEXT_SUFFIX = {
     sniff.MUSICXML: ".musicxml",
+    sniff.MUSESCORE: ".mscx",
+    sniff.ABC: ".abc",
     sniff.FRETBOOK_JSON: ".json",
     sniff.CHORDPRO: ".cho",
     sniff.CHORDS_OVER_LYRICS: ".txt",
@@ -92,7 +94,13 @@ async def _from_file(file: UploadFile, ctx: AppContext, user: Principal) -> JSON
 
     if filename.lower().endswith(".zip"):
         sniffed = sniff.sniff_path(path, filename).kind
-        if sniffed not in (sniff.GUITAR_PRO, sniff.MXL, sniff.FRETBOOK_ARCHIVE):
+        if sniffed not in (
+            sniff.GUITAR_PRO,
+            sniff.MXL,
+            sniff.MUSESCORE,
+            sniff.TUXGUITAR,
+            sniff.FRETBOOK_ARCHIVE,
+        ):
             dest_dir = ctx.settings.inbox_dir / f"bulk-unpacked-{uuid.uuid4().hex}"
             try:
                 extracted = safe_extract_zip(path, dest_dir)

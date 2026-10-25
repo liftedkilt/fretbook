@@ -15,6 +15,10 @@ few bars of techniques invented for the tests, and the lyrics are placeholder te
 | `gp/riff.gp3`, `.gp4`, `.gp5` | The riff in Guitar Pro 3, 4 and 5 | `gp/../generate_gp.py` (PyGuitarPro) |
 | `gp/riff.gp` | The riff in Guitar Pro 7/8 | `web/scripts/generate-gp7.mjs` (alphaTab's exporter) |
 | `gp/riff.gpx` | The riff in Guitar Pro 6 | `python tests/fixtures/corpus/generate_gpx.py`: wraps `riff.gp`'s `score.gpif` in a GPX container (see below) |
+| `musescore/riff.mscx`, `.mscz` | The riff as MuseScore XML and compressed `.mscz` container | Hand-written |
+| `abc/riff.abc` | The riff in ABC notation | Hand-written |
+| `tuxguitar/riff.tg` | The riff as a TuxGuitar 2.0 archive | Hand-written |
+| `powertab/riff.ptb` | The riff as a Power Tab binary file | Hand-written |
 | `chordpro/*.cho` | ChordPro with long and short directive forms | Hand-written |
 | `ugtext/*.txt` | Ultimate Guitar style chords-over-lyrics, with and without a header | Hand-written |
 | `asciitab/*.tab`, `asciitab/*.txt` | ASCII tab in sixteen styles: labelled and unlabelled rows, bass, drop D, 5-string bass written low string first, 7-string, multi-digit frets, technique marks, repeat signs, sections with chord lines and lyrics, `PM` rows, a bass and a guitar tab in one file (two tracks), wrapped systems, sixteenth runs, and a `.txt` with a tab among prose | Hand-written |

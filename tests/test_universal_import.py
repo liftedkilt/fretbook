@@ -155,6 +155,24 @@ def test_pasted_text(tmp_path: Path) -> None:
         assert xml.json()["detected"] == "musicxml"
         _done(client, xml)
 
+        abc = _auto(client, data={"text": "X:1\nT:Pasted ABC\nM:4/4\nL:1/4\nK:C\nC D E F|\n"})
+        assert abc.json()["detected"] == "abc"
+        _done(client, abc)
+
+        mscx = _auto(
+            client,
+            data={
+                "text": (
+                    '<?xml version="1.0" encoding="UTF-8"?>\n'
+                    '<museScore version="3.02"><Score><Part><Staff id="1"/></Part>'
+                    '<Staff id="1"><Measure><voice><Chord><durationType>quarter</durationType>'
+                    "<Note><pitch>60</pitch></Note></Chord></voice></Measure></Staff></Score></museScore>"
+                )
+            },
+        )
+        assert mscx.json()["detected"] == "musescore"
+        _done(client, mscx)
+
         prose = _auto(client, data={"text": "Remember to buy milk and call mum."})
         assert prose.status_code == 400
         assert prose.json()["detail"]["key"] == "import.noFileImporter"

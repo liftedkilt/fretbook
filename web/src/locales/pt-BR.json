@@ -582,6 +582,35 @@
       "noTab": "Este arquivo MusicXML não tem tablatura (corda e casa).",
       "tooLarge": "Este arquivo MusicXML é grande demais depois de descompactado."
     },
+    "musescore": {
+      "parse": "Não foi possível ler o arquivo MuseScore.",
+      "notMuseScore": "Isto não é uma partitura MuseScore.",
+      "noTracks": "Este arquivo MuseScore não tem faixas de guitarra ou baixo para tocar.",
+      "noNotes": "Este arquivo MuseScore não tem notas reproduzíveis.",
+      "tooLarge": "Este arquivo MuseScore é grande demais depois de descompactado.",
+      "shifted": "{count} nota(s) em \"{track}\" estavam fora da extensão do instrumento e foram movidas por oitavas.",
+      "dropped": "{count} acorde(s) em \"{track}\" não puderam ser digitados em uma só posição e perderam notas."
+    },
+    "abc": {
+      "parse": "Não foi possível ler a notação ABC.",
+      "empty": "A notação ABC está vazia.",
+      "tooLong": "A notação ABC tem mais de {limit} caracteres.",
+      "tooLarge": "Este arquivo ABC é grande demais.",
+      "noNotes": "Este arquivo ABC não contém notas reproduzíveis.",
+      "shifted": "{count} nota(s) em \"{track}\" estavam fora da extensão do instrumento e foram movidas por oitavas.",
+      "dropped": "{count} acorde(s) em \"{track}\" não puderam ser digitados em uma só posição e perderam notas."
+    },
+    "tuxguitar": {
+      "parse": "Não foi possível ler o arquivo TuxGuitar.",
+      "noTracks": "Este arquivo TuxGuitar não tem faixas de cordas para tocar.",
+      "noNotes": "Este arquivo TuxGuitar não tem notas reproduzíveis.",
+      "tooLarge": "Este arquivo TuxGuitar é grande demais depois de descompactado.",
+      "unsupportedVersion": "Esta versão do TuxGuitar não é suportada."
+    },
+    "powertab": {
+      "parse": "Não foi possível ler o arquivo Power Tab.",
+      "noTracks": "Este arquivo Power Tab não tem faixas para tocar."
+    },
     "json": {
       "parse": "Não foi possível ler o arquivo JSON.",
       "notFretbook": "Este arquivo JSON não é uma exportação do Fretbook."
