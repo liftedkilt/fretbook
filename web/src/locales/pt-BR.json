@@ -849,7 +849,7 @@
     "modeHint": "Solte um arquivo, cole um texto ou um link"
   },
   "asciiTab": {
-    "preview": "Pré-visualização da tablatura",
+    "previewRegion": "Pré-visualização da tablatura",
     "mode": "Colar tablatura",
     "modeHint": "Tablatura em texto ou cifra",
     "paste": "Texto da tablatura ou cifra",

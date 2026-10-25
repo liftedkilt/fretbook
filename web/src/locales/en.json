@@ -849,7 +849,7 @@
     "modeHint": "Drop a file, paste text or a link"
   },
   "asciiTab": {
-    "preview": "Tab preview",
+    "previewRegion": "Tab preview",
     "mode": "Paste tab",
     "modeHint": "ASCII tab or chords over lyrics",
     "paste": "Tab or chord text",
