@@ -29,13 +29,7 @@
   import { isOfflineError } from "./lib/api";
   import { t } from "./lib/i18n.svelte";
   import { followLink, hrefFor, routePath } from "./lib/router.svelte";
-  import {
-    loadMeta,
-    openSheet,
-    openTuner,
-    refreshSongs,
-    ui,
-  } from "./lib/ui.svelte";
+  import { loadMeta, openSheet, openTuner, refreshSongs, ui } from "./lib/ui.svelte";
 
   const path = $derived(routePath());
   const shareMatch = $derived(path.match(/^\/share\/([^/]+)\/?$/));
@@ -56,7 +50,6 @@
   const isToolsChords = $derived(path === "/tools/chords" || path === "/tools/chords/");
   const isToolsTrainer = $derived(path === "/tools/trainer" || path === "/tools/trainer/");
   const isToolsExercises = $derived(path === "/tools/exercises" || path === "/tools/exercises/");
-  const isToolsActive = $derived(path.startsWith("/tools"));
   const isLibrary = $derived(path === "/");
   const isAdmin = $derived(ui.me?.role === "admin");
   const isSettings = $derived(path === "/settings" || path === "/settings/");

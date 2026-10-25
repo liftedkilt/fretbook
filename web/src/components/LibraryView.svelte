@@ -19,7 +19,6 @@
     countFor,
     loadLibrary,
     loadMore,
-    openSheet,
     refreshSongs,
     setSort,
     starSong,
@@ -206,8 +205,7 @@
       eyebrow={t("library.heading")}
       subtitle={t("library.count", { count: countFor(ui.filter) })}
       subtitleTestId="library-count"
-    >
-    </PageHeader>
+    ></PageHeader>
 
     <RecentImports />
     {#if countFor("all") > 0}

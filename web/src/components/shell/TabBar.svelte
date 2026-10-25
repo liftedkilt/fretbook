@@ -31,7 +31,12 @@
   {@render tab("practice", "target", t("practiceLog.nav"), "/practice", current.practice)}
   {@render tab("library", "library", t("library.heading"), "/", current.library)}
   {#if !ui.demoMode}
-    <button class="tab-add" data-testid="tab-add" onclick={() => openSheet("add")} aria-label={t("add.button")}>
+    <button
+      class="tab-add"
+      data-testid="tab-add"
+      onclick={() => openSheet("add")}
+      aria-label={t("add.button")}
+    >
       <span><Icon name="plus" size={26} /></span>
     </button>
   {/if}
