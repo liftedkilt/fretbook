@@ -335,6 +335,7 @@ export interface Meta {
   exporters: string[];
   instruments: InstrumentPreset[];
   ytdlp: YtDlpStatus;
+  worker_kinds?: string[];
   /** A read-only public demo (`FRETBOOK_DEMO_MODE`). */
   demo_mode?: boolean;
   /** Online lookup of album, year and cover art is on (`FRETBOOK_METADATA_LOOKUP`). */
@@ -445,6 +446,10 @@ export interface Job {
   label?: string;
   result: {
     song_id?: string;
+    track_id?: string;
+    bars?: number;
+    bpm?: number;
+    anchors?: number;
     autosync?: AutoSyncProposal | null;
     slug?: string;
     content_kind?: ContentKind;
@@ -471,6 +476,16 @@ export interface AudioCalibration {
   offset_ms: number;
   jitter_ms?: number | null;
   updated_at: string;
+}
+
+export interface TranscribeInfo {
+  available: boolean;
+}
+
+export interface TranscribeRequest {
+  stem?: "mix" | "bass" | "guitar";
+  preset?: string | null;
+  grid?: 4 | 8 | 16 | 32;
 }
 
 export interface AudioCalibrationBody {

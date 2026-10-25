@@ -48,3 +48,10 @@ export function classifyPaste(value: string): { url: string } | { text: string }
   if (/^https?:\/\/\S+$/i.test(trimmed)) return { url: trimmed };
   return { text: value };
 }
+
+const AUDIO_SUFFIXES = [".mp3", ".wav", ".ogg", ".flac", ".m4a", ".aac", ".wma", ".opus"];
+
+export function isAudioFileName(name: string): boolean {
+  const lower = name.toLowerCase();
+  return AUDIO_SUFFIXES.some((ext) => lower.endsWith(ext));
+}

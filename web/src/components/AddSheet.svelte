@@ -15,6 +15,7 @@
     importDocument,
     importFile,
     importMidi,
+    importTranscribe,
     importUrl,
     inspectMidi,
     previewAsciiTab,
@@ -24,7 +25,7 @@
   import { asciiTabBody, debounced, DEFAULT_GRID, type Grid } from "../lib/asciiTab";
   import { documentFromGuitarPro } from "../lib/alphatab/importScore";
   import { isMidiFile, type MidiImportOptions } from "../lib/midiImport";
-  import { isGuitarProFile } from "../lib/sniff";
+  import { isAudioFileName, isGuitarProFile } from "../lib/sniff";
   import { keyed, t, tOr } from "../lib/i18n.svelte";
   import { instrumentLabel } from "../lib/instruments";
   import { rememberLessonSong, withLesson } from "../lib/lessonRun";
@@ -54,6 +55,9 @@
   let sheetText = $state("");
   let picker = $state<ImportPreview | null>(null);
   let midi = $state<{ file: File; info: MidiInspection } | null>(null);
+  let audioFile = $state<File | null>(null);
+  let audioStem = $state<"mix" | "bass" | "guitar">("mix");
+  let audioPreset = $state(ui.defaultInstrument || "guitar-6");
   let previewUrl = $state("");
   let selected = $state<number[]>([]);
   let dragging = $state(false);

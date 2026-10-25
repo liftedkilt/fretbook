@@ -784,6 +784,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/imports/transcribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start File Transcription
+         * @description Upload an audio file and transcribe it into a new song with draft tab and sync marks.
+         */
+        post: operations["start_file_transcription_api_imports_transcribe_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/jobs": {
         parameters: {
             query?: never;
@@ -1919,6 +1939,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/songs/{song_id}/transcribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Transcribe Info
+         * @description Whether a worker that transcribes audio is currently running.
+         */
+        get: operations["get_transcribe_info_api_songs__song_id__transcribe_get"];
+        put?: never;
+        /**
+         * Start Song Transcription
+         * @description Queue transcription of a song's existing audio into a draft tab track.
+         *
+         *     The job extracts polyphonic MIDI notes, tracks beats and tempo, and assigns frets.
+         *     The resulting track is added to the song with sync anchors set from the beat grid.
+         */
+        post: operations["start_song_transcription_api_songs__song_id__transcribe_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/songs/import-document": {
         parameters: {
             query?: never;
@@ -2420,6 +2467,29 @@ export interface components {
             /** File */
             file: string;
         };
+        /** Body_start_file_transcription_api_imports_transcribe_post */
+        Body_start_file_transcription_api_imports_transcribe_post: {
+            /** Artist */
+            artist?: string | null;
+            /** File */
+            file: string;
+            /**
+             * Grid
+             * @default 16
+             * @enum {integer}
+             */
+            grid: 4 | 8 | 16 | 32;
+            /** Preset */
+            preset?: string | null;
+            /**
+             * Stem
+             * @default mix
+             * @enum {string}
+             */
+            stem: "mix" | "bass" | "guitar";
+            /** Title */
+            title?: string | null;
+        };
         /** Body_upload_audio_api_songs__song_id__audio_post */
         Body_upload_audio_api_songs__song_id__audio_post: {
             /** File */
@@ -2901,7 +2971,13 @@ export interface components {
         };
         /** JobResult */
         JobResult: {
+            /** Anchors */
+            anchors?: number | null;
             autosync?: components["schemas"]["AutoSyncProposal"] | null;
+            /** Bars */
+            bars?: number | null;
+            /** Bpm */
+            bpm?: number | null;
             /** Content Kind */
             content_kind?: ("tab" | "chords") | null;
             /** Copied */
@@ -2916,6 +2992,8 @@ export interface components {
             slug?: string | null;
             /** Song Id */
             song_id?: string | null;
+            /** Track Id */
+            track_id?: string | null;
             /** Warnings */
             warnings?: components["schemas"]["ErrorDetail"][];
         } & {
@@ -4465,6 +4543,31 @@ export interface components {
             /** Track Id */
             track_id: string;
         };
+        /**
+         * TranscribeInfo
+         * @description Whether a worker that transcribes audio is running.
+         */
+        TranscribeInfo: {
+            /** Available */
+            available: boolean;
+        };
+        /** TranscribeRequest */
+        TranscribeRequest: {
+            /**
+             * Grid
+             * @default 16
+             * @enum {integer}
+             */
+            grid: 4 | 8 | 16 | 32;
+            /** Preset */
+            preset?: string | null;
+            /**
+             * Stem
+             * @default mix
+             * @enum {string}
+             */
+            stem: "mix" | "bass" | "guitar";
+        };
         /** UpdateSongBody */
         UpdateSongBody: {
             /**
@@ -4612,6 +4715,7 @@ export type BodyImportLibraryApiLibraryImportPost = components['schemas']['Body_
 export type BodyImportMidiApiImportsMidiPost = components['schemas']['Body_import_midi_api_imports_midi_post'];
 export type BodyImportPackApiLessonsImportPost = components['schemas']['Body_import_pack_api_lessons_import_post'];
 export type BodyInspectMidiApiImportsMidiInspectPost = components['schemas']['Body_inspect_midi_api_imports_midi_inspect_post'];
+export type BodyStartFileTranscriptionApiImportsTranscribePost = components['schemas']['Body_start_file_transcription_api_imports_transcribe_post'];
 export type BodyUploadAudioApiSongsSongIdAudioPost = components['schemas']['Body_upload_audio_api_songs__song_id__audio_post'];
 export type BodyUploadCoverApiSongsSongIdCoverPost = components['schemas']['Body_upload_cover_api_songs__song_id__cover_post'];
 export type BulkImportAccepted = components['schemas']['BulkImportAccepted'];
@@ -4736,6 +4840,8 @@ export type TokensRevoked = components['schemas']['TokensRevoked'];
 export type Track = components['schemas']['Track'];
 export type TrackBar = components['schemas']['TrackBar'];
 export type TrackDifficulty = components['schemas']['TrackDifficulty'];
+export type TranscribeInfo = components['schemas']['TranscribeInfo'];
+export type TranscribeRequest = components['schemas']['TranscribeRequest'];
 export type UpdateSongBody = components['schemas']['UpdateSongBody'];
 export type UserStorage = components['schemas']['UserStorage'];
 export type ValidationBody = components['schemas']['ValidationBody'];
@@ -8327,6 +8433,84 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ImportPreview"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    start_file_transcription_api_imports_transcribe_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_start_file_transcription_api_imports_transcribe_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAccepted"];
                 };
             };
             /** @description Keyed error. `detail` is {key, message, params}. */
@@ -14064,6 +14248,162 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SongTags"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    get_transcribe_info_api_songs__song_id__transcribe_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                song_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscribeInfo"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    start_song_transcription_api_songs__song_id__transcribe_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                song_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TranscribeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAccepted"];
                 };
             };
             /** @description Keyed error. `detail` is {key, message, params}. */

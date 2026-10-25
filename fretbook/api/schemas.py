@@ -383,6 +383,11 @@ class JobResult(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     song_id: str | None = None
+    track_id: str | None = None
+    """Transcription jobs only."""
+    bars: int | None = None
+    bpm: float | None = None
+    anchors: int | None = None
     autosync: AutoSyncProposal | None = None
     """Auto-sync jobs only."""
     slug: str | None = None
@@ -432,6 +437,21 @@ class StemList(BaseModel):
 class StemRequest(BaseModel):
     model: Literal["htdemucs_6s", "htdemucs"] = "htdemucs_6s"
     """``htdemucs_6s`` also separates guitar and piano; ``htdemucs`` gives bass, drums, vocals and other."""
+
+
+class TranscribeInfo(BaseModel):
+    """Whether a worker that transcribes audio is running."""
+
+    available: bool
+
+
+class TranscribeRequest(BaseModel):
+    stem: Literal["mix", "bass", "guitar"] = "mix"
+    """Which stem to transcribe: mix (no separation), bass stem or guitar stem."""
+    preset: str | None = None
+    """Instrument preset to finger the tab for (e.g. guitar-6, bass-4). None suggests from pitch range."""
+    grid: Literal[4, 8, 16, 32] = 16
+    """Note value positions snap to: 4 = quarter, 16 = sixteenth."""
 
 
 class YouTubeAudioRequest(BaseModel):

@@ -956,6 +956,74 @@
         "title": "Body_inspect_midi_api_imports_midi_inspect_post",
         "type": "object"
       },
+      "Body_start_file_transcription_api_imports_transcribe_post": {
+        "properties": {
+          "artist": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Artist"
+          },
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          },
+          "grid": {
+            "default": 16,
+            "enum": [
+              4,
+              8,
+              16,
+              32
+            ],
+            "title": "Grid",
+            "type": "integer"
+          },
+          "preset": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preset"
+          },
+          "stem": {
+            "default": "mix",
+            "enum": [
+              "mix",
+              "bass",
+              "guitar"
+            ],
+            "title": "Stem",
+            "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_start_file_transcription_api_imports_transcribe_post",
+        "type": "object"
+      },
       "Body_upload_audio_api_songs__song_id__audio_post": {
         "properties": {
           "file": {
@@ -2226,6 +2294,17 @@
       "JobResult": {
         "additionalProperties": true,
         "properties": {
+          "anchors": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Anchors"
+          },
           "autosync": {
             "anyOf": [
               {
@@ -2235,6 +2314,28 @@
                 "type": "null"
               }
             ]
+          },
+          "bars": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bars"
+          },
+          "bpm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bpm"
           },
           "content_kind": {
             "anyOf": [
@@ -2316,6 +2417,17 @@
               }
             ],
             "title": "Song Id"
+          },
+          "track_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Track Id"
           },
           "warnings": {
             "items": {
@@ -6559,6 +6671,58 @@
           "factors"
         ],
         "title": "TrackDifficulty",
+        "type": "object"
+      },
+      "TranscribeInfo": {
+        "description": "Whether a worker that transcribes audio is running.",
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "available"
+        ],
+        "title": "TranscribeInfo",
+        "type": "object"
+      },
+      "TranscribeRequest": {
+        "properties": {
+          "grid": {
+            "default": 16,
+            "enum": [
+              4,
+              8,
+              16,
+              32
+            ],
+            "title": "Grid",
+            "type": "integer"
+          },
+          "preset": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preset"
+          },
+          "stem": {
+            "default": "mix",
+            "enum": [
+              "mix",
+              "bass",
+              "guitar"
+            ],
+            "title": "Stem",
+            "type": "string"
+          }
+        },
+        "title": "TranscribeRequest",
         "type": "object"
       },
       "UpdateSongBody": {
@@ -11293,6 +11457,98 @@
           }
         },
         "summary": "Preview Import",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
+    "/api/imports/transcribe": {
+      "post": {
+        "description": "Upload an audio file and transcribe it into a new song with draft tab and sync marks.",
+        "operationId": "start_file_transcription_api_imports_transcribe_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_start_file_transcription_api_imports_transcribe_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Start File Transcription",
         "tags": [
           "imports"
         ]
@@ -18659,6 +18915,199 @@
         "summary": "Set Song Tags",
         "tags": [
           "tags"
+        ]
+      }
+    },
+    "/api/songs/{song_id}/transcribe": {
+      "get": {
+        "description": "Whether a worker that transcribes audio is currently running.",
+        "operationId": "get_transcribe_info_api_songs__song_id__transcribe_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "song_id",
+            "required": true,
+            "schema": {
+              "title": "Song Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscribeInfo"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Get Transcribe Info",
+        "tags": [
+          "songs"
+        ]
+      },
+      "post": {
+        "description": "Queue transcription of a song's existing audio into a draft tab track.\n\nThe job extracts polyphonic MIDI notes, tracks beats and tempo, and assigns frets.\nThe resulting track is added to the song with sync anchors set from the beat grid.",
+        "operationId": "start_song_transcription_api_songs__song_id__transcribe_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "song_id",
+            "required": true,
+            "schema": {
+              "title": "Song Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TranscribeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Keyed error. `detail` is {key, message, params}."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationBody"
+                }
+              }
+            },
+            "description": "Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error."
+          }
+        },
+        "summary": "Start Song Transcription",
+        "tags": [
+          "songs"
         ]
       }
     },

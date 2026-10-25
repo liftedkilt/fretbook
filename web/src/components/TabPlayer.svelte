@@ -23,6 +23,7 @@
   import PracticePanel from "./PracticePanel.svelte";
   import StemMixer from "./StemMixer.svelte";
   import AutoSyncSheet from "./AutoSyncSheet.svelte";
+  import TranscribeSheet from "./TranscribeSheet.svelte";
   import RetuneSheet from "./RetuneSheet.svelte";
   import LessonRunBanner from "./LessonRunBanner.svelte";
   import ScorePanel from "./ScorePanel.svelte";
@@ -137,6 +138,7 @@
   let scoreReady = $state(0);
   let retuneOpen = $state(false);
   let autoSyncOpen = $state(false);
+  let transcribeOpen = $state(false);
   let shiftMs = 0;
   const player: { api: alphaTab.AlphaTabApi | null } = { api: null };
   // With a recording, a second, hidden alphaTab player plays the score's tracks and follows the
@@ -855,6 +857,22 @@
     commitAnchors(anchors);
     tapIndex = 0;
     autoSyncOpen = false;
+  }
+
+  function openTranscribe() {
+    if (playing) toggle();
+    transcribeOpen = true;
+  }
+
+  async function onTranscribeSuccess(newTrackId?: string) {
+    try {
+      song = (await getSong(song.id)) as TabSong;
+      if (newTrackId) {
+        trackId = newTrackId;
+      }
+    } catch (err) {
+      error = err instanceof ApiError ? err.message : message(err);
+    }
   }
 
   function step(direction: number) {
@@ -1762,6 +1780,14 @@
                 onclick={openAutoSync}
                 ><Icon name="waveform" size={18} />{t("autoSync.button")}</button
               >
+              {#if ui.workerKinds.includes("audio.transcribe")}
+                <button
+                  data-testid="player-transcribe"
+                  title={t("transcribe.buttonHint")}
+                  onclick={openTranscribe}
+                  ><Icon name="sparkle" size={18} />{t("transcribe.button")}</button
+                >
+              {/if}
               <button class="danger-text" onclick={() => commitAnchors({})}
                 >{t("player.clearAll")}</button
               >
@@ -2027,6 +2053,12 @@
       existing={Object.keys(song.document.sync.anchors).length}
       onclose={() => (autoSyncOpen = false)}
       onaccept={acceptAutoSync}
+    />
+    <TranscribeSheet
+      open={transcribeOpen}
+      songId={song.id}
+      onclose={() => (transcribeOpen = false)}
+      onsuccess={onTranscribeSuccess}
     />
   {/if}
   <ScoreResults

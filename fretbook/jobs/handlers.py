@@ -20,6 +20,7 @@ from fretbook.importers.youtube_frames import YouTubeFrameImporter
 from fretbook.jobs.autosync import register_autosync
 from fretbook.jobs.runner import JobRunner, Progress
 from fretbook.jobs.stems import register_stems
+from fretbook.jobs.transcribe import register_transcribe
 from fretbook.jobs.youtube_audio import register_youtube_audio
 from fretbook.score.model import ScoreDocument, content_hash
 from fretbook.score.playback import played_bars
@@ -86,6 +87,7 @@ def register_handlers(
     runner.register("import.omr", omr_import, worker_only=True)
     register_autosync(runner, songs, media)
     register_stems(runner, songs, media)
+    register_transcribe(runner, songs, media)
     register_youtube_audio(runner, songs, media)
 
 

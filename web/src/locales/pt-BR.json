@@ -689,6 +689,15 @@
       "unavailable": "O Demucs não está instalado no worker, então ele não pode separar stems.",
       "decodeFailed": "Não foi possível ler o arquivo de áudio para a separação."
     },
+    "transcribe": {
+      "noWorker": "Nenhum worker em execução capaz de transcrever áudio.",
+      "unavailable": "onnxruntime não está instalado no worker, portanto não é possível transcrever áudio.",
+      "stemsUnavailable": "Demucs não está instalado no worker, portanto o isolamento de stems não pode ser executado.",
+      "stemFailed": "Falha no isolamento de faixas.",
+      "tooShort": "O áudio é muito curto para ser transcrito.",
+      "noNotes": "Nenhuma nota foi detectada neste áudio.",
+      "badGrid": "Grade de quantização inválida."
+    },
     "course": {
       "notFound": "Esse curso não foi encontrado."
     },
@@ -1835,6 +1844,32 @@
       "other": "Outros"
     },
     "noWorker": "A separação de stems precisa do worker de tarefas com o Demucs instalado. Veja o guia de hospedagem."
+  },
+  "transcribe": {
+    "title": "Transcrever áudio em tablatura",
+    "button": "Transcrever",
+    "buttonHint": "Transcrever a gravação em uma faixa de tablatura rascunho",
+    "hint": "Transcreva notas polifônicas da gravação em uma nova faixa com digitação automática e marcas de sincronização.",
+    "start": "Transcrever",
+    "close": "Fechar",
+    "cancel": "Cancelar",
+    "timeout": "A transcrição demorou muito. Tente novamente.",
+    "stem": "Faixa isolada (stem)",
+    "stemMix": "Mixagem completa (sem isolamento)",
+    "stemBass": "Faixa de baixo (isolar com Demucs)",
+    "stemGuitar": "Faixa de guitarra (isolar com Demucs)",
+    "preset": "Predefinição de instrumento",
+    "grid": "Grade de quantização",
+    "queued": "Aguardando o trabalhador…",
+    "transcribing": "Transcrevendo áudio…",
+    "decoding": "Decodificando áudio…",
+    "stemSeparation": "Isolando faixas…",
+    "modelInference": "Detectando notas com basic-pitch…",
+    "beatTracking": "Rastreando batidas e andamento…",
+    "fingering": "Digitando casas…",
+    "complete": "Transcrição concluída",
+    "dialogTitle": "Transcrever áudio",
+    "importAsAudio": "Importar apenas como áudio"
   },
   "youtubeAudio": {
     "label": "Adicionar áudio de um link do YouTube",
