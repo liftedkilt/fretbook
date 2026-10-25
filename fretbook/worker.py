@@ -17,6 +17,7 @@ import threading
 from collections.abc import Sequence
 
 from fretbook.audio.stems import available as stems_available
+from fretbook.audio.transcription import available as transcription_available
 from fretbook.config import Settings
 from fretbook.db.migrate import migrate
 from fretbook.importers.omr import available as omr_available
@@ -24,6 +25,7 @@ from fretbook.jobs.handlers import register_handlers
 from fretbook.jobs.registry import KINDS, register_kinds
 from fretbook.jobs.runner import JobRunner
 from fretbook.jobs.stems import KIND as STEMS_KIND
+from fretbook.jobs.transcribe import KIND as TRANSCRIBE_KIND
 from fretbook.storage.media import MediaStore
 from fretbook.storage.repository import SongRepository
 
@@ -94,6 +96,9 @@ def main(argv: Sequence[str] | None = None) -> None:
             # Without Demucs the kind would be advertised but could never run; leave it to a worker that can.
             kinds.remove(STEMS_KIND)
             logger.warning("Demucs is not installed, so this worker does not claim %s", STEMS_KIND)
+        if TRANSCRIBE_KIND in kinds and not transcription_available():
+            kinds.remove(TRANSCRIBE_KIND)
+            logger.warning("onnxruntime is not installed, so this worker does not claim %s", TRANSCRIBE_KIND)
     if "import.omr" in kinds and not args.kinds and not omr_available():
         kinds.remove("import.omr")
         logger.warning("Audiveris is not installed, so this worker does not claim import.omr")

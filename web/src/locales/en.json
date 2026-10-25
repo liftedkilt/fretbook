@@ -689,6 +689,15 @@
       "unavailable": "Demucs is not installed in the worker, so it cannot separate stems.",
       "decodeFailed": "The audio file could not be read for separation."
     },
+    "transcribe": {
+      "noWorker": "No worker is running that can transcribe audio.",
+      "unavailable": "onnxruntime is not installed in the worker, so it cannot transcribe audio.",
+      "stemsUnavailable": "Demucs is not installed in the worker, so stem isolation cannot run.",
+      "stemFailed": "Stem isolation failed.",
+      "tooShort": "The audio is too short to transcribe.",
+      "noNotes": "No notes were detected in this audio.",
+      "badGrid": "Invalid quantization grid."
+    },
     "course": {
       "notFound": "That course was not found."
     },
@@ -1835,6 +1844,33 @@
       "other": "Other"
     },
     "noWorker": "Stem separation needs the job worker with Demucs installed. See the self-hosting guide."
+  },
+  "transcribe": {
+    "title": "Transcribe audio into tab",
+    "button": "Transcribe",
+    "buttonHint": "Transcribe the recording into a draft tab track",
+    "hint": "Transcribe polyphonic notes from the recording into a new tab track with automatic fingering and sync marks.",
+    "start": "Transcribe",
+    "close": "Close",
+    "cancel": "Cancel",
+    "timeout": "Transcription took too long. Try again.",
+    "stem": "Stem",
+    "stemMix": "Mix (full recording)",
+    "stemBass": "Bass stem (isolate with Demucs)",
+    "stemGuitar": "Guitar stem (isolate with Demucs)",
+    "preset": "Instrument preset",
+    "grid": "Quantization grid",
+    "queued": "Waiting for the worker…",
+    "transcribing": "Transcribing audio…",
+    "decoding": "Decoding audio…",
+    "stemSeparation": "Isolating stems…",
+    "modelInference": "Detecting notes with basic-pitch…",
+    "beatTracking": "Tracking beats and tempo…",
+    "fingering": "Fingering frets…",
+    "complete": "Transcription complete",
+    "dialogTitle": "Transcribe audio",
+    "filePrompt": "Transcribe notes from {file} into a new tab.",
+    "importAsAudio": "Import as audio only"
   },
   "youtubeAudio": {
     "label": "Add audio from a YouTube link",

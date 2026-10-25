@@ -25,6 +25,7 @@ include = ["fretbook*"]
 # Migrations, demo song, built-in lessons, and the build outputs the Docker image copies in
 # (`fretbook/static` from the web build, `fretbook/gp/gp-to-document.mjs` from `npm run build:gp-cli`).
 fretbook = [
+    "audio/models/*",
     "db/migrations/*.sql",
     "demo/*",
     "lessons/builtin/**/*.md",
@@ -57,8 +58,8 @@ no_implicit_optional = true
 check_untyped_defs = true
 
 [[tool.mypy.overrides]]
-# Optional dependencies (requirements-vision.txt, requirements-stems.txt) and mido ship without type stubs.
-module = ["cv2.*", "pytesseract.*", "PIL.*", "mido.*", "torch.*", "demucs.*"]
+# Optional dependencies (requirements-vision.txt, requirements-stems.txt, requirements-transcribe.txt) and mido ship without type stubs.
+module = ["cv2.*", "pytesseract.*", "PIL.*", "mido.*", "torch.*", "demucs.*", "onnxruntime.*", "scipy.*"]
 ignore_missing_imports = true
 
 [tool.ruff]

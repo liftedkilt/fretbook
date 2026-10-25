@@ -21,9 +21,9 @@ RUN if [ -n "$AUDIVERIS_DEB_URL" ]; then \
         && rm -rf /var/lib/apt/lists/*; \
     fi
 WORKDIR /app
-COPY requirements.txt requirements-vision.txt requirements-stems.txt ./
+COPY requirements.txt requirements-vision.txt requirements-stems.txt requirements-transcribe.txt ./
 RUN python3 -m venv /opt/venv \
-    && /opt/venv/bin/pip install --no-cache-dir -r requirements.txt -r requirements-vision.txt -r requirements-stems.txt
+    && /opt/venv/bin/pip install --no-cache-dir -r requirements.txt -r requirements-vision.txt -r requirements-stems.txt -r requirements-transcribe.txt
 COPY fretbook ./fretbook
 
 RUN groupadd --gid 1000 fretbook \

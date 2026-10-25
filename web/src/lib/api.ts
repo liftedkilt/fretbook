@@ -52,6 +52,8 @@ import type {
   SetlistSummary as ContractSetlistSummary,
   Settings as ContractSettings,
   StemList as ContractStemList,
+  TranscribeInfo,
+  TranscribeRequest,
   SongDetail as ContractSongDetail,
   SongPractice as ContractSongPractice,
   SongPage as ContractSongPage,
@@ -591,6 +593,40 @@ export function startStems(
 
 export function deleteStems(id: string): Promise<void> {
   return request(`/api/songs/${id}/stems`, { method: "DELETE" });
+}
+
+/** Whether a worker that can transcribe audio is running. */
+export function getTranscribeInfo(id: string): Promise<TranscribeInfo> {
+  return request<TranscribeInfo>(`/api/songs/${id}/transcribe`);
+}
+
+/** Queue transcription of a song's audio into a draft tab track. */
+export function startTranscribe(
+  id: string,
+  body: TranscribeRequest = {},
+): Promise<JobAccepted> {
+  return request<JobAccepted>(`/api/songs/${id}/transcribe`, json("POST", body));
+}
+
+/** Upload an audio file to transcribe directly into a new song. */
+export function importTranscribe(
+  file: File,
+  options: {
+    stem?: "mix" | "bass" | "guitar";
+    preset?: string | null;
+    grid?: 4 | 8 | 16 | 32;
+    title?: string;
+    artist?: string;
+  } = {},
+): Promise<JobAccepted> {
+  const form = new FormData();
+  form.append("file", file);
+  if (options.stem) form.append("stem", options.stem);
+  if (options.preset) form.append("preset", options.preset);
+  if (options.grid) form.append("grid", String(options.grid));
+  if (options.title) form.append("title", options.title);
+  if (options.artist) form.append("artist", options.artist);
+  return request<JobAccepted>("/api/imports/transcribe", { method: "POST", body: form });
 }
 
 export async function sendSync(

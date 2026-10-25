@@ -38,6 +38,7 @@ from fretbook.api.share_routes import router as share_router
 from fretbook.api.stem_routes import router as stem_router
 from fretbook.api.tag_routes import router as tag_router
 from fretbook.api.token_routes import router as token_router
+from fretbook.api.transcribe_routes import router as transcribe_router
 from fretbook.api.universal_routes import router as universal_router
 from fretbook.api.youtube_audio_routes import router as youtube_audio_router
 from fretbook.audio.ytdlp_health import AutoUpdater
@@ -319,6 +320,7 @@ def create_app(
     app.include_router(midi_router)
     app.include_router(autosync_router)
     app.include_router(stem_router)
+    app.include_router(transcribe_router)
     app.include_router(youtube_audio_router)
     app.include_router(retune_router)
     app.include_router(universal_router)

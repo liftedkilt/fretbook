@@ -147,6 +147,7 @@ export const ui = $state({
   sort: initialSort.sort,
   order: initialSort.order,
   presets: [] as InstrumentPreset[],
+  workerKinds: [] as string[],
   ytdlp: null as YtDlpStatus | null,
   /** A read-only public demo: hide what would change the library. */
   demoMode: false,
@@ -326,6 +327,7 @@ export async function loadMeta(): Promise<void> {
   const [meta, me] = await Promise.all([getMeta(), getMe()]);
   ui.me = me;
   ui.presets = meta.instruments;
+  ui.workerKinds = meta.worker_kinds ?? [];
   ui.ytdlp = meta.ytdlp;
   ui.demoMode = meta.demo_mode ?? false;
   ui.lookupEnabled = meta.metadata_lookup ?? false;
