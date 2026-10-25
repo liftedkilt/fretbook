@@ -1206,7 +1206,7 @@
     "addedMany": "{count} músicas adicionadas.",
     "pickerTitle": "Adicionar músicas",
     "pickerRecent": "Abertas recentemente",
-    "pickerAlready": "{title} (já está nesta setlist)",
+    "pickerAlready": "Já está nesta setlist",
     "pickerAdd": {
       "one": "Adicionar {count} música",
       "other": "Adicionar {count} músicas"

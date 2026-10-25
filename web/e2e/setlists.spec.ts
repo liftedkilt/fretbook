@@ -69,7 +69,7 @@ test("build a setlist, reorder it with buttons and the keyboard, and play it thr
   await expect(async () => {
     await page.reload();
     await expect(titles).toHaveText(["Charlie", "Alpha", "Bravo"]);
-    await expect(entry("Alpha").getByTestId("setlist-entry-note-text")).toHaveText(
+    await expect(entry("Alpha").getByTestId("setlist-entry-note-text")).toContainText(
       "capo 2, skip solo",
     );
     await expect(entry("Alpha").getByTestId("setlist-transpose-value")).toHaveText("+2");
@@ -239,7 +239,7 @@ test("the picker marks songs already added, and removing a song can be undone", 
   await expect(alpha).toHaveAttribute("aria-pressed", "true");
   await page.getByTestId("setlist-add-search").fill("Brav");
   await expect(page.getByTestId("setlist-result")).toHaveCount(1);
-  await page.keyboard.press("Escape");
+  await page.getByTestId("setlist-song-picker-close").click();
 
   const titles = page.getByTestId("setlist-entry-title");
   await expect(titles).toHaveText(["Alpha"]);

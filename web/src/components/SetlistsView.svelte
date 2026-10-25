@@ -203,13 +203,14 @@
     background: var(--surface-2);
   }
   .name {
+    padding-right: 2.5rem;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
   .card-menu {
     position: absolute;
-    top: var(--sp-4);
-    right: var(--sp-4);
+    right: var(--sp-2);
+    bottom: var(--sp-2);
   }
 </style>
