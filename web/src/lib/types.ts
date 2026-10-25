@@ -570,6 +570,8 @@ export interface PracticeStats {
   longest_streak: number;
   total_seconds: number;
   songs_practised: number;
+  songs_this_month: number;
+  last_lesson: { course_id: string; lesson_id: string; opened_at: string } | null;
   heatmap: { day: string; seconds: number; sessions: number }[];
   week: { seconds: number; previous_seconds: number; days_practised: number; goal_days: number };
   recent: PracticeSongStats[];

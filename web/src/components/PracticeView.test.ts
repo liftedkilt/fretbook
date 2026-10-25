@@ -20,7 +20,9 @@ function stats(overrides: Partial<PracticeStats> = {}): PracticeStats {
     current_streak: 3,
     longest_streak: 5,
     total_seconds: 7200,
-    songs_practised: 2,
+    songs_practised: 5,
+    songs_this_month: 2,
+    last_lesson: null,
     heatmap: [
       { day: "2026-03-10", seconds: 300, sessions: 1 },
       { day: "2026-03-09", seconds: 700, sessions: 2 },
@@ -146,10 +148,41 @@ describe("PracticeView", () => {
     expect(screen.getByTestId("practice-best")).toHaveTextContent("88%");
   });
 
+  it("continues the last lesson when it was opened after the last song", async () => {
+    mockStats.mockResolvedValue(
+      stats({
+        last_lesson: {
+          course_id: "basics",
+          lesson_id: "one",
+          opened_at: "2026-03-10T11:00:00+00:00",
+        },
+      }),
+    );
+    render(PracticeView);
+    const link = await screen.findByTestId("practice-continue");
+    expect(link.getAttribute("href")).toContain("/lessons/basics/one");
+  });
+
+  it("keeps the song when it was practised after the last lesson", async () => {
+    mockStats.mockResolvedValue(
+      stats({
+        last_lesson: {
+          course_id: "basics",
+          lesson_id: "one",
+          opened_at: "2026-03-09T11:00:00+00:00",
+        },
+      }),
+    );
+    render(PracticeView);
+    const link = await screen.findByTestId("practice-continue");
+    expect(link.getAttribute("href")).toContain("/songs/s1");
+  });
+
   it("explains an empty log and hides the lists", async () => {
     mockStats.mockResolvedValue(
       stats({
         songs_practised: 0,
+        songs_this_month: 0,
         heatmap: [],
         recent: [],
         best_scores: [],
@@ -175,6 +208,7 @@ describe("PracticeView", () => {
     mockStats.mockResolvedValue(
       stats({
         songs_practised: 0,
+        songs_this_month: 0,
         recent: [],
         best_scores: [],
         stale: [],

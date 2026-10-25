@@ -3886,7 +3886,7 @@ export interface components {
             goal: components["schemas"]["PracticeGoal"];
             /** Heatmap */
             heatmap: components["schemas"]["PracticeDay"][];
-            last_lesson?: components["schemas"]["PracticeLastLesson"] | null;
+            last_lesson: components["schemas"]["PracticeLastLesson"] | null;
             /** Longest Streak */
             longest_streak: number;
             /** Recent */
@@ -3898,10 +3898,7 @@ export interface components {
             rhythm_runs: components["schemas"]["PracticeRhythmRun"][];
             /** Songs Practised */
             songs_practised: number;
-            /**
-             * Songs This Month
-             * @default 0
-             */
+            /** Songs This Month */
             songs_this_month: number;
             /** Stale */
             stale: components["schemas"]["PracticeSongStats"][];
