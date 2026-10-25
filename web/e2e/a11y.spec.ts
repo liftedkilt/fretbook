@@ -225,6 +225,39 @@ for (const scheme of ["light", "dark"] as const) {
       expect(await violations(page, "setlist-overflow")).toEqual([]);
     });
 
+    test("the setlist song picker, new-setlist sheet and row menu have no axe violations", async ({
+      page,
+      seed,
+    }) => {
+      const song = await seed.chordSheet();
+      const made = await page.request.post("/api/setlists", {
+        data: { name: "Friday", entries: [{ song_id: song.id }] },
+      });
+      expect(made.ok()).toBeTruthy();
+      const setlist = (await made.json()) as { id: string };
+      const found: string[] = [];
+
+      await page.goto(`/setlists/${setlist.id}`);
+      await expect(page.getByTestId("setlist-entry")).toHaveCount(1);
+      found.push(...(await violations(page, "setlist-compact-rows")));
+      await page.getByTestId("setlist-entry-menu").click();
+      await expect(page.getByRole("menu")).toBeVisible();
+      found.push(...(await violations(page, "setlist-row-menu")));
+      await page.keyboard.press("Escape");
+      await page.getByTestId("setlist-add-open").click();
+      await expect(page.getByTestId("setlist-song-picker")).toBeVisible();
+      await expect(page.getByTestId("setlist-result").first()).toBeVisible();
+      found.push(...(await violations(page, "setlist-song-picker")));
+
+      await page.goto("/setlists");
+      await expect(page.getByTestId("setlist-row")).toHaveCount(1);
+      found.push(...(await violations(page, "setlist-cards")));
+      await page.getByTestId("setlist-new").click();
+      await expect(page.getByTestId("setlist-new-sheet")).toBeVisible();
+      found.push(...(await violations(page, "setlist-new-sheet")));
+      expect(found).toEqual([]);
+    });
+
     test("the practice home with history and its goal popover have no axe violations", async ({
       page,
       seed,

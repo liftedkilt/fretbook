@@ -102,8 +102,10 @@ test("a saved setlist plays with no network", async ({ page, context, seed }) =>
 
   await page.goto(`/setlists/${setlist.id}`);
   await controlled(page);
-  await page.getByTestId("offline-toggle").click();
-  await expect(page.getByTestId("offline-toggle")).toContainText("Available offline");
+  await page.getByTestId("setlist-overflow").click();
+  await page.getByTestId("setlist-offline").click();
+  await page.getByTestId("setlist-overflow").click();
+  await expect(page.getByTestId("setlist-offline")).toContainText("Kept on this device");
 
   await context.setOffline(true);
   await page.goto(`/setlists/${setlist.id}/play/2`);

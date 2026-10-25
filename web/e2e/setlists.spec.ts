@@ -1,4 +1,25 @@
+import type { Page } from "@playwright/test";
+
 import { expect, test } from "./support/fixtures";
+
+async function addSongs(page: Page, titles: string[]) {
+  await page.getByTestId("setlist-add-open").click();
+  for (const title of titles) {
+    await page.getByTestId("setlist-result").filter({ hasText: title }).click();
+  }
+  await page.getByTestId("setlist-picker-add").click();
+  await expect(page.getByTestId("setlist-song-picker")).toBeHidden();
+}
+
+async function openAndClick(page: Page, menu: string, item: string) {
+  await page.getByTestId(menu).click();
+  await page.getByTestId(item).click();
+}
+
+async function rowMenu(page: Page, title: string, item: string) {
+  await page.getByRole("button", { name: `More for ${title}` }).click();
+  await page.getByRole("menuitem", { name: item }).click();
+}
 
 const SHEET = (word: string) => `{title: ${word}}\n[C]${word} [G]line\n`;
 
@@ -13,23 +34,22 @@ test("build a setlist, reorder it with buttons and the keyboard, and play it thr
   await page.goto("/");
   await page.getByTestId("nav-setlists").click();
   await expect(page.getByTestId("setlists-empty")).toBeVisible();
+  await page.getByTestId("setlist-new").click();
   await page.getByTestId("setlist-new-name").fill("Friday gig");
   await page.getByTestId("setlist-create").click();
   await expect(page).toHaveURL(/\/setlists\/[^/]+$/);
   await expect(page.getByTestId("setlist-name")).toHaveValue("Friday gig");
   await expect(page.getByTestId("setlist-entries-empty")).toBeVisible();
 
-  for (const title of ["Alpha", "Bravo", "Charlie"]) {
-    await page.getByRole("button", { name: `Add ${title}` }).click();
-  }
+  await addSongs(page, ["Alpha", "Bravo", "Charlie"]);
   const titles = page.getByTestId("setlist-entry-title");
   await expect(titles).toHaveText(["Alpha", "Bravo", "Charlie"]);
 
   // Buttons.
-  await page.getByRole("button", { name: "Move Charlie up" }).click();
+  await rowMenu(page, "Charlie", "Move up");
   await expect(titles).toHaveText(["Alpha", "Charlie", "Bravo"]);
   // Keyboard: focus stays on the moved row, and Alt+arrows move it again.
-  await expect(page.getByRole("button", { name: "Move Charlie up" })).toBeFocused();
+  await expect(page.getByRole("button", { name: "More for Charlie" })).toBeFocused();
   await page.keyboard.press("Alt+ArrowUp");
   await expect(titles).toHaveText(["Charlie", "Alpha", "Bravo"]);
   await expect(page.getByTestId("setlist-announce")).toHaveText(
@@ -38,6 +58,7 @@ test("build a setlist, reorder it with buttons and the keyboard, and play it thr
 
   // Notes and a per-entry transpose.
   const entry = (title: string) => page.getByTestId("setlist-entry").filter({ hasText: title });
+  await entry("Alpha").getByTestId("setlist-entry-note-text").click();
   await entry("Alpha").getByTestId("setlist-entry-note").fill("capo 2, skip solo");
   await entry("Alpha").getByTestId("setlist-entry-note").blur();
   await entry("Alpha").getByTestId("setlist-transpose-up").click();
@@ -48,7 +69,9 @@ test("build a setlist, reorder it with buttons and the keyboard, and play it thr
   await expect(async () => {
     await page.reload();
     await expect(titles).toHaveText(["Charlie", "Alpha", "Bravo"]);
-    await expect(entry("Alpha").getByTestId("setlist-entry-note")).toHaveValue("capo 2, skip solo");
+    await expect(entry("Alpha").getByTestId("setlist-entry-note-text")).toHaveText(
+      "capo 2, skip solo",
+    );
     await expect(entry("Alpha").getByTestId("setlist-transpose-value")).toHaveText("+2");
   }).toPass();
 
@@ -99,7 +122,7 @@ test("drag a song to a new place, then export the setlist as one PDF", async ({ 
 
   const [download] = await Promise.all([
     page.waitForEvent("download"),
-    page.getByTestId("setlist-export-pdf").click(),
+    openAndClick(page, "setlist-overflow", "setlist-export-pdf"),
   ]);
   expect(download.suggestedFilename()).toBe("Mixed.pdf");
 
@@ -129,11 +152,9 @@ test("a song can be in several setlists, and setlists can be renamed and deleted
   await expect(page.getByTestId("setlist-row").filter({ hasText: "Renamed" })).toBeVisible();
 
   page.once("dialog", (dialog) => void dialog.accept());
-  await page
-    .getByTestId("setlist-row")
-    .filter({ hasText: "Two" })
-    .getByRole("button", { name: /Delete setlist/ })
-    .click();
+  const two = page.getByTestId("setlist-row").filter({ hasText: "Two" });
+  await two.getByTestId("setlist-card-menu").click();
+  await page.getByTestId("setlist-card-delete").click();
   await expect(page.getByTestId("setlist-row")).toHaveCount(1);
 });
 
@@ -146,10 +167,10 @@ test("the play bar stays on screen while the score scrolls, clear of the dock", 
   await page.setViewportSize({ width: 375, height: 812 });
 
   await page.goto("/setlists");
+  await page.getByTestId("setlist-new").click();
   await page.getByTestId("setlist-new-name").fill("Scroll test");
   await page.getByTestId("setlist-create").click();
-  await page.getByRole("button", { name: `Add ${tab.title}` }).click();
-  await page.getByRole("button", { name: "Add Zulu" }).click();
+  await addSongs(page, [tab.title, "Zulu"]);
   await page.getByTestId("setlist-play").click();
   await expect(page.getByTestId("player-play")).toBeVisible();
 
@@ -198,4 +219,41 @@ test("add a song to a setlist from the library and from the song page", async ({
   await expect(page.getByTestId("setlist-picker-done")).toContainText("Added Bravo to Friday gig.");
   await page.getByRole("link", { name: "Open" }).click();
   await expect(page.getByTestId("setlist-entry-title")).toHaveText(["Alpha", "Bravo"]);
+});
+
+test("the picker marks songs already added, and removing a song can be undone", async ({
+  page,
+  seed,
+}) => {
+  await seed.create({ title: "Alpha", chordpro: SHEET("Alpha") });
+  await seed.create({ title: "Bravo", chordpro: SHEET("Bravo") });
+  const made = await page.request.post("/api/setlists", { data: { name: "Gig" } });
+  const setlist = (await made.json()) as { id: string };
+
+  await page.goto(`/setlists/${setlist.id}`);
+  await expect(page.getByTestId("setlist-subtitle")).toHaveText("0 songs");
+  await addSongs(page, ["Alpha"]);
+
+  await page.getByTestId("setlist-add-open").click();
+  const alpha = page.getByTestId("setlist-result").filter({ hasText: "Alpha" });
+  await expect(alpha).toHaveAttribute("aria-pressed", "true");
+  await page.getByTestId("setlist-add-search").fill("Brav");
+  await expect(page.getByTestId("setlist-result")).toHaveCount(1);
+  await page.keyboard.press("Escape");
+
+  const titles = page.getByTestId("setlist-entry-title");
+  await expect(titles).toHaveText(["Alpha"]);
+  await rowMenu(page, "Alpha", "Remove from setlist");
+  await expect(titles).toHaveCount(0);
+  await page.getByTestId("setlist-undo").click();
+  await expect(titles).toHaveText(["Alpha"]);
+});
+
+test("the setlist menu holds the destructive action last", async ({ page }) => {
+  const made = await page.request.post("/api/setlists", { data: { name: "Gig" } });
+  const setlist = (await made.json()) as { id: string };
+  await page.goto(`/setlists/${setlist.id}`);
+  await page.getByTestId("setlist-overflow").click();
+  const items = page.getByRole("menuitem");
+  await expect(items.last()).toHaveText("Delete setlist…");
 });

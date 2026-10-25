@@ -1182,7 +1182,36 @@
     "addToTitle": "Adicionar à setlist",
     "addedTo": "{title} adicionada a {name}.",
     "pickerEmpty": "Você ainda não tem setlists. Dê um nome abaixo para começar uma com esta música.",
-    "pickerNew": "Nova setlist…"
+    "pickerNew": "Nova setlist…",
+    "newButton": "Nova setlist",
+    "newTitle": "Nova setlist",
+    "cancel": "Cancelar",
+    "countTime": {
+      "one": "{count} música · cerca de {time}",
+      "other": "{count} músicas · cerca de {time}"
+    },
+    "keepOffline": "Manter neste dispositivo",
+    "keptOffline": "Mantida neste dispositivo (remover)",
+    "renameItem": "Renomear",
+    "deleteItem": "Excluir setlist…",
+    "addNote": "Adicionar uma nota",
+    "rowMenu": "Mais para {title}",
+    "cardMenu": "Mais para {name}",
+    "moveUpItem": "Mover para cima",
+    "moveDownItem": "Mover para baixo",
+    "removeItem": "Remover da setlist",
+    "removed": "{title} removida.",
+    "restored": "{title} voltou.",
+    "undo": "Desfazer",
+    "addedMany": "{count} músicas adicionadas.",
+    "pickerTitle": "Adicionar músicas",
+    "pickerRecent": "Abertas recentemente",
+    "pickerAlready": "{title} (já está nesta setlist)",
+    "pickerAdd": {
+      "one": "Adicionar {count} música",
+      "other": "Adicionar {count} músicas"
+    },
+    "pickerAddNone": "Adicionar músicas"
   },
   "highway": {
     "view": "Visualização",

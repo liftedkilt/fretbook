@@ -7,6 +7,9 @@ import {
   playIndex,
   playPath,
   reorderKey,
+  runningMinutes,
+  runningSeconds,
+  songsById,
   setlistPath,
   stepForKey,
   toDrafts,
@@ -102,5 +105,26 @@ describe("toDrafts", () => {
       string_count: 0,
     };
     expect(toDrafts([entry])).toEqual([{ song_id: "s1", note: "capo 2", transpose: 2 }]);
+  });
+});
+
+describe("running time", () => {
+  it("sums known durations and skips songs without one", () => {
+    const songs = new Map([
+      ["a", { duration: 120 }],
+      ["b", { duration: null }],
+    ]);
+    expect(runningSeconds(["a", "b", "a", "missing"], songs)).toBe(240);
+    expect(runningMinutes(0)).toBe(1);
+    expect(runningMinutes(1320)).toBe(22);
+  });
+
+  it("reads every page of songs", async () => {
+    const pages: Record<string, { items: { id: string }[]; next_cursor: string | null }> = {
+      first: { items: [{ id: "a" }], next_cursor: "second" },
+      second: { items: [{ id: "b" }], next_cursor: null },
+    };
+    const songs = await songsById(async (cursor) => pages[cursor ?? "first"] as never);
+    expect([...songs.keys()]).toEqual(["a", "b"]);
   });
 });
