@@ -63,5 +63,13 @@
 {#if failed}
   <p class="alert" role="alert">{t("asciiTab.previewFailed")}</p>
 {:else}
-  <div class="tab-preview paper" data-testid="tab-preview" bind:this={host}></div>
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+  <div
+    class="tab-preview paper"
+    data-testid="tab-preview"
+    role="region"
+    tabindex="0"
+    aria-label={title || t("asciiTab.preview")}
+    bind:this={host}
+  ></div>
 {/if}

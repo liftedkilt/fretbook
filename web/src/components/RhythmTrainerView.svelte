@@ -1,6 +1,5 @@
 <script lang="ts">
   import Icon from "./Icon.svelte";
-  import SegmentedControl from "./ui/SegmentedControl.svelte";
   import SliderStepper from "./ui/SliderStepper.svelte";
   import ToolPage from "./ui/ToolPage.svelte";
   import ListenPanel from "./ListenPanel.svelte";
@@ -298,345 +297,345 @@
 />
 
 {#snippet settings()}
-    <div class="pickers">
+  <div class="pickers">
+    <label class="tool-field">
+      <span>{t("rhythm.source")}</span>
+      <select
+        data-testid="rhythm-source"
+        value={source}
+        disabled={running}
+        onchange={(event) => chooseSource(event.currentTarget.value as "builtin" | "song")}
+      >
+        <option value="builtin">{t("rhythm.sourceBuiltin")}</option>
+        <option value="song">{t("rhythm.sourceSong")}</option>
+      </select>
+    </label>
+    {#if source === "song"}
       <label class="tool-field">
-        <span>{t("rhythm.source")}</span>
+        <span>{t("rhythm.song")}</span>
         <select
-          data-testid="rhythm-source"
-          value={source}
+          data-testid="rhythm-song"
+          value={songId}
           disabled={running}
-          onchange={(event) => chooseSource(event.currentTarget.value as "builtin" | "song")}
+          onchange={(event) => chooseSong(event.currentTarget.value)}
         >
-          <option value="builtin">{t("rhythm.sourceBuiltin")}</option>
-          <option value="song">{t("rhythm.sourceSong")}</option>
+          <option value="">{t("rhythm.chooseSong")}</option>
+          {#each songs as song (song.id)}
+            <option value={song.id}>{song.title}</option>
+          {/each}
         </select>
       </label>
-      {#if source === "song"}
-        <label class="tool-field">
-          <span>{t("rhythm.song")}</span>
-          <select
-            data-testid="rhythm-song"
-            value={songId}
-            disabled={running}
-            onchange={(event) => chooseSong(event.currentTarget.value)}
-          >
-            <option value="">{t("rhythm.chooseSong")}</option>
-            {#each songs as song (song.id)}
-              <option value={song.id}>{song.title}</option>
-            {/each}
-          </select>
-        </label>
-        {#if songDoc}
-          {#if songDoc.tracks.length > 1}
-            <label class="tool-field">
-              <span>{t("rhythm.track")}</span>
-              <select
-                data-testid="rhythm-track"
-                value={trackIndex}
-                disabled={running}
-                onchange={(event) => chooseTrack(Number(event.currentTarget.value))}
-              >
-                {#each songDoc.tracks as track, index (track.id)}
-                  <option value={index}>{track.name}</option>
-                {/each}
-              </select>
-            </label>
-          {/if}
+      {#if songDoc}
+        {#if songDoc.tracks.length > 1}
           <label class="tool-field">
-            <span>{t("rhythm.songRhythm")}</span>
+            <span>{t("rhythm.track")}</span>
             <select
-              data-testid="rhythm-song-rhythm"
-              value={songPatternId}
-              disabled={running || rhythms.length === 0}
-              onchange={(event) => {
-                songPatternId = event.currentTarget.value;
-                result = null;
-              }}
+              data-testid="rhythm-track"
+              value={trackIndex}
+              disabled={running}
+              onchange={(event) => chooseTrack(Number(event.currentTarget.value))}
             >
-              {#each rhythms as rhythm (rhythm.pattern.id)}
-                <option value={rhythm.pattern.id}>{songLabel(rhythm)}</option>
+              {#each songDoc.tracks as track, index (track.id)}
+                <option value={index}>{track.name}</option>
               {/each}
             </select>
           </label>
         {/if}
-      {:else}
         <label class="tool-field">
-          <span>{t("rhythm.pattern")}</span>
+          <span>{t("rhythm.songRhythm")}</span>
           <select
-            data-testid="rhythm-pattern"
-            value={patternId}
-            disabled={running}
+            data-testid="rhythm-song-rhythm"
+            value={songPatternId}
+            disabled={running || rhythms.length === 0}
             onchange={(event) => {
-              patternId = event.currentTarget.value;
+              songPatternId = event.currentTarget.value;
               result = null;
-              persist();
             }}
           >
-            {#each PATTERNS as option (option.id)}
-              <option value={option.id}>{t(option.labelKey)}</option>
+            {#each rhythms as rhythm (rhythm.pattern.id)}
+              <option value={rhythm.pattern.id}>{songLabel(rhythm)}</option>
             {/each}
           </select>
         </label>
       {/if}
-      <div class="tool-field tempo">
-        <span>{t("rhythm.tempo")}</span>
-        <SliderStepper
-          label={t("rhythm.tempo")}
-          value={bpm}
-          min={MIN_BPM}
-          max={MAX_BPM}
-          testid="rhythm-bpm-slider"
-          decreaseLabel={t("tools.slower")}
-          increaseLabel={t("tools.faster")}
-          decreaseTestId="rhythm-bpm-minus"
-          increaseTestId="rhythm-bpm-plus"
-          disabled={running}
-          onchange={setBpm}
-        />
-        <input
-          type="number"
-          class="bpm-input"
-          data-testid="rhythm-bpm"
-          min={MIN_BPM}
-          max={MAX_BPM}
-          value={bpm}
-          disabled={running}
-          aria-label={t("rhythm.tempo")}
-          oninput={(event) => setBpm(Number(event.currentTarget.value))}
-        />
-      </div>
+    {:else}
       <label class="tool-field">
-        <span>{t("rhythm.bars")}</span>
+        <span>{t("rhythm.pattern")}</span>
         <select
-          data-testid="rhythm-bars"
-          value={bars}
+          data-testid="rhythm-pattern"
+          value={patternId}
           disabled={running}
           onchange={(event) => {
-            bars = Number(event.currentTarget.value);
+            patternId = event.currentTarget.value;
+            result = null;
             persist();
           }}
         >
-          {#each BAR_CHOICES as choice (choice)}
-            <option value={choice}>{choice}</option>
+          {#each PATTERNS as option (option.id)}
+            <option value={option.id}>{t(option.labelKey)}</option>
           {/each}
         </select>
       </label>
-      <label class="tool-toggle rhythm-mic">
-        <input type="checkbox" data-testid="rhythm-mic" bind:checked={useMic} disabled={running} />
-        {t("rhythm.useMic")}
-      </label>
-    </div>
-    {#if useMic}
-      <p class="muted small" data-testid="rhythm-mic-hint">
-        {calibration === null
-          ? t("rhythm.noCalibration")
-          : t("rhythm.calibrated", { ms: Math.round(calibration) })}
-      </p>
     {/if}
-    {#if useMic}
-      <ListenPanel
-        session={micSession}
-        deviceId={micDevice}
-        channel={micChannel}
-        level={micLevel}
-        onDevice={(next) => (micDevice = next)}
-        onChannel={(next) => (micChannel = next)}
+    <div class="tool-field tempo">
+      <span>{t("rhythm.tempo")}</span>
+      <SliderStepper
+        label={t("rhythm.tempo")}
+        value={bpm}
+        min={MIN_BPM}
+        max={MAX_BPM}
+        testid="rhythm-bpm-slider"
+        decreaseLabel={t("tools.slower")}
+        increaseLabel={t("tools.faster")}
+        decreaseTestId="rhythm-bpm-minus"
+        increaseTestId="rhythm-bpm-plus"
+        disabled={running}
+        onchange={setBpm}
       />
-    {/if}
+      <input
+        type="number"
+        class="bpm-input"
+        data-testid="rhythm-bpm"
+        min={MIN_BPM}
+        max={MAX_BPM}
+        value={bpm}
+        disabled={running}
+        aria-label={t("rhythm.tempo")}
+        oninput={(event) => setBpm(Number(event.currentTarget.value))}
+      />
+    </div>
+    <label class="tool-field">
+      <span>{t("rhythm.bars")}</span>
+      <select
+        data-testid="rhythm-bars"
+        value={bars}
+        disabled={running}
+        onchange={(event) => {
+          bars = Number(event.currentTarget.value);
+          persist();
+        }}
+      >
+        {#each BAR_CHOICES as choice (choice)}
+          <option value={choice}>{choice}</option>
+        {/each}
+      </select>
+    </label>
+    <label class="tool-toggle rhythm-mic">
+      <input type="checkbox" data-testid="rhythm-mic" bind:checked={useMic} disabled={running} />
+      {t("rhythm.useMic")}
+    </label>
+  </div>
+  {#if useMic}
+    <p class="muted small" data-testid="rhythm-mic-hint">
+      {calibration === null
+        ? t("rhythm.noCalibration")
+        : t("rhythm.calibrated", { ms: Math.round(calibration) })}
+    </p>
+  {/if}
+  {#if useMic}
+    <ListenPanel
+      session={micSession}
+      deviceId={micDevice}
+      channel={micChannel}
+      level={micLevel}
+      onDevice={(next) => (micDevice = next)}
+      onChannel={(next) => (micChannel = next)}
+    />
+  {/if}
 {/snippet}
 
 {#snippet stage()}
-    {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
-    {#if source === "song"}
-      {#if songError}
-        <p class="alert" role="alert" data-testid="rhythm-song-error">
-          <Icon name="alert" size={18} />{songError}
-        </p>
-      {:else if songDoc && rhythms.length === 0}
-        <p class="muted small" data-testid="rhythm-song-empty">{t("rhythm.songEmpty")}</p>
-      {/if}
+  {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
+  {#if source === "song"}
+    {#if songError}
+      <p class="alert" role="alert" data-testid="rhythm-song-error">
+        <Icon name="alert" size={18} />{songError}
+      </p>
+    {:else if songDoc && rhythms.length === 0}
+      <p class="muted small" data-testid="rhythm-song-empty">{t("rhythm.songEmpty")}</p>
     {/if}
+  {/if}
 
-    <div
-      class="rhythm-bar"
-      data-testid="rhythm-bar"
-      role="img"
-      aria-label={t("rhythm.barLabel", { pattern: pattern.label ?? t(pattern.labelKey) })}
-    >
-      {#each cells as cell (cell)}
-        <div
-          class="rhythm-cell {cellState(cell)}"
-          class:beat={cell % pattern.grid === 0}
-          class:now={position !== null && !position.countIn && position.cell === cell}
-          data-testid={`rhythm-cell-${cell}`}
-          data-state={cellState(cell)}
+  <div
+    class="rhythm-bar"
+    data-testid="rhythm-bar"
+    role="img"
+    aria-label={t("rhythm.barLabel", { pattern: pattern.label ?? t(pattern.labelKey) })}
+  >
+    {#each cells as cell (cell)}
+      <div
+        class="rhythm-cell {cellState(cell)}"
+        class:beat={cell % pattern.grid === 0}
+        class:now={position !== null && !position.countIn && position.cell === cell}
+        data-testid={`rhythm-cell-${cell}`}
+        data-state={cellState(cell)}
+      >
+        <span class="rhythm-count" aria-hidden="true"
+          >{cell % pattern.grid === 0 ? cell / pattern.grid + 1 : "·"}</span
         >
-          <span class="rhythm-count" aria-hidden="true"
-            >{cell % pattern.grid === 0 ? cell / pattern.grid + 1 : "·"}</span
-          >
-          <div class="rhythm-note-area">
-            <div class="rhythm-note-glyph">
-              {#if cellState(cell) === "hit"}
-                <svg viewBox="0 0 24 40" class="rhythm-note" aria-hidden="true">
-                  <ellipse cx="9" cy="32" rx="6" ry="4.2" transform="rotate(-20 9 32)" />
-                  <rect x="14" y="4" width="2" height="28" />
-                  {#if hasFlag(pattern, cell, (i) => cellState(i) === "hit")}
-                    <path d="M14 4 c5 2 7 7 6 12 c-2 -3 -4 -5 -6 -6" />
-                    {#if pattern.grid === 4}
-                      <path d="M14 11 c5 2 7 7 6 12 c-2 -3 -4 -5 -6 -6" />
-                    {/if}
-                  {/if}
-                </svg>
-              {:else}
-                <svg viewBox="0 0 24 40" class="rhythm-rest" aria-hidden="true">
-                  <rect x="5" y="24" width="14" height="4" />
-                </svg>
-              {/if}
-            </div>
+        <div class="rhythm-note-area">
+          <div class="rhythm-note-glyph">
             {#if cellState(cell) === "hit"}
-              {@const beam = beamAt(pattern, cell, (i) => cellState(i) === "hit")}
-              {#if beam}
-                <div
-                  class="rhythm-beam"
-                  data-testid="rhythm-beam"
-                  data-span={beam.span}
-                  style="width: calc({beam.span} * (100% + var(--rhythm-gap)) + 2px);"
-                ></div>
-                {#if beam.secondary}
-                  <div
-                    class="rhythm-beam secondary"
-                    data-testid="rhythm-beam-secondary"
-                    data-span={beam.span}
-                    style="width: calc({beam.span} * (100% + var(--rhythm-gap)) + 2px);"
-                  ></div>
+              <svg viewBox="0 0 24 40" class="rhythm-note" aria-hidden="true">
+                <ellipse cx="9" cy="32" rx="6" ry="4.2" transform="rotate(-20 9 32)" />
+                <rect x="14" y="4" width="2" height="28" />
+                {#if hasFlag(pattern, cell, (i) => cellState(i) === "hit")}
+                  <path d="M14 4 c5 2 7 7 6 12 c-2 -3 -4 -5 -6 -6" />
+                  {#if pattern.grid === 4}
+                    <path d="M14 11 c5 2 7 7 6 12 c-2 -3 -4 -5 -6 -6" />
+                  {/if}
                 {/if}
-              {/if}
+              </svg>
+            {:else}
+              <svg viewBox="0 0 24 40" class="rhythm-rest" aria-hidden="true">
+                <rect x="5" y="24" width="14" height="4" />
+              </svg>
             {/if}
           </div>
           {#if cellState(cell) === "hit"}
-            <svg
-              viewBox="0 0 24 28"
-              class="rhythm-strum"
-              aria-hidden="true"
-              data-direction={strumDirection(pattern, cell)}
-            >
-              {#if strumDirection(pattern, cell) === "down"}
-                <path d="M12 3v20M5 16l7 8 7-8" />
-              {:else}
-                <path d="M12 25V5M5 12l7-8 7 8" />
-              {/if}
-            </svg>
-          {/if}
-        </div>
-      {/each}
-    </div>
-    {#if pattern.grid === 3}<p class="muted small">{t("rhythm.tripletNote")}</p>{/if}
-
-    <div class="rhythm-status" aria-live="polite" data-testid="rhythm-status">
-      {#if running}
-        {position?.countIn !== false
-          ? t("rhythm.countIn")
-          : t("rhythm.playing", { bar: (position?.bar ?? 0) + 1, bars })}
-      {/if}
-    </div>
-
-    {#if running}
-      <button class="primary hero start" data-testid="rhythm-stop" onclick={stop}>
-        <Icon name="pause" size={22} /><span>{t("tools.stop")}</span>
-      </button>
-    {:else}
-      <button class="primary hero start" data-testid="rhythm-start" onclick={begin}>
-        <Icon name="play" size={22} /><span>{result ? t("rhythm.again") : t("tools.start")}</span>
-      </button>
-    {/if}
-
-    <button
-      class="rhythm-pad"
-      data-testid="rhythm-pad"
-      disabled={!running}
-      onpointerdown={(event) => {
-        event.preventDefault();
-        record("touch");
-      }}
-      onkeydown={(event) => event.code === "Space" && event.preventDefault()}
-    >
-      <Icon name="tap" size={28} />
-      <span>{t("rhythm.tap")}</span>
-    </button>
-
-    {#if result}
-      <section class="rhythm-results" data-testid="rhythm-results" aria-label={t("rhythm.results")}>
-        <h2>{t("rhythm.results")}</h2>
-        <p
-          class="rhythm-verdict"
-          data-testid="rhythm-verdict"
-          data-tendency={result.summary.tendency}
-        >
-          {t(messageKey)}
-        </p>
-        <dl class="rhythm-stats">
-          <div>
-            <dt>{t("rhythm.hits")}</dt>
-            <dd data-testid="rhythm-hit-count">{result.summary.hit} / {result.summary.expected}</dd>
-          </div>
-          <div>
-            <dt>{t("rhythm.extra")}</dt>
-            <dd data-testid="rhythm-extra-count">{result.summary.extra}</dd>
-          </div>
-          {#if result.summary.meanMs !== null && result.summary.spreadMs !== null}
-            <div>
-              <dt>{t("rhythm.average")}</dt>
-              <dd data-testid="rhythm-mean">{ms(result.summary.meanMs)} {t("rhythm.ms")}</dd>
-            </div>
-            <div>
-              <dt>{t("rhythm.spread")}</dt>
-              <dd data-testid="rhythm-spread">
-                ±{Math.round(result.summary.spreadMs)}
-                {t("rhythm.ms")}
-              </dd>
-            </div>
-          {/if}
-        </dl>
-        <div
-          class="rhythm-histogram"
-          data-testid="rhythm-histogram"
-          role="img"
-          aria-label={t("rhythm.histogram")}
-        >
-          {#each bins as bin (bin.centerMs)}
-            <div class="rhythm-bin">
+            {@const beam = beamAt(pattern, cell, (i) => cellState(i) === "hit")}
+            {#if beam}
               <div
-                class="rhythm-bin-bar"
-                class:early={bin.centerMs < 0}
-                class:late={bin.centerMs > 0}
-                style:height={`${(bin.count / binMax) * 100}%`}
-                data-count={bin.count}
+                class="rhythm-beam"
+                data-testid="rhythm-beam"
+                data-span={beam.span}
+                style="width: calc({beam.span} * (100% + var(--rhythm-gap)) + 2px);"
               ></div>
-              <span class="rhythm-bin-label">{bin.centerMs > 0 ? "+" : ""}{bin.centerMs}</span>
-            </div>
-          {/each}
+              {#if beam.secondary}
+                <div
+                  class="rhythm-beam secondary"
+                  data-testid="rhythm-beam-secondary"
+                  data-span={beam.span}
+                  style="width: calc({beam.span} * (100% + var(--rhythm-gap)) + 2px);"
+                ></div>
+              {/if}
+            {/if}
+          {/if}
         </div>
-        <p class="muted small">{t("rhythm.histogramHint")}</p>
-        <h3>{t("rhythm.perBar")}</h3>
-        <ol class="rhythm-per-bar" data-testid="rhythm-per-bar">
-          {#each breakdown as row (row.bar)}
-            <li data-testid={`rhythm-bar-row-${row.bar}`}>
-              <span class="rhythm-bar-name">{t("rhythm.barNumber", { bar: row.bar + 1 })}</span>
-              <span class="rhythm-bar-cells" aria-hidden="true">
-                {#each row.cells as error, i (i)}
-                  <span class="rhythm-bar-cell {errorTone(error)}" class:rest={error === undefined}
-                  ></span>
-                {/each}
-              </span>
-              <span class="rhythm-bar-stat" data-testid={`rhythm-bar-stat-${row.bar}`}>
-                {row.hit}/{row.expected}
-                {#if row.meanMs !== null}· {ms(row.meanMs)} {t("rhythm.ms")}{/if}
-              </span>
-            </li>
-          {/each}
-        </ol>
-      </section>
+        {#if cellState(cell) === "hit"}
+          <svg
+            viewBox="0 0 24 28"
+            class="rhythm-strum"
+            aria-hidden="true"
+            data-direction={strumDirection(pattern, cell)}
+          >
+            {#if strumDirection(pattern, cell) === "down"}
+              <path d="M12 3v20M5 16l7 8 7-8" />
+            {:else}
+              <path d="M12 25V5M5 12l7-8 7 8" />
+            {/if}
+          </svg>
+        {/if}
+      </div>
+    {/each}
+  </div>
+  {#if pattern.grid === 3}<p class="muted small">{t("rhythm.tripletNote")}</p>{/if}
+
+  <div class="rhythm-status" aria-live="polite" data-testid="rhythm-status">
+    {#if running}
+      {position?.countIn !== false
+        ? t("rhythm.countIn")
+        : t("rhythm.playing", { bar: (position?.bar ?? 0) + 1, bars })}
     {/if}
+  </div>
+
+  {#if running}
+    <button class="primary hero start" data-testid="rhythm-stop" onclick={stop}>
+      <Icon name="pause" size={22} /><span>{t("tools.stop")}</span>
+    </button>
+  {:else}
+    <button class="primary hero start" data-testid="rhythm-start" onclick={begin}>
+      <Icon name="play" size={22} /><span>{result ? t("rhythm.again") : t("tools.start")}</span>
+    </button>
+  {/if}
+
+  <button
+    class="rhythm-pad"
+    data-testid="rhythm-pad"
+    disabled={!running}
+    onpointerdown={(event) => {
+      event.preventDefault();
+      record("touch");
+    }}
+    onkeydown={(event) => event.code === "Space" && event.preventDefault()}
+  >
+    <Icon name="tap" size={28} />
+    <span>{t("rhythm.tap")}</span>
+  </button>
+
+  {#if result}
+    <section class="rhythm-results" data-testid="rhythm-results" aria-label={t("rhythm.results")}>
+      <h2>{t("rhythm.results")}</h2>
+      <p
+        class="rhythm-verdict"
+        data-testid="rhythm-verdict"
+        data-tendency={result.summary.tendency}
+      >
+        {t(messageKey)}
+      </p>
+      <dl class="rhythm-stats">
+        <div>
+          <dt>{t("rhythm.hits")}</dt>
+          <dd data-testid="rhythm-hit-count">{result.summary.hit} / {result.summary.expected}</dd>
+        </div>
+        <div>
+          <dt>{t("rhythm.extra")}</dt>
+          <dd data-testid="rhythm-extra-count">{result.summary.extra}</dd>
+        </div>
+        {#if result.summary.meanMs !== null && result.summary.spreadMs !== null}
+          <div>
+            <dt>{t("rhythm.average")}</dt>
+            <dd data-testid="rhythm-mean">{ms(result.summary.meanMs)} {t("rhythm.ms")}</dd>
+          </div>
+          <div>
+            <dt>{t("rhythm.spread")}</dt>
+            <dd data-testid="rhythm-spread">
+              ±{Math.round(result.summary.spreadMs)}
+              {t("rhythm.ms")}
+            </dd>
+          </div>
+        {/if}
+      </dl>
+      <div
+        class="rhythm-histogram"
+        data-testid="rhythm-histogram"
+        role="img"
+        aria-label={t("rhythm.histogram")}
+      >
+        {#each bins as bin (bin.centerMs)}
+          <div class="rhythm-bin">
+            <div
+              class="rhythm-bin-bar"
+              class:early={bin.centerMs < 0}
+              class:late={bin.centerMs > 0}
+              style:height={`${(bin.count / binMax) * 100}%`}
+              data-count={bin.count}
+            ></div>
+            <span class="rhythm-bin-label">{bin.centerMs > 0 ? "+" : ""}{bin.centerMs}</span>
+          </div>
+        {/each}
+      </div>
+      <p class="muted small">{t("rhythm.histogramHint")}</p>
+      <h3>{t("rhythm.perBar")}</h3>
+      <ol class="rhythm-per-bar" data-testid="rhythm-per-bar">
+        {#each breakdown as row (row.bar)}
+          <li data-testid={`rhythm-bar-row-${row.bar}`}>
+            <span class="rhythm-bar-name">{t("rhythm.barNumber", { bar: row.bar + 1 })}</span>
+            <span class="rhythm-bar-cells" aria-hidden="true">
+              {#each row.cells as error, i (i)}
+                <span class="rhythm-bar-cell {errorTone(error)}" class:rest={error === undefined}
+                ></span>
+              {/each}
+            </span>
+            <span class="rhythm-bar-stat" data-testid={`rhythm-bar-stat-${row.bar}`}>
+              {row.hit}/{row.expected}
+              {#if row.meanMs !== null}· {ms(row.meanMs)} {t("rhythm.ms")}{/if}
+            </span>
+          </li>
+        {/each}
+      </ol>
+    </section>
+  {/if}
 {/snippet}
 
 <style>
