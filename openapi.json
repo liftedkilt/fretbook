@@ -1314,6 +1314,14 @@
             "title": "Locked",
             "type": "boolean"
           },
+          "max_stars": {
+            "title": "Max Stars",
+            "type": "integer"
+          },
+          "minutes_left": {
+            "title": "Minutes Left",
+            "type": "integer"
+          },
           "next_lesson_id": {
             "anyOf": [
               {
@@ -1339,6 +1347,10 @@
             ],
             "title": "Source",
             "type": "string"
+          },
+          "stars": {
+            "title": "Stars",
+            "type": "integer"
           },
           "summary": {
             "title": "Summary",
@@ -1368,6 +1380,9 @@
           "locked",
           "requires",
           "next_lesson_id",
+          "minutes_left",
+          "stars",
+          "max_stars",
           "levels"
         ],
         "title": "CourseDetail",
@@ -1457,6 +1472,14 @@
             "title": "Locked",
             "type": "boolean"
           },
+          "max_stars": {
+            "title": "Max Stars",
+            "type": "integer"
+          },
+          "minutes_left": {
+            "title": "Minutes Left",
+            "type": "integer"
+          },
           "next_lesson_id": {
             "anyOf": [
               {
@@ -1482,6 +1505,10 @@
             ],
             "title": "Source",
             "type": "string"
+          },
+          "stars": {
+            "title": "Stars",
+            "type": "integer"
           },
           "summary": {
             "title": "Summary",
@@ -1510,7 +1537,10 @@
           "completed_count",
           "locked",
           "requires",
-          "next_lesson_id"
+          "next_lesson_id",
+          "minutes_left",
+          "stars",
+          "max_stars"
         ],
         "title": "CourseSummary",
         "type": "object"
@@ -2848,6 +2878,20 @@
             "title": "Id",
             "type": "string"
           },
+          "minutes": {
+            "title": "Minutes",
+            "type": "integer"
+          },
+          "pass_condition": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LessonPassCondition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "requires": {
             "items": {
               "type": "string"
@@ -2862,6 +2906,10 @@
             ],
             "title": "Source",
             "type": "string"
+          },
+          "stars": {
+            "title": "Stars",
+            "type": "integer"
           },
           "status": {
             "enum": [
@@ -2888,7 +2936,10 @@
           "status",
           "source",
           "has_pass_condition",
-          "requires"
+          "pass_condition",
+          "requires",
+          "minutes",
+          "stars"
         ],
         "title": "LessonSummary",
         "type": "object"

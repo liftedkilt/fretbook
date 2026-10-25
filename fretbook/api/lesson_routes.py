@@ -71,7 +71,12 @@ class LessonSummary(BaseModel):
     status: Status
     source: Source
     has_pass_condition: bool
+    pass_condition: LessonPassCondition | None
     requires: list[str]
+    minutes: int
+    """A rough time to read the lesson and practise it, in minutes."""
+    stars: int
+    """0 until the lesson is done, then 1 to 3 from the best score."""
 
 
 class CourseLevel(BaseModel):
@@ -92,6 +97,10 @@ class CourseSummary(BaseModel):
     requires: list[str]
     """Titles of the courses that must be finished first."""
     next_lesson_id: str | None
+    minutes_left: int
+    """Estimated minutes for the lessons not done yet."""
+    stars: int
+    max_stars: int
 
 
 class CourseDetail(CourseSummary):
@@ -224,6 +233,25 @@ def _find_course(catalog: Catalog, course_id: str) -> CourseEntry:
     return entry
 
 
+WORDS_PER_MINUTE = 200
+PRACTICE_MINUTES = 5
+
+
+def _minutes(lesson: Lesson) -> int:
+    """Reading time for the text plus a fixed practice slot when the lesson asks for a result or an exercise."""
+    words = sum(len(block.text.split()) for block in lesson.blocks if block.kind == "markdown")
+    practise = lesson.pass_condition is not None or any(block.kind == "exercise" for block in lesson.blocks)
+    return max(1, round(words / WORDS_PER_MINUTE)) + (PRACTICE_MINUTES if practise else 0)
+
+
+def _stars(row: Progress | None) -> int:
+    if row is None or not row.completed_at:
+        return 0
+    if row.best_score is None:
+        return 1
+    return 3 if row.best_score >= 95 else 2 if row.best_score >= 85 else 1
+
+
 def _find_lesson(entry: CourseEntry, lesson_id: str) -> LessonEntry:
     for item in entry.lessons:
         if item.lesson.id == lesson_id:
@@ -237,6 +265,7 @@ def _course_summary(
     course = entry.course
     done = sum(1 for item in entry.lessons if state.lesson_status[(course.id, item.lesson.id)] == unlock.COMPLETED)
     resume_to = unlock.next_lesson(entry, _last_opened(entry, progress), state)
+    pending = [item for item in entry.lessons if state.lesson_status[(course.id, item.lesson.id)] != unlock.COMPLETED]
     return CourseSummary(
         id=course.id,
         title=course.title,
@@ -250,6 +279,9 @@ def _course_summary(
             catalog.courses[other].course.title for other in course.requires if not state.course_done.get(other, False)
         ],
         next_lesson_id=resume_to.lesson.id if resume_to else None,
+        minutes_left=sum(_minutes(item.lesson) for item in pending),
+        stars=sum(_stars(progress.get((course.id, item.lesson.id))) for item in entry.lessons),
+        max_stars=3 * len(entry.lessons),
     )
 
 
@@ -267,7 +299,8 @@ def list_courses(ctx: AppContext = Depends(context), user: Principal = Depends(p
     catalog = _catalog(ctx).load()
     progress = _repo(ctx).all(user.user_id)
     state = unlock.standing(catalog, progress)
-    where = unlock.resume(catalog, progress, state)
+    # Nothing to continue until a lesson has been opened.
+    where = unlock.resume(catalog, progress, state) if progress else None
     resume = None
     if where is not None:
         entry = catalog.courses[where[0]]
@@ -306,7 +339,10 @@ def get_course(course_id: str, ctx: AppContext = Depends(context), user: Princip
                 status=state.lesson_status[(course_id, lesson.id)],  # type: ignore[arg-type]
                 source=item.source,  # type: ignore[arg-type]
                 has_pass_condition=lesson.pass_condition is not None,
+                pass_condition=_condition(lesson.pass_condition),
                 requires=item.requires,
+                minutes=_minutes(lesson),
+                stars=_stars(progress.get((course_id, lesson.id))),
             )
         )
     summary = _course_summary(entry, catalog, state, progress)
