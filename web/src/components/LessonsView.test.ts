@@ -22,6 +22,9 @@ const course = (id: string, track: string, extra = {}) => ({
   locked: false,
   requires: [],
   next_lesson_id: "a",
+  minutes_left: 135,
+  stars: 0,
+  max_stars: 12,
   ...extra,
 });
 
@@ -50,6 +53,8 @@ describe("LessonsView", () => {
     expect(screen.getByRole("heading", { name: "Guitar" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Bass" })).toBeInTheDocument();
     expect(screen.getByTestId("course-card-g1")).toHaveTextContent("1 of 4 lessons done");
+    expect(screen.getByTestId("course-card-g1")).toHaveTextContent("≈ 2h 15m left");
+    expect(screen.getByTestId("course-card-g1")).toHaveTextContent("Continue");
     expect(screen.getByTestId("course-card-g1")).toHaveAttribute("href", "/lessons/g1");
     expect(screen.getByTestId("course-card-b1")).toHaveTextContent("Finish Course g1 first.");
   });
@@ -58,7 +63,25 @@ describe("LessonsView", () => {
     render(LessonsView);
     await screen.findByTestId("course-card-g1");
     expect(screen.queryByTestId("lessons-admin")).toBeNull();
+    expect(screen.queryByTestId("lessons-import")).toBeNull();
     expect(screen.queryByTestId("lessons-problems")).toBeNull();
+  });
+
+  it("offers a start-here card for the default instrument when nothing is open yet", async () => {
+    mockList.mockResolvedValue(
+      list({
+        resume: null,
+        courses: [
+          course("g1", "guitar", { completed_count: 0 }),
+          course("b1", "bass", { completed_count: 0 }),
+        ],
+      }),
+    );
+    render(LessonsView);
+    const card = await screen.findByTestId("lessons-start-here");
+    expect(screen.queryByTestId("lessons-continue")).toBeNull();
+    expect(card).toHaveAttribute("href", "/lessons/b1");
+    expect(card).toHaveTextContent("Start here");
   });
 
   it("says when there are no courses", async () => {
@@ -84,7 +107,7 @@ describe("LessonsView", () => {
     mockList.mockResolvedValue(list({ can_edit: true }));
     mockImport.mockRejectedValue(new Error("That pack could not be imported."));
     render(LessonsView);
-    await screen.findByTestId("lessons-admin");
+    await screen.findByTestId("lessons-import");
     const file = new File(["zip"], "pack.zip");
     await fireEvent.change(screen.getByTestId("lessons-import"), { target: { files: [file] } });
     expect(await screen.findByRole("alert")).toHaveTextContent("That pack could not be imported.");

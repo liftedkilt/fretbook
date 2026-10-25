@@ -1,15 +1,18 @@
 import { describe, expect, it } from "vitest";
 import {
   courseTemplate,
+  formatMinutes,
   fretboardPitchClasses,
   isYouTube,
   lessonPath,
   lessonTemplate,
   notePitchClass,
+  passText,
   renderMarkdown,
   safeUrl,
   slugify,
   spotsFor,
+  startHere,
 } from "./lessons";
 
 describe("renderMarkdown", () => {
@@ -138,5 +141,29 @@ describe("small helpers", () => {
   it("offers templates with front matter", () => {
     expect(lessonTemplate("Hi")).toMatch(/^---\ntitle: Hi\n/);
     expect(courseTemplate("bass")).toContain("track: bass");
+  });
+});
+
+describe("course path helpers", () => {
+  it("formats minutes as minutes, hours, or both", () => {
+    expect(formatMinutes(0)).toBe("1 min");
+    expect(formatMinutes(25)).toBe("25 min");
+    expect(formatMinutes(120)).toBe("2h");
+    expect(formatMinutes(135)).toBe("2h 15m");
+  });
+
+  it("describes a pass condition", () => {
+    expect(passText(null)).toMatch(/Mark the lesson/);
+    expect(passText({ type: "wait", min_score: null, min_bpm: null })).toMatch(/wait mode/);
+    expect(passText({ type: "score", min_score: 80, min_bpm: 90 })).toMatch(/80%.*90 BPM/);
+  });
+
+  it("suggests the course for the default instrument, skipping locked ones", () => {
+    const courses = [
+      { track: "guitar", locked: false },
+      { track: "bass", locked: true },
+    ];
+    expect(startHere(courses, "bass")).toBe(courses[0]);
+    expect(startHere([courses[1]], "bass")).toBeNull();
   });
 });

@@ -20,7 +20,10 @@ const lesson = (id: string, status: string) => ({
   status,
   source: "builtin",
   has_pass_condition: false,
+  pass_condition: null,
   requires: [],
+  minutes: 6,
+  stars: status === "completed" ? 2 : 0,
 });
 
 const course = (extra = {}) => ({
@@ -34,6 +37,9 @@ const course = (extra = {}) => ({
   locked: false,
   requires: [],
   next_lesson_id: "b",
+  minutes_left: 90,
+  stars: 2,
+  max_stars: 9,
   levels: [
     {
       id: "basics",
@@ -63,11 +69,16 @@ describe("CourseView", () => {
       "/lessons/g1/b",
     );
     expect(screen.getByTestId("lesson-row-c").querySelector("a")).toBeNull();
-    expect(screen.getByTestId("lesson-row-c")).toHaveTextContent(
-      "Finish the lesson before this one",
-    );
+    // The lock icon carries the reason, not a sentence repeated on every row.
+    expect(screen.getByTestId("lesson-row-c")).not.toHaveTextContent("Finish the lesson");
+    expect(screen.getByRole("img", { name: /Locked: Lesson c/ })).toBeInTheDocument();
+    expect(screen.getByTestId("lesson-row-b")).toHaveTextContent("Up next");
+    expect(screen.getByTestId("lesson-row-b")).toHaveTextContent("Mark the lesson as done");
+    expect(screen.getByRole("img", { name: "2 of 3 stars" })).toBeInTheDocument();
     expect(screen.getByTestId("course-continue")).toHaveAttribute("href", "/lessons/g1/b");
-    expect(screen.getByTestId("course-continue")).toHaveTextContent("Continue where you left off");
+    expect(screen.getByTestId("course-continue")).toHaveTextContent("Continue: Lesson b");
+    expect(screen.getByTestId("course-side")).toHaveTextContent("≈ 1h 30m");
+    expect(screen.getByTestId("course-stars")).toHaveTextContent("2 of 9");
     expect(screen.queryByTestId("course-admin")).toBeNull();
   });
 
@@ -80,14 +91,25 @@ describe("CourseView", () => {
     expect(screen.queryByTestId("course-continue")).toBeNull();
   });
 
+  it("shows a finished course without a continue button", async () => {
+    mockGet.mockResolvedValue(
+      course({ completed_count: 3, next_lesson_id: null, minutes_left: 0, stars: 9 }),
+    );
+    render(CourseView, { id: "g1" });
+    expect(await screen.findByText("Course complete")).toBeInTheDocument();
+    expect(screen.queryByTestId("course-continue")).toBeNull();
+  });
+
   it("lets editors add, edit and delete", async () => {
     mockList.mockResolvedValue({ can_edit: true });
     mockDelete.mockResolvedValue(undefined);
     vi.spyOn(window, "confirm").mockReturnValue(true);
     render(CourseView, { id: "g1" });
     const admin = await screen.findByTestId("course-admin");
-    expect(admin.querySelector('a[href="/lessons/g1/new"]')).not.toBeNull();
-    expect(admin.querySelector('a[href="/lessons/g1/edit"]')).not.toBeNull();
+    await fireEvent.click(admin);
+    expect(screen.getByTestId("course-edit")).toBeInTheDocument();
+    expect(screen.getByTestId("course-new-lesson")).toBeInTheDocument();
+    expect(screen.getByTestId("course-import-item")).toBeInTheDocument();
     await fireEvent.click(screen.getByTestId("course-delete"));
     expect(mockDelete).toHaveBeenCalledWith("g1");
   });
@@ -96,7 +118,9 @@ describe("CourseView", () => {
     mockGet.mockResolvedValue(course({ source: "builtin" }));
     mockList.mockResolvedValue({ can_edit: true });
     render(CourseView, { id: "g1" });
-    await screen.findByTestId("course-admin");
+    const admin = await screen.findByTestId("course-admin");
+    await fireEvent.click(admin);
+    expect(screen.getByTestId("course-edit")).toBeInTheDocument();
     expect(screen.queryByTestId("course-delete")).toBeNull();
   });
 

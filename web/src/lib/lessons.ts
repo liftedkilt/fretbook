@@ -1,3 +1,4 @@
+import { t } from "./i18n.svelte";
 import type { FretNote } from "./fretboard";
 
 /** Where a lesson page lives. Ids are lowercase words, so they never need escaping. */
@@ -210,4 +211,47 @@ export function slugify(text: string): string {
     .slice(0, 64)
     .replace(/-+$/, "");
   return slug === "new" || slug === "edit" ? `${slug}-1` : slug;
+}
+
+// -- Course path ------------------------------------------------------------------------------
+
+/** "25 min", "2h" or "1h 30m", for the rough time left on a course. */
+export function formatMinutes(minutes: number): string {
+  const total = Math.max(1, Math.round(minutes));
+  if (total < 60) return t("coursePath.minutes", { n: total });
+  const hours = Math.floor(total / 60);
+  const rest = total % 60;
+  return rest
+    ? t("coursePath.hoursMinutes", { h: hours, m: rest })
+    : t("coursePath.hours", { h: hours });
+}
+
+/** What a lesson asks of you to pass, in words. */
+export function passText(
+  condition: {
+    type: string;
+    min_score: number | null;
+    min_bpm: number | null;
+  } | null,
+): string {
+  if (!condition) return t("lessons.passNone");
+  if (condition.type === "score") {
+    return condition.min_bpm
+      ? t("lessons.passScoreBpm", { score: condition.min_score ?? 0, bpm: condition.min_bpm })
+      : t("lessons.passScore", { score: condition.min_score ?? 0 });
+  }
+  return t("lessons.passWait");
+}
+
+/** The course to suggest first: the one for the default instrument, else the first one that is open. */
+export function startHere<T extends { track: string; locked: boolean }>(
+  courses: T[],
+  family: string,
+): T | null {
+  const open = courses.filter((course) => !course.locked);
+  return (
+    open.find((course) => course.track === (family === "bass" ? "bass" : "guitar")) ??
+    open[0] ??
+    null
+  );
 }

@@ -1960,7 +1960,6 @@
     "progress": "{done} de {total} aulas concluídas",
     "progressLabel": "Progresso em {course}",
     "finishFirst": "Conclua antes: {courses}.",
-    "lockedLesson": "Conclua a aula anterior para abrir esta.",
     "done": "Concluída",
     "open": "Abrir",
     "passHeading": "Passar nesta aula",
@@ -2363,5 +2362,27 @@
       "difficultyAsc": "Mais fáceis primeiro",
       "difficultyDesc": "Mais difíceis primeiro"
     }
+  },
+  "coursePath": {
+    "startHere": "Comece aqui",
+    "continue": "Continuar",
+    "continueLesson": "Continuar: {lesson}",
+    "review": "Revisar",
+    "left": "restantes",
+    "lessonCount": {
+      "one": "{count} aula",
+      "other": "{count} aulas"
+    },
+    "progress": "Progresso",
+    "timeLeft": "Tempo restante",
+    "stars": "Estrelas",
+    "finished": "Curso concluído",
+    "starsLabel": "{stars} de {max} estrelas",
+    "starsTotal": "{stars} de {max}",
+    "lockedLabel": "Bloqueada: {lesson}. Conclua a aula anterior para abrir esta.",
+    "upNext": "A seguir",
+    "minutes": "{n} min",
+    "hours": "{h}h",
+    "hoursMinutes": "{h}h {m}min"
   }
 }
