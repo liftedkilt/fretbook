@@ -2,7 +2,7 @@
 
 Fretbook teaches with **courses**: ordered lessons grouped into levels, with prerequisites, one set for guitar and one for bass. Lessons are plain Markdown files, so people and coding agents can write them, review them in a pull request, and share them as a zip.
 
-This page is the format reference. To *use* the lessons, open **Lessons** in the sidebar (on a phone: **Tools → Lessons**). See [Learning a song](guides/lessons.md) for how lessons fit with the practice tools.
+This page is the format reference. To *use* the lessons, open **Lessons** in the sidebar (on a phone: the **Lessons** tab). See [Learning a song](guides/lessons.md) for how lessons fit with the practice tools.
 
 ## The built-in courses
 
