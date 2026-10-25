@@ -582,6 +582,35 @@
       "noTab": "This MusicXML file has no tablature (string and fret) data.",
       "tooLarge": "This MusicXML file is too large once unpacked."
     },
+    "musescore": {
+      "parse": "The MuseScore file could not be read.",
+      "notMuseScore": "This is not a MuseScore score.",
+      "noTracks": "This MuseScore file contains no playable guitar or bass tracks.",
+      "noNotes": "This MuseScore file has no playable notes.",
+      "tooLarge": "This MuseScore file is too large once unpacked.",
+      "shifted": "{count} note(s) in \"{track}\" were outside the instrument range and shifted by octaves.",
+      "dropped": "{count} chord(s) in \"{track}\" could not be fingered in one position and dropped notes."
+    },
+    "abc": {
+      "parse": "The ABC notation could not be read.",
+      "empty": "The ABC notation is empty.",
+      "tooLong": "The ABC notation is longer than {limit} characters.",
+      "tooLarge": "This ABC file is too large.",
+      "noNotes": "This ABC file contains no playable notes.",
+      "shifted": "{count} note(s) in \"{track}\" were outside the instrument range and shifted by octaves.",
+      "dropped": "{count} chord(s) in \"{track}\" could not be fingered in one position and dropped notes."
+    },
+    "tuxguitar": {
+      "parse": "The TuxGuitar file could not be read.",
+      "noTracks": "This TuxGuitar file contains no playable fretted tracks.",
+      "noNotes": "This TuxGuitar file has no playable notes.",
+      "tooLarge": "This TuxGuitar file is too large once unpacked.",
+      "unsupportedVersion": "This TuxGuitar version is not supported."
+    },
+    "powertab": {
+      "parse": "The Power Tab file could not be read.",
+      "noTracks": "This Power Tab file contains no playable tracks."
+    },
     "json": {
       "parse": "The JSON file could not be read.",
       "notFretbook": "This JSON file is not a Fretbook export."

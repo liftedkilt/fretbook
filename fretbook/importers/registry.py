@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from fretbook.importers import sniff
+from fretbook.importers.abc import AbcImporter
 from fretbook.importers.ascii_tab import AsciiTabImporter
 from fretbook.importers.audio_only import AudioOnlyImporter
 from fretbook.importers.base import Importer, ImportError, ImportRequest
@@ -10,9 +11,12 @@ from fretbook.importers.chordpro import ChordProImporter
 from fretbook.importers.fretbook_json import FretbookJsonImporter
 from fretbook.importers.guitarpro import GuitarProImporter
 from fretbook.importers.midi import MidiImporter
+from fretbook.importers.musescore import MuseScoreImporter
 from fretbook.importers.musicxml import MusicXmlImporter
 from fretbook.importers.omr import OmrImporter
+from fretbook.importers.powertab import PowerTabImporter
 from fretbook.importers.songsterr import SongsterrImporter
+from fretbook.importers.tuxguitar import TuxGuitarImporter
 from fretbook.importers.youtube_frames import YouTubeFrameImporter
 
 
@@ -20,6 +24,10 @@ def default_importers() -> list[Importer]:
     return [
         SongsterrImporter(),
         MusicXmlImporter(),
+        MuseScoreImporter(),
+        AbcImporter(),
+        TuxGuitarImporter(),
+        PowerTabImporter(),
         FretbookJsonImporter(),
         AsciiTabImporter(),
         ChordProImporter(),
@@ -35,6 +43,10 @@ def default_importers() -> list[Importer]:
 _IMPORTER_FOR = {
     sniff.MUSICXML: "musicxml",
     sniff.MXL: "musicxml",
+    sniff.MUSESCORE: "musescore",
+    sniff.ABC: "abc",
+    sniff.TUXGUITAR: "tuxguitar",
+    sniff.POWER_TAB: "powertab",
     sniff.GUITAR_PRO: "guitarpro",
     sniff.FRETBOOK_JSON: "fretbook-json",
     sniff.CHORDPRO: "chordpro",

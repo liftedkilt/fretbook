@@ -15,7 +15,24 @@ from fretbook.importers.ascii_tab import looks_like_ascii_tab
 
 MAX_LINKS = 3
 # Best sources first: a Guitar Pro or MusicXML file beats a text sheet.
-LINK_EXTENSIONS = (".gp5", ".gp4", ".gp3", ".gpx", ".gp", ".musicxml", ".mxl", ".cho", ".chordpro", ".chopro", ".crd")
+LINK_EXTENSIONS = (
+    ".gp5",
+    ".gp4",
+    ".gp3",
+    ".gpx",
+    ".gp",
+    ".ptb",
+    ".tg",
+    ".mscz",
+    ".mscx",
+    ".musicxml",
+    ".mxl",
+    ".abc",
+    ".cho",
+    ".chordpro",
+    ".chopro",
+    ".crd",
+)
 
 
 class _Page(HTMLParser):

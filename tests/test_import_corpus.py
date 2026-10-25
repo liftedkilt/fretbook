@@ -73,9 +73,36 @@ def normalize(path: Path, tmp_path: Path) -> dict:
 
 def test_corpus_is_complete() -> None:
     kinds = {p.parent.name for p in FILES}
-    assert {"musicxml", "gp", "chordpro", "ugtext", "asciitab", "midi", "json"} <= kinds
-    suffixes = {".musicxml", ".mxl", ".gp3", ".gp4", ".gp5", ".gp", ".gpx", ".cho", ".mid", ".json"}
-    assert {p.suffix for p in FILES} >= suffixes
+    assert {
+        "musicxml",
+        "gp",
+        "chordpro",
+        "ugtext",
+        "asciitab",
+        "midi",
+        "json",
+        "musescore",
+        "abc",
+        "tuxguitar",
+        "powertab",
+    } <= kinds
+    assert {
+        ".musicxml",
+        ".mxl",
+        ".gp3",
+        ".gp4",
+        ".gp5",
+        ".gp",
+        ".gpx",
+        ".cho",
+        ".mid",
+        ".json",
+        ".mscx",
+        ".mscz",
+        ".abc",
+        ".tg",
+        ".ptb",
+    } <= {p.suffix for p in FILES}
 
 
 @pytest.mark.parametrize("path", FILES, ids=lambda p: str(p.relative_to(CORPUS)))
@@ -134,3 +161,20 @@ def test_riff_has_the_same_notes_in_musicxml_and_json(tmp_path: Path) -> None:
     xml = run_import(CORPUS / "musicxml" / "riff.partwise.musicxml", tmp_path)
     js = run_import(CORPUS / "json" / "riff.tab.json", tmp_path)
     assert notes_of(js) == notes_of(xml)
+
+
+@pytest.mark.parametrize(
+    "rel_path",
+    [
+        "musescore/riff.mscx",
+        "musescore/riff.mscz",
+        "abc/riff.abc",
+        "tuxguitar/riff.tg",
+        "powertab/riff.ptb",
+    ],
+)
+def test_riff_has_the_same_notes_across_new_formats(rel_path: str, tmp_path: Path) -> None:
+    xml = run_import(CORPUS / "musicxml" / "riff.partwise.musicxml", tmp_path)
+    imported = run_import(CORPUS / rel_path, tmp_path)
+    assert notes_of(imported) == notes_of(xml)
+    assert (imported.title, imported.artist) == (xml.title, xml.artist)

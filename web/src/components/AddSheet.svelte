@@ -536,7 +536,7 @@
           type="file"
           multiple
           disabled={Boolean(busy)}
-          accept=".musicxml,.xml,.json,.gp,.gp3,.gp4,.gp5,.gpx,.cho,.chordpro,.chopro,.crd,.txt,.tab,.zip,.pdf,.png,.jpg,.jpeg,.tif,.tiff,.bmp,.gif"
+          accept=".musicxml,.xml,.json,.gp,.gp3,.gp4,.gp5,.gpx,.ptb,.tg,.mscz,.mscx,.abc,.mid,.midi,.cho,.chordpro,.chopro,.crd,.txt,.tab,.zip,.pdf,.png,.jpg,.jpeg,.tif,.tiff,.bmp,.gif"
           onchange={(event) => {
             const fileList = event.currentTarget.files;
             if (!fileList || fileList.length === 0) return;
