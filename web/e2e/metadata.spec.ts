@@ -43,9 +43,10 @@ test("set a song's details and notes, upload cover art, and filter the library b
   await expect(page.getByTestId("song-key")).toHaveText("A minor");
   await page.goto("/");
   await expect(page.getByTestId("song-card")).toHaveCount(2);
-  await expect(page.getByTestId("song-card-details")).toHaveText("A minor · Blues");
-  await expect(page.locator(".song-card .cover-image")).toHaveCount(1);
+  await expect(page.getByTestId("song-key")).toHaveText("A minor");
+  await expect(page.getByTestId("song-card").locator(".cover-image")).toHaveCount(1);
 
+  await page.getByTestId("library-filters").click();
   await page.getByTestId("library-genre-filter").selectOption("Blues");
   await expect(page.getByTestId("song-card")).toHaveCount(1);
   await expect(page.getByTestId("song-title")).toHaveText("Slow Blues");

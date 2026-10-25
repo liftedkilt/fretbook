@@ -30,6 +30,27 @@ export function paletteFor(id: string): CoverPalette {
   return PALETTES[hash(id) % PALETTES.length];
 }
 
+export type CoverPattern = {
+  shape: "stripes" | "dots" | "rings" | "grid";
+  angle: number;
+  weight: number;
+  cx: number;
+  cy: number;
+};
+
+/** A texture picked from the id, so songs with the same title and a similar palette still differ. */
+export function patternFor(id: string): CoverPattern {
+  const seed = hash(`${id}:pattern`);
+  const shapes: CoverPattern["shape"][] = ["stripes", "dots", "rings", "grid"];
+  return {
+    shape: shapes[seed % shapes.length],
+    angle: [0, 30, 45, 60, 90, 120, 135, 150][(seed >> 3) % 8],
+    weight: 3 + ((seed >> 7) % 5),
+    cx: 20 + ((seed >> 11) % 60),
+    cy: 20 + ((seed >> 17) % 60),
+  };
+}
+
 /** One or two letters for the cover: the first letters of the first two words, ignoring a leading "The". */
 export function monogram(title: string): string {
   const words = title

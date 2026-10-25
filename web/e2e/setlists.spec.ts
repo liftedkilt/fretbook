@@ -181,8 +181,9 @@ test("add a song to a setlist from the library and from the song page", async ({
   await page.goto("/");
   // Library card: keyboard-reachable button, creating a new setlist on the way.
   const card = page.getByTestId("song-card").filter({ hasText: "Alpha" });
-  await card.getByTestId("song-add-to-setlist").focus();
+  await card.getByTestId("song-menu").focus();
   await page.keyboard.press("Enter");
+  await page.getByTestId("song-add-to-setlist").click();
   await expect(page.getByTestId("setlist-picker-empty")).toBeVisible();
   await page.getByTestId("setlist-picker-name").fill("Friday gig");
   await page.keyboard.press("Enter");

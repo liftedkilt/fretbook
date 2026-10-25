@@ -36,6 +36,7 @@
   const PATHS: Record<string, string> = {
     library:
       "M4 19.5V5a2 2 0 0 1 2-2h13v16H6.5A2.5 2.5 0 0 0 4 21.5v-2ZM4 19.5A2.5 2.5 0 0 1 6.5 17H19M9 7h6",
+    filter: "M3 6h18M6 12h12M10 18h4",
     plus: "M12 5v14M5 12h14",
     lock: "M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4",
     list: "M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01",

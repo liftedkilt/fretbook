@@ -81,10 +81,16 @@ describe("RecentImports", () => {
 
     await vi.waitFor(() => {
       expect(screen.getByTestId("recent-imports-panel")).toBeInTheDocument();
-      expect(screen.getByText("bad-song.musicxml")).toBeInTheDocument();
-      expect(screen.getByTestId("job-retry")).toBeInTheDocument();
-      expect(screen.getByTestId("job-dismiss")).toBeInTheDocument();
     });
+    // Failures start folded into one banner; Review opens the list.
+    expect(screen.getByTestId("recent-imports-summary")).toHaveTextContent(
+      "1 import needs attention",
+    );
+    expect(screen.queryByTestId("recent-import-item")).toBeNull();
+    await fireEvent.click(screen.getByTestId("recent-imports-review"));
+    expect(screen.getByText("bad-song.musicxml")).toBeInTheDocument();
+    expect(screen.getByTestId("job-retry")).toBeInTheDocument();
+    expect(screen.getByTestId("job-dismiss")).toBeInTheDocument();
 
     mockRetryJob.mockResolvedValue({ job_id: "failed-1" });
     mockListJobs.mockResolvedValue([

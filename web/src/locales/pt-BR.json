@@ -838,7 +838,18 @@
     "done": "Concluído",
     "viewSong": "Ver música",
     "skippedDuplicate": "Ignorado (duplicado)",
-    "replacedDuplicate": "Substituído existente"
+    "replacedDuplicate": "Substituído existente",
+    "needAttention": {
+      "one": "{count} importação precisa de atenção",
+      "other": "{count} importações precisam de atenção"
+    },
+    "finished": {
+      "one": "{count} importação concluída",
+      "other": "{count} importações concluídas"
+    },
+    "review": "Revisar",
+    "hide": "Ocultar",
+    "moreRunning": "+{count} em importação"
   },
   "repeats": {
     "heading": "Repetições e saltos",
@@ -2291,5 +2302,28 @@
   },
   "primitives": {
     "more": "Mais ações"
+  },
+  "libraryToolbar": {
+    "actions": "Ações",
+    "filters": "Filtros",
+    "level": "Nível",
+    "tags": "Tags",
+    "active": "Filtros ativos",
+    "remove": "Remover filtro: {filter}",
+    "clear": "Limpar",
+    "sort": {
+      "updatedDesc": "Atualizadas recentemente",
+      "updatedAsc": "Atualizadas há mais tempo",
+      "titleAsc": "Título A–Z",
+      "titleDesc": "Título Z–A",
+      "artistAsc": "Artista A–Z",
+      "artistDesc": "Artista Z–A",
+      "addedDesc": "Adicionadas mais recentes",
+      "addedAsc": "Adicionadas mais antigas",
+      "openedDesc": "Abertas recentemente",
+      "openedAsc": "Abertas há mais tempo",
+      "difficultyAsc": "Mais fáceis primeiro",
+      "difficultyDesc": "Mais difíceis primeiro"
+    }
   }
 }

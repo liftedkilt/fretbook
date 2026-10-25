@@ -1,26 +1,21 @@
 <script lang="ts">
-  import Cover from "./Cover.svelte";
-  import { coverSrc } from "../lib/cover";
   import FirstRun from "./FirstRun.svelte";
   import Icon from "./Icon.svelte";
   import LibraryPicker from "./LibraryPicker.svelte";
   import ManageTagsSheet from "./ManageTagsSheet.svelte";
   import RecentImports from "./RecentImports.svelte";
   import SetlistPicker from "./SetlistPicker.svelte";
+  import FiltersPopover from "./library/FiltersPopover.svelte";
+  import SongCard from "./library/SongCard.svelte";
   import Chip from "./ui/Chip.svelte";
   import Page from "./ui/Page.svelte";
   import PageHeader from "./ui/PageHeader.svelte";
   import { addTags, deleteSong } from "../lib/api";
   import { t } from "../lib/i18n.svelte";
-  import { levelOf } from "../lib/difficulty";
-  import { instrumentLabel } from "../lib/instruments";
   import { keyLabel } from "../lib/keys";
-  import { snippetParts } from "../lib/lyricsSnippet";
-  import { followLink, hrefFor } from "../lib/router.svelte";
-  import type { LibraryLevel, LibrarySort, SongSummary } from "../lib/types";
+  import type { LibraryLevel, LibrarySort, SongSummary, SortOrder } from "../lib/types";
   import {
     countFor,
-    defaultOrder,
     loadLibrary,
     loadMore,
     openSheet,
@@ -45,20 +40,26 @@
     { id: "chords", key: "library.filterChords" },
   ];
 
-  const sorts: { id: LibrarySort; key: string }[] = [
-    { id: "updated", key: "library.sortRecent" },
-    { id: "title", key: "library.sortTitle" },
-    { id: "artist", key: "library.sortArtist" },
-    { id: "added", key: "library.sortAdded" },
-    { id: "opened", key: "library.sortOpened" },
-    { id: "difficulty", key: "library.sortDifficulty" },
+  // The direction is part of the choice, so there is no separate arrow to decode.
+  const sorts: { sort: LibrarySort; order: SortOrder; key: string }[] = [
+    { sort: "updated", order: "desc", key: "libraryToolbar.sort.updatedDesc" },
+    { sort: "updated", order: "asc", key: "libraryToolbar.sort.updatedAsc" },
+    { sort: "title", order: "asc", key: "libraryToolbar.sort.titleAsc" },
+    { sort: "title", order: "desc", key: "libraryToolbar.sort.titleDesc" },
+    { sort: "artist", order: "asc", key: "libraryToolbar.sort.artistAsc" },
+    { sort: "artist", order: "desc", key: "libraryToolbar.sort.artistDesc" },
+    { sort: "added", order: "desc", key: "libraryToolbar.sort.addedDesc" },
+    { sort: "added", order: "asc", key: "libraryToolbar.sort.addedAsc" },
+    { sort: "opened", order: "desc", key: "libraryToolbar.sort.openedDesc" },
+    { sort: "opened", order: "asc", key: "libraryToolbar.sort.openedAsc" },
+    { sort: "difficulty", order: "asc", key: "libraryToolbar.sort.difficultyAsc" },
+    { sort: "difficulty", order: "desc", key: "libraryToolbar.sort.difficultyDesc" },
   ];
-  const levels: { id: LibraryLevel; key: string }[] = [
-    { id: "all", key: "difficulty.levelAll" },
-    { id: "easy", key: "difficulty.levelEasy" },
-    { id: "medium", key: "difficulty.levelMedium" },
-    { id: "hard", key: "difficulty.levelHard" },
-  ];
+  const levelKeys: Record<Exclude<LibraryLevel, "all">, string> = {
+    easy: "difficulty.levelEasy",
+    medium: "difficulty.levelMedium",
+    hard: "difficulty.levelHard",
+  };
 
   // The server searches, filters, sorts and pages. Typing waits a moment; the other changes load at once.
   // App loads the first page; this only reacts to changes once it has.
@@ -91,10 +92,6 @@
     if (target?.closest("input, textarea, select, [contenteditable]")) return;
     event.preventDefault();
     searchInput?.focus();
-  }
-
-  function flipOrder() {
-    setSort(ui.sort, ui.order === "asc" ? "desc" : "asc");
   }
 
   async function more() {
@@ -158,15 +155,43 @@
     }
   }
 
-  function tagSelectedFilter(tag: string): boolean {
-    return ui.tags.some((item) => item.toLowerCase() === tag.toLowerCase());
+  type ActiveFilter = { id: string; label: string; remove: () => void };
+
+  // The filters inside the popover, shown as removable chips so they are never hidden state.
+  const activeFilters = $derived.by<ActiveFilter[]>(() => {
+    const list: ActiveFilter[] = [];
+    if (ui.level !== "all") {
+      const level = ui.level;
+      list.push({ id: "level", label: t(levelKeys[level]), remove: () => (ui.level = "all") });
+    }
+    if (ui.keyFilter) {
+      list.push({
+        id: "key",
+        label: `${t("metadata.filterKey")}: ${keyLabel(ui.keyFilter, t)}`,
+        remove: () => (ui.keyFilter = ""),
+      });
+    }
+    if (ui.genreFilter) {
+      list.push({
+        id: "genre",
+        label: `${t("metadata.filterGenre")}: ${ui.genreFilter}`,
+        remove: () => (ui.genreFilter = ""),
+      });
+    }
+    for (const tag of ui.tags) {
+      list.push({ id: `tag:${tag}`, label: tag, remove: () => toggleTagFilter(tag) });
+    }
+    return list;
+  });
+
+  function clearFilters() {
+    ui.level = "all";
+    ui.keyFilter = "";
+    ui.genreFilter = "";
+    ui.tags = [];
   }
 
-  function kindLabel(song: SongSummary): string {
-    return song.content_kind === "chords"
-      ? t("library.chordSheet")
-      : instrumentLabel(song.preferred_instrument);
-  }
+  const paged = $derived(ui.nextCursor !== null && ui.nextCursor !== undefined);
 </script>
 
 <svelte:window onkeydown={onKeydown} />
@@ -192,7 +217,6 @@
     </PageHeader>
 
     <RecentImports />
-
     {#if countFor("all") > 0}
       <div class="toolbar">
         <label class="search">
@@ -211,121 +235,80 @@
         <label class="sort">
           <span class="visually-hidden">{t("library.sort")}</span>
           <select
-            value={ui.sort}
+            value={`${ui.sort}:${ui.order}`}
             data-testid="library-sort"
             aria-label={t("library.sort")}
             onchange={(event) => {
-              const sort = event.currentTarget.value as LibrarySort;
-              setSort(sort, defaultOrder(sort));
+              const [sort, order] = event.currentTarget.value.split(":");
+              setSort(sort as LibrarySort, order as SortOrder);
             }}
           >
-            {#each sorts as item (item.id)}
-              <option value={item.id}>{t(item.key)}</option>
+            {#each sorts as item (`${item.sort}:${item.order}`)}
+              <option value={`${item.sort}:${item.order}`}>{t(item.key)}</option>
             {/each}
           </select>
         </label>
-        {#if !ui.demoMode}
-          <Chip
-            variant="filter"
-            label={t("tags.select")}
-            testid="library-select"
-            pressed={selecting}
-            onclick={toggleSelecting}
-          />
-        {/if}
-        <button
-          class="icon-button glass sort-order"
-          data-testid="library-order"
-          onclick={flipOrder}
-          aria-label={t("library.order")}
-          title={ui.order === "asc" ? t("library.orderAsc") : t("library.orderDesc")}
-        >
-          <span aria-hidden="true">{ui.order === "asc" ? "↑" : "↓"}</span>
-        </button>
-      </div>
-
-      <div class="chips" role="group" aria-label={t("library.filters")}>
-        {#each filters as item (item.id)}
-          <Chip
-            variant="filter"
-            label={t(item.key)}
-            count={countFor(item.id)}
-            testid={`library-filter-${item.id}`}
-            pressed={ui.filter === item.id}
-            onclick={() => (ui.filter = item.id)}
-          />
-        {/each}
-        <Chip
-          variant="filter"
-          label={t("tags.favourites")}
-          icon={ui.favouritesOnly ? "starFilled" : "star"}
-          count={countFor("favourites")}
-          testid="library-filter-favourites"
-          pressed={ui.favouritesOnly}
-          onclick={() => (ui.favouritesOnly = !ui.favouritesOnly)}
+        <FiltersPopover
+          count={activeFilters.length}
+          onmanagetags={ui.demoMode ? undefined : () => (managingTags = true)}
         />
-      </div>
-
-      <div class="chips" role="group" aria-label={t("difficulty.filters")}>
-        {#each levels as item (item.id)}
-          <Chip
-            variant="filter"
-            label={t(item.key)}
-            testid={`library-level-${item.id}`}
-            pressed={ui.level === item.id}
-            onclick={() => (ui.level = item.id)}
-          />
-        {/each}
-      </div>
-
-      {#if ui.facets.keys.length || ui.facets.genres.length}
-        <div class="facet-filters" role="group" aria-label={t("metadata.filters")}>
-          {#if ui.facets.keys.length}
-            <label class="facet">
-              <span>{t("metadata.filterKey")}</span>
-              <select data-testid="library-key-filter" bind:value={ui.keyFilter}>
-                <option value="">{t("metadata.filterAny")}</option>
-                {#each ui.facets.keys as item (item.name)}
-                  <option value={item.name}>{keyLabel(item.name, t)} ({item.count})</option>
-                {/each}
-              </select>
-            </label>
-          {/if}
-          {#if ui.facets.genres.length}
-            <label class="facet">
-              <span>{t("metadata.filterGenre")}</span>
-              <select data-testid="library-genre-filter" bind:value={ui.genreFilter}>
-                <option value="">{t("metadata.filterAny")}</option>
-                {#each ui.facets.genres as item (item.name)}
-                  <option value={item.name}>{item.name} ({item.count})</option>
-                {/each}
-              </select>
-            </label>
-          {/if}
-        </div>
-      {/if}
-
-      {#if ui.tagList.length}
-        <div class="chips tag-chips" role="group" aria-label={t("tags.filters")}>
-          {#each ui.tagList as item (item.tag)}
+        {#if !ui.demoMode}
+          <span class="select-toggle">
             <Chip
-              variant="tag"
-              label={item.tag}
-              count={item.count}
-              testid="library-tag"
-              pressed={tagSelectedFilter(item.tag)}
-              onclick={() => toggleTagFilter(item.tag)}
+              variant="filter"
+              label={t("tags.select")}
+              testid="library-select"
+              pressed={selecting}
+              onclick={toggleSelecting}
+            />
+          </span>
+        {/if}
+      </div>
+
+      <div class="chip-line">
+        <div class="chips" role="group" aria-label={t("library.filters")}>
+          {#each filters as item (item.id)}
+            <Chip
+              variant="filter"
+              label={t(item.key)}
+              count={countFor(item.id)}
+              testid={`library-filter-${item.id}`}
+              pressed={ui.filter === item.id}
+              onclick={() => (ui.filter = item.id)}
             />
           {/each}
-          {#if !ui.demoMode}
+          <Chip
+            variant="filter"
+            label={t("tags.favourites")}
+            icon={ui.favouritesOnly ? "starFilled" : "star"}
+            count={countFor("favourites")}
+            testid="library-filter-favourites"
+            pressed={ui.favouritesOnly}
+            onclick={() => (ui.favouritesOnly = !ui.favouritesOnly)}
+          />
+        </div>
+      </div>
+
+      {#if activeFilters.length}
+        <div class="active" role="group" aria-label={t("libraryToolbar.active")}>
+          {#each activeFilters as filter (filter.id)}
             <button
-              class="button ghost"
-              data-testid="library-manage-tags"
-              onclick={() => (managingTags = true)}
+              type="button"
+              class="active-chip"
+              data-testid="library-active-filter"
+              aria-label={t("libraryToolbar.remove", { filter: filter.label })}
+              onclick={filter.remove}
             >
-              {t("manageTags.open")}
+              {filter.label}
+              <Icon name="close" size={14} />
             </button>
-          {/if}
+          {/each}
+          <button
+            type="button"
+            class="clear"
+            data-testid="library-clear-filters"
+            onclick={clearFilters}>{t("libraryToolbar.clear")}</button
+          >
         </div>
       {/if}
 
@@ -377,7 +360,7 @@
     {#if !ui.loaded}
       <div class="song-grid" aria-busy="true">
         {#each [0, 1, 2, 3, 4, 5] as index (index)}
-          <div class="song-card skeleton">
+          <div class="skeleton">
             <div class="cover cover-md"></div>
             <span></span><span></span>
           </div>
@@ -401,13 +384,12 @@
             ? t("library.searchEmpty", { query: ui.search.trim() })
             : t("library.filterEmpty")}
         </p>
-        {#if ui.tags.length || ui.favouritesOnly || ui.level !== "all"}
+        {#if activeFilters.length || ui.favouritesOnly}
           <button
             data-testid="library-clear-tags"
             onclick={() => {
-              ui.tags = [];
+              clearFilters();
               ui.favouritesOnly = false;
-              ui.level = "all";
             }}>{t("tags.clearFilters")}</button
           >
         {/if}
@@ -420,138 +402,24 @@
     {:else}
       <div class="song-grid">
         {#each ui.songs as song (song.id)}
-          <article class="song-card" data-testid="song-card">
-            <a
-              class="song-link"
-              data-testid="song-link"
-              href={hrefFor(`/songs/${song.id}`)}
-              onclick={(event) => followLink(event, `/songs/${song.id}`)}
-            >
-              <span class="song-art">
-                <Cover
-                  id={song.id}
-                  title={song.title}
-                  kind={song.content_kind}
-                  strings={song.string_count}
-                  src={coverSrc(song.cover_url)}
-                />
-                <span class="song-kind">
-                  <Icon
-                    name={song.content_kind === "chords" ? "chords" : "tab"}
-                    size={14}
-                  />{kindLabel(song)}
-                </span>
-                {#if song.has_audio}
-                  <span class="song-audio" title={t("library.audio")}
-                    ><Icon name="waveform" size={14} /></span
-                  >
-                {/if}
-                <span class="song-play" aria-hidden="true"><Icon name="play" size={20} /></span>
-              </span>
-              <span class="song-text">
-                <strong class="song-title" data-testid="song-title">{song.title}</strong>
-                <span class="song-artist">{song.artist || "—"}</span>
-                {#if song.content_kind === "tab"}
-                  <span class="song-meta">
-                    {t("library.strings", { count: song.string_count })} · {t("library.measures", {
-                      count: song.measure_count,
-                    })} · {t("library.tempo", { bpm: song.bpm })}
-                    {#if song.difficulty !== null}
-                      · <span data-testid="song-difficulty"
-                        >{t("difficulty.level", { level: levelOf(song.difficulty) })}</span
-                      >{/if}
-                  </span>
-                {/if}
-                {#if song.key || song.genre}
-                  <span class="song-meta" data-testid="song-card-details"
-                    >{[song.key ? keyLabel(song.key, t) : "", song.genre]
-                      .filter(Boolean)
-                      .join(" · ")}</span
-                  >
-                {/if}
-                {#if song.lyrics_snippet}
-                  <span
-                    class="song-lyrics"
-                    data-testid="song-lyrics-snippet"
-                    title={t("librarySnippet.label")}
-                    ><span class="visually-hidden"
-                      >{t("librarySnippet.label")}:
-                    </span>{#each snippetParts(song.lyrics_snippet) as part, index (index)}{#if part.hit}<mark
-                          >{part.text}</mark
-                        >{:else}{part.text}{/if}{/each}</span
-                  >
-                {/if}
-                {#if song.tags.length}
-                  <span class="song-tag-row" data-testid="song-card-tags">
-                    {#each song.tags.slice(0, 3) as tag (tag)}<span class="tag-mini">{tag}</span
-                      >{/each}
-                    {#if song.tags.length > 3}<span class="tag-mini">+{song.tags.length - 3}</span
-                      >{/if}
-                  </span>
-                {/if}
-              </span>
-            </a>
-            {#if selecting}
-              <label class="song-select">
-                <input
-                  type="checkbox"
-                  data-testid="song-select"
-                  checked={selected.includes(song.id)}
-                  onchange={() => toggleSelected(song.id)}
-                  aria-label={`${t("tags.selectSong")}: ${song.title}`}
-                />
-              </label>
-            {/if}
-            {#if !ui.demoMode}
-              <div class="song-actions" class:starred={song.favourite}>
-                <button
-                  class="icon-button glass song-star"
-                  class:on={song.favourite}
-                  data-testid="song-star"
-                  aria-pressed={song.favourite}
-                  onclick={() => void toggleStar(song)}
-                  aria-label={`${song.favourite ? t("tags.unfavourite") : t("tags.favourite")}: ${song.title}`}
-                  title={song.favourite ? t("tags.unfavourite") : t("tags.favourite")}
-                >
-                  <Icon name={song.favourite ? "starFilled" : "star"} size={16} />
-                </button>
-                <a
-                  class="icon-button glass"
-                  data-testid="song-edit"
-                  href={hrefFor(`/songs/${song.id}/edit`)}
-                  onclick={(event) => followLink(event, `/songs/${song.id}/edit`)}
-                  aria-label={`${t("library.edit")}: ${song.title}`}
-                  title={t("library.edit")}
-                >
-                  <Icon name="edit" size={16} />
-                </a>
-                <button
-                  class="icon-button glass"
-                  data-testid="song-add-to-setlist"
-                  onclick={() => (pickerSong = { id: song.id, title: song.title })}
-                  aria-label={`${t("setlists.addToSetlist")}: ${song.title}`}
-                  title={t("setlists.addToSetlist")}
-                >
-                  <Icon name="listMusic" size={16} />
-                </button>
-                <button
-                  class="icon-button glass"
-                  data-testid="song-delete"
-                  onclick={() => void remove(song)}
-                  aria-label={`${t("library.delete")}: ${song.title}`}
-                  title={t("library.delete")}
-                >
-                  <Icon name="trash" size={16} />
-                </button>
-              </div>
-            {/if}
-          </article>
+          <SongCard
+            {song}
+            readOnly={ui.demoMode}
+            {selecting}
+            selected={selected.includes(song.id)}
+            onselect={() => toggleSelected(song.id)}
+            onstar={() => void toggleStar(song)}
+            onsetlist={() => (pickerSong = { id: song.id, title: song.title })}
+            ondelete={() => void remove(song)}
+          />
         {/each}
       </div>
-      <div class="load-more">
-        <p class="muted" data-testid="library-showing">
-          {t("library.showing", { shown: ui.songs.length, total: ui.total })}
-        </p>
+      <div class="load-more" data-testid="library-end">
+        {#if paged}
+          <p class="muted" data-testid="library-showing">
+            {t("library.showing", { shown: ui.songs.length, total: ui.total })}
+          </p>
+        {/if}
         {#if ui.nextCursor}
           <button
             data-testid="library-load-more"
@@ -566,3 +434,186 @@
 </Page>
 
 <ManageTagsSheet open={managingTags} onclose={() => (managingTags = false)} />
+
+<style>
+  .toolbar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-3);
+  }
+
+  .search {
+    position: relative;
+    flex: 1;
+    max-width: 520px;
+    min-width: 0;
+  }
+
+  .search :global(.icon) {
+    position: absolute;
+    left: var(--sp-3);
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-3);
+    pointer-events: none;
+  }
+
+  .search input {
+    min-height: 44px;
+    padding-left: var(--sp-6);
+    border-radius: var(--r-sm);
+    background: var(--surface);
+  }
+
+  .sort select {
+    width: auto;
+    max-width: 14rem;
+    min-height: 44px;
+    border-radius: var(--r-sm);
+    text-overflow: ellipsis;
+  }
+
+  .select-toggle {
+    margin-left: auto;
+  }
+
+  /* Chip rows scroll sideways; the right edge fades out so a clipped chip reads as "more". */
+  .chip-line {
+    margin-bottom: var(--sp-4);
+  }
+
+  .chips {
+    display: flex;
+    gap: var(--sp-2);
+    margin: 0 calc(-1 * var(--pad));
+    padding: 2px var(--pad);
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - var(--pad)), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - var(--pad)), transparent);
+  }
+
+  .chips::-webkit-scrollbar {
+    display: none;
+  }
+
+  .active {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-4);
+  }
+
+  .active-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
+    min-height: 32px;
+    padding: 0 var(--sp-3);
+    border: 1px solid var(--accent-ring);
+    border-radius: var(--r-pill);
+    background: var(--accent-soft);
+    color: var(--accent-text);
+    font-size: var(--fs-sm);
+  }
+
+  .clear {
+    min-height: 32px;
+    padding: 0 var(--sp-2);
+    border: 0;
+    background: transparent;
+    color: var(--accent-text);
+    font-size: var(--fs-sm);
+    text-decoration: underline;
+  }
+
+  .bulk-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-3);
+    margin: 0 0 var(--sp-5);
+    padding: var(--sp-3);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+  }
+
+  .bulk-bar input[type="text"] {
+    flex: 1 1 160px;
+    min-width: 0;
+  }
+
+  .song-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: var(--sp-5) var(--sp-4);
+  }
+
+  .load-more {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-3);
+    margin: var(--sp-5) 0 var(--sp-2);
+  }
+
+  .skeleton .cover {
+    border-radius: var(--r-md);
+    background: var(--surface-2);
+  }
+
+  .skeleton .cover::after {
+    display: none;
+  }
+
+  .skeleton span {
+    display: block;
+    height: 12px;
+    margin: var(--sp-3) 0 0;
+    border-radius: var(--r-xs);
+    background: var(--surface-2);
+  }
+
+  .skeleton span:last-child {
+    width: 55%;
+    margin-top: var(--sp-2);
+  }
+
+  @media (max-width: 767px) {
+    .toolbar {
+      flex-wrap: wrap;
+    }
+
+    .search {
+      flex-basis: 100%;
+      max-width: none;
+    }
+
+    .sort {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .sort select {
+      width: 100%;
+      max-width: none;
+    }
+
+    .select-toggle {
+      margin-left: 0;
+    }
+
+    /* Songs become a list of rows. */
+    .song-grid {
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+
+    .skeleton {
+      display: none;
+    }
+  }
+</style>

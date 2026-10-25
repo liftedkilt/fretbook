@@ -125,12 +125,14 @@ test("library cards and the tab bar fit a phone", async ({ page, seed }) => {
     await expect(page.getByTestId("song-card")).toHaveCount(2);
     await noSidewaysScroll(page);
 
-    // Every card action sits inside its own card and is at least 44px.
+    // Every row action sits inside its own row and is at least 44px.
     const measure = () =>
       page.getByTestId("song-card").evaluateAll((nodes) =>
         nodes.flatMap((node) => {
           const card = node.getBoundingClientRect();
-          return Array.from(node.querySelectorAll(".song-actions > *")).map((button) => {
+          return Array.from(
+            node.querySelectorAll("[data-testid=song-star], [data-testid=song-menu]"),
+          ).map((button) => {
             const rect = button.getBoundingClientRect();
             return {
               inside: rect.left >= card.left - 1 && rect.right <= card.right + 1,
@@ -141,7 +143,8 @@ test("library cards and the tab bar fit a phone", async ({ page, seed }) => {
       );
     // Buttons animate in, so wait for them to settle.
     await expect.poll(async () => (await measure()).every((b) => b.inside && !b.small)).toBe(true);
-    expect(await measure()).toHaveLength(8);
+    // A star and a menu per song; delete is behind the menu, not a tap away.
+    expect(await measure()).toHaveLength(4);
 
     // The + is centred, and there is one of it.
     const add = await page.locator(".tab-add").boundingBox();
@@ -150,7 +153,7 @@ test("library cards and the tab bar fit a phone", async ({ page, seed }) => {
 
     // Scrolled to the end, the list clears the tab bar and its + button.
     await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-    const showing = await page.getByTestId("library-showing").boundingBox();
+    const showing = await page.getByTestId("library-end").boundingBox();
     const bar = await page.locator(".tabbar").boundingBox();
     expect(showing!.y + showing!.height).toBeLessThanOrEqual(bar!.y - 26);
   }

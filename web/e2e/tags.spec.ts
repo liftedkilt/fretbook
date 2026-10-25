@@ -24,14 +24,17 @@ test("tag a song, star it, and filter the library by tags and favourites", async
   await page.goto("/");
   await expect(page.getByTestId("song-card")).toHaveCount(3);
   await expect(page.getByTestId("library-filter-favourites")).toContainText("1");
+  await page.getByTestId("library-filters").click();
   await page.getByTestId("library-tag").filter({ hasText: "funk" }).click();
   await expect(page.getByTestId("song-card")).toHaveCount(1);
   await expect(page.getByTestId("song-title")).toHaveText("Slap Funk");
+  await expect(page.getByTestId("library-active-filter")).toHaveCount(1);
   await page.getByTestId("library-tag").filter({ hasText: "slap" }).click();
   await expect(page.getByTestId("song-card")).toHaveCount(1);
   await page.getByTestId("library-tag").filter({ hasText: "funk" }).click();
   await page.getByTestId("library-tag").filter({ hasText: "slap" }).click();
   await expect(page.getByTestId("song-card")).toHaveCount(3);
+  await page.keyboard.press("Escape");
   await page.getByTestId("library-filter-favourites").click();
   await expect(page.getByTestId("song-card")).toHaveCount(1);
   await page.getByTestId("library-filter-favourites").click();
@@ -43,8 +46,11 @@ test("tag a song, star it, and filter the library by tags and favourites", async
   await page.getByTestId("library-bulk-tag").fill("practice");
   await page.getByTestId("library-bulk-apply").click();
   await expect(page.getByTestId("library-bulk-notice")).toContainText("practice");
+  await page.getByTestId("library-filters").click();
   await page.getByTestId("library-tag").filter({ hasText: "practice" }).click();
   await expect(page.getByTestId("song-card")).toHaveCount(3);
+  await page.getByTestId("library-clear-filters").click();
+  await expect(page.getByTestId("library-active-filter")).toHaveCount(0);
 });
 
 test("an imported song starts with tags suggested from its instrument", async ({ page, seed }) => {
@@ -52,7 +58,8 @@ test("an imported song starts with tags suggested from its instrument", async ({
   await page.goto(`/songs/${song.id}`);
   await expect(page.getByTestId("song-tag").first()).toBeVisible();
   await page.goto("/");
-  await expect(page.getByTestId("song-card-tags")).toBeVisible();
+  await page.getByTestId("library-filters").click();
+  await expect(page.getByTestId("library-tag").first()).toBeVisible();
 });
 
 test("rename, merge and delete a tag from the library", async ({ page, seed }) => {
@@ -71,6 +78,7 @@ test("rename, merge and delete a tag from the library", async ({ page, seed }) =
   }
 
   await page.goto("/");
+  await page.getByTestId("library-filters").click();
   await page.getByTestId("library-manage-tags").click();
   const row = (tag: string) => page.getByTestId("manage-tag").filter({ hasText: tag });
 

@@ -114,6 +114,47 @@ for (const scheme of ["light", "dark"] as const) {
       expect(found).toEqual([]);
     });
 
+    test("the library toolbar popover, song menu and import banner have no axe violations", async ({
+      page,
+      seed,
+    }) => {
+      await seed.musicXmlTab();
+      await seed.chordSheet();
+      const found: string[] = [];
+      await page.goto("/");
+      await expect(page.getByTestId("song-card")).toHaveCount(2);
+
+      await page.getByTestId("library-filters").click();
+      await expect(page.getByRole("dialog", { name: "Filters" })).toBeVisible();
+      found.push(...(await violations(page, "library-filters")));
+      await page.getByTestId("library-level-easy").click();
+      await page.keyboard.press("Escape");
+      await expect(page.getByTestId("library-active-filter")).toBeVisible();
+      found.push(...(await violations(page, "library-active-filters")));
+      await page.getByTestId("library-clear-filters").click();
+
+      await page.getByTestId("song-menu").first().click();
+      await expect(page.getByRole("menu")).toBeVisible();
+      found.push(...(await violations(page, "song-menu")));
+      await page.keyboard.press("Escape");
+
+      await page.getByTestId("add-song").click();
+      await page.getByTestId("add-mode-file").click();
+      await page.getByTestId("add-file-input").setInputFiles({
+        name: "bad-riff.musicxml",
+        mimeType: "application/xml",
+        buffer: Buffer.from("<not-a-score/>"),
+      });
+      await expect(page.getByTestId("add-error")).toBeVisible();
+      await page.getByTestId("add-sheet-close").click();
+      await expect(page.getByTestId("recent-imports-banner")).toBeVisible();
+      found.push(...(await violations(page, "import-banner")));
+      await page.getByTestId("recent-imports-review").click();
+      await expect(page.getByTestId("recent-import-item")).toBeVisible();
+      found.push(...(await violations(page, "import-banner-open")));
+      expect(found).toEqual([]);
+    });
+
     test("the setlist overflow menu has no axe violations", async ({ page }) => {
       const made = await page.request.post("/api/setlists", { data: { name: "Friday" } });
       expect(made.ok()).toBeTruthy();
