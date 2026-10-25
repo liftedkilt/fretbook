@@ -5,3 +5,5 @@ ruff==0.17.2
 mypy==2.4.0
 # Synthetic tab frames for the issue #6 spike. Not used by the server or the image.
 pillow>=10
+# So the audio transcription engine is tested for real (the web process never imports it).
+-r requirements-transcribe.txt
