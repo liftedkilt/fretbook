@@ -1,6 +1,7 @@
 <script lang="ts">
   import ChordSheetView from "./ChordSheetView.svelte";
   import TabPlayer from "./TabPlayer.svelte";
+  import Page from "./ui/Page.svelte";
   import { getSharedSong } from "../lib/api";
   import { t } from "../lib/i18n.svelte";
   import type { SongDetail, TabSong } from "../lib/types";
@@ -32,17 +33,19 @@
   {#if error}<p class="alert" role="alert">{error}</p>{/if}
   {#if !song}
     {#if !error}<p class="muted" role="status">{t("app.loading")}</p>{/if}
-  {:else if song.content_kind === "chords"}
-    <ChordSheetView {song} readOnly />
   {:else}
-    <TabPlayer song={song as TabSong} readOnly />
+    <Page width="wide">
+      {#if song.content_kind === "chords"}
+        <ChordSheetView {song} readOnly />
+      {:else}
+        <TabPlayer song={song as TabSong} readOnly />
+      {/if}
+    </Page>
   {/if}
 </main>
 
 <style>
   .share-page {
-    max-width: 72rem;
-    margin: 0 auto;
-    padding: 1rem;
+    padding: var(--sp-4);
   }
 </style>

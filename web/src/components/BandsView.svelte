@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Page from "./ui/Page.svelte";
+  import PageHeader from "./ui/PageHeader.svelte";
   import {
     addMember,
     createBand,
@@ -72,163 +74,164 @@
   }
 </script>
 
-<section class="bands">
-  <header class="page-hero">
-    <div>
-      <p class="eyebrow">{t("bands.nav")}</p>
-      <h1 class="display">{t("bands.heading")}</h1>
-      <p class="muted">{t("bands.intro")}</p>
-    </div>
-  </header>
+<Page width="page">
+  <section class="bands">
+    <PageHeader title={t("bands.heading")} eyebrow={t("bands.nav")} subtitle={t("bands.intro")} />
 
-  {#if error}<p class="alert" role="alert">{error}</p>{/if}
-  {#if notice}<p class="muted" role="status">{notice}</p>{/if}
+    {#if error}<p class="alert" role="alert">{error}</p>{/if}
+    {#if notice}<p class="muted" role="status">{notice}</p>{/if}
 
-  <form
-    class="band-create"
-    onsubmit={(event) => {
-      event.preventDefault();
-      const next = name.trim();
-      if (!next) return;
-      void run(async () => {
-        const created = await createBand(next);
-        name = "";
-        openId = created.id;
-        rename = created.name;
-        notice = t("bands.created");
-        setActiveLibrary(created.id);
-        await refreshSongs();
-      });
-    }}
-  >
-    <label>
-      {t("bands.name")}
-      <input data-testid="band-name" bind:value={name} maxlength="80" required />
-    </label>
-    <button class="primary" data-testid="band-create" type="submit" disabled={busy || !name.trim()}>
-      {t("bands.create")}
-    </button>
-  </form>
-
-  {#if bands.length === 0}
-    <p class="muted" data-testid="bands-empty">{t("bands.empty")}</p>
-  {:else}
-    <ul class="band-list">
-      {#each bands as band (band.id)}
-        <li>
-          <button
-            type="button"
-            aria-current={openId === band.id ? "true" : undefined}
-            onclick={() => select(band.id)}
-          >
-            <strong>{band.name}</strong>
-            <span
-              >{t("bands.songs", { count: band.song_count })} · {band.role === "edit"
-                ? t("bands.edit")
-                : t("bands.view")}</span
-            >
-          </button>
-        </li>
-      {/each}
-    </ul>
-  {/if}
-
-  {#if open && open.role === "edit"}
-    <section class="band-manage" data-testid="band-members">
-      <h2>{open.name}</h2>
-      <form
-        class="band-rename"
-        onsubmit={(event) => {
-          event.preventDefault();
-          if (!rename.trim()) return;
-          void run(async () => {
-            await renameBand(open.id, rename.trim());
-          });
-        }}
+    <form
+      class="band-create"
+      onsubmit={(event) => {
+        event.preventDefault();
+        const next = name.trim();
+        if (!next) return;
+        void run(async () => {
+          const created = await createBand(next);
+          name = "";
+          openId = created.id;
+          rename = created.name;
+          notice = t("bands.created");
+          setActiveLibrary(created.id);
+          await refreshSongs();
+        });
+      }}
+    >
+      <label>
+        {t("bands.name")}
+        <input data-testid="band-name" bind:value={name} maxlength="80" required />
+      </label>
+      <button
+        class="primary"
+        data-testid="band-create"
+        type="submit"
+        disabled={busy || !name.trim()}
       >
-        <label>
-          {t("bands.rename")}
-          <input bind:value={rename} maxlength="80" />
-        </label>
-        <button type="submit" disabled={busy}>{t("bands.rename")}</button>
-      </form>
-      <h3>{t("bands.members")}</h3>
-      <ul>
-        {#each members as member (member.user_id)}
+        {t("bands.create")}
+      </button>
+    </form>
+
+    {#if bands.length === 0}
+      <p class="muted" data-testid="bands-empty">{t("bands.empty")}</p>
+    {:else}
+      <ul class="band-list">
+        {#each bands as band (band.id)}
           <li>
-            <span>{member.display_name}</span>
-            <select
-              aria-label={t("bands.role")}
-              value={member.role}
-              onchange={(event) => {
-                const next = (event.currentTarget as HTMLSelectElement).value as "view" | "edit";
-                void run(async () => {
-                  await setMemberRole(open.id, member.user_id, next);
-                });
-              }}
-            >
-              <option value="view">{t("bands.view")}</option>
-              <option value="edit">{t("bands.edit")}</option>
-            </select>
             <button
               type="button"
-              disabled={busy}
-              onclick={() =>
-                void run(async () => {
-                  await removeMember(open.id, member.user_id);
-                })}
+              aria-current={openId === band.id ? "true" : undefined}
+              onclick={() => select(band.id)}
             >
-              {t("bands.remove")}
+              <strong>{band.name}</strong>
+              <span
+                >{t("bands.songs", { count: band.song_count })} · {band.role === "edit"
+                  ? t("bands.edit")
+                  : t("bands.view")}</span
+              >
             </button>
           </li>
         {/each}
       </ul>
-      <form
-        class="band-add"
-        onsubmit={(event) => {
-          event.preventDefault();
-          const next = email.trim();
-          if (!next) return;
-          void run(async () => {
-            await addMember(open.id, next, role);
-            email = "";
-          });
-        }}
-      >
-        <label>
-          {t("bands.email")}
-          <input type="email" data-testid="band-email" bind:value={email} />
-        </label>
-        <label>
-          {t("bands.role")}
-          <select bind:value={role}>
-            <option value="view">{t("bands.view")}</option>
-            <option value="edit">{t("bands.edit")}</option>
-          </select>
-        </label>
-        <button type="submit" disabled={busy || !email.trim()}>{t("bands.add")}</button>
-      </form>
-      <button
-        class="danger-text"
-        type="button"
-        disabled={busy}
-        onclick={() => {
-          if (!confirm(t("bands.deleteConfirm"))) return;
-          void run(async () => {
-            await deleteBand(open.id);
-            if (ui.libraryId === open.id) {
-              setActiveLibrary("");
-              await refreshSongs();
-            }
-            openId = "";
-          });
-        }}
-      >
-        {t("bands.delete")}
-      </button>
-    </section>
-  {/if}
-</section>
+    {/if}
+
+    {#if open && open.role === "edit"}
+      <section class="band-manage" data-testid="band-members">
+        <h2>{open.name}</h2>
+        <form
+          class="band-rename"
+          onsubmit={(event) => {
+            event.preventDefault();
+            if (!rename.trim()) return;
+            void run(async () => {
+              await renameBand(open.id, rename.trim());
+            });
+          }}
+        >
+          <label>
+            {t("bands.rename")}
+            <input bind:value={rename} maxlength="80" />
+          </label>
+          <button type="submit" disabled={busy}>{t("bands.rename")}</button>
+        </form>
+        <h3>{t("bands.members")}</h3>
+        <ul>
+          {#each members as member (member.user_id)}
+            <li>
+              <span>{member.display_name}</span>
+              <select
+                aria-label={t("bands.role")}
+                value={member.role}
+                onchange={(event) => {
+                  const next = (event.currentTarget as HTMLSelectElement).value as "view" | "edit";
+                  void run(async () => {
+                    await setMemberRole(open.id, member.user_id, next);
+                  });
+                }}
+              >
+                <option value="view">{t("bands.view")}</option>
+                <option value="edit">{t("bands.edit")}</option>
+              </select>
+              <button
+                type="button"
+                disabled={busy}
+                onclick={() =>
+                  void run(async () => {
+                    await removeMember(open.id, member.user_id);
+                  })}
+              >
+                {t("bands.remove")}
+              </button>
+            </li>
+          {/each}
+        </ul>
+        <form
+          class="band-add"
+          onsubmit={(event) => {
+            event.preventDefault();
+            const next = email.trim();
+            if (!next) return;
+            void run(async () => {
+              await addMember(open.id, next, role);
+              email = "";
+            });
+          }}
+        >
+          <label>
+            {t("bands.email")}
+            <input type="email" data-testid="band-email" bind:value={email} />
+          </label>
+          <label>
+            {t("bands.role")}
+            <select bind:value={role}>
+              <option value="view">{t("bands.view")}</option>
+              <option value="edit">{t("bands.edit")}</option>
+            </select>
+          </label>
+          <button type="submit" disabled={busy || !email.trim()}>{t("bands.add")}</button>
+        </form>
+        <button
+          class="danger-text"
+          type="button"
+          disabled={busy}
+          onclick={() => {
+            if (!confirm(t("bands.deleteConfirm"))) return;
+            void run(async () => {
+              await deleteBand(open.id);
+              if (ui.libraryId === open.id) {
+                setActiveLibrary("");
+                await refreshSongs();
+              }
+              openId = "";
+            });
+          }}
+        >
+          {t("bands.delete")}
+        </button>
+      </section>
+    {/if}
+  </section>
+</Page>
 
 <style>
   .bands {
