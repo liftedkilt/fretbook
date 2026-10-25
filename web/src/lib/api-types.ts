@@ -3731,6 +3731,15 @@ export interface components {
              */
             weekly_summary: boolean;
         };
+        /** PracticeLastLesson */
+        PracticeLastLesson: {
+            /** Course Id */
+            course_id: string;
+            /** Lesson Id */
+            lesson_id: string;
+            /** Opened At */
+            opened_at: string;
+        };
         /** PracticeRhythmRun */
         PracticeRhythmRun: {
             /** Bar */
@@ -3877,6 +3886,7 @@ export interface components {
             goal: components["schemas"]["PracticeGoal"];
             /** Heatmap */
             heatmap: components["schemas"]["PracticeDay"][];
+            last_lesson?: components["schemas"]["PracticeLastLesson"] | null;
             /** Longest Streak */
             longest_streak: number;
             /** Recent */
@@ -3888,6 +3898,11 @@ export interface components {
             rhythm_runs: components["schemas"]["PracticeRhythmRun"][];
             /** Songs Practised */
             songs_practised: number;
+            /**
+             * Songs This Month
+             * @default 0
+             */
+            songs_this_month: number;
             /** Stale */
             stale: components["schemas"]["PracticeSongStats"][];
             /** Today */
@@ -4808,6 +4823,7 @@ export type PracticeExerciseBody = components['schemas']['PracticeExerciseBody']
 export type PracticeExerciseStats = components['schemas']['PracticeExerciseStats'];
 export type PracticeGoal = components['schemas']['PracticeGoal'];
 export type PracticeGoalBody = components['schemas']['PracticeGoalBody'];
+export type PracticeLastLesson = components['schemas']['PracticeLastLesson'];
 export type PracticeRhythmRun = components['schemas']['PracticeRhythmRun'];
 export type PracticeSession = components['schemas']['PracticeSession'];
 export type PracticeSessionBody = components['schemas']['PracticeSessionBody'];

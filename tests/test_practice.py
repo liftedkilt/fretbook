@@ -563,3 +563,34 @@ def test_stats_list_recent_rhythm_runs_with_song_titles(client: TestClient) -> N
     assert by_pattern[f"song:{song_id}:3"]["bar"] == 3
     assert by_pattern["song:gone:5"]["song_title"] is None and by_pattern["song:gone:5"]["bar"] == 5
     assert by_pattern["eighths"]["mean_error_ms"] == 4.0
+
+
+def test_stats_count_songs_practised_this_month(tmp_path: Path) -> None:
+    settings = Settings.for_tests(tmp_path / "month")
+    with TestClient(create_app(settings)) as client:
+        alpha, beta, old = _song(client, "Alpha"), _song(client, "Beta"), _song(client, "Old")
+    repo = PracticeRepository(settings)
+    today = datetime.now(UTC).date()
+    month_start = today.replace(day=1)
+    previous = month_start - timedelta(days=1)
+    for song, day in [(alpha, month_start), (alpha, today), (beta, today), (old, previous)]:
+        repo.record("local", SessionInput(song_id=song, day=day.isoformat(), duration_seconds=60))
+    stats = repo.stats("local", today)
+    assert stats["songs_practised"] == 3
+    assert stats["songs_this_month"] == 2
+    # Looking back from last month does not count this month's sessions.
+    assert repo.stats("local", previous)["songs_this_month"] == 1
+
+
+def test_stats_report_the_last_lesson_opened(client: TestClient) -> None:
+    assert client.get("/api/practice/stats").json()["last_lesson"] is None
+    settings = client.app.state.ctx.settings
+    from fretbook.storage.lessons import LessonProgressRepository
+
+    lessons = LessonProgressRepository(settings)
+    lessons.opened("local", "basics", "one")
+    time.sleep(1.1)
+    lessons.opened("local", "basics", "two")
+    last = client.get("/api/practice/stats").json()["last_lesson"]
+    assert (last["course_id"], last["lesson_id"]) == ("basics", "two")
+    assert last["opened_at"]

@@ -195,7 +195,28 @@ class PracticeRepository:
                 )
             ]
             rhythm_runs = _rhythm_runs(conn, owner_id)
-        return {**_dashboard(goal, per_day, songs, today), "exercises": exercises, "rhythm_runs": rhythm_runs}
+            month = today.isoformat()[:7]
+            songs_this_month = conn.execute(
+                """
+                SELECT count(DISTINCT p.song_id) FROM practice_sessions p JOIN songs s ON s.id = p.song_id
+                WHERE p.owner_id = ? AND s.owner_id = p.owner_id AND substr(p.day, 1, 7) = ? AND p.day <= ?
+                """,
+                (owner_id, month, today.isoformat()),
+            ).fetchone()[0]
+            last_lesson = conn.execute(
+                """
+                SELECT course_id, lesson_id, last_opened_at AS opened_at FROM lesson_progress
+                WHERE owner_id = ? ORDER BY last_opened_at DESC, course_id, lesson_id LIMIT 1
+                """,
+                (owner_id,),
+            ).fetchone()
+        return {
+            **_dashboard(goal, per_day, songs, today),
+            "songs_this_month": songs_this_month,
+            "last_lesson": dict(last_lesson) if last_lesson else None,
+            "exercises": exercises,
+            "rhythm_runs": rhythm_runs,
+        }
 
     def recommendations(self, owner_id: str, today: date) -> dict[str, Any]:
         """Songs to stretch to, loops to revisit and songs due for review, as of the player's ``today``."""
