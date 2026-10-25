@@ -1713,27 +1713,6 @@
           <div bind:this={host}></div>
         </div>
       </div>
-
-      {#if practice.fretboard.on || waitOn}
-        <div
-          class="fretboard-wrap"
-          data-testid="player-fretboard"
-          role={waitOn ? "group" : undefined}
-          aria-label={waitOn ? t("waitMode.fretboard") : undefined}
-        >
-          <Fretboard
-            tuning={track.tuning_midi}
-            capo={track.capo}
-            frets={fretCount(track)}
-            current={waitOn ? (waitMarks?.notes ?? []) : fretFocus.current}
-            next={waitOn ? [] : fretFocus.next}
-            tone={waitMarks?.tone}
-            label={practice.fretboard.label}
-            root={practice.fretboard.root ?? defaultRoot(track.tuning_midi)}
-            leftHanded={practice.fretboard.leftHanded}
-          />
-        </div>
-      {/if}
     </div>
     {#if panelOpen && !handsFree.stage}
       <div class="player-sheet" bind:this={sheetSlot}>
@@ -1816,6 +1795,27 @@
       </div>
     {/if}
   </div>
+
+  {#if practice.fretboard.on || waitOn}
+    <div
+      class="fretboard-wrap"
+      data-testid="player-fretboard"
+      role={waitOn ? "group" : undefined}
+      aria-label={waitOn ? t("waitMode.fretboard") : undefined}
+    >
+      <Fretboard
+        tuning={track.tuning_midi}
+        capo={track.capo}
+        frets={fretCount(track)}
+        current={waitOn ? (waitMarks?.notes ?? []) : fretFocus.current}
+        next={waitOn ? [] : fretFocus.next}
+        tone={waitMarks?.tone}
+        label={practice.fretboard.label}
+        root={practice.fretboard.root ?? defaultRoot(track.tuning_midi)}
+        leftHanded={practice.fretboard.leftHanded}
+      />
+    </div>
+  {/if}
 
   <p class="visually-hidden" role="status" data-testid="player-announcer">
     {countingIn ? t("player.countingIn") : playing ? t("player.playing") : t("player.paused")}
