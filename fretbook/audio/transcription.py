@@ -170,7 +170,7 @@ def _output_to_notes(
             remaining_energy[note_start_idx:i, freq_idx - 1] = 0
 
         amplitude = float(np.mean(frames[note_start_idx:i, freq_idx]))
-        pitch = freq_idx + MIDI_OFFSET
+        pitch = int(freq_idx) + MIDI_OFFSET
         if min_pitch <= pitch <= max_pitch:
             note_events.append((int(note_start_idx), int(i), pitch, amplitude))
 
@@ -214,7 +214,7 @@ def _output_to_notes(
                 continue
 
             amplitude = float(np.mean(frames[i_start:i_end, freq_idx]))
-            pitch = int(freq_idx + MIDI_OFFSET)
+            pitch = int(freq_idx) + MIDI_OFFSET
             if min_pitch <= pitch <= max_pitch:
                 note_events.append((int(i_start), int(i_end), pitch, amplitude))
 
@@ -229,6 +229,31 @@ def _output_to_notes(
         )
         for start, end, pitch, amp in note_events
     ]
+
+
+# Intervals above a fundamental where a harmonic is heard as a note of its own: octave, octave and a fifth, two octaves.
+_HARMONIC_INTERVALS = (12, 19, 24)
+
+
+def suppress_harmonics(notes: list[NoteEvent], onset_window: float = 0.06, ratio: float = 0.8) -> list[NoteEvent]:
+    """Drop notes that are probably a harmonic of a stronger, simultaneous note.
+
+    A plucked string sounds its octave and fifth above, which the model sometimes reports as a quieter note that starts
+    with the fundamental. A note goes when a note 12, 19 or 24 semitones below it starts within ``onset_window``
+    seconds and is at least ``ratio`` times as loud.
+    """
+    kept: list[NoteEvent] = []
+    for note in notes:
+        harmonic = any(
+            other.pitch == note.pitch - interval
+            and abs(other.start_sec - note.start_sec) <= onset_window
+            and other.amplitude >= note.amplitude * ratio
+            for other in notes
+            for interval in _HARMONIC_INTERVALS
+        )
+        if not harmonic:
+            kept.append(note)
+    return kept
 
 
 def predict_notes(
@@ -268,14 +293,16 @@ def predict_notes(
     frames = _unwrap_output(outs[0], original_length, N_OVERLAPPING_FRAMES)
     onsets = _unwrap_output(outs[1], original_length, N_OVERLAPPING_FRAMES)
 
-    return _output_to_notes(
-        frames,
-        onsets,
-        onset_thresh=onset_thresh,
-        frame_thresh=frame_thresh,
-        min_note_len=min_note_len,
-        min_pitch=min_pitch,
-        max_pitch=max_pitch,
+    return suppress_harmonics(
+        _output_to_notes(
+            frames,
+            onsets,
+            onset_thresh=onset_thresh,
+            frame_thresh=frame_thresh,
+            min_note_len=min_note_len,
+            min_pitch=min_pitch,
+            max_pitch=max_pitch,
+        )
     )
 
 
@@ -352,6 +379,8 @@ def transcribe(
         beats = beat_res.beats
         period = beat_res.period
         bpm = round(min(max(60.0 / period, 30.0), 360.0), 2)
+        if beats.size == 0:
+            beats = np.array([0.0])
 
         # Convert NoteEvents to tick notes
         min_tick_len = TICKS_PER_QUARTER // grid
@@ -407,3 +436,31 @@ def transcribe(
             import shutil
 
             shutil.rmtree(stem_clean_dir, ignore_errors=True)
+
+
+def note_f_measure(
+    reference: list[tuple[float, float, int]],
+    estimated: list[tuple[float, float, int]],
+    *,
+    onset_tolerance: float = 0.05,
+) -> tuple[float, float, float]:
+    """Precision, recall and F-measure of ``(start_sec, end_sec, pitch)`` notes.
+
+    A note matches when the pitch is equal and the onset is within ``onset_tolerance`` seconds (the usual MIREX
+    note-onset criterion without offsets). Each reference note matches at most one estimated note.
+    """
+    unmatched = list(reference)
+    hits = 0
+    for start, _, pitch in sorted(estimated):
+        best = None
+        for index, (ref_start, _, ref_pitch) in enumerate(unmatched):
+            if ref_pitch == pitch and abs(ref_start - start) <= onset_tolerance:
+                if best is None or abs(ref_start - start) < abs(unmatched[best][0] - start):
+                    best = index
+        if best is not None:
+            unmatched.pop(best)
+            hits += 1
+    precision = hits / len(estimated) if estimated else 0.0
+    recall = hits / len(reference) if reference else 0.0
+    f_measure = 2 * precision * recall / (precision + recall) if hits else 0.0
+    return precision, recall, f_measure

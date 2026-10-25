@@ -6,8 +6,7 @@ table and writes results the same way. The design is in the
 [architecture notes](https://github.com/liftedkilt/fretbook/blob/main/docs/ARCHITECTURE.md).
 
 !!! info "What runs on it today"
-    The worker runs **stem separation** (`audio.stems`, see below), **sheet music recognition** (`import.omr`, optional) and a built-in test kind, `echo`. Transcription
-    and recognising tabs in video frames are on the
+    The worker runs **stem separation** (`audio.stems`, see below), **audio transcription** (`audio.transcribe`, see below), **sheet music recognition** (`import.omr`, optional) and a built-in test kind, `echo`. Recognising tabs in video frames is on the
     [roadmap](https://github.com/liftedkilt/fretbook/blob/main/ROADMAP.md) and will use it too. You do not need a
     worker for any other feature.
 
@@ -47,6 +46,23 @@ volume for each, for example to play along without the bass or to solo the guita
   ffmpeg are all it needs.
 - A worker where Demucs is not installed does not claim the kind, so the feature stays hidden. With no worker at all
   nothing is shown and the rest of Fretbook is unaffected.
+
+## Audio transcription
+
+With a worker that has `onnxruntime`, a song with a recording gets a **Transcribe** button in the sync tools of the
+player. It turns the recording into a new draft tab track: [basic-pitch](https://github.com/spotify/basic-pitch)
+(Spotify, Apache 2.0; the ONNX model ships in `fretbook/audio/models/`) finds the notes, the beat tracker used by
+auto-sync gives the tempo and bar lines, and the fingering pass picks strings and frets. The song's sync marks are set
+from the beat grid, and the song is flagged for review: expect wrong notes and octave errors, especially in a full
+mix. Pick the **bass** or **guitar** stem to run Demucs first (needs `requirements-stems.txt` too), which helps a lot.
+The upload endpoint `POST /api/imports/transcribe` does the same for a new audio file and creates the song.
+
+- `Dockerfile.worker` installs `requirements-transcribe.txt` (`onnxruntime`, `scipy`). On a machine without Docker,
+  `pip install -r requirements-transcribe.txt` and ffmpeg are all it needs; it runs on the CPU, in about a tenth of
+  the recording's length.
+- A worker without `onnxruntime` does not claim the kind, so the button stays hidden.
+- `python scripts/transcribe_eval.py` prints note precision, recall and F-measure on synthetic audio rendered from
+  the MIDI corpus.
 
 ## Sheet music recognition
 

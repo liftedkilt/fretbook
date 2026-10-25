@@ -2476,9 +2476,8 @@ export interface components {
             /**
              * Grid
              * @default 16
-             * @enum {integer}
              */
-            grid: 4 | 8 | 16 | 32;
+            grid: number;
             /** Preset */
             preset?: string | null;
             /**

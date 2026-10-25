@@ -82,13 +82,15 @@ async def start_file_transcription(
     file: UploadFile = File(...),
     stem: Literal["mix", "bass", "guitar"] = Form("mix"),
     preset: str | None = Form(None),
-    grid: Literal[4, 8, 16, 32] = Form(16),
+    grid: int = Form(16),
     title: str | None = Form(None),
     artist: str | None = Form(None),
     ctx: AppContext = Depends(context),
     user: Principal = Depends(principal),
 ) -> JSONResponse:
     """Upload an audio file and transcribe it into a new song with draft tab and sync marks."""
+    if grid not in (4, 8, 16, 32):
+        raise api_error(422, "transcribe.badGrid", "grid must be 4, 8, 16 or 32")
     if KIND not in ctx.jobs.live_worker_kinds():
         raise api_error(409, "transcribe.noWorker", "no worker is running that can transcribe audio")
     filename = file.filename or "recording.mp3"

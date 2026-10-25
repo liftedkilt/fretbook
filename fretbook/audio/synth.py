@@ -79,6 +79,34 @@ def render(
     return out / max(1.0, float(np.abs(out).max()))
 
 
+def render_notes(
+    notes: list[tuple[float, float, int]],
+    *,
+    bpm: float | None = None,
+    sample_rate: int = SAMPLE_RATE,
+    tail: float = 0.5,
+) -> Floats:
+    """Plucked-string audio for ``(start_sec, end_sec, midi)`` notes: test and evaluation material for transcription.
+
+    With ``bpm``, a kick on every beat and a snare on the back beats are added under the notes so the beat tracker has
+    a pulse to follow, as in a recording with drums.
+    """
+    end = max(end for _, end, _ in notes) + tail
+    out = np.zeros(int(end * sample_rate))
+    for start, stop, midi in notes:
+        t = np.arange(int(max(stop - start, 0.1) * sample_rate)) / sample_rate
+        frequency = 440 * 2 ** ((midi - 69) / 12)
+        partials = sum(np.sin(2 * np.pi * frequency * h * t) / h**1.2 for h in range(1, 7) if frequency * h < 8000)
+        tone = 0.25 * partials * np.exp(-t * 2.5) * np.minimum(1, t / 0.004)
+        _add(out, start, tone, sample_rate)
+    if bpm:
+        rng = np.random.default_rng(7)
+        beat = 60 / bpm
+        for index in range(int(end / beat)):
+            _add(out, index * beat, _kick(sample_rate) if index % 2 == 0 else _snare(sample_rate, rng), sample_rate)
+    return out
+
+
 def _add(out: Floats, when: float, sound: Floats, sample_rate: int) -> None:
     index = int(round(when * sample_rate))
     if index >= out.size:
