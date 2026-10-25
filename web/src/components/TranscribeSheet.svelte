@@ -86,20 +86,17 @@
   }
 </script>
 
-<Sheet {open} onclose={handleClose}>
+<Sheet
+  {open}
+  title={t("transcribe.title")}
+  subtitle={t("transcribe.hint")}
+  testid="transcribe-sheet"
+  onclose={handleClose}
+>
   <div class="transcribe-sheet">
-    <header class="sheet-header">
-      <h2><Icon name="waveform" size={22} /> {t("transcribe.title")}</h2>
-      <button class="ghost icon-only" onclick={handleClose} aria-label={t("transcribe.close")}>
-        <Icon name="x" size={18} />
-      </button>
-    </header>
-
-    <p class="muted">{t("transcribe.hint")}</p>
-
     {#if phase === "working"}
       <div class="status-box working" role="status">
-        <Icon name="spinner" size={20} class="spin" />
+        <Icon name="refresh" size={20} class="spin" />
         <span>{progress}</span>
       </div>
     {:else}
@@ -139,7 +136,8 @@
 
       <div class="button-row">
         <button class="accent" data-testid="transcribe-submit" onclick={submit}>
-          <Icon name="sparkle" size={16} /> {t("transcribe.start")}
+          <Icon name="sparkle" size={16} />
+          {t("transcribe.start")}
         </button>
         <button class="ghost" onclick={handleClose}>{t("transcribe.cancel")}</button>
       </div>
@@ -152,27 +150,6 @@
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
-    padding: 1.5rem;
-    min-width: 320px;
-    max-width: 480px;
-  }
-  .sheet-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .sheet-header h2 {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 0;
-    font-size: 1.25rem;
-  }
-  .muted {
-    margin: 0;
-    color: var(--text-muted);
-    font-size: 0.9rem;
-    line-height: 1.4;
   }
   .form-group {
     display: flex;
@@ -185,9 +162,9 @@
   }
   .form-group select {
     padding: 0.5rem 0.75rem;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border);
-    background: var(--surface);
+    border-radius: var(--r-sm);
+    border: 1px solid var(--line);
+    background: var(--surface-2);
     color: var(--text);
   }
   .status-box {
@@ -195,16 +172,16 @@
     align-items: center;
     gap: 0.75rem;
     padding: 0.75rem 1rem;
-    border-radius: var(--radius-sm);
+    border-radius: var(--r-sm);
     font-size: 0.9rem;
   }
   .status-box.working {
-    background: var(--surface-hover);
+    background: var(--surface-3);
     color: var(--text);
   }
   .status-box.error {
-    background: var(--danger-subtle, #fee2e2);
-    color: var(--danger, #dc2626);
+    background: var(--danger-soft);
+    color: var(--danger);
   }
   .button-row {
     display: flex;

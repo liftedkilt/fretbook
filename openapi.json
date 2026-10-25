@@ -976,12 +976,6 @@
           },
           "grid": {
             "default": 16,
-            "enum": [
-              4,
-              8,
-              16,
-              32
-            ],
             "title": "Grid",
             "type": "integer"
           },

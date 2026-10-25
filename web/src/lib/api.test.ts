@@ -366,3 +366,15 @@ describe("waitForJob", () => {
     expect(((await waiting) as api.ApiError).key).toBe("job.timeout");
   });
 });
+
+describe("transcription", () => {
+  it("asks whether a worker can transcribe and queues a job with the chosen options", async () => {
+    respond = (call) =>
+      call.init?.method === "POST" ? reply({ job_id: "j9" }, 202) : reply({ available: true });
+    expect(await api.getTranscribeInfo("s1")).toEqual({ available: true });
+    expect(await api.startTranscribe("s1", { stem: "bass", grid: 8 })).toEqual({ job_id: "j9" });
+    const post = calls.at(-1)!;
+    expect(post.url).toContain("/api/songs/s1/transcribe");
+    expect(JSON.parse(String(post.init?.body))).toEqual({ stem: "bass", grid: 8 });
+  });
+});

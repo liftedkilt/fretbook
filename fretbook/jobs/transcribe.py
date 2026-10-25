@@ -132,7 +132,15 @@ def register_transcribe(
                 )
                 suffix = file_path.suffix.lower()
                 content_type = AUDIO_TYPES.get(suffix, "audio/mpeg")
-                media.save_audio(owner_id, created["id"], filename, content_type, file_path)
+                media.save_file(
+                    owner_id,
+                    created["id"],
+                    kind="audio",
+                    filename=filename,
+                    content_type=content_type,
+                    source=file_path,
+                    replace_kind=True,
+                )
                 track_id = document.tracks[0].id if document.tracks else "trk_transcribed"
                 return {
                     "song_id": created["id"],

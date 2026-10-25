@@ -1867,10 +1867,7 @@
     "modelInference": "Detecting notes with basic-pitch…",
     "beatTracking": "Tracking beats and tempo…",
     "fingering": "Fingering frets…",
-    "complete": "Transcription complete",
-    "dialogTitle": "Transcribe audio",
-    "filePrompt": "Transcribe notes from {file} into a new tab.",
-    "importAsAudio": "Import as audio only"
+    "complete": "Transcription complete"
   },
   "youtubeAudio": {
     "label": "Add audio from a YouTube link",

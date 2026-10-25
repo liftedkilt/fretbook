@@ -478,16 +478,6 @@ export interface AudioCalibration {
   updated_at: string;
 }
 
-export interface TranscribeInfo {
-  available: boolean;
-}
-
-export interface TranscribeRequest {
-  stem?: "mix" | "bass" | "guitar";
-  preset?: string | null;
-  grid?: 4 | 8 | 16 | 32;
-}
-
 export interface AudioCalibrationBody {
   output_device?: string;
   input_device?: string;

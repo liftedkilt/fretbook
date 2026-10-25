@@ -1867,9 +1867,7 @@
     "modelInference": "Detectando notas com basic-pitch…",
     "beatTracking": "Rastreando batidas e andamento…",
     "fingering": "Digitando casas…",
-    "complete": "Transcrição concluída",
-    "dialogTitle": "Transcrever áudio",
-    "importAsAudio": "Importar apenas como áudio"
+    "complete": "Transcrição concluída"
   },
   "youtubeAudio": {
     "label": "Adicionar áudio de um link do YouTube",
