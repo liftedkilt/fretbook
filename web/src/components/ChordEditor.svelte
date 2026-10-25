@@ -2,10 +2,11 @@
   import { untrack } from "svelte";
 
   import ChordSheet from "./ChordSheet.svelte";
+  import EditorHeader from "./EditorHeader.svelte";
   import Icon from "./Icon.svelte";
+  import SegmentedControl from "./ui/SegmentedControl.svelte";
   import { ApiError, getSong, updateSong } from "../lib/api";
   import { t } from "../lib/i18n.svelte";
-  import { followLink, hrefFor } from "../lib/router.svelte";
   import type { SongDetail } from "../lib/types";
 
   let { song: initial }: { song: SongDetail } = $props();
@@ -16,6 +17,13 @@
   let conflict = $state(false);
   let status = $state("");
   let pane = $state<"write" | "preview">("write");
+  let savedTitle = $state(untrack(() => initial.title));
+  let savedArtist = $state(untrack(() => initial.artist));
+  let savedText = $state(untrack(() => initial.chordpro ?? ""));
+
+  const dirty = $derived(
+    song.title !== savedTitle || song.artist !== savedArtist || text !== savedText,
+  );
 
   async function save() {
     status = t("editor.saving");
@@ -29,6 +37,9 @@
         chordpro: text,
       });
       text = song.chordpro ?? text;
+      savedTitle = song.title;
+      savedArtist = song.artist;
+      savedText = text;
       status = t("editor.saved");
     } catch (err) {
       status = "";
@@ -40,30 +51,26 @@
   async function reload() {
     song = await getSong(song.id);
     text = song.chordpro ?? "";
+    savedTitle = song.title;
+    savedArtist = song.artist;
+    savedText = text;
     conflict = false;
     error = "";
   }
 </script>
 
 <div class="editor-page">
-  <header class="editor-bar">
-    <a
-      class="back-link"
-      href={hrefFor(`/songs/${song.id}`)}
-      onclick={(event) => followLink(event, `/songs/${song.id}`)}
-    >
-      <Icon name="back" size={18} />{t("chords.view")}
-    </a>
-    <h1 class="editor-title">{t("chords.editHeading")}</h1>
-    <div class="editor-actions">
-      {#if status}<span class="save-status" role="status" data-testid="editor-status"
-          ><Icon name="check" size={16} />{status}</span
-        >{/if}
-      <button class="primary" data-testid="editor-save" onclick={() => void save()}
-        ><Icon name="save" size={18} />{t("editor.save")}</button
-      >
-    </div>
-  </header>
+  <EditorHeader
+    songId={song.id}
+    title={song.title}
+    {dirty}
+    {status}
+    onPreview={() => {
+      pane = "preview";
+    }}
+    previewPressed={pane === "preview"}
+    onsave={() => void save()}
+  />
 
   {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
   {#if conflict}
@@ -80,13 +87,18 @@
     <p class="muted small span-2">{t("chords.editHint")}</p>
   </section>
 
-  <div class="segmented pane-switch" role="tablist" aria-label={t("chords.editHeading")}>
-    <button role="tab" aria-selected={pane === "write"} onclick={() => (pane = "write")}
-      ><Icon name="edit" size={16} />{t("chords.write")}</button
-    >
-    <button role="tab" aria-selected={pane === "preview"} onclick={() => (pane = "preview")}
-      ><Icon name="eye" size={16} />{t("chords.preview")}</button
-    >
+  <div class="pane-switch">
+    <SegmentedControl
+      label={t("chords.editHeading")}
+      role="tablist"
+      value={pane}
+      testid="chord-pane"
+      onchange={(next) => (pane = next as "write" | "preview")}
+      options={[
+        { value: "write", label: t("chords.write"), icon: "edit", testid: "chord-write" },
+        { value: "preview", label: t("chords.preview"), icon: "eye", testid: "chord-preview-tab" },
+      ]}
+    />
   </div>
 
   <div class="chord-editor" data-pane={pane}>

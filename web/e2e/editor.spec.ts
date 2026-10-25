@@ -28,10 +28,51 @@ test("edit a bar, save, reload, and the change persists", async ({ page, seed })
   expect(notes).toEqual([expect.objectContaining({ string: 2, fret: 7 })]);
 });
 
+test("keyboard editing still changes a fret, a duration, and the bars", async ({ page, seed }) => {
+  const song = await seed.create({ title: "Keys", preset: "guitar-6" });
+  await page.goto(`/songs/${song.id}/edit`);
+
+  const fret = page.getByTestId("beat-card").first().getByTestId("fret-input-0");
+  await fret.focus();
+  await page.keyboard.type("5");
+  await expect(fret).toHaveValue("5");
+
+  const duration = page.getByTestId("beat-duration").first();
+  await duration.getByTestId("duration-quarter").focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(duration.getByTestId("duration-quarterTriplet")).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
+
+  await page.getByTestId("editor-bar-menu").focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByTestId("editor-insert-before")).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(page.getByTestId("editor-add-measure")).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page.getByTestId("editor-measure")).toHaveAttribute("data-bar", "1");
+
+  await page.getByTestId("editor-save").click();
+  await expect(page.getByTestId("editor-status")).toBeVisible();
+  const saved = await (await page.request.get(`/api/songs/${song.id}`)).json();
+  const beat = saved.document.tracks[0].bars[0].voices[0].beats[0];
+  expect(beat).toEqual(
+    expect.objectContaining({
+      duration: 640,
+      tuplet: 3,
+      notes: [expect.objectContaining({ string: 0, fret: 5 })],
+    }),
+  );
+  expect(saved.document.bars).toHaveLength(5);
+  expect(saved.document.tracks[0].bars[1].voices[0].beats).toEqual([]);
+});
+
 test("a second bar can be added and edited", async ({ page, seed }) => {
   const song = await seed.musicXmlTab();
   await page.goto(`/songs/${song.id}/edit`);
   await expect(page.getByTestId("editor-measure")).toHaveAttribute("data-bar", "0");
+  await page.getByTestId("editor-bar-menu").click();
   await page.getByTestId("editor-add-measure").click();
   await expect(page.getByTestId("editor-measure")).toHaveAttribute("data-bar", "1");
   await expect(page.getByTestId("bar-chip-4")).toBeVisible();

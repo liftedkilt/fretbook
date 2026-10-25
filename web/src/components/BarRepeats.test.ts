@@ -16,6 +16,7 @@ describe("BarRepeats", () => {
     render(BarRepeats, { props: { bar } });
 
     const startCheckbox = screen.getByTestId("repeat-start");
+    expect(startCheckbox.closest("label")).toHaveClass("switch");
     await fireEvent.click(startCheckbox);
     expect(bar.repeat_start).toBe(true);
 

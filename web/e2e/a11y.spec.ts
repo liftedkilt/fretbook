@@ -267,6 +267,21 @@ for (const scheme of ["light", "dark"] as const) {
       found.push(...(await violations(page, "practice goal popover")));
       expect(found).toEqual([]);
     });
+
+    test("the tab editor bar and beat menus have no axe violations", async ({ page, seed }) => {
+      const song = await seed.create({ title: "Editor Axe", preset: "guitar-6" });
+      await page.goto(`/songs/${song.id}/edit`);
+      await expect(page.getByTestId("editor-bar-menu")).toBeVisible();
+      await page.getByTestId("editor-bar-menu").click();
+      await expect(page.getByRole("menu")).toBeVisible();
+      const found = await violations(page, "editor bar menu");
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("menu")).toBeHidden();
+      await page.getByTestId("editor-beat-menu").first().click();
+      await expect(page.getByRole("menu")).toBeVisible();
+      found.push(...(await violations(page, "editor beat menu")));
+      expect(found).toEqual([]);
+    });
   });
 }
 

@@ -18,6 +18,7 @@
     testid,
     role = "radiogroup",
     disabled = false,
+    icons = false,
   }: {
     label: string;
     value: string;
@@ -26,6 +27,8 @@
     testid?: string;
     role?: "radiogroup" | "tablist";
     disabled?: boolean;
+    /** Icon-only segments. The label stays available to assistive tech. */
+    icons?: boolean;
   } = $props();
 
   const tabs = $derived(role === "tablist");
@@ -57,6 +60,7 @@
 
 <div
   class="control segmented"
+  class:icons
   {role}
   aria-label={label}
   aria-orientation="horizontal"
@@ -74,8 +78,8 @@
       disabled={disabled || option.disabled}
       onclick={() => onchange(option.value)}
     >
-      {#if option.icon}<Icon name={option.icon} size={16} />{/if}
-      {option.label}
+      {#if option.icon}<Icon name={option.icon} size={icons ? 18 : 16} />{/if}
+      <span class:visually-hidden={icons && Boolean(option.icon)}>{option.label}</span>
     </button>
   {/each}
 </div>
@@ -132,6 +136,11 @@
 
   .control.segmented button:disabled {
     opacity: 0.55;
+  }
+
+  .control.segmented.icons button {
+    min-width: 36px;
+    padding: 0 var(--sp-2);
   }
 
   @media (prefers-reduced-motion: reduce) {

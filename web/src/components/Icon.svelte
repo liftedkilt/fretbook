@@ -33,6 +33,22 @@
    * | Full screen                     | maximize / minimize                |
    * | Close / remove                  | close                              |
    * | Overflow menu                   | more                               |
+   * | Duplicate                       | copy                               |
+   * | Whole note                      | noteWhole                          |
+   * | Dotted half note                | noteDottedHalf                     |
+   * | Half note                       | noteHalf                           |
+   * | Dotted quarter note             | noteDottedQuarter                  |
+   * | Quarter note                    | noteQuarter                        |
+   * | Quarter-note triplet            | noteQuarterTriplet                 |
+   * | Dotted eighth note              | noteDottedEighth                   |
+   * | Eighth note                     | noteEighth                         |
+   * | Eighth-note triplet             | noteEighthTriplet                  |
+   * | Sixteenth note                  | noteSixteenth                      |
+   * | Sixteenth-note triplet          | noteSixteenthTriplet               |
+   * | Thirty-second note              | noteThirtySecond                   |
+   *
+   * A path may be "stroke|fill": the part after | is filled (a note head)
+   * and the part before is stroked (stem, flags, dot, tuplet figure).
    */
   const PATHS: Record<string, string> = {
     library:
@@ -117,6 +133,7 @@
       "M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z",
     cloudCheck: "M20 16.6A5 5 0 0 0 18 7h-1.3A7 7 0 1 0 4 14.4M8 18l2.5 2.5L16 15",
     cloudDownload: "M12 12v9M8 17l4 4 4-4M20 16.6A5 5 0 0 0 18 7h-1.3A7 7 0 1 0 4 14.4",
+    copy: "M20 9h-9a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2zM5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1",
     crosshair: "M12 22v-3M12 5V2M22 12h-3M5 12H2M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z",
     drum: "M12 4c4.4 0 8 1.2 8 2.7v8.6c0 1.5-3.6 2.7-8 2.7s-8-1.2-8-2.7V6.7C4 5.2 7.6 4 12 4ZM4 6.7c0 1.5 3.6 2.7 8 2.7s8-1.2 8-2.7M12 9.4V18M8.5 8.8v7.2M15.5 8.8v7.2",
     dumbbell: "M6.5 6.5v11M17.5 6.5v11M3.5 9.5v5M20.5 9.5v5M6.5 12h11",
@@ -129,6 +146,27 @@
       "M4 6h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1ZM7 10h1M11 10h1M15 10h1M19 10h1M8 14h8",
     listMusic: "M21 15.5V6M18.5 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM16 6H3M12 12H3M12 18H3",
     metronome: "M5 21 10 3h4l5 18H5ZM12 21V9M12 9l5.5-3",
+    noteDottedEighth:
+      "M12.2 14.6V2.4M12.2 2.4c3.2.7 4.7 2.5 4.1 4.3-.35 1.15-1.9 1.45-3.3.7M15.6 15.8a1.15 1.15 0 1 0 2.3 0 1.15 1.15 0 1 0-2.3 0|M3.4 15.8a4.5 3.15 0 1 0 9 0 4.5 3.15 0 1 0-9 0",
+    noteDottedHalf:
+      "M3.2 15.8a4.8 3.3 0 1 0 9.6 0 4.8 3.3 0 1 0-9.6 0M12.6 14.8V2.4M15.6 15.8a1.15 1.15 0 1 0 2.3 0 1.15 1.15 0 1 0-2.3 0",
+    noteDottedQuarter:
+      "M12.2 14.6V2.4M15.6 15.8a1.15 1.15 0 1 0 2.3 0 1.15 1.15 0 1 0-2.3 0|M3.4 15.8a4.5 3.15 0 1 0 9 0 4.5 3.15 0 1 0-9 0",
+    noteEighth:
+      "M12.2 14.6V2.4M12.2 2.4c3.2.7 4.7 2.5 4.1 4.3-.35 1.15-1.9 1.45-3.3.7|M3.4 15.8a4.5 3.15 0 1 0 9 0 4.5 3.15 0 1 0-9 0",
+    noteEighthTriplet:
+      "M12.2 14.6V2.4M12.2 2.4c3.2.7 4.7 2.5 4.1 4.3-.35 1.15-1.9 1.45-3.3.7M16 12.4h4.4M20.2 12.4c.4 1.6-.6 2.5-2.2 2.7M18.2 15.1h2.6M20.6 15.1c.4 1.8-.4 3-2.5 3.4M16.2 18.4h3.8|M3.4 15.8a4.5 3.15 0 1 0 9 0 4.5 3.15 0 1 0-9 0",
+    noteHalf: "M3.2 15.8a4.8 3.3 0 1 0 9.6 0 4.8 3.3 0 1 0-9.6 0M12.6 14.8V2.4",
+    noteQuarter: "M12.2 14.6V2.4|M3.4 15.8a4.5 3.15 0 1 0 9 0 4.5 3.15 0 1 0-9 0",
+    noteQuarterTriplet:
+      "M12.2 14.6V2.4M16 12.4h4.4M20.2 12.4c.4 1.6-.6 2.5-2.2 2.7M18.2 15.1h2.6M20.6 15.1c.4 1.8-.4 3-2.5 3.4M16.2 18.4h3.8|M3.4 15.8a4.5 3.15 0 1 0 9 0 4.5 3.15 0 1 0-9 0",
+    noteSixteenth:
+      "M12.2 14.6V2.4M12.2 2.4c3.2.7 4.7 2.5 4.1 4.3-.35 1.15-1.9 1.45-3.3.7M12.2 5.8c3.2.7 4.7 2.5 4.1 4.3-.35 1.15-1.9 1.45-3.3.7|M3.4 15.8a4.5 3.15 0 1 0 9 0 4.5 3.15 0 1 0-9 0",
+    noteSixteenthTriplet:
+      "M12.2 14.6V2.4M12.2 2.4c3.2.7 4.7 2.5 4.1 4.3-.35 1.15-1.9 1.45-3.3.7M12.2 5.6c3.2.7 4.7 2.5 4.1 4.3-.35 1.15-1.9 1.45-3.3.7M16 12.4h4.4M20.2 12.4c.4 1.6-.6 2.5-2.2 2.7M18.2 15.1h2.6M20.6 15.1c.4 1.8-.4 3-2.5 3.4M16.2 18.4h3.8|M3.4 15.8a4.5 3.15 0 1 0 9 0 4.5 3.15 0 1 0-9 0",
+    noteThirtySecond:
+      "M12.2 14.6V2.4M12.2 2.2c3.2.7 4.7 2.5 4.1 4.3-.35 1.15-1.9 1.45-3.3.7M12.2 5.2c3.2.7 4.7 2.5 4.1 4.3-.35 1.15-1.9 1.45-3.3.7M12.2 8.2c3.2.7 4.7 2.5 4.1 4.3-.35 1.15-1.9 1.45-3.3.7|M3.4 15.8a4.5 3.15 0 1 0 9 0 4.5 3.15 0 1 0-9 0",
+    noteWhole: "M4.2 12a7.6 4.2 0 1 0 15.2 0 7.6 4.2 0 1 0-15.2 0",
     target:
       "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20ZM12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12ZM12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z",
     tuningFork: "M9 2v8a3 3 0 0 0 6 0V2M8 2h2M14 2h2M12 13v9",
@@ -143,6 +181,11 @@
     size = 20,
     class: className = "",
   }: { name: string; size?: number; class?: string } = $props();
+
+  const spec = $derived(PATHS[name] ?? "");
+  const pipe = $derived(spec.indexOf("|"));
+  const strokeD = $derived(pipe < 0 ? spec : spec.slice(0, pipe));
+  const fillD = $derived(pipe < 0 ? "" : spec.slice(pipe + 1));
 
   $effect(() => {
     if (import.meta.env.DEV && !(name in PATHS)) console.warn(`Icon: unknown name "${name}"`);
@@ -161,5 +204,6 @@
   stroke-linejoin="round"
   aria-hidden="true"
 >
-  <path d={PATHS[name] ?? ""} />
+  {#if fillD}<path d={fillD} fill="currentColor" stroke="none" />{/if}
+  {#if strokeD}<path d={strokeD} />{/if}
 </svg>
