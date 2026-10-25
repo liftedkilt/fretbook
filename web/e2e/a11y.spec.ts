@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 
 import { expect, test } from "./support/fixtures";
+import { menuItem } from "./support/song-page";
 
 const TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
 
@@ -113,7 +114,7 @@ for (const scheme of ["light", "dark"] as const) {
 
       await page.goto(`/songs/${tab.id}`);
       await expect(page.getByTestId("player-play")).toBeVisible();
-      await page.getByTestId("song-metadata-edit").click();
+      await menuItem(page, "song-metadata-edit");
       await expect(page.getByTestId("metadata-sheet")).toBeVisible();
       found.push(...(await violations(page, "metadata-sheet")));
       await page.keyboard.press("Escape");
@@ -234,6 +235,40 @@ for (const scheme of ["light", "dark"] as const) {
       await page.getByTestId("chord-wait-input").click();
       await expect(page.getByTestId("chord-wait").getByTestId("listen-panel")).toBeVisible();
       found.push(...(await violations(page, "chord sheet input popover")));
+      expect(found).toEqual([]);
+    });
+
+    test("the song page menu, export sheet, tag input and phone header have no axe violations", async ({
+      page,
+      seed,
+    }) => {
+      const tab = await seed.musicXmlTab();
+      const found: string[] = [];
+
+      await page.goto(`/songs/${tab.id}`);
+      await expect(page.getByTestId("player-play")).toBeVisible();
+      await page.getByTestId("song-tag-new").click();
+      await expect(page.getByTestId("song-tag-input")).toBeVisible();
+      found.push(...(await violations(page, "song tag input")));
+      await page.keyboard.press("Escape");
+
+      await page.getByTestId("song-more").click();
+      await expect(page.getByRole("menu")).toBeVisible();
+      found.push(...(await violations(page, "song menu")));
+      await page.getByTestId("export-open").click();
+      await expect(page.getByTestId("export-sheet")).toBeVisible();
+      found.push(...(await violations(page, "export-sheet")));
+      await page.keyboard.press("Escape");
+      await expect(page.getByTestId("export-sheet")).toBeHidden();
+
+      // The phone header: back link, star and menu, then the details sheet with the tags in it.
+      await page.setViewportSize({ width: 375, height: 812 });
+      await page.goto(`/songs/${tab.id}`);
+      await expect(page.getByTestId("player-play")).toBeVisible();
+      found.push(...(await violations(page, "song page, phone")));
+      await menuItem(page, "song-metadata-edit");
+      await expect(page.getByTestId("metadata-sheet")).toBeVisible();
+      found.push(...(await violations(page, "metadata-sheet, phone")));
       expect(found).toEqual([]);
     });
 

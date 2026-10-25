@@ -1,6 +1,7 @@
 import { test as base, expect } from "@playwright/test";
 
 import { Seeder } from "./support/seed";
+import { menuItem } from "./support/song-page";
 import { type RunningServer, startServer } from "./support/server";
 
 const test = base.extend<{ server: RunningServer }>({
@@ -20,7 +21,7 @@ const test = base.extend<{ server: RunningServer }>({
 test("a share link opens the song without the editor", async ({ page, request }) => {
   const song = await new Seeder(request).chordSheet();
   await page.goto(`/songs/${song.id}`);
-  await page.getByTestId("song-share").click();
+  await menuItem(page, "song-share");
   await page.getByTestId("share-create").click();
   const url = await page.getByTestId("share-url").inputValue();
   expect(url).toContain("/share/sh_");

@@ -47,44 +47,22 @@ describe("SongMetadata", () => {
     ui.lookupEnabled = false;
   });
 
-  it("shows the details as pills, with the key worded in full", () => {
-    render(SongMetadata, {
-      song: makeSong({ key: "F#m", key_detected: true, genre: "Blues", album: "Live", year: 1999 }),
-      onchange: vi.fn(),
-    });
-    expect(screen.getByTestId("song-key")).toHaveTextContent("F♯ minor");
-    expect(screen.getByTestId("song-genre")).toHaveTextContent("Blues");
-    expect(screen.getByTestId("song-year")).toHaveTextContent("1999");
-    expect(screen.getByTestId("song-album")).toHaveTextContent("Live");
-  });
-
-  it("renders the notes as safe Markdown", () => {
-    render(SongMetadata, {
-      song: makeSong({ notes: "play **slow**\n\n<img src=x onerror=alert(1)>" }),
-      onchange: vi.fn(),
-    });
-    const notes = screen.getByTestId("song-notes");
-    expect(notes.querySelector("strong")).toHaveTextContent("slow");
-    expect(notes.querySelector("img")).toBeNull();
-  });
-
-  it("only offers the edit button in a song with nothing set, and nothing at all in the demo", () => {
-    const { unmount } = render(SongMetadata, { song: makeSong(), onchange: vi.fn() });
-    expect(screen.getByTestId("song-metadata-edit")).toBeInTheDocument();
-    expect(screen.queryByTestId("song-key")).toBeNull();
-    unmount();
+  it("has no form when the song is locked", () => {
     ui.demoMode = true;
-    render(SongMetadata, { song: makeSong(), onchange: vi.fn() });
-    expect(screen.queryByTestId("song-metadata")).toBeNull();
+    render(SongMetadata, { open: true, song: makeSong(), onchange: vi.fn() });
+    expect(screen.queryByTestId("metadata-save")).toBeNull();
   });
 
   it("saves the form and hands the saved song to the page", async () => {
     const saved = makeSong({ key: "Am", genre: "Rock", year: 1980 });
     mockUpdate.mockResolvedValue(saved);
     const onchange = vi.fn();
-    render(SongMetadata, { song: makeSong({ key: "C", key_detected: true }), onchange });
+    render(SongMetadata, {
+      open: true,
+      song: makeSong({ key: "C", key_detected: true }),
+      onchange,
+    });
 
-    await fireEvent.click(screen.getByTestId("song-metadata-edit"));
     // A detected key is the "automatic" choice, not a chosen one.
     expect(screen.getByTestId("metadata-key")).toHaveValue("");
     await fireEvent.change(screen.getByTestId("metadata-key"), { target: { value: "Am" } });
@@ -104,8 +82,7 @@ describe("SongMetadata", () => {
   });
 
   it("refuses a year that is not four digits before asking the server", async () => {
-    render(SongMetadata, { song: makeSong(), onchange: vi.fn() });
-    await fireEvent.click(screen.getByTestId("song-metadata-edit"));
+    render(SongMetadata, { open: true, song: makeSong(), onchange: vi.fn() });
     await fireEvent.input(screen.getByTestId("metadata-year"), { target: { value: "99" } });
     await fireEvent.click(screen.getByTestId("metadata-save"));
     expect(await screen.findByRole("alert")).toBeInTheDocument();
@@ -114,8 +91,7 @@ describe("SongMetadata", () => {
 
   it("clears an empty year and shows a server error", async () => {
     mockUpdate.mockRejectedValue(new Error("nope"));
-    render(SongMetadata, { song: makeSong({ year: 1999 }), onchange: vi.fn() });
-    await fireEvent.click(screen.getByTestId("song-metadata-edit"));
+    render(SongMetadata, { open: true, song: makeSong({ year: 1999 }), onchange: vi.fn() });
     await fireEvent.input(screen.getByTestId("metadata-year"), { target: { value: "" } });
     await fireEvent.click(screen.getByTestId("metadata-save"));
     expect(await screen.findByRole("alert")).toHaveTextContent("nope");
@@ -127,8 +103,7 @@ describe("SongMetadata", () => {
     mockUpload.mockResolvedValue(withCover);
     mockDelete.mockResolvedValue(makeSong());
     const onchange = vi.fn();
-    const { rerender } = render(SongMetadata, { song: makeSong(), onchange });
-    await fireEvent.click(screen.getByTestId("song-metadata-edit"));
+    const { rerender } = render(SongMetadata, { open: true, song: makeSong(), onchange });
     expect(screen.queryByTestId("metadata-cover-remove")).toBeNull();
 
     const file = new File(["x"], "c.png", { type: "image/png" });
@@ -144,16 +119,14 @@ describe("SongMetadata", () => {
   });
 
   it("offers the online lookup only when the server allows it, and fills empty fields", async () => {
-    render(SongMetadata, { song: makeSong(), onchange: vi.fn() });
-    await fireEvent.click(screen.getByTestId("song-metadata-edit"));
+    render(SongMetadata, { open: true, song: makeSong(), onchange: vi.fn() });
     expect(screen.queryByTestId("metadata-lookup")).toBeNull();
   });
 
   it("looks the song up and fills the empty album and year", async () => {
     ui.lookupEnabled = true;
     mockLookup.mockResolvedValue(makeSong({ album: "The Album", year: 1971 }));
-    render(SongMetadata, { song: makeSong(), onchange: vi.fn() });
-    await fireEvent.click(screen.getByTestId("song-metadata-edit"));
+    render(SongMetadata, { open: true, song: makeSong(), onchange: vi.fn() });
     await fireEvent.click(screen.getByTestId("metadata-lookup"));
     await waitFor(() => expect(screen.getByTestId("metadata-album")).toHaveValue("The Album"));
     expect(screen.getByTestId("metadata-year")).toHaveValue("1971");

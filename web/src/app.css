@@ -1564,33 +1564,16 @@ textarea {
   min-width: 0;
 }
 
-.hero-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
-  min-width: 0;
-  max-width: 100%;
-}
-
 /* Too narrow for the actions beside the title: they go on their own row under it. */
 @media (max-width: 1536px) {
   .song-hero {
     grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .hero-actions {
-    grid-column: 2 / -1;
   }
 }
 
 @media (max-width: 860px) {
   .song-hero {
     grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .hero-actions {
-    grid-column: 1 / -1;
   }
 }
 
@@ -3201,10 +3184,6 @@ textarea {
 /* ------------------------------------------------------------- full screen */
 
 /* The song page in full screen (lib/fullscreen.ts): only the score and the dock, edge to edge. */
-:root:not([data-fullscreen]) .fullscreen-dock {
-  display: none;
-}
-
 :root[data-fullscreen] {
   --side-w: 0px;
 }
@@ -3213,8 +3192,6 @@ textarea {
 :root[data-fullscreen] .topbar,
 :root[data-fullscreen] .tabbar,
 :root[data-fullscreen] .song-header,
-:root[data-fullscreen] .song-tags,
-:root[data-fullscreen] .song-metadata,
 :root[data-fullscreen] .difficulty,
 :root[data-fullscreen] .song-practice {
   display: none !important;
@@ -3231,19 +3208,6 @@ textarea {
 
 :root[data-fullscreen] .player-page {
   padding-bottom: var(--dock-space);
-}
-
-/* No room for one more button in the phone dock: the exit floats just above the dock's right end.
-   The dock bar's backdrop-filter makes it the containing block. */
-@media (max-width: 767px) {
-  :root[data-fullscreen] .fullscreen-dock {
-    position: absolute;
-    top: -52px;
-    right: 8px;
-    background: var(--glass-solid);
-    border: 1px solid var(--glass-line);
-    box-shadow: var(--shadow-lg);
-  }
 }
 
 /* Fills the screen above the dock; split view keeps its own height. */
@@ -3707,56 +3671,6 @@ kbd {
 .chip .icon {
   margin-right: 0.3rem;
   vertical-align: -2px;
-}
-
-.song-tags {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.6rem;
-  margin: 0 0 1rem;
-}
-
-.tag-list {
-  display: contents;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.tag-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  min-height: 32px;
-  padding: 0 0.3rem 0 0.7rem;
-  border: 1px solid var(--line);
-  border-radius: var(--r-pill);
-  color: var(--text-2);
-  font-size: 0.84rem;
-}
-
-.tag-remove {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  min-width: 26px;
-  height: 26px;
-  min-height: 26px;
-  padding: 0;
-  border: 0;
-  border-radius: var(--r-pill);
-  background: transparent;
-  color: inherit;
-}
-
-.tag-add {
-  display: flex;
-  gap: 0.4rem;
-}
-
-.tag-add input {
-  width: 11rem;
 }
 
 /* Tools Hub */
@@ -4386,21 +4300,6 @@ kbd {
 }
 
 /* Song details: key, genre, year, album, notes */
-.song-metadata {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem 0.6rem;
-  margin: 0 0 1rem;
-}
-
-.meta-pills {
-  display: contents;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
 .song-notes {
   flex-basis: 100%;
   padding: 0.75rem 1rem;

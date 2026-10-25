@@ -14,10 +14,13 @@
   import type { LibraryInfo, ShareLink } from "../lib/types";
   import { refreshSongs, setActiveLibrary, ui } from "../lib/ui.svelte";
 
-  let { songId }: { songId: string } = $props();
+  // The share and copy-or-move sheets for a song. The song page's overflow menu opens them.
+  let {
+    songId,
+    shareOpen = $bindable(false),
+    moveOpen = $bindable(false),
+  }: { songId: string; shareOpen?: boolean; moveOpen?: boolean } = $props();
 
-  let shareOpen = $state(false);
-  let moveOpen = $state(false);
   let libraries = $state<LibraryInfo[]>([]);
   let shares = $state<ShareLink[]>([]);
   let days = $state("");
@@ -26,6 +29,21 @@
   let error = $state("");
   let notice = $state("");
   let busy = $state(false);
+
+  $effect(() => {
+    if (!shareOpen) return;
+    fresh = "";
+    void loadShares().catch((err: unknown) => {
+      error = err instanceof Error ? err.message : t("error.generic");
+    });
+  });
+
+  $effect(() => {
+    if (!moveOpen) return;
+    void loadLibraries().catch((err: unknown) => {
+      error = err instanceof Error ? err.message : t("error.generic");
+    });
+  });
 
   const editable = $derived(libraries.filter((item) => item.role === "edit"));
 
@@ -91,36 +109,6 @@
     }
   }
 </script>
-
-<div class="song-library-actions">
-  {#if ui.shareLinks}
-    <button
-      type="button"
-      data-testid="song-share"
-      onclick={() => {
-        shareOpen = true;
-        fresh = "";
-        void loadShares().catch((err: unknown) => {
-          error = err instanceof Error ? err.message : t("error.generic");
-        });
-      }}
-    >
-      {t("sharing.share")}
-    </button>
-  {/if}
-  <button
-    type="button"
-    data-testid="song-move"
-    onclick={() => {
-      moveOpen = true;
-      void loadLibraries().catch((err: unknown) => {
-        error = err instanceof Error ? err.message : t("error.generic");
-      });
-    }}
-  >
-    {t("sharing.move")}
-  </button>
-</div>
 
 <Sheet
   open={shareOpen}
@@ -212,18 +200,3 @@
     </button>
   </p>
 </Sheet>
-
-<style>
-  .song-library-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin: 0 0 1rem;
-  }
-
-  /* Full screen keeps only the score and the dock. This stays in the component so it does not
-     depend on the shared stylesheet. */
-  :global(:root[data-fullscreen]) .song-library-actions {
-    display: none;
-  }
-</style>

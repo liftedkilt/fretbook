@@ -1,6 +1,6 @@
 <script lang="ts">
   // Enters and leaves the song page's full screen layout (see lib/fullscreen.ts).
-  // The header copy is hidden while full screen is on; the dock copy only shows then (app.css).
+  // One button, in the player dock: it is the only full screen control on the page.
   import IconButton from "./ui/IconButton.svelte";
   import { t } from "../lib/i18n.svelte";
   import {
@@ -9,8 +9,6 @@
     fullscreenSupported,
     watchFullscreen,
   } from "../lib/fullscreen";
-
-  let { placement }: { placement: "header" | "dock" } = $props();
 
   const supported = fullscreenSupported();
   let on = $state(false);
@@ -33,12 +31,12 @@
 
 {#if supported}
   <IconButton
-    class={placement === "dock" ? "ghost fullscreen-dock" : "fullscreen-header"}
+    class="ghost fullscreen-dock"
     icon={on ? "minimize" : "maximize"}
     {label}
-    testid={placement === "dock" ? "player-fullscreen-exit" : "player-fullscreen"}
+    testid="player-fullscreen"
     pressed={on}
-    placement={placement === "dock" ? "above" : "below"}
+    placement="above"
     onclick={() => void toggle()}
   />
 {/if}

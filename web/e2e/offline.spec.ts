@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test";
 
 import { expect, test } from "./support/fixtures";
+import { addTag, menuItem } from "./support/song-page";
 
 // The service worker is what makes the rest of this work, so it must be on here (it is blocked elsewhere).
 test.use({ serviceWorkers: "allow" });
@@ -24,8 +25,8 @@ test("a saved song opens with no network, and an edit made offline is sent when 
   await page.goto(`/songs/${song.id}`);
   await controlled(page);
   await expect(page.getByTestId("song-heading")).toHaveText("Gig Tune");
-  await page.getByTestId("offline-toggle").click();
-  await expect(page.getByTestId("offline-toggle")).toContainText("Available offline");
+  await menuItem(page, "offline-toggle");
+  await expect(page.getByTestId("offline-saved")).toBeVisible();
 
   await context.setOffline(true);
   await page.reload();
@@ -138,15 +139,14 @@ test("a favourite and a tag set offline are queued and sent when the network ret
   await page.goto(`/songs/${song.id}`);
   await controlled(page);
   await expect(page.getByTestId("song-heading")).toHaveText("Queued Marks");
-  await page.getByTestId("offline-toggle").click();
-  await expect(page.getByTestId("offline-toggle")).toContainText("Available offline");
+  await menuItem(page, "offline-toggle");
+  await expect(page.getByTestId("offline-saved")).toBeVisible();
 
   await context.setOffline(true);
   await page.reload();
   await expect(page.getByTestId("offline-indicator")).toBeVisible();
   await page.getByTestId("song-favourite").click();
-  await page.getByTestId("song-tag-input").fill("gig");
-  await page.getByTestId("song-tag-input").press("Enter");
+  await addTag(page, "gig");
   await expect(page.getByTestId("song-tag")).toContainText("gig");
   await expect(page.getByTestId("offline-queued")).toBeVisible();
 

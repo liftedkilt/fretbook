@@ -1,4 +1,5 @@
 import { expect, test } from "./support/fixtures";
+import { addTag } from "./support/song-page";
 
 test("tag a song, star it, and filter the library by tags and favourites", async ({
   page,
@@ -10,11 +11,9 @@ test("tag a song, star it, and filter the library by tags and favourites", async
 
   // Tag and star from the song page.
   await page.goto(`/songs/${funk.id}`);
-  await page.getByTestId("song-tag-input").fill("funk");
-  await page.getByTestId("song-tag-input").press("Enter");
+  await addTag(page, "funk");
   await expect(page.getByTestId("song-tag")).toHaveText(/funk/);
-  await page.getByTestId("song-tag-input").fill("slap");
-  await page.getByTestId("song-tag-input").press("Enter");
+  await addTag(page, "slap");
   await expect(page.getByTestId("song-tag")).toHaveCount(2);
   await page.getByTestId("song-favourite").click();
   await expect(page.getByTestId("song-favourite")).toHaveAttribute("aria-pressed", "true");
@@ -71,8 +70,7 @@ test("rename, merge and delete a tag from the library", async ({ page, seed }) =
   ] as const) {
     await page.goto(`/songs/${song.id}`);
     for (const tag of tags) {
-      await page.getByTestId("song-tag-input").fill(tag);
-      await page.getByTestId("song-tag-input").press("Enter");
+      await addTag(page, tag);
     }
     await expect(page.getByTestId("song-tag")).toHaveCount(2);
   }

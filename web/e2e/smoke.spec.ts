@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 
 import { expect, test } from "./support/fixtures";
+import { openExport } from "./support/song-page";
 import { fixture } from "./support/paths";
 
 test.describe("container smoke flows", () => {
@@ -64,7 +65,7 @@ test.describe("container smoke flows", () => {
     await expect(page.getByTestId("transpose-value")).toHaveText("+1");
 
     // Test PDF export
-    await page.getByTestId("export-menu").click();
+    await openExport(page);
     const [download] = await Promise.all([
       page.waitForEvent("download"),
       page.getByTestId("export-pdf").click(),

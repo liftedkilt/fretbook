@@ -106,7 +106,8 @@ describe("ChordSheetView diagram strip", () => {
       props: { song: song("{define: Am7 base-fret 1 frets x 0 2 0 1 0}\n[Am7]Hello") },
     });
     expect(screen.getByText("From this song")).toBeInTheDocument();
-    await fireEvent.click(screen.getByTestId("export-menu"));
+    await fireEvent.click(screen.getByTestId("song-more"));
+    await fireEvent.click(screen.getByTestId("export-open"));
     await fireEvent.click(screen.getByTestId("export-pdf"));
     await waitFor(() => expect(pdf).toHaveBeenCalledTimes(1));
     const { diagrams } = pdf.mock.calls[0][0];

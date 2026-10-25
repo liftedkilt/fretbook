@@ -2470,5 +2470,18 @@
     "newBestDelta": "Novo recorde · +{delta}",
     "courseTitle": "Curso concluído",
     "courseTime": "Tempo total {time}"
+  },
+  "songPage": {
+    "addTag": "Tag",
+    "cancelTag": "Cancelar",
+    "transpose": "Transpor",
+    "keepOnDevice": "Manter neste dispositivo",
+    "removeFromDevice": "Remover deste dispositivo",
+    "export": "Exportar…",
+    "exportTitle": "Exportar",
+    "songDetails": "Detalhes da música",
+    "delete": "Excluir música…",
+    "level": "Nível {level}",
+    "details": "Detalhes"
   }
 }

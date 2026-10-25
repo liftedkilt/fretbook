@@ -1,4 +1,5 @@
 import { expect, test } from "./support/fixtures";
+import { openExport } from "./support/song-page";
 import { startServer } from "./support/server";
 
 test("an empty library offers every way to start", async ({ page }) => {
@@ -82,10 +83,10 @@ test("a demo instance is read-only", async ({ browser }) => {
 
     await page.getByTestId("song-title").filter({ hasText: "Walking Home" }).click();
     await expect(page.getByTestId("player-play")).toBeVisible();
-    for (const id of ["song-favourite", "song-tag-input", "song-edit-link", "player-tap"]) {
+    for (const id of ["song-favourite", "song-tag-new", "song-edit-link", "player-tap"]) {
       await expect(page.getByTestId(id)).toHaveCount(0);
     }
-    await page.getByTestId("export-menu").click();
+    await openExport(page);
     await expect(page.getByTestId("export-pdf")).toBeVisible();
     await expect(page.getByTestId("song-add-to-setlist")).toHaveCount(0);
 
