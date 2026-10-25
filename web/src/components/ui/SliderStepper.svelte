@@ -13,6 +13,7 @@
     testid,
     decreaseTestId,
     increaseTestId,
+    disabled = false,
     onchange,
   }: {
     label: string;
@@ -25,6 +26,7 @@
     testid?: string;
     decreaseTestId?: string;
     increaseTestId?: string;
+    disabled?: boolean;
     onchange: (value: number) => void;
   } = $props();
 </script>
@@ -34,7 +36,7 @@
     label={decreaseLabel}
     icon="minus"
     testid={decreaseTestId}
-    disabled={value <= min}
+    disabled={disabled || value <= min}
     onclick={() => onchange(value - step)}
   />
   <input
@@ -44,6 +46,7 @@
     {max}
     {step}
     {value}
+    {disabled}
     aria-label={label}
     oninput={(event) => onchange(Number(event.currentTarget.value))}
   />
@@ -51,7 +54,7 @@
     label={increaseLabel}
     icon="plus"
     testid={increaseTestId}
-    disabled={value >= max}
+    disabled={disabled || value >= max}
     onclick={() => onchange(value + step)}
   />
 </div>
