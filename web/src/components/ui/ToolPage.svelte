@@ -15,6 +15,7 @@
     settingsLabel = "",
     stage,
     settings,
+    layout = "split",
     actions,
   }: {
     title: string;
@@ -24,6 +25,8 @@
     settingsLabel?: string;
     stage: Snippet;
     settings?: Snippet;
+    /** `stacked` puts the settings card above a full-width stage (a results grid). */
+    layout?: "split" | "stacked";
     actions?: Snippet;
   } = $props();
 </script>
@@ -41,7 +44,7 @@
       {actions}
     />
 
-    <div class="body" class:single={!settings}>
+    <div class="body" class:single={!settings} class:stacked={layout === "stacked"}>
       <section class="card stage" aria-label={stageLabel || undefined} data-testid="tool-stage">
         {@render stage()}
       </section>
@@ -80,8 +83,12 @@
     background: var(--surface);
   }
 
+  .stacked .settings {
+    order: -1;
+  }
+
   @media (min-width: 768px) {
-    .body:not(.single) {
+    .body:not(.single):not(.stacked) {
       grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
     }
   }

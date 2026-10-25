@@ -153,11 +153,7 @@
       <span class="unit">{t("tools.bpm")} · {tempoName}</span>
     </div>
 
-    <button
-      class="primary hero start"
-      data-testid="metronome-toggle"
-      onclick={togglePlay}
-    >
+    <button class="primary hero start" data-testid="metronome-toggle" onclick={togglePlay}>
       <Icon name={isPlaying ? "pause" : "play"} size={22} />
       <span>{isPlaying ? t("tools.stop") : t("tools.start")}</span>
     </button>
@@ -189,7 +185,12 @@
           aria-label={t("tools.bpm")}
           oninput={(event) => setBpm(Number(event.currentTarget.value))}
         />
-        <button class="button" data-testid="metronome-tap" onclick={onTap} title={t("tools.tapHint")}>
+        <button
+          class="button"
+          data-testid="metronome-tap"
+          onclick={onTap}
+          title={t("tools.tapHint")}
+        >
           <Icon name="tap" size={20} />
           <span>{t("tools.tapTempo")}</span>
         </button>

@@ -39,11 +39,14 @@
     active = true,
     optionsSnippet,
     togglesSnippet,
+    page,
   }: {
     strings: number[] | null;
     active?: boolean;
     optionsSnippet?: Snippet;
     togglesSnippet?: Snippet;
+    /** Lays the two parts out itself (the tool page): Start sits under the dial, strings in a row. */
+    page?: Snippet<[Snippet, Snippet]>;
   } = $props();
 
   let a4 = $state(440);
@@ -250,7 +253,7 @@
   $effect(() => () => void stop());
 </script>
 
-<div class="tuner">
+{#snippet settingsPart()}
   <div class="tuner-options">
     {#if optionsSnippet}
       {@render optionsSnippet()}
@@ -299,7 +302,72 @@
   {#if togglesSnippet}
     {@render togglesSnippet()}
   {/if}
+{/snippet}
 
+{#snippet actionsPart()}
+  <div class="tuner-actions">
+    {#if strings}
+      <button data-testid="tuner-restart" onclick={startOver}>{t("tuner.startOver")}</button>
+    {/if}
+    {#if running}
+      <button data-testid="tuner-stop" onclick={() => void stop()}>{t("tuner.stop")}</button>
+    {:else}
+      <button
+        class="primary"
+        data-testid="tuner-start"
+        disabled={starting}
+        onclick={() => void start()}
+      >
+        <Icon name="tuningFork" size={18} />{starting ? t("tuner.starting") : t("tuner.start")}
+      </button>
+    {/if}
+  </div>
+{/snippet}
+
+{#snippet stringButton(index: number)}
+  {@const midi = strings![index]}
+  <button
+    class="tuner-string"
+    class:tuner-string-active={reading?.string === index}
+    class:tuner-string-tuned={tuned.includes(index)}
+    class:tuner-string-locked={!auto && locked === index}
+    data-testid={`tuner-string-${index}`}
+    aria-pressed={tone?.string === index}
+    aria-label={t("tuner.playString", { string: index + 1, note: midiToName(midi) })}
+    title={t("tuner.playString", { string: index + 1, note: midiToName(midi) })}
+    onclick={() => toggleTone(index)}
+  >
+    <span class="tuner-string-no">{index + 1}</span>
+    <span class="tuner-string-name">{midiToName(midi)}</span>
+    <Icon name={tuned.includes(index) ? "check" : "waveform"} size={16} />
+  </button>
+{/snippet}
+
+{#snippet stringsPart()}
+  {#if strings}
+    {#if page}
+      <!-- One row, low string to high. -->
+      <ul class="tuner-row" style:--strings={strings.length} data-testid="tuner-strings">
+        {#each [...strings.keys()].reverse() as index (index)}
+          <li>{@render stringButton(index)}</li>
+        {/each}
+      </ul>
+    {:else}
+      <div class="tuner-headstock" data-testid="tuner-strings">
+        {#each [sides.left, sides.right] as column, side (side)}
+          <ul class="tuner-column">
+            {#each column as index (index)}
+              <li>{@render stringButton(index)}</li>
+            {/each}
+          </ul>
+        {/each}
+      </div>
+    {/if}
+    <p class="muted tuner-hint">{t("tuner.toneHint")}</p>
+  {/if}
+{/snippet}
+
+{#snippet stagePart()}
   <div
     class="tuner-dial"
     class:tuner-dial-tuned={ticked}
@@ -343,36 +411,10 @@
     </p>
   </div>
 
-  {#if strings}
-    <div class="tuner-headstock" data-testid="tuner-strings">
-      {#each [sides.left, sides.right] as column, side (side)}
-        <ul class="tuner-column">
-          {#each column as index (index)}
-            {@const midi = strings[index]}
-            <li>
-              <button
-                class="tuner-string"
-                class:tuner-string-active={reading?.string === index}
-                class:tuner-string-tuned={tuned.includes(index)}
-                class:tuner-string-locked={!auto && locked === index}
-                data-testid={`tuner-string-${index}`}
-                aria-pressed={tone?.string === index}
-                aria-label={t("tuner.playString", { string: index + 1, note: midiToName(midi) })}
-                title={t("tuner.playString", { string: index + 1, note: midiToName(midi) })}
-                onclick={() => toggleTone(index)}
-              >
-                <span class="tuner-string-no">{index + 1}</span>
-                <span class="tuner-string-name">{midiToName(midi)}</span>
-                <Icon name={tuned.includes(index) ? "check" : "waveform"} size={16} />
-              </button>
-            </li>
-          {/each}
-        </ul>
-      {/each}
-    </div>
-    <p class="muted tuner-hint">{t("tuner.toneHint")}</p>
+  {#if page}
+    {@render actionsPart()}
   {/if}
-
+  {@render stringsPart()}
   <ListenPanel
     {session}
     {deviceId}
@@ -383,21 +425,16 @@
     onChannel={(next) => (channel = next)}
   />
 
-  <div class="tuner-actions">
-    {#if strings}
-      <button data-testid="tuner-restart" onclick={startOver}>{t("tuner.startOver")}</button>
-    {/if}
-    {#if running}
-      <button data-testid="tuner-stop" onclick={() => void stop()}>{t("tuner.stop")}</button>
-    {:else}
-      <button
-        class="primary"
-        data-testid="tuner-start"
-        disabled={starting}
-        onclick={() => void start()}
-      >
-        <Icon name="tuningFork" size={18} />{starting ? t("tuner.starting") : t("tuner.start")}
-      </button>
-    {/if}
+  {#if !page}
+    {@render actionsPart()}
+  {/if}
+{/snippet}
+
+{#if page}
+  {@render page(stagePart, settingsPart)}
+{:else}
+  <div class="tuner">
+    {@render settingsPart()}
+    {@render stagePart()}
   </div>
-</div>
+{/if}

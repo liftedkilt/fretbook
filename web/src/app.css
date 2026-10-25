@@ -3901,198 +3901,6 @@ kbd {
   font-weight: normal;
 }
 
-/* Standalone Metronome */
-.metronome-visual-container {
-  display: flex;
-  justify-content: center;
-  padding: 1.25rem 0;
-}
-
-.metronome-visual {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.metronome-beat {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--surface);
-  border: 2px solid var(--line-strong);
-  font-weight: 700;
-  font-size: 1.1rem;
-  color: var(--text-2);
-  transition:
-    transform 0.08s ease,
-    background-color 0.08s ease,
-    border-color 0.08s ease;
-}
-
-.metronome-beat-accent {
-  border-color: var(--accent);
-}
-
-.metronome-beat-active {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
-  transform: scale(1.18);
-  box-shadow: 0 0 16px var(--accent-alpha, rgba(234, 88, 12, 0.5));
-}
-
-.metronome-beat-sub {
-  transform: scale(1.08);
-  opacity: 0.85;
-}
-
-.metronome-tempo-box {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.25rem;
-  padding: 2rem 1.5rem;
-  background: var(--surface);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--r-lg);
-}
-
-.metronome-bpm-display {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.2rem;
-}
-
-.metronome-bpm-number {
-  font-size: 4.5rem;
-  font-weight: 800;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-  color: var(--text);
-}
-
-.metronome-bpm-unit {
-  font-size: 0.9rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  color: var(--text-3);
-}
-
-.metronome-tempo-name {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--accent-text);
-  margin-top: 0.25rem;
-}
-
-.metronome-slider {
-  width: 100%;
-  max-width: 420px;
-  min-height: 44px;
-}
-
-.metronome-steppers {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.stepper-btn {
-  min-width: 44px;
-  min-height: 44px;
-  font-weight: 700;
-}
-
-.metronome-number-input {
-  width: 80px;
-  min-height: 44px;
-  text-align: center;
-  font-size: 1.25rem;
-  font-weight: 700;
-}
-
-.metronome-tap-btn {
-  min-height: 44px;
-  padding: 0 1.5rem;
-  font-weight: 600;
-  gap: 0.5rem;
-}
-
-.metronome-controls-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  background: var(--surface);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--r-md);
-  padding: 1.25rem;
-}
-
-@media (max-width: 560px) {
-  .metronome-controls-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.tool-field-toggle {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.tool-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  min-height: 44px;
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: var(--text);
-  cursor: pointer;
-}
-
-.metronome-volume-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.metronome-volume-row input[type="range"] {
-  flex: 1;
-  min-height: 44px;
-}
-
-.metronome-volume-row output {
-  min-width: 44px;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-}
-
-.metronome-action-row {
-  display: flex;
-  justify-content: center;
-  padding: 0.5rem 0;
-}
-
-.metronome-toggle-btn {
-  min-height: 52px;
-  min-width: 160px;
-  font-size: 1.15rem;
-  font-weight: 700;
-  border-radius: var(--r-lg);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.6rem;
-}
-
 /* Chord diagrams: the strip on a chord sheet and the chord library page. */
 .chord-diagrams {
   margin: 0 0 1.2rem;
@@ -4691,4 +4499,38 @@ kbd {
 .system-info dd {
   margin: 0;
   overflow-wrap: anywhere;
+}
+
+/* Tool page: the tuner's strings in one row, low to high. */
+.tuner-row {
+  display: grid;
+  grid-template-columns: repeat(var(--strings, 6), minmax(0, 1fr));
+  gap: var(--sp-2);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.tuner-row .tuner-string {
+  grid-template-columns: 1fr;
+  justify-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-2);
+}
+
+@media (max-width: 767px) {
+  .tuner-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.tool-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 44px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
 }

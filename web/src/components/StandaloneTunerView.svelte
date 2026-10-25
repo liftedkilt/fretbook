@@ -1,7 +1,6 @@
 <script lang="ts">
   import Tuner from "./Tuner.svelte";
-  import Page from "./ui/Page.svelte";
-  import PageHeader from "./ui/PageHeader.svelte";
+  import ToolPage from "./ui/ToolPage.svelte";
   import { t } from "../lib/i18n.svelte";
   import { INSTRUMENTS, type InstrumentDefinition } from "../lib/tuner";
   import { parseCustomTuning } from "../lib/tuning";
@@ -77,68 +76,72 @@
   });
 </script>
 
-<Page width="page">
-  <div class="tool-view" data-testid="standalone-tuner-view">
-    <PageHeader
-      title={t("tools.tuner")}
-      titleSize="title"
-      eyebrow={t("tools.nav")}
-      backHref="/tools"
-      backLabel={t("tools.heading")}
-      backTestId="tool-back"
-    />
+<Tuner {strings} active={true}>
+  {#snippet page(stagePart, optionsPart)}
+    <ToolPage title={t("tools.tuner")} testid="standalone-tuner-view">
+      {#snippet stage()}
+        {@render stagePart()}
+      {/snippet}
+      {#snippet settings()}
+        <div class="pickers">
+          <label class="tool-field">
+            <span>{t("tools.instrument")}</span>
+            <select
+              data-testid="tuner-instrument"
+              value={instrumentId}
+              onchange={(event) => {
+                instrumentId = event.currentTarget.value;
+              }}
+            >
+              {#each INSTRUMENTS as inst (inst.id)}
+                <option value={inst.id}>{t(inst.labelKey)}</option>
+              {/each}
+            </select>
+          </label>
 
-    <div class="standalone-pickers">
-      <label class="tool-field">
-        <span>{t("tools.instrument")}</span>
-        <select
-          data-testid="tuner-instrument"
-          value={instrumentId}
-          onchange={(event) => {
-            instrumentId = event.currentTarget.value;
-          }}
-        >
-          {#each INSTRUMENTS as inst (inst.id)}
-            <option value={inst.id}>{t(inst.labelKey)}</option>
-          {/each}
-        </select>
-      </label>
+          {#if instrumentId !== "chromatic"}
+            <label class="tool-field">
+              <span>{t("tools.tuning")}</span>
+              <select
+                data-testid="tuner-tuning"
+                value={tuningId}
+                onchange={(event) => {
+                  tuningId = event.currentTarget.value;
+                }}
+              >
+                {#each availableTunings as tune (tune.id)}
+                  <option value={tune.id}>{t(tune.labelKey)}</option>
+                {/each}
+                <option value="custom">{t("tools.tunings.custom")}</option>
+              </select>
+            </label>
+          {/if}
 
-      {#if instrumentId !== "chromatic"}
-        <label class="tool-field">
-          <span>{t("tools.tuning")}</span>
-          <select
-            data-testid="tuner-tuning"
-            value={tuningId}
-            onchange={(event) => {
-              tuningId = event.currentTarget.value;
-            }}
-          >
-            {#each availableTunings as tune (tune.id)}
-              <option value={tune.id}>{t(tune.labelKey)}</option>
-            {/each}
-            <option value="custom">{t("tools.tunings.custom")}</option>
-          </select>
-        </label>
-      {/if}
+          {#if instrumentId !== "chromatic" && tuningId === "custom"}
+            <label class="tool-field tool-field-full">
+              <span>{t("tools.customTuning")}</span>
+              <input
+                type="text"
+                data-testid="tuner-custom-tuning"
+                placeholder={t("tools.customTuningPlaceholder")}
+                value={customText}
+                oninput={(event) => {
+                  customText = event.currentTarget.value;
+                }}
+              />
+              <span class="muted tool-field-help">{t("tools.customTuningHelp")}</span>
+            </label>
+          {/if}
+        </div>
+        <div class="tuner-options">{@render optionsPart()}</div>
+      {/snippet}
+    </ToolPage>
+  {/snippet}
+</Tuner>
 
-      {#if instrumentId !== "chromatic" && tuningId === "custom"}
-        <label class="tool-field tool-field-full">
-          <span>{t("tools.customTuning")}</span>
-          <input
-            type="text"
-            data-testid="tuner-custom-tuning"
-            placeholder={t("tools.customTuningPlaceholder")}
-            value={customText}
-            oninput={(event) => {
-              customText = event.currentTarget.value;
-            }}
-          />
-          <span class="muted tool-field-help">{t("tools.customTuningHelp")}</span>
-        </label>
-      {/if}
-    </div>
-
-    <Tuner {strings} active={true} />
-  </div>
-</Page>
+<style>
+  .pickers {
+    display: grid;
+    gap: var(--sp-3);
+  }
+</style>

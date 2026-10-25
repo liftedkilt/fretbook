@@ -2,8 +2,7 @@
   import ChordDiagram from "./ChordDiagram.svelte";
   import ChordSetupPicker from "./ChordSetupPicker.svelte";
   import Icon from "./Icon.svelte";
-  import Page from "./ui/Page.svelte";
-  import PageHeader from "./ui/PageHeader.svelte";
+  import ToolPage from "./ui/ToolPage.svelte";
   import { t } from "../lib/i18n.svelte";
   import { loadSetup, saveSetup } from "../lib/chords/choice";
   import { resolveSetup } from "../lib/chords/instruments";
@@ -49,54 +48,13 @@
   }
 </script>
 
-<Page width="page">
-  <div class="tool-view chord-library" data-testid="chord-library-view">
-    <PageHeader
-      title={t("chordDiagrams.libraryHeading")}
-      titleSize="title"
-      eyebrow={t("tools.nav")}
-      subtitle={t("chordDiagrams.librarySubtitle")}
-      backHref="/tools"
-      backLabel={t("tools.heading")}
-      backTestId="tool-back"
-    />
-
-    <div class="standalone-pickers">
-      <label class="tool-field tool-field-full">
-        <span>{t("chordDiagrams.search")}</span>
-        <input
-          type="text"
-          data-testid="chord-search"
-          placeholder={t("chordDiagrams.searchPlaceholder")}
-          autocomplete="off"
-          spellcheck="false"
-          bind:value={query}
-        />
-      </label>
-      <ChordSetupPicker instrument={instrumentId} tuning={tuningId} onchange={changeSetup} />
-    </div>
-
-    <div class="chip-row" role="group" aria-label={t("chordDiagrams.root")}>
-      {#each ROOTS as item (item)}
-        <button
-          class="chip"
-          aria-pressed={root === item}
-          data-testid="chord-root-{item}"
-          onclick={() => pickRoot(item)}>{item}</button
-        >
-      {/each}
-    </div>
-    <div class="chip-row" role="group" aria-label={t("chordDiagrams.quality")}>
-      {#each QUALITIES as item (item)}
-        <button
-          class="chip"
-          aria-pressed={parsed !== null && quality === item}
-          data-testid="chord-quality-{item || 'maj'}"
-          onclick={() => pickQuality(item)}>{item || t("chordDiagrams.major")}</button
-        >
-      {/each}
-    </div>
-
+<ToolPage
+  title={t("chordDiagrams.libraryHeading")}
+  subtitle={t("chordDiagrams.librarySubtitle")}
+  testid="chord-library-view"
+  layout="stacked"
+>
+  {#snippet stage()}
     {#if !name}
       <p class="muted" data-testid="chord-empty">{t("chordDiagrams.searchHint")}</p>
     {:else if !parsed}
@@ -127,5 +85,40 @@
         {/each}
       </ul>
     {/if}
-  </div>
-</Page>
+  {/snippet}
+
+  {#snippet settings()}
+    <label class="tool-field">
+      <span>{t("chordDiagrams.search")}</span>
+      <input
+        type="text"
+        data-testid="chord-search"
+        placeholder={t("chordDiagrams.searchPlaceholder")}
+        autocomplete="off"
+        spellcheck="false"
+        bind:value={query}
+      />
+    </label>
+    <ChordSetupPicker instrument={instrumentId} tuning={tuningId} onchange={changeSetup} />
+    <div class="chip-row" role="group" aria-label={t("chordDiagrams.root")}>
+      {#each ROOTS as item (item)}
+        <button
+          class="chip"
+          aria-pressed={root === item}
+          data-testid="chord-root-{item}"
+          onclick={() => pickRoot(item)}>{item}</button
+        >
+      {/each}
+    </div>
+    <div class="chip-row" role="group" aria-label={t("chordDiagrams.quality")}>
+      {#each QUALITIES as item (item)}
+        <button
+          class="chip"
+          aria-pressed={parsed !== null && quality === item}
+          data-testid="chord-quality-{item || 'maj'}"
+          onclick={() => pickQuality(item)}>{item || t("chordDiagrams.major")}</button
+        >
+      {/each}
+    </div>
+  {/snippet}
+</ToolPage>
