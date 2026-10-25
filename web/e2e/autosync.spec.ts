@@ -62,6 +62,7 @@ test("Auto-sync estimates the bar marks, previews them and saves them on accept"
   await page.goto(`/songs/${song.id}`);
   await expect(page.getByTestId("player-score").locator("svg").first()).toBeVisible();
   await page.getByTestId("player-panel-toggle").click();
+  await page.getByTestId("player-sheet-tab-sync").click();
   await page.getByTestId("player-autosync").click();
 
   const sheet = page.getByTestId("autosync-sheet");
@@ -108,5 +109,6 @@ test("Auto-sync is not offered for a song without audio", async ({ page, seed })
   await page.goto(`/songs/${song.id}`);
   await expect(page.getByTestId("player-score").locator("svg").first()).toBeVisible();
   await page.getByTestId("player-panel-toggle").click();
+  await page.getByTestId("player-sheet-tab-sync").click();
   await expect(page.getByTestId("player-autosync")).toHaveCount(0);
 });

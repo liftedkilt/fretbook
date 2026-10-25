@@ -4,35 +4,33 @@
 
   import Cover from "./Cover.svelte";
   import { coverSrc } from "../lib/cover";
+  import DockSpeed from "./DockSpeed.svelte";
+  import DockTextButton from "./DockTextButton.svelte";
   import Fretboard from "./Fretboard.svelte";
-  import FretboardPanel from "./FretboardPanel.svelte";
   import Highway from "./Highway.svelte";
   import Icon from "./Icon.svelte";
+  import PlayerSheet from "./PlayerSheet.svelte";
   import SongLibraryActions from "./SongLibraryActions.svelte";
   import SongMetadata from "./SongMetadata.svelte";
   import SongTags from "./SongTags.svelte";
   import Chip from "./ui/Chip.svelte";
   import IconButton from "./ui/IconButton.svelte";
+  import OverflowMenu from "./ui/OverflowMenu.svelte";
   import PageHeader from "./ui/PageHeader.svelte";
   import SegmentedControl from "./ui/SegmentedControl.svelte";
-  import LoopPanel from "./LoopPanel.svelte";
+  import Tooltip from "./ui/Tooltip.svelte";
+  import { sectionMarks } from "../lib/playerSheet";
   import Menu from "./Menu.svelte";
   import SetlistPicker from "./SetlistPicker.svelte";
   import OfflineToggle from "./OfflineToggle.svelte";
   import FullscreenToggle from "./FullscreenToggle.svelte";
-  import PracticePanel from "./PracticePanel.svelte";
-  import StemMixer from "./StemMixer.svelte";
   import AutoSyncSheet from "./AutoSyncSheet.svelte";
   import TranscribeSheet from "./TranscribeSheet.svelte";
   import RetuneSheet from "./RetuneSheet.svelte";
   import LessonRunBanner from "./LessonRunBanner.svelte";
-  import ScorePanel from "./ScorePanel.svelte";
   import ScoreResults from "./ScoreResults.svelte";
   import ShortcutHelp from "./ShortcutHelp.svelte";
-  import ListenPanel from "./ListenPanel.svelte";
-  import WaitPanel from "./WaitPanel.svelte";
   import { ApiError, getSong, patchSync, recordPracticeSession, uploadAudio } from "../lib/api";
-  import YouTubeAudio from "./YouTubeAudio.svelte";
   import { AudioMedia } from "../lib/alphatab/audioHandler";
   import { planFollow, SynthFollower } from "../lib/alphatab/synthFollow";
   import { separateEffectBands } from "../lib/alphatab/display";
@@ -108,7 +106,7 @@
     type ScoreRecord,
   } from "../lib/scoreLog";
   import { followLink, hrefFor } from "../lib/router.svelte";
-  import { RATES, shortcutFor, stepRate, type ShortcutAction } from "../lib/shortcuts";
+  import { shortcutFor, stepRate, type ShortcutAction } from "../lib/shortcuts";
   import {
     barSeconds,
     flatSyncPoints,
@@ -1307,6 +1305,11 @@
     else void startScore();
   }
 
+  function chooseFree() {
+    if (waitOn) stopWait();
+    if (scoreOn) stopScore();
+  }
+
   function playScoreAgain() {
     scoreResultsOpen = false;
     goToBar(loopA ?? 0);
@@ -1384,13 +1387,51 @@
 
   let exporting = $state(false);
   let panelOpen = $state(false);
-  // Phones fold the less-used dock buttons into a ⋯ popover (app.css).
-  let moreOpen = $state(false);
+  let sheetSlot = $state<HTMLDivElement | null>(null);
+  const marks = $derived(sectionMarks(document_.bars, order));
   const loopStyle = $derived(
     loopA != null && loopB != null && barCount > 1
       ? `left:${(loopA / barCount) * 100}%;width:${((loopB - loopA + 1) / barCount) * 100}%`
       : "",
   );
+
+  function closeSheet() {
+    panelOpen = false;
+    queueMicrotask(() =>
+      document.querySelector<HTMLElement>("[data-testid=player-panel-toggle]")?.focus(),
+    );
+  }
+
+  // The score sits beside the sheet. alphaTab sizes itself from the window, and the
+  // sheet fills the gap above the dock instead of running underneath it.
+  $effect(() => {
+    void panelOpen;
+    const slot = sheetSlot;
+    const place = () => {
+      if (!slot) return;
+      if (window.innerWidth < 768) {
+        slot.style.removeProperty("--sheet-height");
+        return;
+      }
+      const top = slot.getBoundingClientRect().top;
+      const dockTop =
+        document.querySelector(".dock-bar")?.getBoundingClientRect().top ?? window.innerHeight;
+      const available = dockTop - Math.max(top, 16) - 8;
+      if (available > 0) slot.style.setProperty("--sheet-height", `${Math.round(available)}px`);
+    };
+    const frame = requestAnimationFrame(() => {
+      place();
+      // alphaTab measures the score column from the window, not this element.
+      window.dispatchEvent(new Event("resize"));
+    });
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, { passive: true });
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place);
+    };
+  });
 
   function exportUrl(kind: string): string {
     return new URL(`api/songs/${song.id}/export.${kind}`, document.baseURI).toString();
@@ -1625,180 +1666,95 @@
   />
   {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
 
-  {#if song.has_audio}
-    <audio data-testid="player-audio" bind:this={audioEl} src={audioSrc} preload="auto"></audio>
-  {/if}
-  <div
-    class="player-stage"
-    data-testid="player-stage"
-    data-view={ui.playerView}
-    data-synth={synthState}
-  >
-    {#if ui.playerView === "highway" || ui.playerView === "split"}
-      <div class="highway-wrap" data-testid="player-highway">
-        <Highway
-          document={document_}
-          {track}
-          hasAudio={song.has_audio}
-          currentTime={currentSeconds}
-          {playing}
-          {rate}
-          {loopA}
-          {loopB}
-          grades={scoreOn ? scoreGrades : waitOn ? waitGrades : undefined}
-          waitingAt={waitOn && waitState === "waiting" && waitStep
-            ? { bar: waitStep.bar, position: waitStep.position }
-            : null}
-          onseek={goToBar}
-        />
-      </div>
-    {/if}
-    <!-- Scrolls on its own, so keyboard users need to be able to focus it. -->
-    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-    <div
-      class="paper score"
-      data-testid="player-score"
-      data-hidden={ui.playerView === "highway" ? "true" : undefined}
-      data-wait={waitOn ? waitState : undefined}
-      bind:this={scroller}
-      role="region"
-      aria-label={t("player.score")}
-      tabindex={ui.playerView === "highway" ? -1 : 0}
-    >
-      <!-- alphaTab's container sits inside the scroller: when they are the same element,
-           follow adds the current scroll offset again and overshoots the bar (issue #118). -->
-      <div bind:this={host}></div>
-    </div>
-  </div>
-
-  {#if practice.fretboard.on || waitOn}
-    <div
-      class="fretboard-wrap"
-      data-testid="player-fretboard"
-      role={waitOn ? "group" : undefined}
-      aria-label={waitOn ? t("waitMode.fretboard") : undefined}
-    >
-      <Fretboard
-        tuning={track.tuning_midi}
-        capo={track.capo}
-        frets={fretCount(track)}
-        current={waitOn ? (waitMarks?.notes ?? []) : fretFocus.current}
-        next={waitOn ? [] : fretFocus.next}
-        tone={waitMarks?.tone}
-        label={practice.fretboard.label}
-        root={practice.fretboard.root ?? defaultRoot(track.tuning_midi)}
-        leftHanded={practice.fretboard.leftHanded}
-      />
-    </div>
-  {/if}
-
-  <p class="visually-hidden" role="status" data-testid="player-announcer">
-    {countingIn ? t("player.countingIn") : playing ? t("player.playing") : t("player.paused")}
-  </p>
-
-  <div class="dock">
-    {#if panelOpen}
-      <section class="dock-panel" aria-label={t("player.syncPanel")}>
-        <p class="panel-hint">
-          {#if song.has_audio && Object.keys(song.document.sync.anchors).length === 0 && song.document.sync.points.some((point) => point != null)}
-            {t("player.usingPublished")}
-          {:else if song.has_audio}
-            {t("player.keys")}
-          {:else if song.document.sync.points.length || song.document.sync.video_id}
-            {t("player.needAudio")}
-          {:else}
-            {t("player.synth")} {t("player.keys")}
-          {/if}
-        </p>
-        <PracticePanel
-          {practice}
-          hasAudio={song.has_audio}
-          tracks={song.document.tracks}
-          onchange={practiceChanged}
-        />
-        {#if song.has_audio && !ui.demoMode && !readOnly}
-          <StemMixer
-            songId={song.id}
-            {audioEl}
-            master={recordingGain(practice.mix)}
-            onactive={(active) => {
-              stemsActive = active;
-              if (!active) applyPractice();
-            }}
-          />
-        {/if}
-        <FretboardPanel {practice} onchange={practiceChanged} />
-        <WaitPanel
-          {practice}
-          on={waitOn}
-          available={!song.has_audio}
-          error={waitError}
-          onchange={() => {
-            applyPractice();
-            if (waitOn) {
-              // The matcher and hint timer were built with the old options.
-              stopWait();
-              void startWait();
-            }
-          }}
-          ontoggle={toggleWait}
-        />
-        {#if !song.has_audio}
-          <ListenPanel
-            session={listenSession}
-            deviceId={listenDevice}
-            channel={listenChannel}
-            level={listenLevel}
-            onDevice={(next) => (listenDevice = next)}
-            onChannel={(next) => (listenChannel = next)}
-          />
-        {/if}
-        <ScorePanel
-          on={scoreOn}
-          summary={scoreSummary}
-          bleed={scoreBleed}
-          calibrated={scoreCalibrated}
-          error={scoreError}
-          ontoggle={toggleScore}
-        />
-        {#if song.has_audio && !ui.demoMode && !readOnly}
-          <div class="panel-group">
-            <h3>{t("player.syncMarks")}</h3>
-            <div class="button-row">
-              <button class="accent" data-testid="player-tap" onclick={tap}
-                ><Icon name="tap" size={18} />{t("player.tap")}</button
-              >
-              <button onclick={() => nudge(-0.05)}>{t("player.nudgeBack")}</button>
-              <button onclick={() => nudge(0.05)}>{t("player.nudgeForward")}</button>
-              <button onclick={clearCurrent}>{t("player.clearAnchor")}</button>
-              <button onclick={() => commitAnchors(pointAnchors(song.document.sync, barCount))}
-                >{t("player.restore")}</button
-              >
-              <button
-                data-testid="player-autosync"
-                title={t("autoSync.buttonHint")}
-                onclick={openAutoSync}
-                ><Icon name="waveform" size={18} />{t("autoSync.button")}</button
-              >
-              {#if ui.workerKinds.includes("audio.transcribe")}
-                <button
-                  data-testid="player-transcribe"
-                  title={t("transcribe.buttonHint")}
-                  onclick={openTranscribe}
-                  ><Icon name="sparkle" size={18} />{t("transcribe.button")}</button
-                >
-              {/if}
-              <button class="danger-text" onclick={() => commitAnchors({})}
-                >{t("player.clearAll")}</button
-              >
-            </div>
-            <p class="muted small">
-              {t("player.nextTap", { measure: tapIndex + 1 })}{#if saveLabel}&nbsp;· {saveLabel}{/if}
-            </p>
+  <div class="player-body">
+    <div class="player-main">
+      {#if song.has_audio}
+        <audio data-testid="player-audio" bind:this={audioEl} src={audioSrc} preload="auto"></audio>
+      {/if}
+      <div
+        class="player-stage"
+        data-testid="player-stage"
+        data-view={ui.playerView}
+        data-synth={synthState}
+      >
+        {#if ui.playerView === "highway" || ui.playerView === "split"}
+          <div class="highway-wrap" data-testid="player-highway">
+            <Highway
+              document={document_}
+              {track}
+              hasAudio={song.has_audio}
+              currentTime={currentSeconds}
+              {playing}
+              {rate}
+              {loopA}
+              {loopB}
+              grades={scoreOn ? scoreGrades : waitOn ? waitGrades : undefined}
+              waitingAt={waitOn && waitState === "waiting" && waitStep
+                ? { bar: waitStep.bar, position: waitStep.position }
+                : null}
+              onseek={goToBar}
+            />
           </div>
         {/if}
-        <LoopPanel
+        <!-- Scrolls on its own, so keyboard users need to be able to focus it. -->
+        <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+        <div
+          class="paper score"
+          data-testid="player-score"
+          data-hidden={ui.playerView === "highway" ? "true" : undefined}
+          data-wait={waitOn ? waitState : undefined}
+          bind:this={scroller}
+          role="region"
+          aria-label={t("player.score")}
+          tabindex={ui.playerView === "highway" ? -1 : 0}
+        >
+          <!-- alphaTab's container sits inside the scroller: when they are the same element,
+           follow adds the current scroll offset again and overshoots the bar (issue #118). -->
+          <div bind:this={host}></div>
+        </div>
+      </div>
+
+      {#if practice.fretboard.on || waitOn}
+        <div
+          class="fretboard-wrap"
+          data-testid="player-fretboard"
+          role={waitOn ? "group" : undefined}
+          aria-label={waitOn ? t("waitMode.fretboard") : undefined}
+        >
+          <Fretboard
+            tuning={track.tuning_midi}
+            capo={track.capo}
+            frets={fretCount(track)}
+            current={waitOn ? (waitMarks?.notes ?? []) : fretFocus.current}
+            next={waitOn ? [] : fretFocus.next}
+            tone={waitMarks?.tone}
+            label={practice.fretboard.label}
+            root={practice.fretboard.root ?? defaultRoot(track.tuning_midi)}
+            leftHanded={practice.fretboard.leftHanded}
+          />
+        </div>
+      {/if}
+    </div>
+    {#if panelOpen && !handsFree.stage}
+      <div class="player-sheet" bind:this={sheetSlot}>
+        <PlayerSheet
+          userId={ui.me?.user_id ?? ""}
+          songId={song.id}
           {practice}
+          hasAudio={song.has_audio}
+          {readOnly}
+          demo={ui.demoMode}
+          tracks={song.document.tracks}
+          {trackId}
+          audioUrl={audioSrc}
+          {audioEl}
+          canTranscribe={ui.workerKinds.includes("audio.transcribe")}
+          anchorCount={Object.keys(song.document.sync.anchors).length}
+          publishedSync={song.document.sync.points.some((point) => point != null)}
+          pendingSync={Boolean(song.document.sync.points.length || song.document.sync.video_id)}
+          bpm={song.document.bpm}
+          {tapIndex}
+          {saveLabel}
           {loopA}
           {loopB}
           {activeLoopId}
@@ -1806,47 +1762,66 @@
           {speedTrainerPercent}
           {speedTrainerPass}
           {speedTrainerCompleted}
-          onsetloop={setLoop}
+          {rate}
+          {waitOn}
+          waitAvailable={!song.has_audio}
+          {waitError}
+          {scoreOn}
+          {scoreSummary}
+          {scoreBleed}
+          {scoreCalibrated}
+          {scoreError}
+          {listenSession}
+          {listenDevice}
+          {listenChannel}
+          {listenLevel}
+          notation={ui.notation}
+          stage={handsFree.stage}
+          onclose={closeSheet}
+          onpractice={practiceChanged}
+          onfree={chooseFree}
+          onwait={toggleWait}
+          onscore={toggleScore}
+          onwaitoptions={() => {
+            applyPractice();
+            if (waitOn) {
+              stopWait();
+              void startWait();
+            }
+          }}
+          onloop={setLoop}
           onclearloop={clearLoop}
-          onchange={practiceChanged}
           onjump={activateLoop}
+          onrate={setRate}
+          ontap={tap}
+          onnudge={nudge}
+          onclearanchor={clearCurrent}
+          onrestore={() => commitAnchors(pointAnchors(song.document.sync, barCount))}
+          onclearall={() => commitAnchors({})}
+          onautosync={openAutoSync}
+          ontranscribe={openTranscribe}
+          onbpm={(next) => commitAnchors({ ...song.document.sync.anchors }, next)}
+          onupload={(file) => void onUpload(file)}
+          onyoutube={() => void onYouTubeAudio()}
+          onstems={(active) => {
+            stemsActive = active;
+            if (!active) applyPractice();
+          }}
+          ontrack={(id) => (trackId = id)}
+          onnotation={toggleNotation}
+          onstage={setStage}
+          onlistenDevice={(next) => (listenDevice = next)}
+          onlistenChannel={(next) => (listenChannel = next)}
         />
-        {#if !readOnly}
-          <div class="panel-group panel-inline">
-            <label class="field compact-field">
-              <span>{t("player.bpm")}</span>
-              <input
-                type="number"
-                min="1"
-                max="399"
-                value={song.document.bpm}
-                onchange={(event) => {
-                  const bpm = Number(event.currentTarget.value);
-                  if (bpm > 0 && bpm < 400) commitAnchors({ ...song.document.sync.anchors }, bpm);
-                }}
-              />
-            </label>
-            <label class="button file-button">
-              <Icon name="upload" size={18} />{t("player.upload")}
-              <input
-                class="visually-hidden"
-                type="file"
-                accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.webm"
-                onchange={(event) => {
-                  const file = event.currentTarget.files?.[0];
-                  event.currentTarget.value = "";
-                  if (file) void onUpload(file);
-                }}
-              />
-            </label>
-          </div>
-          <div class="panel-group panel-inline">
-            <YouTubeAudio songId={song.id} ondone={onYouTubeAudio} />
-          </div>
-        {/if}
-      </section>
+      </div>
     {/if}
+  </div>
 
+  <p class="visually-hidden" role="status" data-testid="player-announcer">
+    {countingIn ? t("player.countingIn") : playing ? t("player.playing") : t("player.paused")}
+  </p>
+
+  <div class="dock">
     {#if waitOn}
       <div
         class="wait-status"
@@ -1901,16 +1876,21 @@
           placement="above"
           onclick={() => step(-1)}
         />
-        <button
-          class="play-button"
-          data-testid="player-play"
-          data-playing={playing}
-          data-counting={countingIn}
-          onclick={toggle}
-          aria-label={playing ? t("player.pause") : t("player.play")}
-        >
-          <Icon name={playing ? "pause" : "play"} size={24} />
-        </button>
+        <Tooltip text={playing ? t("player.pause") : t("player.play")} placement="above">
+          {#snippet children(describedBy)}
+            <button
+              class="play-button"
+              data-testid="player-play"
+              data-playing={playing}
+              data-counting={countingIn}
+              onclick={toggle}
+              aria-label={playing ? t("player.pause") : t("player.play")}
+              aria-describedby={describedBy || undefined}
+            >
+              <Icon name={playing ? "pause" : "play"} size={24} />
+            </button>
+          {/snippet}
+        </Tooltip>
         <IconButton
           class="ghost"
           icon="next"
@@ -1934,6 +1914,15 @@
         </div>
         <div class="scrubber">
           {#if loopStyle}<span class="scrubber-loop" style={loopStyle}></span>{/if}
+          {#each marks as mark (mark.index)}
+            <span
+              class="scrubber-mark"
+              style="left:{(mark.index / Math.max(barCount, 1)) * 100}%"
+              aria-hidden="true"
+            >
+              <span class="scrubber-mark-label">{mark.label}</span>
+            </span>
+          {/each}
           <input
             type="range"
             min="0"
@@ -1950,84 +1939,46 @@
       </div>
 
       <div class="dock-tools">
-        {#if song.document.tracks.length > 1}
-          <label class="dock-select">
-            <span class="visually-hidden">{t("player.track")}</span>
-            <Icon name="layers" size={16} />
-            <select bind:value={trackId} aria-label={t("player.track")}>
-              {#each song.document.tracks as item (item.id)}
-                <option value={item.id}>{item.name}</option>
-              {/each}
-            </select>
-          </label>
-        {/if}
-        <label class="dock-select">
-          <span class="visually-hidden">{t("player.rate")}</span>
-          <Icon name="gauge" size={16} />
-          <select
-            value={rate}
-            aria-label={t("player.rate")}
-            onchange={(event) => setRate(Number(event.currentTarget.value))}
-          >
-            {#each RATES as value (value)}
-              <option {value}>{value}×</option>
-            {/each}
-          </select>
-        </label>
-        <IconButton
-          class="ghost dock-more"
-          icon="more"
-          label={t("player.more")}
-          testid="player-more"
-          placement="above"
-          expanded={moreOpen}
-          onclick={() => (moreOpen = !moreOpen)}
+        <DockSpeed {rate} onchange={setRate} />
+        <DockTextButton
+          icon="repeat"
+          label={t("player.loop")}
+          testid="player-loop-toggle"
+          pressed={loopA != null && loopB != null}
+          onclick={toggleLoop}
         />
-        <div class="dock-secondary" data-open={moreOpen || undefined}>
-          <IconButton
-            class="ghost"
-            icon="chords"
-            label={t("player.notation")}
-            placement="above"
-            pressed={ui.notation}
-            onclick={toggleNotation}
-          />
-          <IconButton
-            class="ghost"
-            placement="above"
-            icon="crosshair"
-            label={t("player.follow")}
-            pressed={follow}
-            onclick={() => setFollow(!follow)}
-          />
-          <IconButton
-            class="ghost"
-            placement="above"
-            icon="monitor"
-            label={t("handsFree.stage")}
-            testid="stage-toggle"
-            pressed={handsFree.stage}
-            onclick={() => setStage(!handsFree.stage)}
-          />
-          <IconButton
-            class="ghost"
-            placement="above"
-            icon="keyboard"
-            label={t("shortcuts.title")}
-            testid="player-shortcuts"
-            onclick={() => (helpOpen = true)}
-          />
-        </div>
+        <DockTextButton
+          icon="target"
+          label={t("playerSheet.practice")}
+          testid="player-panel-toggle"
+          pressed={waitOn || scoreOn}
+          expanded={panelOpen}
+          controls={panelOpen ? "player-sheet" : undefined}
+          onclick={() => (panelOpen = !panelOpen)}
+        />
         <IconButton
           class="ghost"
           placement="above"
-          icon="sliders"
-          label={t("player.syncPanel")}
-          testid="player-panel-toggle"
-          expanded={panelOpen}
-          onclick={() => (panelOpen = !panelOpen)}
+          icon="crosshair"
+          label={t("player.follow")}
+          pressed={follow}
+          onclick={() => setFollow(!follow)}
         />
         <FullscreenToggle placement="dock" />
+        <OverflowMenu
+          label={t("player.more")}
+          testid="player-more"
+          placement="above"
+          items={[
+            {
+              id: "shortcuts",
+              label: t("shortcuts.title"),
+              icon: "keyboard",
+              testid: "player-shortcuts",
+              onclick: () => (helpOpen = true),
+            },
+          ]}
+        />
       </div>
     </div>
   </div>
@@ -2078,3 +2029,83 @@
     onclose={() => (pickerOpen = false)}
   />
 </div>
+
+<style>
+  .player-body {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--sp-4);
+  }
+
+  .player-main {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .player-sheet {
+    position: sticky;
+    top: var(--sp-4);
+    flex: 0 0 calc(var(--sp-8) * 6);
+    width: calc(var(--sp-8) * 6);
+    align-self: flex-start;
+    height: var(--sheet-height, calc(100dvh - var(--dock-space) - var(--sp-7)));
+    max-height: var(--sheet-height, calc(100dvh - var(--dock-space) - var(--sp-7)));
+    z-index: 30;
+  }
+
+  .dock-tools {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .scrubber-mark {
+    position: absolute;
+    top: 0;
+    z-index: 1;
+    width: 1px;
+    height: var(--sp-2);
+    background: var(--text-3);
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+
+  .scrubber-mark-label {
+    position: absolute;
+    top: var(--sp-2);
+    left: 50%;
+    max-width: calc(var(--sp-8) + var(--sp-4));
+    overflow: hidden;
+    color: var(--text-3);
+    font-size: var(--fs-xs);
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transform: translateX(-50%);
+  }
+
+  @media (max-width: 767px) {
+    .player-body {
+      display: block;
+    }
+
+    .dock-tools {
+      justify-content: space-between;
+    }
+
+    .player-sheet {
+      position: fixed;
+      top: auto;
+      right: var(--sp-2);
+      bottom: var(--dock-space);
+      left: var(--sp-2);
+      z-index: 35;
+      width: auto;
+      height: auto;
+      max-height: min(58dvh, calc(100dvh - var(--dock-space) - var(--sp-6)));
+    }
+
+    .scrubber-mark-label {
+      display: none;
+    }
+  }
+</style>

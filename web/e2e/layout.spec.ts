@@ -72,7 +72,9 @@ test("the phone player keeps the fretboard clear of the dock and doesn't shift",
     await page.goto(`/songs/${song.id}`);
     await expect(page.getByTestId("player-play")).toBeVisible();
     await page.getByTestId("player-panel-toggle").click();
+    await page.getByTestId("player-sheet-tab-view").click();
     await page.getByTestId("fretboard-on").check();
+    await expect(page.getByTestId("stage-toggle")).toBeVisible();
     await page.getByTestId("player-panel-toggle").click();
     await expect(page.getByTestId("player-fretboard")).toBeVisible();
 
@@ -104,9 +106,9 @@ test("the phone player keeps the fretboard clear of the dock and doesn't shift",
     expect(later.fretboard.top).toBeCloseTo(during.fretboard.top, 0);
     await page.getByTestId("player-play").click();
 
-    await expect(page.getByTestId("stage-toggle")).toBeHidden();
+    await expect(page.getByTestId("player-shortcuts")).toBeHidden();
     await page.getByTestId("player-more").click();
-    await expect(page.getByTestId("stage-toggle")).toBeVisible();
+    await expect(page.getByTestId("player-shortcuts")).toBeVisible();
     await page.screenshot({ path: `test-results/player-${size.width}.png` });
   }
 });

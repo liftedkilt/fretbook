@@ -42,6 +42,6 @@ test("song page and practice panel", async ({ page, seed }) => {
   await shoot(page, "song-page");
 
   await page.getByTestId("player-panel-toggle").click();
-  await expect(page.getByTestId("metronome-toggle")).toBeVisible();
+  await expect(page.getByTestId("practice-mode-free")).toBeVisible();
   await shoot(page, "practice-panel");
 });

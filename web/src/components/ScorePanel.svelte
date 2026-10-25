@@ -11,6 +11,7 @@
     calibrated,
     error,
     ontoggle,
+    hideToggle = false,
   }: {
     on: boolean;
     summary: ScoreSummary | null;
@@ -18,17 +19,23 @@
     calibrated: boolean;
     error: string;
     ontoggle: () => void;
+    /** The practice mode card is the switch; keep the live numbers. */
+    hideToggle?: boolean;
   } = $props();
 </script>
 
 <div class="panel-group" data-testid="score-panel">
-  <h3>{t("scored.title")}</h3>
-  <p class="muted small">{t("scored.about")}</p>
-  <div class="mix-row">
-    <button class="button" data-testid="score-toggle" aria-pressed={on} onclick={ontoggle}
-      ><Icon name="star" size={16} />{on ? t("scored.stop") : t("scored.start")}</button
-    >
-  </div>
+  {#if !hideToggle}
+    <h3>{t("scored.title")}</h3>
+    <p class="muted small">{t("scored.about")}</p>
+    <div class="mix-row">
+      <button class="button" data-testid="score-toggle" aria-pressed={on} onclick={ontoggle}
+        ><Icon name="star" size={16} />{on ? t("scored.stop") : t("scored.start")}</button
+      >
+    </div>
+  {:else if on}
+    <p class="muted small">{t("scored.about")}</p>
+  {/if}
   {#if on && summary}
     <p class="muted small" data-testid="score-live" role="status">
       {#if summary.graded === 0}

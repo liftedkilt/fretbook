@@ -290,6 +290,21 @@
     "playing": "Playing",
     "paused": "Paused"
   },
+  "playerSheet": {
+    "label": "Practice, audio, sync and view",
+    "practice": "Practice",
+    "audio": "Audio",
+    "sync": "Sync",
+    "view": "View",
+    "mode": "Mode",
+    "freePlay": "Free play",
+    "freePlayBlurb": "Play along at your own pace.",
+    "scoreBlurb": "Every note graded on time. Headphones on.",
+    "waitBlurb": "The cursor waits until you play each note.",
+    "speed": "Speed",
+    "audioSource": "Audio source",
+    "download": "Download audio"
+  },
   "practice": {
     "metronome": "Metronome",
     "volume": "Volume",

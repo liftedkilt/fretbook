@@ -11,6 +11,7 @@
     error,
     onchange,
     ontoggle,
+    hideToggle = false,
   }: {
     practice: PracticeSettings;
     on: boolean;
@@ -18,17 +19,21 @@
     error: string;
     onchange: () => void;
     ontoggle: () => void;
+    /** The practice mode card is the switch; keep the options. */
+    hideToggle?: boolean;
   } = $props();
 </script>
 
 <div class="panel-group" data-testid="wait-panel">
-  <h3>{t("wait.title")}</h3>
+  {#if !hideToggle}<h3>{t("wait.title")}</h3>{/if}
   {#if available}
     <p class="muted small">{t("wait.about")}</p>
     <div class="mix-row">
-      <button class="button" data-testid="wait-toggle" aria-pressed={on} onclick={ontoggle}
-        ><Icon name="hourglass" size={16} />{on ? t("wait.stop") : t("wait.start")}</button
-      >
+      {#if !hideToggle}
+        <button class="button" data-testid="wait-toggle" aria-pressed={on} onclick={ontoggle}
+          ><Icon name="hourglass" size={16} />{on ? t("wait.stop") : t("wait.start")}</button
+        >
+      {/if}
       <label class="check">
         <input
           type="checkbox"

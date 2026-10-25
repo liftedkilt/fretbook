@@ -1,4 +1,6 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
+
   import Icon from "./Icon.svelte";
   import { t } from "../lib/i18n.svelte";
   import type { PracticeSettings, SavedLoop } from "../lib/practice";
@@ -16,6 +18,7 @@
     onclearloop,
     onchange,
     onjump,
+    between,
   }: {
     practice: PracticeSettings;
     loopA: number | null;
@@ -29,6 +32,8 @@
     onclearloop: () => void;
     onchange: () => void;
     onjump: (loop: SavedLoop) => void;
+    /** Speed, drawn between the loop and the speed trainer. */
+    between?: Snippet;
   } = $props();
 
   let newLoopName = $state("");
@@ -150,6 +155,8 @@
     </div>
   {/if}
 </div>
+
+{#if between}{@render between()}{/if}
 
 <div class="panel-group" data-testid="speed-trainer-panel">
   <h3>{t("speedTrainer.title")}</h3>

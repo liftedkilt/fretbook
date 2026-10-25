@@ -103,6 +103,18 @@ for (const scheme of ["light", "dark"] as const) {
       await page.goto(`/songs/${synced.id}`);
       await expect(page.getByTestId("player-play")).toBeVisible();
       await page.getByTestId("player-panel-toggle").click();
+      await expect(page.getByTestId("player-sheet")).toBeVisible();
+      found.push(...(await violations(page, "player-sheet")));
+      for (const name of ["audio", "sync", "view"]) {
+        await page.getByTestId(`player-sheet-tab-${name}`).click();
+        found.push(...(await violations(page, `player-sheet-${name}`)));
+      }
+      await page.getByTestId("player-speed").click();
+      await expect(page.getByTestId("player-speed-popover")).toBeVisible();
+      found.push(...(await violations(page, "player-speed")));
+      await page.keyboard.press("Escape");
+
+      await page.getByTestId("player-sheet-tab-sync").click();
       await page.getByTestId("player-autosync").click();
       await expect(page.getByTestId("autosync-sheet")).toBeVisible();
       found.push(...(await violations(page, "autosync-sheet")));
@@ -270,6 +282,8 @@ test.describe("reduced motion", () => {
     const song = await seed.musicXmlTab();
     await page.goto(`/songs/${song.id}`);
     await expect(page.getByTestId("player-play")).toBeVisible();
+    await page.getByTestId("player-panel-toggle").click();
+    await expect(page.getByTestId("player-sheet")).toBeVisible();
     const slow = await page.evaluate(() => {
       const limit = 0.05;
       const toSeconds = (list: string) => list.split(",").map((v) => parseFloat(v));
