@@ -1,18 +1,14 @@
 <script lang="ts">
   import Icon from "./Icon.svelte";
+  import GoalChip from "./practice/GoalChip.svelte";
+  import Heatmap from "./practice/Heatmap.svelte";
+  import PracticeRow from "./practice/PracticeRow.svelte";
   import Recommendations from "./Recommendations.svelte";
   import Page from "./ui/Page.svelte";
   import PageHeader from "./ui/PageHeader.svelte";
   import { getPracticeStats, savePracticeGoal } from "../lib/api";
   import { t } from "../lib/i18n.svelte";
-  import {
-    agoDays,
-    goalProgress,
-    heatmapWeeks,
-    localDay,
-    minutesOf,
-    ringOffset,
-  } from "../lib/practiceLog";
+  import { agoDays, goalProgress, localDay, minutesOf, ringOffset } from "../lib/practiceLog";
   import { formatDuration } from "../lib/practiceText";
   import { followLink, hrefFor } from "../lib/router.svelte";
   import { KIND_NAMES } from "../lib/trainer/store";
@@ -23,9 +19,6 @@
 
   let stats = $state<PracticeStats | null>(null);
   let error = $state("");
-  let goalDraft = $state(15);
-  let weekly = $state(true);
-  let saving = $state(false);
 
   function fail(err: unknown) {
     error = err instanceof Error ? err.message : t("error.generic");
@@ -35,8 +28,6 @@
     getPracticeStats(localDay(new Date()))
       .then((loaded) => {
         stats = loaded;
-        goalDraft = loaded.goal.daily_minutes;
-        weekly = loaded.goal.weekly_summary;
       })
       .catch(fail);
   });
@@ -44,29 +35,19 @@
   const progress = $derived(
     stats ? goalProgress(stats.today_seconds, stats.goal.daily_minutes) : 0,
   );
-  const weeks = $derived(
-    stats ? heatmapWeeks(stats.heatmap, stats.today, stats.goal.daily_minutes) : [],
-  );
   const empty = $derived(
     stats !== null && stats.songs_practised === 0 && stats.exercises.length === 0,
   );
 
-  async function saveGoal(event: SubmitEvent) {
-    event.preventDefault();
+  /** Goal changes apply as soon as they are made; a failed save puts the old goal back. */
+  async function saveGoal(goal: { daily_minutes: number; weekly_summary: boolean }) {
     if (!stats) return;
-    saving = true;
     error = "";
     try {
-      const goal = await savePracticeGoal({
-        daily_minutes: Math.max(0, Math.min(720, Math.round(Number(goalDraft) || 0))),
-        weekly_summary: weekly,
-      });
-      stats = { ...stats, goal };
-      goalDraft = goal.daily_minutes;
+      const saved = await savePracticeGoal(goal);
+      if (stats) stats = { ...stats, goal: saved };
     } catch (err) {
       fail(err);
-    } finally {
-      saving = false;
     }
   }
 
@@ -86,12 +67,50 @@
     return t("practiceLog.vsLastWeek", { percent: `${percent > 0 ? "+" : ""}${percent}` });
   }
 
-  /** Start the heatmap at the right edge, where today is. */
-  function showLatest(node: HTMLElement) {
-    node.scrollLeft = node.scrollWidth;
-  }
-
   const songPath = (id: string) => `/songs/${id}`;
+
+  const greeting = $derived.by(() => {
+    const hour = new Date().getHours();
+    return t(
+      hour < 5 || hour >= 18
+        ? "practiceHome.greetingEvening"
+        : hour < 12
+          ? "practiceHome.greetingMorning"
+          : "practiceHome.greetingAfternoon",
+    );
+  });
+
+  const subtitle = $derived.by(() => {
+    if (!stats) return "";
+    if (empty) return t("practiceHome.subtitleEmpty");
+    const goal = stats.goal.daily_minutes;
+    if (goal <= 0) {
+      return stats.today_seconds > 0
+        ? t("practiceHome.playedMinutes", { minutes: minutesOf(stats.today_seconds) })
+        : t("practiceHome.nothingYet");
+    }
+    return progress >= 1
+      ? t("practiceHome.goalMet")
+      : t("practiceHome.toGoal", { minutes: Math.max(1, goal - minutesOf(stats.today_seconds)) });
+  });
+
+  /** The song to carry on with: whatever was practised last. */
+  const resume = $derived(stats?.recent[0] ?? null);
+  const playedToday = $derived(
+    stats ? stats.recent.filter((s) => s.last_day === stats!.today) : [],
+  );
+  const bestScore = $derived(
+    stats
+      ? stats.best_scores.reduce<number | null>(
+          (best, song) =>
+            song.best_score !== null && (best === null || song.best_score > best)
+              ? song.best_score
+              : best,
+          null,
+        )
+      : null,
+  );
+  const weekDelta = $derived(stats ? change(stats.week.seconds, stats.week.previous_seconds) : "");
 
   function runName(run: PracticeRhythmRun): string {
     const builtIn = PATTERNS.find((pattern) => pattern.id === run.pattern);
@@ -103,6 +122,10 @@
     }
     return t("rhythm.toolTitle");
   }
+
+  const exerciseName = (kind: keyof typeof KIND_NAMES | "rhythm") =>
+    kind === "rhythm" ? t("rhythm.toolTitle") : t(KIND_NAMES[kind].labelKey);
+  const exercisePath = (kind: string) => (kind === "rhythm" ? "/tools/rhythm" : "/tools/trainer");
 
   function runDetail(run: PracticeRhythmRun): string {
     const parts = [
@@ -125,15 +148,50 @@
 
 <Page width="page">
   <section class="practice-page" data-testid="practice-view">
-    <PageHeader title={t("practiceLog.heading")} eyebrow={t("practiceLog.nav")} />
+    <PageHeader
+      title={greeting}
+      eyebrow={t("practiceLog.nav")}
+      {subtitle}
+      subtitleTestId="practice-subtitle"
+    >
+      {#snippet actions()}
+        {#if stats}
+          {#if resume}
+            <a
+              class="button primary"
+              data-testid="practice-continue"
+              href={hrefFor(songPath(resume.song_id))}
+              onclick={(event) => followLink(event, songPath(resume!.song_id))}
+            >
+              <Icon name="play" size={16} />{t("practiceHome.continue")}
+            </a>
+          {:else}
+            <a
+              class="button primary"
+              data-testid="practice-start"
+              href={hrefFor("/")}
+              onclick={(event) => followLink(event, "/")}
+            >
+              <Icon name="library" size={16} />{t("practiceHome.start")}
+            </a>
+          {/if}
+        {/if}
+      {/snippet}
+    </PageHeader>
 
     {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
 
     {#if !stats}
       {#if !error}<p class="muted" role="status">{t("app.loading")}</p>{/if}
+    {:else if empty}
+      <div class="empty-state compact" data-testid="practice-empty">
+        <span class="empty-art"><Icon name="target" size={30} /></span>
+        <p class="muted">{t("practiceLog.empty")}</p>
+      </div>
+      <Recommendations />
     {:else}
-      <div class="top">
-        <div class="card ring-card" data-testid="practice-goal-card">
+      <div class="today card" data-testid="practice-goal-card">
+        {#if stats.goal.daily_minutes > 0}
           <div class="ring" data-testid="practice-ring" data-progress={progress.toFixed(2)}>
             <svg viewBox="0 0 120 120" width="132" height="132" aria-hidden="true">
               <circle class="track" cx="60" cy="60" r={RADIUS} />
@@ -151,106 +209,84 @@
             <div class="ring-text">
               <strong data-testid="practice-today">{minutesOf(stats.today_seconds)}</strong>
               <span class="muted">
-                {stats.goal.daily_minutes > 0
-                  ? t("practiceLog.ofGoal", { minutes: stats.goal.daily_minutes })
-                  : t("practiceLog.minutesToday")}
+                {t("practiceLog.ofGoal", { minutes: stats.goal.daily_minutes })}
               </span>
             </div>
           </div>
-          <form class="goal-form" onsubmit={saveGoal}>
-            <label for="practice-goal">{t("practiceLog.dailyGoal")}</label>
-            <div class="goal-row">
-              <input
-                id="practice-goal"
-                data-testid="practice-goal-input"
-                type="number"
-                min="0"
-                max="720"
-                bind:value={goalDraft}
-              />
-              <span class="muted">{t("practiceLog.minutes")}</span>
-            </div>
-            <label class="check">
-              <input type="checkbox" data-testid="practice-weekly-toggle" bind:checked={weekly} />
-              {t("practiceLog.weeklySummary")}
-            </label>
-            <button class="button" type="submit" data-testid="practice-goal-save" disabled={saving}>
-              {t("practiceLog.saveGoal")}
-            </button>
-          </form>
-        </div>
-
-        <div class="card stats-card">
-          <div class="stat" data-testid="practice-streak">
-            <span class="stat-value">{stats.current_streak}</span>
-            <span class="muted">{t("practiceLog.dayStreak", { count: stats.current_streak })}</span>
+        {:else}
+          <div class="plain-today">
+            <strong data-testid="practice-today">{minutesOf(stats.today_seconds)}</strong>
+            <span class="muted">{t("practiceLog.minutesToday")}</span>
           </div>
-          <div class="stat">
-            <span class="stat-value" data-testid="practice-longest">{stats.longest_streak}</span>
-            <span class="muted">{t("practiceLog.longestStreak")}</span>
-          </div>
-          <div class="stat">
-            <span class="stat-value" data-testid="practice-songs">{stats.songs_practised}</span>
-            <span class="muted">{t("practiceLog.songsPractised")}</span>
-          </div>
-          <div class="stat">
-            <span class="stat-value">{formatDuration(stats.total_seconds)}</span>
-            <span class="muted">{t("practiceLog.totalTime")}</span>
-          </div>
+        {/if}
+        <div class="today-body">
+          <h2>{t("practiceHome.today")}</h2>
+          {#if playedToday.length}
+            <p class="played" data-testid="practice-played-today">
+              {t("practiceHome.playedToday", {
+                songs: playedToday.map((song) => song.title).join(", "),
+              })}
+            </p>
+          {:else}
+            <p class="muted">{t("practiceHome.nothingYet")}</p>
+          {/if}
+          <GoalChip
+            minutes={stats.goal.daily_minutes}
+            weekly={stats.goal.weekly_summary}
+            onchange={saveGoal}
+          />
         </div>
       </div>
 
-      {#if stats.goal.weekly_summary}
-        <div class="card week" data-testid="practice-week">
-          <h2>{t("practiceLog.thisWeek")}</h2>
-          <p>
-            <strong>{formatDuration(stats.week.seconds)}</strong>
-            <span class="muted">
-              {t("practiceLog.weekDays", { count: stats.week.days_practised })}
-              {#if stats.goal.daily_minutes > 0}
-                · {t("practiceLog.weekGoalDays", { count: stats.week.goal_days })}
-              {/if}
-              {#if change(stats.week.seconds, stats.week.previous_seconds)}
-                · {change(stats.week.seconds, stats.week.previous_seconds)}
-              {/if}
+      <div class="tiles">
+        <div class="tile streak" data-testid="practice-streak">
+          <span class="tile-icon"><Icon name="flame" size={20} /></span>
+          <span class="tile-value">{stats.current_streak}</span>
+          <span class="tile-label"
+            >{t("practiceLog.dayStreak", { count: stats.current_streak })}</span
+          >
+          <span class="tile-note muted">
+            {#if stats.current_streak === 0 && stats.longest_streak > 0}
+              {t("practiceHome.streakPaused")}
+            {:else}
+              {t("practiceLog.longestStreak")}
+              <span data-testid="practice-longest">{stats.longest_streak}</span>
+            {/if}
+          </span>
+        </div>
+        {#if stats.goal.weekly_summary}
+          <div class="tile" data-testid="practice-week">
+            <span class="tile-icon"><Icon name="calendar" size={20} /></span>
+            <span class="tile-value">{formatDuration(stats.week.seconds)}</span>
+            <span class="tile-label">{t("practiceLog.thisWeek")}</span>
+            <span class="tile-note muted">
+              {weekDelta || t("practiceLog.weekDays", { count: stats.week.days_practised })}
             </span>
-          </p>
+          </div>
+        {/if}
+        <div class="tile">
+          <span class="tile-icon"><Icon name="tab" size={20} /></span>
+          <span class="tile-value" data-testid="practice-songs">{stats.songs_practised}</span>
+          <span class="tile-label">{t("practiceLog.songsPractised")}</span>
+          <span class="tile-note muted"
+            >{formatDuration(stats.total_seconds)} {t("practiceLog.totalTime")}</span
+          >
         </div>
-      {/if}
-
-      {#if empty}
-        <div class="empty-state compact" data-testid="practice-empty">
-          <span class="empty-art"><Icon name="target" size={30} /></span>
-          <p class="muted">{t("practiceLog.empty")}</p>
-        </div>
-      {/if}
-
-      <div class="card">
-        <h2>{t("practiceLog.heatmap")}</h2>
-        <div
-          class="heatmap"
-          role="img"
-          aria-label={t("practiceLog.heatmapLabel")}
-          data-testid="practice-heatmap"
-          use:showLatest
-        >
-          {#each weeks as week, index (index)}
-            <div class="week-col">
-              {#each week as cell (cell.day)}
-                <span
-                  class="cell level-{cell.level}"
-                  class:future={cell.future}
-                  data-testid={cell.level > 0 ? "practice-heat-day" : undefined}
-                  data-day={cell.day}
-                  title={cell.future ? undefined : `${cell.day}: ${formatDuration(cell.seconds)}`}
-                ></span>
-              {/each}
-            </div>
-          {/each}
+        <div class="tile">
+          <span class="tile-icon"><Icon name="star" size={20} /></span>
+          <span class="tile-value" data-testid="practice-best">
+            {bestScore !== null ? `${Math.round(bestScore)}%` : "–"}
+          </span>
+          <span class="tile-label">{t("practiceHome.bestScore")}</span>
         </div>
       </div>
 
       <Recommendations />
+
+      <div class="card">
+        <h2>{t("practiceLog.heatmap")}</h2>
+        <Heatmap days={stats.heatmap} today={stats.today} goalMinutes={stats.goal.daily_minutes} />
+      </div>
 
       <div class="lists">
         {#each [{ id: "recent", labelKey: "practiceLog.recent", rows: stats.recent }, { id: "scores", labelKey: "practiceLog.bestScores", rows: stats.best_scores }, { id: "stale", labelKey: "practiceLog.stale", rows: stats.stale }] as list (list.id)}
@@ -259,24 +295,17 @@
               <h2>{t(list.labelKey)}</h2>
               <ul class="song-list">
                 {#each list.rows as song (song.song_id)}
-                  <li>
-                    <a
-                      href={hrefFor(songPath(song.song_id))}
-                      onclick={(event) => followLink(event, songPath(song.song_id))}
-                    >
-                      <strong>{song.title}</strong>
-                      {#if song.artist}<span class="muted">{song.artist}</span>{/if}
-                    </a>
-                    <span class="muted meta">
-                      {#if list.id === "scores" && song.best_score !== null}
-                        {Math.round(song.best_score)}%
-                      {:else if list.id === "recent"}
-                        {formatDuration(song.total_seconds)} · {ago(song)}
-                      {:else}
-                        {ago(song)}
-                      {/if}
-                    </span>
-                  </li>
+                  <PracticeRow
+                    path={songPath(song.song_id)}
+                    title={song.title}
+                    subtitle={song.artist}
+                    cover={{ id: song.song_id, kind: song.content_kind }}
+                    value={list.id === "scores" && song.best_score !== null
+                      ? `${Math.round(song.best_score)}%`
+                      : list.id === "recent"
+                        ? `${formatDuration(song.total_seconds)} · ${ago(song)}`
+                        : ago(song)}
+                  />
                 {/each}
               </ul>
             </div>
@@ -287,26 +316,12 @@
             <h2>{t("practiceLog.exercises")}</h2>
             <ul class="song-list">
               {#each stats.exercises as exercise (exercise.kind)}
-                <li>
-                  <a
-                    href={hrefFor(exercise.kind === "rhythm" ? "/tools/rhythm" : "/tools/trainer")}
-                    onclick={(event) =>
-                      followLink(
-                        event,
-                        exercise.kind === "rhythm" ? "/tools/rhythm" : "/tools/trainer",
-                      )}
-                  >
-                    <strong
-                      >{exercise.kind === "rhythm"
-                        ? t("rhythm.toolTitle")
-                        : t(KIND_NAMES[exercise.kind].labelKey)}</strong
-                    >
-                  </a>
-                  <span class="muted meta">
-                    {formatDuration(exercise.total_seconds)}
-                    {#if exercise.best_score !== null}· {Math.round(exercise.best_score)}%{/if}
-                  </span>
-                </li>
+                <PracticeRow
+                  path={exercisePath(exercise.kind)}
+                  title={exerciseName(exercise.kind)}
+                  icon={exercise.kind === "rhythm" ? "drum" : "ear"}
+                  value={`${formatDuration(exercise.total_seconds)}${exercise.best_score !== null ? ` · ${Math.round(exercise.best_score)}%` : ""}`}
+                />
               {/each}
             </ul>
           </div>
@@ -316,18 +331,12 @@
             <h2>{t("practiceLog.rhythmRuns.heading")}</h2>
             <ul class="song-list">
               {#each stats.rhythm_runs as run, index (index)}
-                <li>
-                  {#if run.song_id}
-                    <a
-                      href={hrefFor(songPath(run.song_id))}
-                      onclick={(e) => followLink(e, songPath(run.song_id!))}
-                      ><strong>{runName(run)}</strong></a
-                    >
-                  {:else}
-                    <strong>{runName(run)}</strong>
-                  {/if}
-                  <span class="muted meta">{runDetail(run)}</span>
-                </li>
+                <PracticeRow
+                  path={run.song_id ? songPath(run.song_id) : ""}
+                  title={runName(run)}
+                  subtitle={runDetail(run)}
+                  icon="drum"
+                />
               {/each}
             </ul>
           </div>
@@ -340,7 +349,7 @@
 <style>
   .practice-page {
     display: grid;
-    gap: 1rem;
+    gap: var(--sp-5);
     min-width: 0;
   }
   .practice-page > * {
@@ -350,25 +359,33 @@
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: var(--r-md);
-    padding: 1rem 1.15rem;
+    padding: var(--sp-4) var(--sp-5);
     min-width: 0;
   }
   h2 {
-    font-size: 0.95rem;
-    margin: 0 0 0.6rem;
+    font-size: var(--fs-h3);
+    margin: 0 0 var(--sp-3);
     color: var(--text-2);
   }
-  .top {
-    display: grid;
-    gap: 1rem;
-    min-width: 0;
-    grid-template-columns: repeat(auto-fit, minmax(min(17rem, 100%), 1fr));
-  }
-  .ring-card {
+  .today {
     display: flex;
-    gap: 1.25rem;
+    gap: var(--sp-5);
     align-items: center;
     flex-wrap: wrap;
+  }
+  .today-body {
+    display: grid;
+    gap: var(--sp-2);
+    justify-items: start;
+    flex: 1 1 14rem;
+    min-width: 0;
+  }
+  .today-body h2,
+  .today-body p {
+    margin: 0;
+  }
+  .played {
+    overflow-wrap: anywhere;
   }
   .ring {
     position: relative;
@@ -389,7 +406,7 @@
   .arc {
     stroke: var(--accent);
     stroke-linecap: round;
-    transition: stroke-dashoffset 0.4s ease;
+    transition: stroke-dashoffset 0.4s var(--ease);
   }
   .arc.done {
     stroke: var(--success);
@@ -401,125 +418,75 @@
     place-content: center;
     text-align: center;
   }
-  .ring-text strong {
-    font-size: 2rem;
+  .ring-text strong,
+  .plain-today strong {
+    font-size: var(--fs-title);
     line-height: 1;
   }
   .ring-text span {
-    font-size: 0.78rem;
+    font-size: var(--fs-xs);
   }
-  .goal-form {
+  .plain-today {
     display: grid;
-    gap: 0.5rem;
-    flex: 1 1 10rem;
-  }
-  .goal-row {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-  }
-  .goal-row input {
-    width: 6rem;
-  }
-  .check {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-    min-height: 44px;
-    font-size: 0.9rem;
-  }
-  .stats-card {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    align-content: center;
-  }
-  .stat {
-    display: grid;
-    gap: 0.15rem;
-  }
-  .stat-value {
-    font-size: 1.9rem;
-    font-weight: 650;
-    line-height: 1.1;
-  }
-  .week p {
-    margin: 0;
-    display: flex;
-    gap: 0.6rem;
-    align-items: baseline;
-    flex-wrap: wrap;
-  }
-  .heatmap {
-    display: flex;
-    gap: 3px;
-    min-width: 0;
-    max-width: 100%;
-    overflow-x: auto;
-    padding-bottom: 0.25rem;
-  }
-  .week-col {
-    display: grid;
-    gap: 3px;
+    gap: var(--sp-1);
     flex: none;
   }
-  .cell {
-    width: 11px;
-    height: 11px;
-    border-radius: var(--r-xs);
-    background: var(--heat-0);
+  .tiles {
+    display: grid;
+    gap: var(--sp-3);
+    grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
   }
-  .cell.future {
-    background: transparent;
+  .tile {
+    display: grid;
+    gap: var(--sp-1);
+    align-content: start;
+    padding: var(--sp-4);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    min-width: 0;
   }
-  .level-1 {
-    background: var(--heat-1);
+  .tile-icon {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    margin-bottom: var(--sp-1);
+    border-radius: var(--r-sm);
+    background: var(--surface-2);
+    color: var(--text-2);
   }
-  .level-2 {
-    background: var(--heat-2);
+  .streak .tile-icon {
+    background: var(--accent-soft);
+    color: var(--accent-text);
   }
-  .level-3 {
-    background: var(--heat-3);
+  .tile-value {
+    font-size: var(--fs-title);
+    font-weight: 650;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
   }
-  .level-4 {
-    background: var(--heat-4);
+  .streak .tile-value {
+    color: var(--accent-text);
+  }
+  .tile-label {
+    font-size: var(--fs-sm);
+    font-weight: 600;
+  }
+  .tile-note {
+    font-size: var(--fs-xs);
   }
   .lists {
     display: grid;
-    gap: 1rem;
+    gap: var(--sp-4);
     min-width: 0;
-    grid-template-columns: repeat(auto-fit, minmax(min(17rem, 100%), 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(19rem, 100%), 1fr));
   }
   .song-list {
     list-style: none;
     margin: 0;
     padding: 0;
     display: grid;
-    gap: 0.4rem;
-  }
-  .song-list li {
-    display: flex;
-    justify-content: space-between;
-    gap: 0.75rem;
-    align-items: center;
-    min-height: 44px;
-  }
-  .song-list a {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-    min-width: 0;
-    min-height: 44px;
-    color: inherit;
-    text-decoration: none;
-  }
-  .song-list strong {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .meta {
-    flex: none;
-    font-size: 0.85rem;
+    gap: var(--sp-1);
   }
 </style>

@@ -31,11 +31,12 @@ test("the dashboard shows logged practice, and the daily goal can be changed", a
   await expect(page.getByTestId("practice-list-recent")).toContainText("Warm Up");
   await expect(page.getByTestId("practice-ring")).toHaveAttribute("data-progress", "0.47");
 
+  await page.getByTestId("practice-goal-chip").click();
   await page.getByTestId("practice-goal-input").fill("7");
-  await page.getByTestId("practice-goal-save").click();
+  await page.getByTestId("practice-goal-input").press("Enter");
   await expect(page.getByTestId("practice-ring")).toHaveAttribute("data-progress", "1.00");
   await page.reload();
-  await expect(page.getByTestId("practice-goal-input")).toHaveValue("7");
+  await expect(page.getByTestId("practice-goal-chip")).toContainText("7 min");
 });
 
 test("playing a tab is logged and shows in the song's history", async ({ page, seed }) => {

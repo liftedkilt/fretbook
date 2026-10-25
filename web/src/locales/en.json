@@ -1335,6 +1335,29 @@
       "late": "late"
     }
   },
+  "practiceHome": {
+    "greetingMorning": "Good morning",
+    "greetingAfternoon": "Good afternoon",
+    "greetingEvening": "Good evening",
+    "subtitleEmpty": "Play a song and your time is logged here automatically.",
+    "playedMinutes": "{minutes} min played today.",
+    "nothingYet": "Nothing played yet today.",
+    "goalMet": "Today's goal is done. Nice work.",
+    "toGoal": "{minutes} min to today's goal.",
+    "continue": "Continue",
+    "start": "Pick a song to play",
+    "today": "Today",
+    "playedToday": "Played today: {songs}",
+    "goalChip": "Goal: {minutes} min",
+    "goalOff": "Set a daily goal",
+    "goalHint": "Set 0 to turn the daily goal off.",
+    "streakPaused": "Streak paused. Play today to start a new one.",
+    "bestScore": "best score",
+    "upNext": "Up next",
+    "loopScored": "Loop scored {percent}%",
+    "less": "Less",
+    "more": "More"
+  },
   "difficulty": {
     "heading": "Difficulty",
     "intro": "Estimated from the notes in the score: how fast they come, how far the hand moves, how wide the stretches are, which techniques are used, how often chords change and how tricky the rhythm is.",

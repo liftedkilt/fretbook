@@ -1335,6 +1335,29 @@
       "late": "atrasado"
     }
   },
+  "practiceHome": {
+    "greetingMorning": "Bom dia",
+    "greetingAfternoon": "Boa tarde",
+    "greetingEvening": "Boa noite",
+    "subtitleEmpty": "Toque uma música e o seu tempo é registrado aqui automaticamente.",
+    "playedMinutes": "{minutes} min tocados hoje.",
+    "nothingYet": "Nada tocado ainda hoje.",
+    "goalMet": "A meta de hoje está cumprida. Bom trabalho.",
+    "toGoal": "Faltam {minutes} min para a meta de hoje.",
+    "continue": "Continuar",
+    "start": "Escolha uma música para tocar",
+    "today": "Hoje",
+    "playedToday": "Tocado hoje: {songs}",
+    "goalChip": "Meta: {minutes} min",
+    "goalOff": "Definir meta diária",
+    "goalHint": "Use 0 para desativar a meta diária.",
+    "streakPaused": "Sequência pausada. Toque hoje para começar uma nova.",
+    "bestScore": "melhor pontuação",
+    "upNext": "A seguir",
+    "loopScored": "Trecho com {percent}%",
+    "less": "Menos",
+    "more": "Mais"
+  },
   "difficulty": {
     "heading": "Dificuldade",
     "intro": "Estimada a partir das notas da partitura: velocidade, deslocamento da mão, aberturas, técnicas usadas, frequência das trocas de acordes e complexidade do ritmo.",

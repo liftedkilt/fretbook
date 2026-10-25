@@ -7,6 +7,8 @@
    * | Meaning                         | Icon name                          |
    * | ---                             | ---                                |
    * | Practice (nav, practice log)    | target                             |
+   * | Practice streak                 | flame                              |
+   * | A week, a date                  | calendar                           |
    * | Library                         | library                            |
    * | Lessons, course                 | graduation                         |
    * | Setlists                        | listMusic                          |
@@ -109,12 +111,16 @@
     graduation: "M22 10 12 5 2 10l10 5 10-5ZM22 10v6M6 12.5V17c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5",
     bluetooth: "m7 7 10 10-5 5V2l5 5L7 17",
     // Registry additions, alphabetical so later icons land on their own lines.
+    calendar:
+      "M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z",
     cloudCheck: "M20 16.6A5 5 0 0 0 18 7h-1.3A7 7 0 1 0 4 14.4M8 18l2.5 2.5L16 15",
     cloudDownload: "M12 12v9M8 17l4 4 4-4M20 16.6A5 5 0 0 0 18 7h-1.3A7 7 0 1 0 4 14.4",
     crosshair: "M12 22v-3M12 5V2M22 12h-3M5 12H2M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z",
     drum: "M12 4c4.4 0 8 1.2 8 2.7v8.6c0 1.5-3.6 2.7-8 2.7s-8-1.2-8-2.7V6.7C4 5.2 7.6 4 12 4ZM4 6.7c0 1.5 3.6 2.7 8 2.7s8-1.2 8-2.7M12 9.4V18M8.5 8.8v7.2M15.5 8.8v7.2",
     dumbbell: "M6.5 6.5v11M17.5 6.5v11M3.5 9.5v5M20.5 9.5v5M6.5 12h11",
     ear: "M6 8.5a6.5 6.5 0 1 1 13 0c0 6-6 6-6 10a3.5 3.5 0 1 1-7 0M15 8.5a2.5 2.5 0 0 0-5 0v1a2 2 0 1 1 0 4",
+    flame:
+      "M12 22a7 7 0 0 0 7-7c0-4-3-6-4-9-1.5 1.5-2 3-2 4.5C12 8 10.5 6 10 3 7 6 5 9.5 5 14a7 7 0 0 0 7 8Z",
     hourglass:
       "M5 3h14M5 21h14M7 3v3.2a2 2 0 0 0 .6 1.4L12 12l-4.4 4.4a2 2 0 0 0-.6 1.4V21M17 3v3.2a2 2 0 0 1-.6 1.4L12 12l4.4 4.4a2 2 0 0 1 .6 1.4V21",
     keyboard:

@@ -123,6 +123,32 @@ for (const scheme of ["light", "dark"] as const) {
       await expect(page.getByRole("menu")).toBeVisible();
       expect(await violations(page, "setlist-overflow")).toEqual([]);
     });
+
+    test("the practice home with history and its goal popover have no axe violations", async ({
+      page,
+      seed,
+    }) => {
+      const song = await seed.chordSheet();
+      const now = new Date();
+      const pad = (value: number) => String(value).padStart(2, "0");
+      const logged = await page.request.post("/api/practice/sessions", {
+        data: {
+          song_id: song.id,
+          day: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
+          duration_seconds: 420,
+          speed: 1,
+          mode: "free",
+        },
+      });
+      expect(logged.ok()).toBeTruthy();
+      await page.goto("/practice");
+      await expect(page.getByTestId("practice-ring")).toBeVisible();
+      const found = await violations(page, "practice home");
+      await page.getByTestId("practice-goal-chip").click();
+      await expect(page.getByTestId("practice-goal-input")).toBeVisible();
+      found.push(...(await violations(page, "practice goal popover")));
+      expect(found).toEqual([]);
+    });
   });
 }
 
