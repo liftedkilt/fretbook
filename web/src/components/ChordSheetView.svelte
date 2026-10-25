@@ -287,23 +287,6 @@
       </div>
     {/snippet}
   </PageHeader>
-  <SongTags {song} {readOnly} />
-  {#if !readOnly}<SongLibraryActions songId={song.id} />{/if}
-  <SongMetadata
-    {song}
-    {readOnly}
-    onchange={(saved) => {
-      Object.assign(song, {
-        key: saved.key,
-        key_detected: saved.key_detected,
-        genre: saved.genre,
-        album: saved.album,
-        year: saved.year,
-        notes: saved.notes,
-        cover_url: saved.cover_url,
-      });
-    }}
-  />
   {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
 
   {#if entries.length}
@@ -346,6 +329,26 @@
 
   <div class="paper chord-paper" style="font-size:{stage ? Math.max(size, 1.8) : size}rem">
     <ChordSheet text={song.chordpro ?? ""} transpose={shapeShift} {flats} active={activeChord} />
+  </div>
+
+  <div class="chord-details">
+    <SongTags {song} {readOnly} />
+    {#if !readOnly}<SongLibraryActions songId={song.id} />{/if}
+    <SongMetadata
+      {song}
+      {readOnly}
+      onchange={(saved) => {
+        Object.assign(song, {
+          key: saved.key,
+          key_detected: saved.key_detected,
+          genre: saved.genre,
+          album: saved.album,
+          year: saved.year,
+          notes: saved.notes,
+          cover_url: saved.cover_url,
+        });
+      }}
+    />
   </div>
 
   <div class="float-dock no-print" role="toolbar" aria-label={t("chords.controls")}>
@@ -468,6 +471,47 @@
     justify-content: flex-start;
     gap: var(--sp-1) var(--sp-3);
     margin-bottom: var(--sp-1);
+  }
+
+  /* A small cover: the sheet is the page, not the artwork. */
+  .chords-page :global(.cover-lg) {
+    width: clamp(56px, 7vw, 88px);
+    border-radius: var(--r-md);
+    box-shadow: none;
+  }
+
+  .chords-page :global(.cover-lg .cover-mono) {
+    font-size: 1.6rem;
+  }
+
+  /* The labels would push the last controls off a narrow screen. */
+  @media (max-width: 960px) {
+    .float-dock :global(.float-label) {
+      display: none;
+    }
+  }
+
+  .chord-details {
+    max-width: 920px;
+    margin-top: var(--sp-5);
+  }
+
+  /* The header already names the song, so on a phone the sheet starts at its first line. */
+  @media screen and (max-width: 560px) {
+    .chord-paper :global(.chord-title),
+    .chord-paper :global(.chord-artist) {
+      display: none;
+    }
+  }
+
+  /* Two rows on a phone, rather than a dock wider than the screen. */
+  @media (max-width: 560px) {
+    .float-dock {
+      flex-wrap: wrap;
+      justify-content: center;
+      width: calc(100vw - 24px);
+      border-radius: var(--r-lg);
+    }
   }
 
   .capo-note {

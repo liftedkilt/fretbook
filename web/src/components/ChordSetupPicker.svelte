@@ -31,7 +31,7 @@
       {/each}
     </select>
   </label>
-  {#if compact}<span class="dot" aria-hidden="true">·</span>{/if}
+  {#if compact}<span class="sep" aria-hidden="true">·</span>{/if}
   <label class="tool-field">
     <span class:visually-hidden={compact}>{t("tools.tuning")}</span>
     <select
@@ -52,13 +52,14 @@
     gap: var(--sp-1);
   }
 
-  .compact .dot {
+  .compact .sep {
     color: var(--text-3);
   }
 
   .compact select {
     width: auto;
-    padding: var(--sp-1) var(--sp-2);
+    padding-block: var(--sp-1);
+    padding-inline-start: var(--sp-2);
     border-color: transparent;
     background-color: transparent;
     font-size: 0.9rem;
