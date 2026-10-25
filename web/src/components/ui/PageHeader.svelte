@@ -66,11 +66,12 @@
           <h1 class="{titleSize} {titleClass}" data-testid={titleTestId}>{title}</h1>
         {/if}
         {#if subtitle}<p class="subtitle" data-testid={subtitleTestId}>{subtitle}</p>{/if}
-        {#if below}<div class="below">{@render below()}</div>{/if}
       </div>
     </div>
     {#if actions}<div class="actions">{@render actions()}</div>{/if}
   </div>
+  <!-- Full width, so meta facts are not covered by the action buttons. -->
+  {#if below}<div class="below">{@render below()}</div>{/if}
 </header>
 
 <style>
@@ -117,8 +118,9 @@
     display: flex;
     align-items: flex-end;
     gap: var(--sp-4);
-    min-width: 0;
-    flex: 1 1 16rem;
+    /* Stay wide enough for the title; the actions wrap onto the next line instead. */
+    min-width: min(100%, 24rem);
+    flex: 1 1 24rem;
   }
 
   .leading {
@@ -159,17 +161,18 @@
   .below {
     display: grid;
     gap: var(--sp-2);
+    width: 100%;
     min-width: 0;
   }
 
   .actions {
     display: flex;
+    flex: none;
     flex-wrap: wrap;
     align-items: center;
     justify-content: flex-end;
     gap: var(--sp-2);
     margin-left: auto;
-    min-width: 0;
     max-width: 100%;
   }
 

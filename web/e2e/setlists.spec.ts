@@ -125,7 +125,7 @@ test("a song can be in several setlists, and setlists can be renamed and deleted
   await page.getByTestId("setlist-row").filter({ hasText: "One" }).getByRole("link").click();
   await page.getByTestId("setlist-name").fill("Renamed");
   await page.getByTestId("setlist-name").blur();
-  await page.getByRole("link", { name: "All setlists" }).click();
+  await page.locator(".page-header").getByRole("link", { name: "Setlists" }).click();
   await expect(page.getByTestId("setlist-row").filter({ hasText: "Renamed" })).toBeVisible();
 
   page.once("dialog", (dialog) => void dialog.accept());
