@@ -43,6 +43,7 @@
 
 <div class="heat">
   <!-- Focusable so the keyboard can scroll the grid when it is wider than the card. -->
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
   <div
     class="scroller"
     role="region"
