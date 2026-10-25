@@ -1,7 +1,8 @@
 <script lang="ts">
   import Icon from "./Icon.svelte";
-  import Page from "./ui/Page.svelte";
-  import PageHeader from "./ui/PageHeader.svelte";
+  import SegmentedControl from "./ui/SegmentedControl.svelte";
+  import SliderStepper from "./ui/SliderStepper.svelte";
+  import ToolPage from "./ui/ToolPage.svelte";
   import ListenPanel from "./ListenPanel.svelte";
   import { getPracticeStats, getSong, listSongs, recordPracticeExercise } from "../lib/api";
   import { onPracticeLogged, snapshotFromStats } from "../lib/celebrate";
@@ -279,24 +280,25 @@
         }[result.summary.tendency]
       : "",
   );
+  function setBpm(next: number) {
+    bpm = clampBpm(next);
+    persist();
+  }
   const ms = (value: number) => `${value > 0 ? "+" : ""}${Math.round(value)}`;
 </script>
 
 <svelte:window onkeydown={onKey} onkeyup={onKey} />
 
-<Page width="page">
-  <div class="tool-view" data-testid="rhythm-trainer-view">
-    <PageHeader
-      title={t("rhythm.toolTitle")}
-      titleSize="title"
-      eyebrow={t("tools.nav")}
-      subtitle={t("rhythm.intro")}
-      backHref="/tools"
-      backLabel={t("tools.heading")}
-      backTestId="tool-back"
-    />
+<ToolPage
+  title={t("rhythm.toolTitle")}
+  subtitle={t("rhythm.intro")}
+  testid="rhythm-trainer-view"
+  {stage}
+  {settings}
+/>
 
-    <div class="standalone-pickers">
+{#snippet settings()}
+    <div class="pickers">
       <label class="tool-field">
         <span>{t("rhythm.source")}</span>
         <select
@@ -376,22 +378,33 @@
           </select>
         </label>
       {/if}
-      <label class="tool-field">
+      <div class="tool-field tempo">
         <span>{t("rhythm.tempo")}</span>
+        <SliderStepper
+          label={t("rhythm.tempo")}
+          value={bpm}
+          min={MIN_BPM}
+          max={MAX_BPM}
+          testid="rhythm-bpm-slider"
+          decreaseLabel={t("tools.slower")}
+          increaseLabel={t("tools.faster")}
+          decreaseTestId="rhythm-bpm-minus"
+          increaseTestId="rhythm-bpm-plus"
+          disabled={running}
+          onchange={setBpm}
+        />
         <input
           type="number"
+          class="bpm-input"
           data-testid="rhythm-bpm"
           min={MIN_BPM}
           max={MAX_BPM}
           value={bpm}
           disabled={running}
           aria-label={t("rhythm.tempo")}
-          oninput={(event) => {
-            bpm = clampBpm(Number(event.currentTarget.value));
-            persist();
-          }}
+          oninput={(event) => setBpm(Number(event.currentTarget.value))}
         />
-      </label>
+      </div>
       <label class="tool-field">
         <span>{t("rhythm.bars")}</span>
         <select
@@ -430,6 +443,9 @@
         onChannel={(next) => (micChannel = next)}
       />
     {/if}
+{/snippet}
+
+{#snippet stage()}
     {#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
     {#if source === "song"}
       {#if songError}
@@ -524,6 +540,16 @@
       {/if}
     </div>
 
+    {#if running}
+      <button class="primary hero start" data-testid="rhythm-stop" onclick={stop}>
+        <Icon name="pause" size={22} /><span>{t("tools.stop")}</span>
+      </button>
+    {:else}
+      <button class="primary hero start" data-testid="rhythm-start" onclick={begin}>
+        <Icon name="play" size={22} /><span>{result ? t("rhythm.again") : t("tools.start")}</span>
+      </button>
+    {/if}
+
     <button
       class="rhythm-pad"
       data-testid="rhythm-pad"
@@ -537,18 +563,6 @@
       <Icon name="tap" size={28} />
       <span>{t("rhythm.tap")}</span>
     </button>
-
-    <div class="metronome-action-row">
-      {#if running}
-        <button class="primary metronome-toggle-btn" data-testid="rhythm-stop" onclick={stop}>
-          <Icon name="pause" size={22} /><span>{t("tools.stop")}</span>
-        </button>
-      {:else}
-        <button class="primary metronome-toggle-btn" data-testid="rhythm-start" onclick={begin}>
-          <Icon name="play" size={22} /><span>{result ? t("rhythm.again") : t("tools.start")}</span>
-        </button>
-      {/if}
-    </div>
 
     {#if result}
       <section class="rhythm-results" data-testid="rhythm-results" aria-label={t("rhythm.results")}>
@@ -623,12 +637,26 @@
         </ol>
       </section>
     {/if}
-  </div>
-</Page>
+{/snippet}
 
 <style>
+  .pickers {
+    display: grid;
+    gap: var(--sp-4);
+  }
+  .tempo {
+    display: grid;
+    gap: var(--sp-2);
+  }
+  .bpm-input {
+    width: 6rem;
+    text-align: center;
+  }
+  .start {
+    width: 100%;
+    justify-content: center;
+  }
   .rhythm-mic {
-    grid-column: 1 / -1;
     min-height: 44px;
   }
   .rhythm-bar {
