@@ -163,6 +163,13 @@ class PracticeWeek(BaseModel):
     """Days of the last seven that reached the daily goal."""
 
 
+class PracticeLastLesson(BaseModel):
+    course_id: str
+    lesson_id: str
+    opened_at: str
+    """When the lesson was last opened, ISO 8601 in UTC."""
+
+
 class PracticeStats(BaseModel):
     today: str
     goal: PracticeGoal
@@ -171,6 +178,10 @@ class PracticeStats(BaseModel):
     longest_streak: int
     total_seconds: int
     songs_practised: int
+    songs_this_month: int = 0
+    """Songs practised in the calendar month of `today`."""
+    last_lesson: PracticeLastLesson | None = None
+    """The lesson opened most recently, or null when none has been opened."""
     heatmap: list[PracticeDay]
     """The last 365 days that have any practice, oldest first."""
     week: PracticeWeek

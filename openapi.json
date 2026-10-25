@@ -4451,6 +4451,29 @@
         "title": "PracticeGoalBody",
         "type": "object"
       },
+      "PracticeLastLesson": {
+        "properties": {
+          "course_id": {
+            "title": "Course Id",
+            "type": "string"
+          },
+          "lesson_id": {
+            "title": "Lesson Id",
+            "type": "string"
+          },
+          "opened_at": {
+            "title": "Opened At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "course_id",
+          "lesson_id",
+          "opened_at"
+        ],
+        "title": "PracticeLastLesson",
+        "type": "object"
+      },
       "PracticeRhythmRun": {
         "properties": {
           "bar": {
@@ -4889,6 +4912,16 @@
             "title": "Heatmap",
             "type": "array"
           },
+          "last_lesson": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PracticeLastLesson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "longest_streak": {
             "title": "Longest Streak",
             "type": "integer"
@@ -4910,6 +4943,11 @@
           },
           "songs_practised": {
             "title": "Songs Practised",
+            "type": "integer"
+          },
+          "songs_this_month": {
+            "default": 0,
+            "title": "Songs This Month",
             "type": "integer"
           },
           "stale": {
