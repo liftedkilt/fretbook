@@ -4946,7 +4946,6 @@
             "type": "integer"
           },
           "songs_this_month": {
-            "default": 0,
             "title": "Songs This Month",
             "type": "integer"
           },
@@ -4981,6 +4980,8 @@
           "longest_streak",
           "total_seconds",
           "songs_practised",
+          "songs_this_month",
+          "last_lesson",
           "heatmap",
           "week",
           "recent",

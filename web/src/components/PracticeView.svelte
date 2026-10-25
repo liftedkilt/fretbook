@@ -6,6 +6,7 @@
   import Recommendations from "./Recommendations.svelte";
   import Page from "./ui/Page.svelte";
   import PageHeader from "./ui/PageHeader.svelte";
+  import { lessonPath } from "../lib/lessons";
   import { getPracticeStats, savePracticeGoal } from "../lib/api";
   import { t } from "../lib/i18n.svelte";
   import { agoDays, goalProgress, localDay, minutesOf, ringOffset } from "../lib/practiceLog";
@@ -94,8 +95,16 @@
       : t("practiceHome.toGoal", { minutes: Math.max(1, goal - minutesOf(stats.today_seconds)) });
   });
 
-  /** The song to carry on with: whatever was practised last. */
-  const resume = $derived(stats?.recent[0] ?? null);
+  /** Where to carry on: the last song practised or the last lesson opened, whichever came later. */
+  const resume = $derived.by(() => {
+    if (!stats) return null;
+    const song = stats.recent[0] ?? null;
+    const lesson = stats.last_lesson;
+    if (lesson && (!song || Date.parse(lesson.opened_at) > Date.parse(song.last_practised))) {
+      return { path: lessonPath(lesson.course_id, lesson.lesson_id) };
+    }
+    return song ? { path: songPath(song.song_id) } : null;
+  });
   const playedToday = $derived(
     stats ? stats.recent.filter((s) => s.last_day === stats!.today) : [],
   );
@@ -160,8 +169,8 @@
             <a
               class="button primary"
               data-testid="practice-continue"
-              href={hrefFor(songPath(resume.song_id))}
-              onclick={(event) => followLink(event, songPath(resume!.song_id))}
+              href={hrefFor(resume.path)}
+              onclick={(event) => followLink(event, resume!.path)}
             >
               <Icon name="play" size={16} />{t("practiceHome.continue")}
             </a>
@@ -266,8 +275,8 @@
         {/if}
         <div class="tile">
           <span class="tile-icon"><Icon name="tab" size={20} /></span>
-          <span class="tile-value" data-testid="practice-songs">{stats.songs_practised}</span>
-          <span class="tile-label">{t("practiceLog.songsPractised")}</span>
+          <span class="tile-value" data-testid="practice-songs">{stats.songs_this_month}</span>
+          <span class="tile-label">{t("practiceLog.songsThisMonth")}</span>
           <span class="tile-note muted"
             >{formatDuration(stats.total_seconds)} {t("practiceLog.totalTime")}</span
           >

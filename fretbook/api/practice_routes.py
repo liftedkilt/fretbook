@@ -178,9 +178,9 @@ class PracticeStats(BaseModel):
     longest_streak: int
     total_seconds: int
     songs_practised: int
-    songs_this_month: int = 0
+    songs_this_month: int
     """Songs practised in the calendar month of `today`."""
-    last_lesson: PracticeLastLesson | None = None
+    last_lesson: PracticeLastLesson | None
     """The lesson opened most recently, or null when none has been opened."""
     heatmap: list[PracticeDay]
     """The last 365 days that have any practice, oldest first."""
