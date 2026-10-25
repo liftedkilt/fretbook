@@ -2,7 +2,8 @@
   import { tick, untrack } from "svelte";
 
   import Icon from "./Icon.svelte";
-  import OfflineToggle from "./OfflineToggle.svelte";
+  import Cover from "./Cover.svelte";
+  import SongPickerSheet from "./setlists/SongPickerSheet.svelte";
   import OverflowMenu from "./ui/OverflowMenu.svelte";
   import Page from "./ui/Page.svelte";
   import PageHeader from "./ui/PageHeader.svelte";
@@ -14,13 +15,23 @@
     renameSetlist,
     saveSetlistEntries,
   } from "../lib/api";
+  import { coverSrc } from "../lib/cover";
   import { t } from "../lib/i18n.svelte";
+  import {
+    isSetlistSaved,
+    removeSetlistOffline,
+    saveSetlistOffline,
+  } from "../lib/offline/offline.svelte";
+  import { offlineSupported } from "../lib/offline/store";
+  import { formatDuration } from "../lib/practiceText";
   import { followLink, hrefFor, navigate } from "../lib/router.svelte";
   import {
     clampTranspose,
     moveItem,
     playPath,
     reorderKey,
+    runningSeconds,
+    songsById,
     toDrafts,
     transposeLabel,
   } from "../lib/setlists";
@@ -97,7 +108,7 @@
     }
   }
 
-  async function moveTo(from: number, to: number, focus?: "up" | "down") {
+  async function moveTo(from: number, to: number, focus = false) {
     const target = Math.max(0, Math.min(rows.length - 1, to));
     if (from === target || from < 0 || from >= rows.length) return;
     const moved = rows[from];
@@ -110,16 +121,11 @@
     void save();
     if (focus) {
       await tick();
-      // Keep the keyboard where it was, on the same row. At the end of the list use the other button.
-      const row = document.querySelector<HTMLElement>(`[data-uid="${moved.uid}"]`);
-      const wanted = row?.querySelector<HTMLButtonElement>(`[data-move="${focus}"]:not(:disabled)`);
-      (wanted ?? row?.querySelector<HTMLButtonElement>("[data-move]:not(:disabled)"))?.focus();
+      // Keep the keyboard on the same row.
+      document
+        .querySelector<HTMLElement>(`[data-uid="${moved.uid}"] [data-testid="setlist-entry-menu"]`)
+        ?.focus();
     }
-  }
-
-  function remove(index: number) {
-    rows = rows.filter((_, at) => at !== index);
-    void save();
   }
 
   function setTranspose(row: Row, value: number) {
@@ -131,7 +137,7 @@
     const step = reorderKey(event);
     if (!step) return;
     event.preventDefault();
-    void moveTo(index, index + step, step > 0 ? "down" : "up");
+    void moveTo(index, index + step, true);
   }
 
   // Drag and drop (the buttons and Alt+arrows above do the same for keyboards and touch).
@@ -146,39 +152,42 @@
     if (from !== null) void moveTo(from, index);
   }
 
-  // Adding songs: search the library and append.
-  let query = $state("");
-  let results = $state<SongSummary[]>([]);
-  let searched = $state(false);
-
+  // The library's songs by id, for covers and the running time.
+  let songs = $state<Map<string, SongSummary>>(new Map());
   $effect(() => {
-    const text = query.trim();
     let cancel = false;
-    const timer = setTimeout(
-      () => {
-        listSongs({ q: text, limit: 20, sort: text ? undefined : "title" })
-          .then((page) => {
-            if (cancel) return;
-            results = page.items;
-            searched = true;
-          })
-          .catch((err: unknown) => {
-            if (!cancel) fail(err);
-          });
-      },
-      text ? 200 : 0,
-    );
+    songsById((cursor) => listSongs({ limit: 200, sort: "title", cursor }))
+      .then((found) => {
+        if (!cancel) songs = found;
+      })
+      .catch(() => {
+        // Covers and times are extras; the list works without them.
+      });
     return () => {
       cancel = true;
-      clearTimeout(timer);
     };
   });
 
-  function addSong(song: SongSummary) {
+  const seconds = $derived(
+    runningSeconds(
+      rows.map((row) => row.song_id),
+      songs,
+    ),
+  );
+  const subtitle = $derived(
+    seconds > 0
+      ? t("setlists.countTime", { count: rows.length, time: formatDuration(seconds) })
+      : t("setlists.count", { count: rows.length }),
+  );
+
+  let picking = $state(false);
+  const added = $derived(new Set(rows.map((row) => row.song_id)));
+
+  function addSongs(picked: SongSummary[]) {
     rows = [
       ...rows,
-      ...withUid([
-        {
+      ...withUid(
+        picked.map((song) => ({
           id: "",
           song_id: song.id,
           note: "",
@@ -188,11 +197,85 @@
           content_kind: song.content_kind,
           preferred_instrument: song.preferred_instrument,
           string_count: song.string_count,
-        },
-      ]),
+        })),
+      ),
     ];
-    announcement = t("setlists.added", { title: song.title, position: rows.length });
+    announcement =
+      picked.length === 1
+        ? t("setlists.added", { title: picked[0].title, position: rows.length })
+        : t("setlists.addedMany", { count: picked.length });
     void save();
+  }
+
+  // Removing a song can be undone for a few seconds.
+  let undo = $state<{ row: Row; index: number } | null>(null);
+  let undoTimer: ReturnType<typeof setTimeout> | undefined;
+
+  function remove(index: number) {
+    const row = rows[index];
+    rows = rows.filter((_, at) => at !== index);
+    void save();
+    undo = { row, index };
+    announcement = t("setlists.removed", { title: row.title });
+    clearTimeout(undoTimer);
+    undoTimer = setTimeout(() => (undo = null), 8000);
+  }
+
+  function undoRemove() {
+    if (!undo) return;
+    const { row, index } = undo;
+    undo = null;
+    clearTimeout(undoTimer);
+    const next = [...rows];
+    next.splice(Math.min(index, next.length), 0, row);
+    rows = next;
+    announcement = t("setlists.restored", { title: row.title });
+    void save();
+  }
+
+  $effect(() => () => clearTimeout(undoTimer));
+
+  // Notes read as text and turn into a field when clicked.
+  let editingUid = $state<number | null>(null);
+  let noteBefore = "";
+
+  function editNote(row: Row) {
+    noteBefore = row.note;
+    editingUid = row.uid;
+  }
+
+  function endNote(row: Row, keep: boolean) {
+    if (editingUid !== row.uid) return;
+    editingUid = null;
+    if (keep) void save();
+    else row.note = noteBefore;
+  }
+
+  function focusOnMount(node: HTMLElement) {
+    node.focus();
+  }
+
+  // Keeping a copy on this device.
+  let offlineBusy = $state(false);
+  const kept = $derived(isSetlistSaved(id));
+
+  async function toggleOffline() {
+    offlineBusy = true;
+    error = "";
+    try {
+      if (kept) await removeSetlistOffline(id);
+      else await saveSetlistOffline(id);
+    } catch (err) {
+      error = kept || !(err instanceof Error) ? t("offline.failed") : t("offline.saveFailed");
+    } finally {
+      offlineBusy = false;
+    }
+  }
+
+  function renameFocus() {
+    const field = document.getElementById("setlist-name") as HTMLInputElement | null;
+    field?.focus();
+    field?.select();
   }
 
   async function exportPdf() {
@@ -243,7 +326,6 @@
     {#if !loaded}
       <PageHeader
         title={t("setlists.heading")}
-        titleSize="title"
         backHref="/setlists"
         backLabel={t("setlists.nav")}
       />
@@ -252,9 +334,9 @@
     {#if loaded}
       <PageHeader
         title={name}
-        titleSize="title"
         eyebrow={t("setlists.nav")}
-        subtitle={t("setlists.count", { count: rows.length })}
+        {subtitle}
+        subtitleTestId="setlist-subtitle"
         backHref="/setlists"
         backLabel={t("setlists.nav")}
       >
@@ -271,7 +353,51 @@
           />
         {/snippet}
         {#snippet actions()}
-          <OfflineToggle kind="setlist" {id} />
+          <OverflowMenu
+            label={t("primitives.more")}
+            testid="setlist-overflow"
+            items={[
+              ...(offlineSupported()
+                ? [
+                    {
+                      id: "offline",
+                      label: offlineBusy
+                        ? t("offline.working")
+                        : kept
+                          ? t("setlists.keptOffline")
+                          : t("setlists.keepOffline"),
+                      icon: kept ? "cloudCheck" : "cloudDownload",
+                      testid: "setlist-offline",
+                      disabled: offlineBusy,
+                      onclick: () => void toggleOffline(),
+                    },
+                  ]
+                : []),
+              {
+                id: "pdf",
+                label: exporting ? t("setlists.exportingPdf") : t("setlists.exportPdf"),
+                icon: "file",
+                testid: "setlist-export-pdf",
+                disabled: exporting || rows.length === 0,
+                onclick: () => void exportPdf(),
+              },
+              {
+                id: "rename",
+                label: t("setlists.renameItem"),
+                icon: "edit",
+                testid: "setlist-rename",
+                onclick: renameFocus,
+              },
+              {
+                id: "delete",
+                label: t("setlists.deleteItem"),
+                icon: "trash",
+                danger: true,
+                testid: "setlist-delete",
+                onclick: () => void removeSetlist(),
+              },
+            ]}
+          />
           <a
             class="button primary"
             data-testid="setlist-play"
@@ -283,40 +409,23 @@
           >
             <Icon name="play" size={18} />{t("setlists.play")}
           </a>
-          <button
-            data-testid="setlist-export-pdf"
-            disabled={exporting || rows.length === 0}
-            onclick={() => void exportPdf()}
-          >
-            <Icon name="file" size={18} />{exporting
-              ? t("setlists.exportingPdf")
-              : t("setlists.exportPdf")}
-          </button>
-          <OverflowMenu
-            label={t("primitives.more")}
-            testid="setlist-overflow"
-            items={[
-              {
-                id: "delete",
-                label: t("setlists.delete"),
-                icon: "trash",
-                danger: true,
-                testid: "setlist-delete",
-                onclick: () => void removeSetlist(),
-              },
-            ]}
-          />
         {/snippet}
       </PageHeader>
 
-      <h2 class="section-title">{t("setlists.entries")}</h2>
+      <div class="section-head">
+        <h2 class="section-title">{t("setlists.entries")}</h2>
+        <button data-testid="setlist-add-open" onclick={() => (picking = true)}>
+          <Icon name="plus" size={18} />{t("setlists.addHeading")}
+        </button>
+      </div>
       {#if rows.length === 0}
         <p class="muted" data-testid="setlist-entries-empty">{t("setlists.entriesEmpty")}</p>
       {:else}
         <p class="muted hint">{t("setlists.reorderHint")}</p>
         <ol class="entries" data-testid="setlist-entries">
           {#each rows as row, index (row.uid)}
-            <!-- Alt+arrows bubble up from the row\'s own buttons and fields. -->
+            {@const song = songs.get(row.song_id)}
+            <!-- Alt+arrows bubble up from the row's own buttons and fields. -->
             <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
             <li
               class="entry"
@@ -348,76 +457,106 @@
                 aria-hidden="true"><Icon name="grip" size={18} /></span
               >
               <span class="position">{index + 1}</span>
+              <Cover
+                id={row.song_id}
+                title={row.title}
+                kind={row.content_kind}
+                strings={row.string_count}
+                size="sm"
+                src={coverSrc(song?.cover_url)}
+              />
               <div class="entry-main">
                 <strong class="entry-title" data-testid="setlist-entry-title">{row.title}</strong>
                 <span class="muted entry-artist">{row.artist || "—"}</span>
-                <input
-                  class="entry-note"
-                  data-testid="setlist-entry-note"
-                  bind:value={row.note}
-                  maxlength="500"
-                  placeholder={t("setlists.notePlaceholder")}
-                  aria-label={t("setlists.note", { title: row.title })}
-                  onchange={() => void save()}
-                />
-              </div>
-              {#if row.content_kind === "chords"}
-                <div
-                  class="transpose"
-                  role="group"
-                  aria-label={t("setlists.transposeFor", { title: row.title })}
-                >
+                {#if editingUid === row.uid}
+                  <input
+                    class="entry-note"
+                    data-testid="setlist-entry-note"
+                    bind:value={row.note}
+                    maxlength="500"
+                    placeholder={t("setlists.notePlaceholder")}
+                    aria-label={t("setlists.note", { title: row.title })}
+                    use:focusOnMount
+                    onblur={() => endNote(row, true)}
+                    onkeydown={(event) => {
+                      if (event.key === "Enter") event.currentTarget.blur();
+                      else if (event.key === "Escape") {
+                        event.stopPropagation();
+                        endNote(row, false);
+                      }
+                    }}
+                  />
+                {:else}
                   <button
-                    class="icon-button ghost"
-                    data-testid="setlist-transpose-down"
-                    disabled={row.transpose <= -11}
-                    onclick={() => setTranspose(row, row.transpose - 1)}
-                    aria-label={t("setlists.transposeDown")}
-                    title={t("setlists.transposeDown")}><Icon name="minus" size={16} /></button
+                    type="button"
+                    class="note-text"
+                    class:empty={!row.note}
+                    data-testid="setlist-entry-note-text"
+                    aria-label={t("setlists.note", { title: row.title })}
+                    onclick={() => editNote(row)}
                   >
-                  <span class="transpose-value" data-testid="setlist-transpose-value"
-                    >{transposeLabel(row.transpose)}</span
-                  >
-                  <button
-                    class="icon-button ghost"
-                    data-testid="setlist-transpose-up"
-                    disabled={row.transpose >= 11}
-                    onclick={() => setTranspose(row, row.transpose + 1)}
-                    aria-label={t("setlists.transposeUp")}
-                    title={t("setlists.transposeUp")}><Icon name="plus" size={16} /></button
-                  >
-                </div>
-              {/if}
-              <div class="entry-buttons">
-                <button
-                  class="icon-button ghost"
-                  data-testid="setlist-move-up"
-                  data-move="up"
-                  disabled={index === 0}
-                  onclick={() => void moveTo(index, index - 1, "up")}
-                  aria-label={t("setlists.moveUp", { title: row.title })}
-                  title={t("setlists.moveUp", { title: row.title })}
-                  ><Icon name="chevronUp" size={18} /></button
-                >
-                <button
-                  class="icon-button ghost"
-                  data-testid="setlist-move-down"
-                  data-move="down"
-                  disabled={index === rows.length - 1}
-                  onclick={() => void moveTo(index, index + 1, "down")}
-                  aria-label={t("setlists.moveDown", { title: row.title })}
-                  title={t("setlists.moveDown", { title: row.title })}
-                  ><Icon name="chevronDown" size={18} /></button
-                >
-                <button
-                  class="icon-button ghost"
-                  data-testid="setlist-remove"
-                  onclick={() => remove(index)}
-                  aria-label={t("setlists.remove", { title: row.title })}
-                  title={t("setlists.remove", { title: row.title })}
-                  ><Icon name="close" size={18} /></button
-                >
+                    {row.note || t("setlists.addNote")}
+                  </button>
+                {/if}
               </div>
+              <div class="transpose-col">
+                {#if row.content_kind === "chords"}
+                  <div
+                    class="transpose"
+                    role="group"
+                    aria-label={t("setlists.transposeFor", { title: row.title })}
+                  >
+                    <button
+                      class="icon-button ghost"
+                      data-testid="setlist-transpose-down"
+                      disabled={row.transpose <= -11}
+                      onclick={() => setTranspose(row, row.transpose - 1)}
+                      aria-label={t("setlists.transposeDown")}
+                      title={t("setlists.transposeDown")}><Icon name="minus" size={16} /></button
+                    >
+                    <span class="transpose-value" data-testid="setlist-transpose-value"
+                      >{transposeLabel(row.transpose)}</span
+                    >
+                    <button
+                      class="icon-button ghost"
+                      data-testid="setlist-transpose-up"
+                      disabled={row.transpose >= 11}
+                      onclick={() => setTranspose(row, row.transpose + 1)}
+                      aria-label={t("setlists.transposeUp")}
+                      title={t("setlists.transposeUp")}><Icon name="plus" size={16} /></button
+                    >
+                  </div>
+                {/if}
+              </div>
+              <OverflowMenu
+                label={t("setlists.rowMenu", { title: row.title })}
+                testid="setlist-entry-menu"
+                items={[
+                  {
+                    id: "up",
+                    label: t("setlists.moveUpItem"),
+                    icon: "chevronUp",
+                    testid: "setlist-move-up",
+                    disabled: index === 0,
+                    onclick: () => void moveTo(index, index - 1, true),
+                  },
+                  {
+                    id: "down",
+                    label: t("setlists.moveDownItem"),
+                    icon: "chevronDown",
+                    testid: "setlist-move-down",
+                    disabled: index === rows.length - 1,
+                    onclick: () => void moveTo(index, index + 1, true),
+                  },
+                  {
+                    id: "remove",
+                    label: t("setlists.removeItem"),
+                    icon: "close",
+                    testid: "setlist-remove",
+                    onclick: () => remove(index),
+                  },
+                ]}
+              />
             </li>
           {/each}
         </ol>
@@ -426,37 +565,12 @@
         {announcement}
       </p>
 
-      <h2 class="section-title">{t("setlists.addHeading")}</h2>
-      <label class="search">
-        <Icon name="search" size={18} />
-        <input
-          type="search"
-          data-testid="setlist-add-search"
-          bind:value={query}
-          placeholder={t("setlists.addSearch")}
-          aria-label={t("setlists.addSearch")}
-        />
-      </label>
-      {#if searched && results.length === 0}
-        <p class="muted">{t("setlists.addEmpty")}</p>
-      {:else}
-        <ul class="results">
-          {#each results as song (song.id)}
-            <li class="result" data-testid="setlist-result">
-              <span class="result-text">
-                <strong>{song.title}</strong>
-                <span class="muted">{song.artist || "—"}</span>
-              </span>
-              <button
-                data-testid="setlist-add"
-                onclick={() => addSong(song)}
-                aria-label={t("setlists.addButton", { title: song.title })}
-              >
-                <Icon name="plus" size={16} />
-              </button>
-            </li>
-          {/each}
-        </ul>
+      <SongPickerSheet open={picking} {added} onadd={addSongs} onclose={() => (picking = false)} />
+      {#if undo}
+        <div class="toast" role="status" data-testid="setlist-undo-toast">
+          <span>{t("setlists.removed", { title: undo.row.title })}</span>
+          <button data-testid="setlist-undo" onclick={undoRemove}>{t("setlists.undo")}</button>
+        </div>
       {/if}
     {:else if !error}
       <p class="muted" role="status">{t("app.loading")}</p>
@@ -469,9 +583,9 @@
     width: 100%;
     max-width: 40rem;
     font-family: var(--font-display);
-    font-size: var(--fs-title);
+    font-size: var(--fs-display);
     font-weight: 400;
-    line-height: 1.1;
+    line-height: 1.02;
     letter-spacing: -0.01em;
     background: transparent;
     border: 1px solid transparent;
@@ -483,23 +597,30 @@
   .setlist-name:focus {
     border-color: var(--line-strong);
   }
+  .section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    margin: var(--sp-6) 0 var(--sp-2);
+  }
   .section-title {
     font-size: 1rem;
-    margin: 1.5rem 0 0.5rem;
+    margin: 0;
   }
-  .entries,
-  .results {
+  .entries {
     list-style: none;
     margin: 0;
     padding: 0;
     display: grid;
-    gap: 0.5rem;
+    gap: var(--sp-2);
   }
   .entry {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto 1.5rem auto minmax(0, 1fr) 7rem auto;
     align-items: center;
-    gap: 0.6rem;
-    padding: 0.55rem 0.7rem;
+    gap: var(--sp-3);
+    padding: var(--sp-2) var(--sp-3);
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: var(--r-md);
@@ -517,56 +638,69 @@
     display: inline-flex;
   }
   .position {
-    min-width: 1.5rem;
     text-align: right;
     color: var(--text-3);
     font-variant-numeric: tabular-nums;
   }
   .entry-main {
-    flex: 1;
     min-width: 0;
     display: grid;
-    gap: 0.15rem;
+    gap: var(--sp-1);
   }
-  .entry-title {
+  .entry-title,
+  .entry-artist,
+  .note-text {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .entry-note {
-    margin-top: 0.25rem;
-    font-size: 0.85rem;
+  .note-text {
+    justify-self: start;
+    max-width: 100%;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--text-2);
+    font-size: var(--fs-sm);
+    text-align: left;
   }
-  .transpose,
-  .entry-buttons {
+  .note-text.empty {
+    color: var(--text-3);
+  }
+  .note-text:hover {
+    text-decoration: underline;
+  }
+  .entry-note {
+    font-size: var(--fs-sm);
+  }
+  .transpose {
     display: flex;
     align-items: center;
-    gap: 0.15rem;
+    justify-content: center;
+    gap: var(--sp-1);
   }
   .transpose-value {
     min-width: 2rem;
     text-align: center;
     font-variant-numeric: tabular-nums;
   }
-  .result {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-    padding: 0.45rem 0.7rem;
-    border: 1px solid var(--line);
-    border-radius: var(--r-md);
-  }
-  .result-text {
-    display: flex;
-    gap: 0.6rem;
-    align-items: baseline;
-    min-width: 0;
-    flex-wrap: wrap;
-  }
   @media (max-width: 640px) {
     .entry {
-      flex-wrap: wrap;
+      grid-template-columns: 1.5rem auto minmax(0, 1fr) auto;
+    }
+    .grip {
+      display: none;
+    }
+    .transpose-col {
+      grid-column: 3 / 5;
+      grid-row: 2;
+    }
+    .transpose-col:empty {
+      display: none;
+    }
+    .transpose {
+      justify-content: flex-start;
     }
   }
 </style>

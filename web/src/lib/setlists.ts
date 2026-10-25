@@ -1,4 +1,4 @@
-import type { SetlistEntry, SetlistEntryDraft } from "./types";
+import type { SetlistEntry, SetlistEntryDraft, SongSummary } from "./types";
 
 /** The most a chord sheet is shifted per entry; the server enforces the same range. */
 export const MAX_TRANSPOSE = 11;
@@ -73,4 +73,33 @@ export function reorderKey(event: {
   if (event.key === "ArrowDown") return 1;
   if (event.key === "ArrowUp") return -1;
   return null;
+}
+
+/** Every library song by id, read in pages, for covers and running times. */
+export async function songsById(
+  fetchPage: (cursor?: string) => Promise<{ items: SongSummary[]; next_cursor: string | null }>,
+): Promise<Map<string, SongSummary>> {
+  const songs = new Map<string, SongSummary>();
+  let cursor: string | undefined;
+  do {
+    const page = await fetchPage(cursor);
+    for (const song of page.items) songs.set(song.id, song);
+    cursor = page.next_cursor ?? undefined;
+  } while (cursor);
+  return songs;
+}
+
+/** Seconds of playing time for entries with a known duration (chord sheets have none), or 0. */
+export function runningSeconds(
+  songIds: readonly string[],
+  songs: ReadonlyMap<string, Pick<SongSummary, "duration">>,
+): number {
+  let total = 0;
+  for (const id of songIds) total += songs.get(id)?.duration ?? 0;
+  return total;
+}
+
+/** Whole minutes, at least 1, for a running time in seconds. */
+export function runningMinutes(seconds: number): number {
+  return Math.max(1, Math.round(seconds / 60));
 }
