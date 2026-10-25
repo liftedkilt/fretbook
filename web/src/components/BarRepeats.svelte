@@ -5,7 +5,7 @@
   import { DIRECTIONS } from "../lib/playback";
   import type { Bar, DirectionKind } from "../lib/types";
 
-  // Repeat signs, voltas and navigation marks of one bar. It edits the bar in place.
+  // Repeat signs, voltas and jumps for one bar. The parent lays these out in the bar grid.
   let { bar }: { bar: Bar } = $props();
 
   let start = $state(untrack(() => bar.repeat_start ?? false));
@@ -59,98 +59,83 @@
   }
 </script>
 
-<fieldset class="repeats" data-testid="bar-repeats">
-  <legend>{t("repeats.heading")}</legend>
-  <label class="field checkbox-field">
-    <input
-      type="checkbox"
-      data-testid="repeat-start"
-      checked={start}
-      onchange={(event) => toggleStart(event.currentTarget.checked)}
-    />
-    <span>{t("repeats.start")}</span>
-  </label>
-  <label class="field">
-    <span>{t("repeats.plays")}</span>
-    <input
-      type="number"
-      min="2"
-      max="32"
-      placeholder="—"
-      data-testid="repeat-end"
-      value={repeatEnd ? repeatEnd : ""}
-      onchange={(event) => setPlays(event.currentTarget.value)}
-    />
-  </label>
-  <label class="field">
-    <span>{t("repeats.volta")}</span>
-    <input
-      placeholder="1, 2"
-      data-testid="repeat-volta"
-      value={voltas.join(", ")}
-      onchange={(event) => {
-        setVolta(event.currentTarget.value);
-        event.currentTarget.value = voltas.join(", ");
-      }}
-    />
-  </label>
-  <div class="field">
-    <span>{t("repeats.directions")}</span>
-    <div class="direction-list">
-      {#each directions as kind (kind)}
-        <button
-          class="pill pill-accent"
-          type="button"
-          title={t("repeats.remove")}
-          aria-label={`${t("repeats.remove")}: ${t(`repeats.direction.${kind}`)}`}
-          onclick={() => removeDirection(kind)}>{t(`repeats.direction.${kind}`)} ×</button
-        >
-      {/each}
-      <select
-        data-testid="repeat-direction"
-        aria-label={t("repeats.addDirection")}
-        value=""
-        onchange={(event) => {
-          addDirection(event.currentTarget.value);
-          event.currentTarget.value = "";
-        }}
+<label class="switch">
+  <input
+    type="checkbox"
+    data-testid="repeat-start"
+    checked={start}
+    onchange={(event) => toggleStart(event.currentTarget.checked)}
+  />
+  <span class="switch-track" aria-hidden="true"></span>
+  <span>{t("repeats.start")}</span>
+</label>
+<label class="field">
+  <span>{t("repeats.plays")}</span>
+  <input
+    type="number"
+    min="2"
+    max="32"
+    placeholder="—"
+    data-testid="repeat-end"
+    value={repeatEnd ? repeatEnd : ""}
+    onchange={(event) => setPlays(event.currentTarget.value)}
+  />
+</label>
+<label class="field">
+  <span>{t("repeats.volta")}</span>
+  <input
+    placeholder="1, 2"
+    data-testid="repeat-volta"
+    value={voltas.join(", ")}
+    onchange={(event) => {
+      setVolta(event.currentTarget.value);
+      event.currentTarget.value = voltas.join(", ");
+    }}
+  />
+</label>
+<div class="field span-2">
+  <span>{t("repeats.directions")}</span>
+  <div class="direction-list">
+    {#each directions as kind (kind)}
+      <button
+        class="pill pill-accent"
+        type="button"
+        title={t("repeats.remove")}
+        aria-label={`${t("repeats.remove")}: ${t(`repeats.direction.${kind}`)}`}
+        onclick={() => removeDirection(kind)}>{t(`repeats.direction.${kind}`)} ×</button
       >
-        <option value="">{t("repeats.addDirection")}</option>
-        {#each available as kind (kind)}
-          <option value={kind}>{t(`repeats.direction.${kind}`)}</option>
-        {/each}
-      </select>
-    </div>
+    {/each}
+    <select
+      data-testid="repeat-direction"
+      aria-label={t("repeats.addDirection")}
+      value=""
+      onchange={(event) => {
+        addDirection(event.currentTarget.value);
+        event.currentTarget.value = "";
+      }}
+    >
+      <option value="">{t("repeats.addDirection")}</option>
+      {#each available as kind (kind)}
+        <option value={kind}>{t(`repeats.direction.${kind}`)}</option>
+      {/each}
+    </select>
   </div>
-</fieldset>
+</div>
 
 <style>
-  .repeats {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem 1rem;
-    align-items: flex-end;
-    border: 1px solid var(--line, #8884);
-    border-radius: var(--r-sm);
-    padding: 0.5rem 0.75rem;
-    margin: 0;
-  }
-  .repeats legend {
-    font-size: 0.8rem;
-    padding: 0 0.25rem;
-  }
-  .checkbox-field {
-    flex-direction: row;
-    align-items: center;
-    gap: 0.5rem;
-  }
   .direction-list {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.35rem;
+    gap: var(--sp-2);
     align-items: center;
   }
+
   .direction-list .pill {
     cursor: pointer;
+  }
+
+  .direction-list select {
+    flex: 1 1 100%;
+    min-width: 0;
   }
 </style>

@@ -364,7 +364,7 @@
     "section": "Section",
     "voice": "Voice",
     "addBeat": "Add beat",
-    "deleteBeat": "Delete",
+    "deleteBeat": "Delete beat",
     "moveEarlier": "Move earlier",
     "moveLater": "Move later",
     "barFull": "Bar is full",
@@ -389,7 +389,14 @@
     "songCard": "Song",
     "trackCard": "Track",
     "tuning": "Tuning",
-    "bars": "Bars"
+    "bars": "Bars",
+    "backToSong": "Back to song",
+    "unsaved": "Unsaved changes",
+    "barActions": "Bar actions",
+    "insertBefore": "Insert bar before",
+    "duplicateBar": "Duplicate bar",
+    "beatActions": "Beat actions",
+    "graceNone": "No grace note"
   },
   "durations": {
     "whole": "Whole",

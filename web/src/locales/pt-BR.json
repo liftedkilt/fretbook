@@ -364,7 +364,7 @@
     "section": "Seção",
     "voice": "Voz",
     "addBeat": "Adicionar batida",
-    "deleteBeat": "Excluir",
+    "deleteBeat": "Excluir batida",
     "moveEarlier": "Mover para antes",
     "moveLater": "Mover para depois",
     "barFull": "Compasso cheio",
@@ -389,7 +389,14 @@
     "songCard": "Música",
     "trackCard": "Faixa",
     "tuning": "Afinação",
-    "bars": "Compassos"
+    "bars": "Compassos",
+    "backToSong": "Voltar à música",
+    "unsaved": "Alterações não salvas",
+    "barActions": "Ações do compasso",
+    "insertBefore": "Inserir compasso antes",
+    "duplicateBar": "Duplicar compasso",
+    "beatActions": "Ações da batida",
+    "graceNone": "Sem apojatura"
   },
   "durations": {
     "whole": "Semibreve",

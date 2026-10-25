@@ -2,12 +2,14 @@
   import { untrack } from "svelte";
 
   import Icon from "./Icon.svelte";
+  import EditorHeader from "./EditorHeader.svelte";
+  import IconButton from "./ui/IconButton.svelte";
+  import OverflowMenu, { type OverflowItem } from "./ui/OverflowMenu.svelte";
   import SegmentedControl from "./ui/SegmentedControl.svelte";
   import { ApiError, getSong, updateSong } from "../lib/api";
   import { contentKey, mergeOnto, type EditBase } from "../lib/offline/merge";
   import { barTicks, EDITOR_DURATIONS } from "../lib/durations";
   import { t, tOr } from "../lib/i18n.svelte";
-  import { followLink, hrefFor } from "../lib/router.svelte";
   import BarRepeats from "./BarRepeats.svelte";
   import { remapSync } from "../lib/sync";
   import { midiToName } from "../lib/tuning";
@@ -25,6 +27,21 @@
     Track,
     TrackBar,
   } from "../lib/types";
+
+  const DURATION_ICON: Record<string, string> = {
+    whole: "noteWhole",
+    dottedHalf: "noteDottedHalf",
+    half: "noteHalf",
+    dottedQuarter: "noteDottedQuarter",
+    quarter: "noteQuarter",
+    quarterTriplet: "noteQuarterTriplet",
+    dottedEighth: "noteDottedEighth",
+    eighth: "noteEighth",
+    eighthTriplet: "noteEighthTriplet",
+    sixteenth: "noteSixteenth",
+    sixteenthTriplet: "noteSixteenthTriplet",
+    thirtySecond: "noteThirtySecond",
+  };
 
   let {
     song: initial,
@@ -44,6 +61,8 @@
   // What the editor loaded: the content to compare against on a conflict, the sync map to re-key, and the bar origins.
   let loadedContent = untrack(() => contentKey(initial.document));
   let loadedBpm = untrack(() => initial.document.bpm);
+  let savedTitle = $state(untrack(() => initial.title));
+  let savedArtist = $state(untrack(() => initial.artist));
   let baseSync: SyncMap = untrack(
     () => structuredClone($state.snapshot(initial.document.sync)) as SyncMap,
   );
@@ -64,6 +83,12 @@
   const beats = $derived(trackBar.voices[voiceIndex]?.beats ?? []);
   const used = $derived(beats.reduce((total, beat) => total + (beat.grace ? 0 : beat.duration), 0));
   const length = $derived(barTicks(bar.signature));
+  const dirty = $derived(
+    song.title !== savedTitle ||
+      song.artist !== savedArtist ||
+      document_.bpm !== loadedBpm ||
+      contentKey(document_) !== loadedContent,
+  );
 
   function reflow(list: Beat[]) {
     let position = 0;
@@ -120,6 +145,64 @@
     reflow(beats);
   }
 
+  function durationOptions(beat: Beat) {
+    const current = durationValue(beat);
+    const options = EDITOR_DURATIONS.map((option) => ({
+      value: `${option.ticks}:${option.tuplet ?? ""}`,
+      label: t(`durations.${option.key}`),
+      icon: DURATION_ICON[option.key],
+      testid: `duration-${option.key}`,
+    }));
+    if (!options.some((option) => option.value === current)) {
+      options.push({
+        value: current,
+        label: t("durations.other", { ticks: beat.duration }),
+        icon: "",
+        testid: "duration-other",
+      });
+    }
+    return options;
+  }
+
+  function durationLabel(beat: Beat): string {
+    const current = durationValue(beat);
+    return (
+      durationOptions(beat).find((option) => option.value === current)?.label ??
+      t("durations.other", { ticks: beat.duration })
+    );
+  }
+
+  function beatMenu(beat: Beat, index: number): OverflowItem[] {
+    const grace = beat.grace ?? "";
+    return [
+      {
+        id: "grace-none",
+        label: t("editor.graceNone"),
+        active: grace === "",
+        onclick: () => setGrace(beat, ""),
+      },
+      {
+        id: "grace-on",
+        label: t("editor.graceOnBeat"),
+        active: grace === "on_beat",
+        onclick: () => setGrace(beat, "on_beat"),
+      },
+      {
+        id: "grace-before",
+        label: t("editor.graceBeforeBeat"),
+        active: grace === "before_beat",
+        onclick: () => setGrace(beat, "before_beat"),
+      },
+      {
+        id: "delete",
+        label: t("editor.deleteBeat"),
+        danger: true,
+        testid: "editor-delete-beat",
+        onclick: () => deleteBeat(index),
+      },
+    ];
+  }
+
   function addBeat() {
     const list = voiceBeats(trackBar, voiceIndex);
     const left = Math.max(0, length - used);
@@ -144,13 +227,33 @@
 
   // --- song-level bars ----------------------------------------------------
 
-  function insertBar() {
-    const at = barIndex + 1;
-    document_.bars.splice(at, 0, { signature: [bar.signature[0], bar.signature[1]], extras: {} });
-    for (const item of document_.tracks)
-      item.bars.splice(at, 0, { voices: [{ beats: [] }], extras: {} });
+  function clone<T>(value: T): T {
+    return structuredClone($state.snapshot(value)) as T;
+  }
+
+  function insertAt(at: number, copy: boolean) {
+    const master = copy
+      ? clone(bar)
+      : { signature: [bar.signature[0], bar.signature[1]] as [number, number], extras: {} };
+    document_.bars.splice(at, 0, master);
+    for (const item of document_.tracks) {
+      const trackBar = copy ? clone(item.bars[barIndex]) : { voices: [{ beats: [] }], extras: {} };
+      item.bars.splice(at, 0, trackBar);
+    }
     origin.splice(at, 0, null);
     barIndex = at;
+  }
+
+  function insertBefore() {
+    insertAt(barIndex, false);
+  }
+
+  function insertBar() {
+    insertAt(barIndex + 1, false);
+  }
+
+  function duplicateBar() {
+    insertAt(barIndex + 1, true);
   }
 
   function deleteBar() {
@@ -277,6 +380,8 @@
         saved = await send(latest.revision, merged, base);
       }
       song = saved as TabSong;
+      savedTitle = song.title;
+      savedArtist = song.artist;
       loadedContent = contentKey(saved.document!);
       loadedBpm = saved.document!.bpm;
       baseSync = structuredClone(saved.document!.sync);
@@ -292,6 +397,8 @@
   async function reload() {
     const latest = (await getSong(song.id)) as TabSong;
     song = latest;
+    savedTitle = latest.title;
+    savedArtist = latest.artist;
     loadedContent = contentKey(latest.document);
     loadedBpm = latest.document.bpm;
     baseSync = structuredClone(latest.document.sync);
@@ -304,24 +411,14 @@
 </script>
 
 <div class="editor-page">
-  <header class="editor-bar">
-    <a
-      class="back-link"
-      href={hrefFor(`/songs/${song.id}`)}
-      onclick={(event) => followLink(event, `/songs/${song.id}`)}
-    >
-      <Icon name="play" size={14} />{t("editor.play")}
-    </a>
-    <h1 class="editor-title" data-testid="editor-title">{song.title || t("editor.heading")}</h1>
-    <div class="editor-actions">
-      {#if status}<span class="save-status" role="status" data-testid="editor-status"
-          ><Icon name="check" size={16} />{status}</span
-        >{/if}
-      <button class="primary" data-testid="editor-save" onclick={() => void save()}
-        ><Icon name="save" size={18} />{t("editor.save")}</button
-      >
-    </div>
-  </header>
+  <EditorHeader
+    songId={song.id}
+    title={song.title}
+    {dirty}
+    {status}
+    playHref={`/songs/${song.id}`}
+    onsave={() => void save()}
+  />
 
   {#if error}<p class="alert" role="alert" data-testid="editor-error">
       <Icon name="alert" size={18} />{error}
@@ -431,31 +528,65 @@
 
     <section class="editor-main">
       <div class="card bar-card">
-        <div class="bar-nav">
-          <button
-            class="icon-button"
-            disabled={barIndex <= 0}
-            onclick={() => (barIndex -= 1)}
-            aria-label={t("editor.previous")}
-            title={t("editor.previous")}
-          >
-            <Icon name="back" />
-          </button>
-          <div class="bar-current">
-            <strong data-testid="editor-measure" data-bar={barIndex}
-              >{t("editor.measure", { number: barIndex + 1, total: document_.bars.length })}</strong
-            >
-            {#if bar.section}<span class="pill pill-accent">{bar.section}</span>{/if}
+        <div class="bar-pager">
+          <div class="bar-nav">
+            <IconButton
+              label={t("editor.previous")}
+              icon="back"
+              disabled={barIndex <= 0}
+              onclick={() => (barIndex -= 1)}
+            />
+            <div class="bar-current">
+              <strong data-testid="editor-measure" data-bar={barIndex}
+                >{t("editor.measure", {
+                  number: barIndex + 1,
+                  total: document_.bars.length,
+                })}</strong
+              >
+              {#if bar.section}<span class="pill pill-accent">{bar.section}</span>{/if}
+            </div>
+            <IconButton
+              label={t("editor.next")}
+              icon="forward"
+              disabled={barIndex >= document_.bars.length - 1}
+              onclick={() => (barIndex += 1)}
+            />
           </div>
-          <button
-            class="icon-button"
-            disabled={barIndex >= document_.bars.length - 1}
-            onclick={() => (barIndex += 1)}
-            aria-label={t("editor.next")}
-            title={t("editor.next")}
-          >
-            <Icon name="forward" />
-          </button>
+          <OverflowMenu
+            label={t("editor.barActions")}
+            testid="editor-bar-menu"
+            items={[
+              {
+                id: "before",
+                label: t("editor.insertBefore"),
+                icon: "plus",
+                testid: "editor-insert-before",
+                onclick: insertBefore,
+              },
+              {
+                id: "after",
+                label: t("editor.addMeasure"),
+                icon: "plus",
+                testid: "editor-add-measure",
+                onclick: insertBar,
+              },
+              {
+                id: "duplicate",
+                label: t("editor.duplicateBar"),
+                icon: "copy",
+                testid: "editor-duplicate-bar",
+                onclick: duplicateBar,
+              },
+              {
+                id: "delete",
+                label: t("editor.deleteMeasure"),
+                danger: true,
+                testid: "editor-delete-measure",
+                disabled: document_.bars.length <= 1,
+                onclick: deleteBar,
+              },
+            ]}
+          />
         </div>
         <div class="bar-strip" role="group" aria-label={t("editor.bars")}>
           {#each document_.bars as item, index (index)}
@@ -471,7 +602,7 @@
             </button>
           {/each}
         </div>
-        <div class="bar-settings">
+        <div class="bar-grid">
           <div class="field">
             <span>{t("library.signature")}</span>
             <span class="signature">
@@ -493,6 +624,13 @@
               </select>
             </span>
           </div>
+          <label class="field">
+            <span>{t("editor.section")}</span>
+            <input
+              value={bar.section ?? ""}
+              onchange={(event) => (bar.section = event.currentTarget.value.trim() || null)}
+            />
+          </label>
           {#if barIndex > 0}
             <label class="field">
               <span>{t("editor.tempoChange")}</span>
@@ -506,25 +644,7 @@
               />
             </label>
           {/if}
-          <label class="field">
-            <span>{t("editor.section")}</span>
-            <input
-              value={bar.section ?? ""}
-              onchange={(event) => (bar.section = event.currentTarget.value.trim() || null)}
-            />
-          </label>
           <BarRepeats {bar} />
-          <div class="button-row bar-buttons">
-            <button class="small-button" data-testid="editor-add-measure" onclick={insertBar}
-              ><Icon name="plus" size={16} />{t("editor.addMeasure")}</button
-            >
-            <button
-              class="small-button danger-text"
-              onclick={deleteBar}
-              disabled={document_.bars.length <= 1}
-              ><Icon name="trash" size={16} />{t("editor.deleteMeasure")}</button
-            >
-          </div>
         </div>
         <p class="muted small">{t("editor.barsAreShared")}</p>
       </div>
@@ -547,7 +667,7 @@
               ? t("editor.barOver")
               : t("editor.barShort")}
         </span>
-        <button class="primary" data-testid="editor-add-beat" onclick={addBeat}
+        <button class="secondary add-beat" data-testid="editor-add-beat" onclick={addBeat}
           ><Icon name="plus" size={18} />{t("editor.addBeat")}</button
         >
       </div>
@@ -558,65 +678,36 @@
           <article class="beat-card" data-testid="beat-card">
             <header class="beat-head">
               <span class="beat-number">{beatIndex + 1}</span>
-              <div class="beat-tools">
-                <button
-                  class="icon-button ghost"
-                  onclick={() => moveBeat(beatIndex, -1)}
+              <div class="beat-actions">
+                <IconButton
+                  label={t("editor.moveEarlier")}
+                  icon="back"
                   disabled={beatIndex === 0}
-                  aria-label={t("editor.moveEarlier")}
-                  title={t("editor.moveEarlier")}
-                >
-                  <Icon name="back" size={16} />
-                </button>
-                <button
-                  class="icon-button ghost"
-                  onclick={() => moveBeat(beatIndex, 1)}
+                  onclick={() => moveBeat(beatIndex, -1)}
+                />
+                <IconButton
+                  label={t("editor.moveLater")}
+                  icon="forward"
                   disabled={beatIndex === beats.length - 1}
-                  aria-label={t("editor.moveLater")}
-                  title={t("editor.moveLater")}
-                >
-                  <Icon name="forward" size={16} />
-                </button>
-                <button
-                  class="icon-button ghost danger-text"
-                  onclick={() => deleteBeat(beatIndex)}
-                  aria-label={t("editor.deleteBeat")}
-                  title={t("editor.deleteBeat")}
-                >
-                  <Icon name="trash" size={16} />
-                </button>
+                  onclick={() => moveBeat(beatIndex, 1)}
+                />
+                <OverflowMenu
+                  label={t("editor.beatActions")}
+                  testid="editor-beat-menu"
+                  items={beatMenu(beat, beatIndex)}
+                />
               </div>
             </header>
-            <div class="beat-fields">
-              <label class="field">
-                <span>{t("editor.duration")}</span>
-                <select
-                  value={durationValue(beat)}
-                  onchange={(event) => setDuration(beat, event.currentTarget.value)}
-                >
-                  {#each EDITOR_DURATIONS as option (option.key)}
-                    <option value={`${option.ticks}:${option.tuplet ?? ""}`}
-                      >{t(`durations.${option.key}`)}</option
-                    >
-                  {/each}
-                  {#if !EDITOR_DURATIONS.some((option) => `${option.ticks}:${option.tuplet ?? ""}` === durationValue(beat))}
-                    <option value={durationValue(beat)}
-                      >{t("durations.other", { ticks: beat.duration })}</option
-                    >
-                  {/if}
-                </select>
-              </label>
-              <label class="field">
-                <span>{t("editor.grace")}</span>
-                <select
-                  value={beat.grace ?? ""}
-                  onchange={(event) => setGrace(beat, event.currentTarget.value)}
-                >
-                  <option value="">—</option>
-                  <option value="on_beat">{t("editor.graceOnBeat")}</option>
-                  <option value="before_beat">{t("editor.graceBeforeBeat")}</option>
-                </select>
-              </label>
+            <div class="duration">
+              <SegmentedControl
+                icons
+                label={t("editor.duration")}
+                testid="beat-duration"
+                value={durationValue(beat)}
+                onchange={(next) => setDuration(beat, next)}
+                options={durationOptions(beat)}
+              />
+              <p class="duration-name">{durationLabel(beat)}</p>
             </div>
             <div class="staff">
               {#each track.tuning_midi as midi, stringIndex (stringIndex)}
@@ -701,3 +792,60 @@
     </section>
   </div>
 </div>
+
+<style>
+  .editor-page {
+    gap: var(--sp-5);
+  }
+
+  .bar-pager {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+  }
+
+  .bar-pager .bar-nav {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .bar-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-4);
+    align-items: end;
+  }
+
+  .beat-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+  }
+
+  .duration {
+    display: grid;
+    gap: var(--sp-1);
+    min-width: 0;
+  }
+
+  .duration :global(.control.segmented) {
+    width: 100%;
+  }
+
+  .duration-name {
+    margin: 0;
+    color: var(--text-2);
+    font-size: var(--fs-xs);
+    line-height: 1.45;
+  }
+
+  .add-beat {
+    margin-left: auto;
+  }
+
+  @media (min-width: 768px) {
+    .bar-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+</style>

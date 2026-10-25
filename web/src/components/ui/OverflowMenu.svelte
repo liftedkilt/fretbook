@@ -13,6 +13,8 @@
     disabled?: boolean;
     /** Drawn last, after a divider, in the danger colour. */
     danger?: boolean;
+    /** A choice that is currently selected (a check, before the label). */
+    active?: boolean;
     onclick?: () => void;
   };
 
@@ -107,9 +109,11 @@
     <a
       class="item"
       class:danger={item.danger}
+      class:active={item.active}
       role="menuitem"
       href={item.href}
       data-testid={item.testid}
+      aria-current={item.active ? "true" : undefined}
       aria-disabled={item.disabled || undefined}
       tabindex="0"
       onclick={(event) => {
@@ -120,6 +124,7 @@
         choose(item);
       }}
     >
+      {#if item.active}<Icon name="check" size={18} />{/if}
       {#if item.icon}<Icon name={item.icon} size={18} />{/if}
       {item.label}
     </a>
@@ -128,12 +133,15 @@
       type="button"
       class="item"
       class:danger={item.danger}
+      class:active={item.active}
       role="menuitem"
       data-testid={item.testid}
+      aria-current={item.active ? "true" : undefined}
       aria-disabled={item.disabled || undefined}
       disabled={item.disabled}
       onclick={() => choose(item)}
     >
+      {#if item.active}<Icon name="check" size={18} />{/if}
       {#if item.icon}<Icon name={item.icon} size={18} />{/if}
       {item.label}
     </button>
@@ -232,6 +240,10 @@
 
   .danger {
     color: var(--danger);
+  }
+
+  .active {
+    font-weight: 650;
   }
 
   .divider {
