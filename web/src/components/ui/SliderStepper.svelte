@@ -1,0 +1,72 @@
+<script lang="ts">
+  import IconButton from "./IconButton.svelte";
+
+  // A themed slider with a decrease and an increase icon button either side.
+  let {
+    label,
+    value,
+    min,
+    max,
+    step = 1,
+    decreaseLabel,
+    increaseLabel,
+    testid,
+    decreaseTestId,
+    increaseTestId,
+    onchange,
+  }: {
+    label: string;
+    value: number;
+    min: number;
+    max: number;
+    step?: number;
+    decreaseLabel: string;
+    increaseLabel: string;
+    testid?: string;
+    decreaseTestId?: string;
+    increaseTestId?: string;
+    onchange: (value: number) => void;
+  } = $props();
+</script>
+
+<div class="slider-stepper">
+  <IconButton
+    label={decreaseLabel}
+    icon="minus"
+    testid={decreaseTestId}
+    disabled={value <= min}
+    onclick={() => onchange(value - step)}
+  />
+  <input
+    type="range"
+    data-testid={testid}
+    {min}
+    {max}
+    {step}
+    {value}
+    aria-label={label}
+    oninput={(event) => onchange(Number(event.currentTarget.value))}
+  />
+  <IconButton
+    label={increaseLabel}
+    icon="plus"
+    testid={increaseTestId}
+    disabled={value >= max}
+    onclick={() => onchange(value + step)}
+  />
+</div>
+
+<style>
+  .slider-stepper {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    min-width: 0;
+  }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+  }
+</style>

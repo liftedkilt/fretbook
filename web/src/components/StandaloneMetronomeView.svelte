@@ -1,7 +1,8 @@
 <script lang="ts">
   import Icon from "./Icon.svelte";
-  import Page from "./ui/Page.svelte";
-  import PageHeader from "./ui/PageHeader.svelte";
+  import SegmentedControl from "./ui/SegmentedControl.svelte";
+  import SliderStepper from "./ui/SliderStepper.svelte";
+  import ToolPage from "./ui/ToolPage.svelte";
   import { Clicker } from "../lib/clicker";
   import { t } from "../lib/i18n.svelte";
   import {
@@ -92,9 +93,8 @@
     }
   }
 
-  function onSignatureChange(event: Event) {
-    const target = event.currentTarget as HTMLSelectElement;
-    signature = target.value;
+  function onSignatureChange(next: string) {
+    signature = next;
     currentBeat = 0;
     persist();
     engine?.updateConfig({ signature });
@@ -107,9 +107,8 @@
     engine?.updateConfig({ accentBeat1 });
   }
 
-  function onSubdivisionsChange(event: Event) {
-    const target = event.currentTarget as HTMLSelectElement;
-    subdivisions = Number(target.value) || 1;
+  function onSubdivisionsChange(next: string) {
+    subdivisions = Number(next) || 1;
     currentSub = 0;
     persist();
     engine?.updateConfig({ subdivisions });
@@ -128,72 +127,61 @@
   });
 </script>
 
-<Page width="page">
-  <div class="tool-view" data-testid="standalone-metronome-view">
-    <PageHeader
-      title={t("tools.metronome")}
-      titleSize="title"
-      eyebrow={t("tools.nav")}
-      backHref="/tools"
-      backLabel={t("tools.heading")}
-      backTestId="tool-back"
-    />
-
-    <div class="metronome-visual-container">
-      <div
-        class="metronome-visual"
-        data-testid="metronome-visual"
-        aria-label={`Beat ${currentBeat + 1} of ${beatsCount}`}
-      >
-        {#each Array.from({ length: beatsCount }, (_, i) => i) as i (i)}
-          <div
-            class="metronome-beat"
-            class:metronome-beat-active={isPlaying && currentBeat === i}
-            class:metronome-beat-sub={isPlaying && currentBeat === i && currentSub > 0}
-            class:metronome-beat-accent={i === 0 && accentBeat1}
-            data-testid={`metronome-beat-${i}`}
-          >
-            <span class="metronome-beat-number">{i + 1}</span>
-          </div>
-        {/each}
-      </div>
+<ToolPage title={t("tools.metronome")} testid="standalone-metronome-view">
+  {#snippet stage()}
+    <div
+      class="beats"
+      data-testid="metronome-visual"
+      role="img"
+      aria-label={t("tools.beat", { current: currentBeat + 1, total: beatsCount })}
+    >
+      {#each Array.from({ length: beatsCount }, (_, i) => i) as i (i)}
+        <div
+          class="beat"
+          class:active={isPlaying && currentBeat === i}
+          class:sub={isPlaying && currentBeat === i && currentSub > 0}
+          class:accent={i === 0 && accentBeat1}
+          data-testid={`metronome-beat-${i}`}
+        >
+          <span>{i + 1}</span>
+        </div>
+      {/each}
     </div>
 
-    <div class="metronome-tempo-box">
-      <div class="metronome-bpm-display">
-        <span class="metronome-bpm-number" data-testid="metronome-bpm-display">{bpm}</span>
-        <span class="metronome-bpm-unit">{t("tools.bpm")}</span>
-        <span class="metronome-tempo-name">{tempoName}</span>
-      </div>
+    <div class="readout">
+      <span class="bpm display" data-testid="metronome-bpm-display">{bpm}</span>
+      <span class="unit">{t("tools.bpm")} · {tempoName}</span>
+    </div>
 
-      <input
-        type="range"
-        class="metronome-slider"
-        data-testid="metronome-bpm-slider"
+    <button
+      class="primary hero start"
+      data-testid="metronome-toggle"
+      onclick={togglePlay}
+    >
+      <Icon name={isPlaying ? "pause" : "play"} size={22} />
+      <span>{isPlaying ? t("tools.stop") : t("tools.start")}</span>
+    </button>
+  {/snippet}
+
+  {#snippet settings()}
+    <div class="field">
+      <span class="label">{t("tools.tempo")}</span>
+      <SliderStepper
+        label={t("tools.bpm")}
+        value={bpm}
         min={MIN_BPM}
         max={MAX_BPM}
-        step="1"
-        value={bpm}
-        aria-label={t("tools.bpm")}
-        oninput={(event) => setBpm(Number(event.currentTarget.value))}
+        testid="metronome-bpm-slider"
+        decreaseLabel={t("tools.slower")}
+        increaseLabel={t("tools.faster")}
+        decreaseTestId="metronome-bpm-minus-1"
+        increaseTestId="metronome-bpm-plus-1"
+        onchange={(next) => setBpm(next)}
       />
-
-      <div class="metronome-steppers">
-        <button
-          class="button ghost stepper-btn"
-          data-testid="metronome-bpm-minus-5"
-          onclick={() => setBpm(bpm - 5)}
-          aria-label="-5 BPM">-5</button
-        >
-        <button
-          class="button ghost stepper-btn"
-          data-testid="metronome-bpm-minus-1"
-          onclick={() => setBpm(bpm - 1)}
-          aria-label="-1 BPM">-1</button
-        >
+      <div class="tempo-row">
         <input
           type="number"
-          class="metronome-number-input"
+          class="bpm-input"
           data-testid="metronome-bpm-input"
           min={MIN_BPM}
           max={MAX_BPM}
@@ -201,98 +189,181 @@
           aria-label={t("tools.bpm")}
           oninput={(event) => setBpm(Number(event.currentTarget.value))}
         />
-        <button
-          class="button ghost stepper-btn"
-          data-testid="metronome-bpm-plus-1"
-          onclick={() => setBpm(bpm + 1)}
-          aria-label="+1 BPM">+1</button
-        >
-        <button
-          class="button ghost stepper-btn"
-          data-testid="metronome-bpm-plus-5"
-          onclick={() => setBpm(bpm + 5)}
-          aria-label="+5 BPM">+5</button
-        >
+        <button class="button" data-testid="metronome-tap" onclick={onTap} title={t("tools.tapHint")}>
+          <Icon name="tap" size={20} />
+          <span>{t("tools.tapTempo")}</span>
+        </button>
       </div>
-
-      <button
-        class="button metronome-tap-btn"
-        data-testid="metronome-tap"
-        onclick={onTap}
-        title={t("tools.tapHint")}
-      >
-        <Icon name="tap" size={20} />
-        <span>{t("tools.tapTempo")}</span>
-      </button>
     </div>
 
-    <div class="metronome-controls-grid">
-      <label class="tool-field">
-        <span>{t("tools.timeSignature")}</span>
-        <select
-          data-testid="metronome-time-signature"
-          value={signature}
-          onchange={onSignatureChange}
-        >
-          {#each TIME_SIGNATURES as sig (sig.id)}
-            <option value={sig.id}>{sig.id}</option>
-          {/each}
-        </select>
-      </label>
+    <div class="field">
+      <span class="label">{t("tools.timeSignature")}</span>
+      <SegmentedControl
+        label={t("tools.timeSignature")}
+        value={signature}
+        testid="metronome-time-signature"
+        options={TIME_SIGNATURES.map((sig) => ({
+          value: sig.id,
+          label: sig.id,
+          testid: `metronome-time-signature-${sig.id.replace("/", "-")}`,
+        }))}
+        onchange={onSignatureChange}
+      />
+    </div>
 
-      <label class="tool-field">
-        <span>{t("tools.subdivisions")}</span>
-        <select
-          data-testid="metronome-subdivisions"
-          value={subdivisions}
-          onchange={onSubdivisionsChange}
-        >
-          {#each SUBDIVISIONS as sub (sub.id)}
-            <option value={sub.id}>{t(sub.labelKey)}</option>
-          {/each}
-        </select>
-      </label>
+    <div class="field">
+      <span class="label">{t("tools.subdivisions")}</span>
+      <SegmentedControl
+        label={t("tools.subdivisions")}
+        value={String(subdivisions)}
+        testid="metronome-subdivisions"
+        options={SUBDIVISIONS.map((sub) => ({
+          value: String(sub.id),
+          label: t(sub.labelKey),
+          testid: `metronome-subdivisions-${sub.id}`,
+        }))}
+        onchange={onSubdivisionsChange}
+      />
+    </div>
 
-      <div class="tool-field tool-field-toggle">
-        <span>{t("tools.accentBeat1")}</span>
-        <label class="tool-toggle">
-          <input
-            type="checkbox"
-            data-testid="metronome-accent"
-            checked={accentBeat1}
-            onchange={onAccentChange}
-          />
-          {t("tools.accentBeat1")}
-        </label>
+    <label class="switch">
+      <input
+        type="checkbox"
+        data-testid="metronome-accent"
+        checked={accentBeat1}
+        onchange={onAccentChange}
+      />
+      <span class="switch-track" aria-hidden="true"></span>
+      {t("tools.accentBeat1")}
+    </label>
+
+    <div class="field">
+      <span class="label">{t("tools.volume")}</span>
+      <div class="volume">
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          value={volume}
+          data-testid="metronome-volume"
+          aria-label={t("tools.volume")}
+          oninput={onVolumeChange}
+        />
+        <output data-testid="metronome-volume-value">{Math.round(volume * 100)}%</output>
       </div>
-
-      <label class="tool-field">
-        <span>{t("tools.volume")}</span>
-        <span class="metronome-volume-row">
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.05"
-            value={volume}
-            data-testid="metronome-volume"
-            aria-label={t("tools.volume")}
-            oninput={onVolumeChange}
-          />
-          <output data-testid="metronome-volume-value">{Math.round(volume * 100)}%</output>
-        </span>
-      </label>
     </div>
+  {/snippet}
+</ToolPage>
 
-    <div class="metronome-action-row">
-      <button
-        class="primary hero metronome-toggle-btn"
-        data-testid="metronome-toggle"
-        onclick={togglePlay}
-      >
-        <Icon name={isPlaying ? "pause" : "play"} size={22} />
-        <span>{isPlaying ? t("tools.stop") : t("tools.start")}</span>
-      </button>
-    </div>
-  </div>
-</Page>
+<style>
+  .beats {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-3);
+  }
+
+  .beat {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border: 2px solid var(--line-strong);
+    border-radius: 50%;
+    background: var(--surface-2);
+    color: var(--text-2);
+    font-weight: 700;
+    transition:
+      transform 80ms var(--ease),
+      background-color 80ms var(--ease),
+      border-color 80ms var(--ease);
+  }
+
+  .beat.accent {
+    border-color: var(--accent);
+  }
+
+  .beat.active {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--accent-ink);
+    transform: scale(1.18);
+  }
+
+  .beat.sub {
+    opacity: 0.85;
+    transform: scale(1.08);
+  }
+
+  .readout {
+    display: grid;
+    justify-items: center;
+    gap: var(--sp-1);
+  }
+
+  .bpm {
+    font-size: var(--fs-hero-num);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .unit {
+    color: var(--text-2);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+  }
+
+  .start {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .field {
+    display: grid;
+    gap: var(--sp-2);
+    min-width: 0;
+  }
+
+  .label {
+    color: var(--text-2);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+  }
+
+  .tempo-row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+  }
+
+  .bpm-input {
+    width: 6rem;
+    text-align: center;
+  }
+
+  .volume {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+  }
+
+  .volume input {
+    flex: 1;
+    min-height: 44px;
+  }
+
+  .volume output {
+    min-width: 3rem;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .beat {
+      transition: none;
+    }
+  }
+</style>
