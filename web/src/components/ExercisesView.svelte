@@ -501,6 +501,9 @@
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
+    /* A grid item's default min-width is the score's width, which lets the
+       preview paint over the settings. */
+    min-width: 0;
   }
   .pickers {
     display: grid;

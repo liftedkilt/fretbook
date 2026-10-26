@@ -70,6 +70,10 @@
     role="region"
     tabindex="0"
     aria-label={title || t("asciiTab.previewRegion")}
-    bind:this={host}
-  ></div>
+  >
+    <!-- alphaTab sizes the score to this element's offsetWidth. Measuring the
+         bordered scroller counts the border, so each pass is wider and the
+         preview, a flex item, grows without bound. -->
+    <div bind:this={host}></div>
+  </div>
 {/if}
