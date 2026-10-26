@@ -279,6 +279,8 @@
     "loopRange": "A{a}–B{b}",
     "export": "Export",
     "more": "More controls",
+    "mutePlayback": "Mute playback",
+    "unmutePlayback": "Unmute playback",
     "syncPanel": "Sync & audio",
     "syncMarks": "Sync marks",
     "loop": "Loop",

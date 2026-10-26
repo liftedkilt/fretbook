@@ -1882,6 +1882,15 @@ textarea {
   overflow: hidden;
 }
 
+.dock-section {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-3);
+  text-align: center;
+  text-overflow: ellipsis;
+}
+
 .scrubber {
   position: relative;
   height: 44px;

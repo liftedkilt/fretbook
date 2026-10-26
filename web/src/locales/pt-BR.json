@@ -279,6 +279,8 @@
     "loopRange": "A{a}–B{b}",
     "export": "Exportar",
     "more": "Mais controles",
+    "mutePlayback": "Silenciar reprodução",
+    "unmutePlayback": "Ativar som da reprodução",
     "syncPanel": "Sincronia e áudio",
     "syncMarks": "Marcas de sincronia",
     "loop": "Repetição",

@@ -181,6 +181,7 @@
   let currentSeconds = $state(0);
   let clock = $state("0:00.0");
   let playing = $state(false);
+  let muted = $state(false);
   let countingIn = $state(false);
   let helpOpen = $state(false);
   let countInTimer = 0;
@@ -786,22 +787,22 @@
   function applyPractice() {
     savePractice(song.id, practice);
     // While stems play, the recording stays silent and the stems carry the volume.
-    if (audioEl && !stemsActive) audioEl.volume = recordingGain(practice.mix);
+    if (audioEl && !stemsActive) audioEl.volume = muted ? 0 : recordingGain(practice.mix);
     // A recording is mixed with the synth in the hidden companion player, which has no metronome:
     // the page's own clicks keep time there.
     const api = song.has_audio ? (companion.ready ? companion.api : null) : player.api;
     if (!api?.score) return;
     if (!song.has_audio) {
-      api.metronomeVolume = practice.metronome.on ? practice.metronome.volume : 0;
-      api.masterVolume = waitOn && practice.wait.silent ? 0 : practice.mix.synth;
+      api.metronomeVolume = !muted && practice.metronome.on ? practice.metronome.volume : 0;
+      api.masterVolume = muted || (waitOn && practice.wait.silent) ? 0 : practice.mix.synth;
     } else {
-      api.masterVolume = synthGain(practice.mix);
+      api.masterVolume = muted ? 0 : synthGain(practice.mix);
     }
     api.score.tracks.forEach((item, index) => {
       const id = document_.tracks[index]?.id;
       if (id === undefined) return;
       const mix = trackMix(practice, id);
-      api.changeTrackVolume([item], mix.volume);
+      api.changeTrackVolume([item], muted ? 0 : mix.volume);
       // In wait mode the player plays the chosen track, so it is left out of the backing.
       api.changeTrackMute([item], mix.mute || ((waitOn || scoreOn) && index === trackIndex));
       api.changeTrackSolo([item], mix.solo);
@@ -811,6 +812,11 @@
   function practiceChanged() {
     applyPractice();
     if (practice.metronome.on) clicker.unlock();
+  }
+
+  function toggleMute() {
+    muted = !muted;
+    applyPractice();
   }
 
   /** Seconds one bar lasts on the wall clock, at the current speed. */
@@ -828,9 +834,11 @@
     const bar = Math.min(Math.max(index, 0), Math.max(barCount - 1, 0));
     const signature = document_.bars[bar]?.signature ?? [4, 4];
     const plan = countInClicks(signature, barLength(bar), bars);
-    clicker.unlock();
-    const volume = Math.max(practice.metronome.volume, 0.3);
-    for (const click of plan.clicks) clicker.click(click.time, click.accent, volume);
+    if (!muted) {
+      clicker.unlock();
+      const volume = Math.max(practice.metronome.volume, 0.3);
+      for (const click of plan.clicks) clicker.click(click.time, click.accent, volume);
+    }
     countingIn = true;
     countInTimer = window.setTimeout(() => {
       countingIn = false;
@@ -844,7 +852,7 @@
   }
 
   function tickMetronome() {
-    if (!song.has_audio || !audioEl || audioEl.paused || countingIn || !practice.metronome.on)
+    if (!song.has_audio || !audioEl || audioEl.paused || countingIn || muted || !practice.metronome.on)
       return;
     const starts = startsNow();
     if (starts.length === 0) return;
@@ -1433,6 +1441,12 @@
   let panelOpen = $state(false);
   let sheetSlot = $state<HTMLDivElement | null>(null);
   const marks = $derived(sectionMarks(document_.bars, order));
+  const currentSection = $derived.by(() => {
+    for (let index = marks.length - 1; index >= 0; index -= 1) {
+      if (marks[index].index <= currentMeasure) return marks[index].label;
+    }
+    return "";
+  });
   const loopStyle = $derived(
     loopA != null && loopB != null && barCount > 1
       ? `left:${(loopA / barCount) * 100}%;width:${((loopB - loopA + 1) / barCount) * 100}%`
@@ -1883,6 +1897,15 @@
           placement="above"
           onclick={() => step(1)}
         />
+        <IconButton
+          class="ghost"
+          icon={muted ? "volumeX" : "volume2"}
+          label={t(muted ? "player.unmutePlayback" : "player.mutePlayback")}
+          testid="player-mute"
+          pressed={muted}
+          placement="above"
+          onclick={toggleMute}
+        />
       </div>
 
       <div class="dock-progress">
@@ -1894,6 +1917,9 @@
               {t("player.statusIdle", { time: clock })}
             {/if}
           </span>
+          {#if currentSection}
+            <span class="dock-section" title={currentSection}>{currentSection}</span>
+          {/if}
           {#if saveLabel}<span class="muted">{saveLabel}</span>{/if}
         </div>
         <div class="scrubber">
@@ -1903,9 +1929,7 @@
               class="scrubber-mark"
               style="left:{(mark.index / Math.max(barCount, 1)) * 100}%"
               aria-hidden="true"
-            >
-              <span class="scrubber-mark-label">{mark.label}</span>
-            </span>
+            ></span>
           {/each}
           <input
             type="range"
@@ -2053,20 +2077,6 @@
     pointer-events: none;
   }
 
-  .scrubber-mark-label {
-    position: absolute;
-    top: var(--sp-2);
-    left: 50%;
-    max-width: calc(var(--sp-8) + var(--sp-4));
-    overflow: hidden;
-    color: var(--text-3);
-    font-size: var(--fs-xs);
-    line-height: 1.2;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    transform: translateX(-50%);
-  }
-
   @media (max-width: 767px) {
     .player-body {
       display: block;
@@ -2088,9 +2098,6 @@
       max-height: min(58dvh, calc(100dvh - var(--dock-space) - var(--sp-6)));
     }
 
-    .scrubber-mark-label {
-      display: none;
-    }
   }
 
   /* The Details section after the score leaves room for the dock, so no gap sits above it. */
