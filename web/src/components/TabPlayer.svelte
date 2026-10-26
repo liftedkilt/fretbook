@@ -188,6 +188,38 @@
   let saveTimer = 0;
   let pendingSync: (() => Promise<void>) | null = null;
 
+  function updatePlayingOutline(
+    element: HTMLDivElement,
+    instance: alphaTab.AlphaTabApi,
+    beat: alphaTab.model.Beat,
+  ) {
+    if (!beat.notes.length) {
+      element.querySelector(".at-playing-outline")?.remove();
+      return;
+    }
+    const bounds = instance.boundsLookup?.findBeat(beat);
+    if (!bounds) return;
+    const staff = bounds.barBounds.visualBounds;
+    let outline = element.querySelector<SVGSVGElement>(".at-playing-outline");
+    if (!outline) {
+      outline = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      outline.setAttribute("class", "at-playing-outline");
+      outline.setAttribute("viewBox", "0 0 40 180");
+      outline.setAttribute("preserveAspectRatio", "none");
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute(
+        "d",
+        "M20 2 C31 2 38 11 38 22 V138 C38 154 31 168 20 178 C9 168 2 154 2 138 V22 C2 11 9 2 20 2 Z",
+      );
+      outline.appendChild(path);
+      element.appendChild(outline);
+    }
+    outline.style.left = `${bounds.onNotesX - 10}px`;
+    outline.style.top = `${staff.y - 14}px`;
+    outline.style.width = "20px";
+    outline.style.height = `${staff.h + 26}px`;
+  }
+
   // Wait mode: the synth plays and stops on each beat of the chosen track until it is played.
   type WaitState = "idle" | "waiting" | "hit" | "done";
   let waitOn = $state(false);
@@ -468,6 +500,7 @@
     });
     // Without audio, alphaTab's own events say where playback is, tempo changes included.
     instance.playedBeatChanged.on((beat) => {
+      updatePlayingOutline(element, instance, beat);
       if (useAudio) return;
       currentMeasure = followPlayed(
         playedBars(untrack(() => song.document.bars)),
@@ -533,6 +566,7 @@
     return () => {
       scoreReady = 0;
       player.api = null;
+      element.querySelector(".at-playing-outline")?.remove();
       instance.destroy();
     };
   });
