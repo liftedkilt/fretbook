@@ -35,6 +35,7 @@
     trackId,
     audioUrl,
     audioEl,
+    muted,
     canTranscribe,
     anchorCount,
     publishedSync,
@@ -101,6 +102,7 @@
     trackId: string;
     audioUrl: string;
     audioEl: HTMLAudioElement | null;
+    muted: boolean;
     canTranscribe: boolean;
     anchorCount: number;
     publishedSync: boolean;
@@ -371,7 +373,12 @@
     {:else if tab === "audio"}
       <PracticePanel {practice} {hasAudio} {tracks} onchange={onpractice} />
       {#if showSyncTools}
-        <StemMixer {songId} {audioEl} master={recordingGain(practice.mix)} onactive={onstems} />
+        <StemMixer
+          {songId}
+          {audioEl}
+          master={muted ? 0 : recordingGain(practice.mix)}
+          onactive={onstems}
+        />
       {/if}
       {#if !readOnly}
         <div class="panel-group">

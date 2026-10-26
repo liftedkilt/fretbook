@@ -129,6 +129,7 @@
   let host = $state<HTMLDivElement | null>(null);
   let scroller = $state<HTMLDivElement | null>(null);
   let audioEl = $state<HTMLAudioElement | null>(null);
+  let pausedAudioSeek: { measure: number; position: number; seconds: number } | null = null;
   let stemsActive = false;
   // For tests: whether the synth beside the recording is off, loading, ready or sounding.
   let synthState = $state<"off" | "loading" | "ready" | "playing">("off");
@@ -359,6 +360,15 @@
 
   function paintAudioClock() {
     if (!song.has_audio || !audioEl) return;
+    if (audioEl.paused && pausedAudioSeek) {
+      currentMeasure = pausedAudioSeek.measure;
+      currentPosition = pausedAudioSeek.position;
+      currentSeconds = pausedAudioSeek.seconds;
+      clock = formatTime(pausedAudioSeek.seconds);
+      playing = false;
+      return;
+    }
+    if (!audioEl.paused) pausedAudioSeek = null;
     const seconds = audioEl.currentTime;
     const output = player.api?.player?.output as
       alphaTab.synth.IExternalMediaSynthOutput | undefined;
@@ -485,6 +495,8 @@
       : alphaTab.ScrollMode.Off;
     const instance = new alphaTab.AlphaTabApi(element, settings);
     player.api = instance;
+    let mouseDownBeat: alphaTab.model.Beat | null = null;
+    let scoreSelectionDragged = false;
     instance.scoreLoaded.on(() => {
       queueMicrotask(() => {
         scoreReady += 1;
@@ -532,8 +544,20 @@
     });
     // A click on the score moves alphaTab's cursor; wait mode follows it to the clicked beat.
     instance.beatMouseDown.on((beat) => {
-      if (!waitRun || beat.voice.bar.staff.track.index !== untrack(() => trackIndex)) return;
-      followWaitClick(beat.voice.bar.index, beat.displayStart);
+      mouseDownBeat = beat;
+      scoreSelectionDragged = false;
+      if (waitRun && beat.voice.bar.staff.track.index === untrack(() => trackIndex))
+        followWaitClick(beat.voice.bar.index, beat.displayStart);
+    });
+    instance.beatMouseMove.on((beat) => {
+      if (mouseDownBeat && mouseDownBeat !== beat) scoreSelectionDragged = true;
+    });
+    instance.beatMouseUp.on((beat) => {
+      const clickedBeat = mouseDownBeat;
+      const dragged = scoreSelectionDragged || Boolean(beat && clickedBeat && beat !== clickedBeat);
+      mouseDownBeat = null;
+      scoreSelectionDragged = false;
+      if (clickedBeat && !dragged) seekToBeat(instance, element, clickedBeat);
     });
     instance.playerFinished.on(() => {
       if (scoreRun?.running) {
@@ -787,7 +811,9 @@
   function applyPractice() {
     savePractice(song.id, practice);
     // While stems play, the recording stays silent and the stems carry the volume.
-    if (audioEl && !stemsActive) audioEl.volume = muted ? 0 : recordingGain(practice.mix);
+    if (audioEl) {
+      if (!stemsActive) audioEl.volume = muted ? 0 : recordingGain(practice.mix);
+    }
     // A recording is mixed with the synth in the hidden companion player, which has no metronome:
     // the page's own clicks keep time there.
     const api = song.has_audio ? (companion.ready ? companion.api : null) : player.api;
@@ -802,7 +828,7 @@
       const id = document_.tracks[index]?.id;
       if (id === undefined) return;
       const mix = trackMix(practice, id);
-      api.changeTrackVolume([item], muted ? 0 : mix.volume);
+      api.changeTrackVolume([item], mix.volume);
       // In wait mode the player plays the chosen track, so it is left out of the backing.
       api.changeTrackMute([item], mix.mute || ((waitOn || scoreOn) && index === trackIndex));
       api.changeTrackSolo([item], mix.solo);
@@ -816,7 +842,15 @@
 
   function toggleMute() {
     muted = !muted;
-    applyPractice();
+    if (audioEl && !stemsActive) audioEl.volume = muted ? 0 : recordingGain(practice.mix);
+    const api = song.has_audio ? (companion.ready ? companion.api : null) : player.api;
+    if (!api?.score) return;
+    if (!song.has_audio) {
+      api.metronomeVolume = !muted && practice.metronome.on ? practice.metronome.volume : 0;
+      api.masterVolume = muted || (waitOn && practice.wait.silent) ? 0 : practice.mix.synth;
+    } else {
+      api.masterVolume = muted ? 0 : synthGain(practice.mix);
+    }
   }
 
   /** Seconds one bar lasts on the wall clock, at the current speed. */
@@ -890,8 +924,10 @@
       : practice.countIn.bars;
 
     if (song.has_audio && audioEl) {
-      if (audioEl.paused) runCountIn(currentMeasure, () => api.play(), countBars);
-      else api.pause();
+      if (audioEl.paused) {
+        if (pausedAudioSeek) audioEl.currentTime = pausedAudioSeek.seconds;
+        runCountIn(currentMeasure, () => api.play(), countBars);
+      } else api.pause();
       return;
     }
     if (api.playerState === alphaTab.synth.PlayerState.Playing) api.pause();
@@ -937,6 +973,7 @@
     if (song.has_audio && audioEl) {
       const targetTime = Math.max(0, startsNow()[index] ?? 0);
       audioEl.currentTime = targetTime;
+      pausedAudioSeek = audioEl.paused ? { measure: index, position: 0, seconds: targetTime } : null;
       currentSeconds = targetTime;
       currentMeasure = index;
       if (scoreRun) scoreRun.begin(scoreRange(index));
@@ -952,6 +989,45 @@
         if (waitState !== "idle") waitState = "idle";
       }
     }
+  }
+
+  function seekToBeat(
+    instance: alphaTab.AlphaTabApi,
+    element: HTMLDivElement,
+    beat: alphaTab.model.Beat,
+  ) {
+    const doc = song.document;
+    const played = followPlayed(order, beat.voice.bar.index, currentMeasure);
+    if (played < 0) return;
+    const tick = tickOfBar(played) + beat.playbackStart;
+    instance.tickPosition = tick;
+    tapIndex = played;
+    currentMeasure = played;
+    currentPosition = beat.displayStart;
+    if (song.has_audio && audioEl) {
+      const starts = startsNow();
+      const barStart = starts[played] ?? 0;
+      const barEnd = starts[played + 1] ?? barStart;
+      const ticks = playedBarTicks(doc, played);
+      const ratio = ticks > 0 ? Math.max(0, Math.min(1, beat.playbackStart / ticks)) : 0;
+      const seconds = Math.max(0, barStart + (barEnd - barStart) * ratio);
+      audioEl.currentTime = seconds;
+      pausedAudioSeek = audioEl.paused
+        ? { measure: played, position: beat.displayStart, seconds }
+        : null;
+      currentSeconds = seconds;
+      clock = formatTime(seconds);
+    } else {
+      currentSeconds = timeAtBarPosition(
+        highwayStarts(doc, false),
+        played,
+        beat.displayStart,
+        playedBarTicks(doc, played),
+      );
+      clock = formatTime(currentSeconds);
+    }
+    if (scoreRun) scoreRun.begin(scoreRange(played));
+    updatePlayingOutline(element, instance, beat);
   }
 
   /** The player clicked a beat of the score while wait mode is on: wait on it, or play on from it. */
@@ -1725,6 +1801,7 @@
           {trackId}
           audioUrl={audioSrc}
           {audioEl}
+          {muted}
           canTranscribe={ui.workerKinds.includes("audio.transcribe")}
           anchorCount={Object.keys(song.document.sync.anchors).length}
           publishedSync={song.document.sync.points.some((point) => point != null)}
