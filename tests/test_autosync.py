@@ -1,5 +1,6 @@
 """Automatic sync: beat tracking, alignment to the score's bars, the job and its endpoint."""
 
+import time
 import wave
 from pathlib import Path
 
@@ -13,6 +14,23 @@ from fretbook.audio.synth import bar_starts_for, build_document, render
 from fretbook.config import Settings
 from fretbook.score.autosync import LOW_CONFIDENCE, propose
 from fretbook.score.model import ScoreDocument
+
+
+def _await_job(client: TestClient, job_id: str) -> dict:
+    """Run the job if it is still queued, and wait if the app's worker already claimed it.
+
+    ``run_once`` returns immediately when another thread holds the claim, so a single call can
+    observe ``running`` on a busy runner.
+    """
+    jobs = client.app.state.ctx.jobs
+    deadline = time.monotonic() + 30
+    while time.monotonic() < deadline:
+        jobs.run_once()
+        job = client.get(f"/api/jobs/{job_id}").json()
+        if job["status"] not in {"queued", "running"}:
+            return job
+        time.sleep(0.05)
+    return client.get(f"/api/jobs/{job_id}").json()
 
 
 def _errors_ms(document: ScoreDocument, **kwargs) -> tuple[np.ndarray, int, int]:
@@ -200,8 +218,7 @@ def test_endpoint_queues_a_job_that_proposes_anchors_without_saving(tmp_path: Pa
         queued = client.post(f"/api/songs/{song_id}/autosync")
         assert queued.status_code == 202
         job_id = queued.json()["job_id"]
-        client.app.state.ctx.jobs.run_once()
-        job = client.get(f"/api/jobs/{job_id}").json()
+        job = _await_job(client, job_id)
         assert job["status"] == "done", job
         proposal = job["result"]["autosync"]
         assert len(proposal["anchors"]) == 13
@@ -231,8 +248,7 @@ def test_endpoint_passes_the_start_to_the_job_and_checks_the_bar(tmp_path: Path)
         assert client.post(f"/api/songs/{song_id}/autosync", json={"start_seconds": -1}).status_code == 422
         queued = client.post(f"/api/songs/{song_id}/autosync", json={"start_seconds": 4.1})
         assert queued.status_code == 202
-        client.app.state.ctx.jobs.run_once()
-        job = client.get(f"/api/jobs/{queued.json()['job_id']}").json()
+        job = _await_job(client, queued.json()["job_id"])
         assert job["status"] == "done", job
         anchors = job["result"]["autosync"]["anchors"]
         assert max(abs(anchors[str(i)] - t) for i, t in enumerate(starts)) < 0.05
@@ -253,7 +269,6 @@ def test_job_reports_unreadable_audio_with_a_catalog_key(tmp_path: Path) -> None
         song_id = _create_tab(client, document)
         client.post(f"/api/songs/{song_id}/audio", files={"file": ("bad.mp3", b"definitely not an mp3", "audio/mpeg")})
         job_id = client.post(f"/api/songs/{song_id}/autosync").json()["job_id"]
-        client.app.state.ctx.jobs.run_once()
-        job = client.get(f"/api/jobs/{job_id}").json()
+        job = _await_job(client, job_id)
         assert job["status"] == "error"
         assert job["error_key"].startswith("autosync.")
