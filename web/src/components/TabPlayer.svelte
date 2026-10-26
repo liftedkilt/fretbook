@@ -1,6 +1,7 @@
 <script lang="ts">
   import * as alphaTab from "@coderline/alphatab";
   import { onMount, untrack } from "svelte";
+  import { writable } from "svelte/store";
 
   import DockSpeed from "./DockSpeed.svelte";
   import DockTextButton from "./DockTextButton.svelte";
@@ -8,6 +9,7 @@
   import Highway from "./Highway.svelte";
   import Icon from "./Icon.svelte";
   import PlayerSheet from "./PlayerSheet.svelte";
+  import PlayerMuteButton from "./PlayerMuteButton.svelte";
   import SongHeader from "./SongHeader.svelte";
   import IconButton from "./ui/IconButton.svelte";
   import OverflowMenu from "./ui/OverflowMenu.svelte";
@@ -130,7 +132,7 @@
   let scroller = $state<HTMLDivElement | null>(null);
   let audioEl = $state<HTMLAudioElement | null>(null);
   let pausedAudioSeek: { measure: number; position: number; seconds: number } | null = null;
-  let pausedScoreBeat: alphaTab.model.Beat | null = null;
+  const muteState = writable(false);
   let stemsActive = false;
   // For tests: whether the synth beside the recording is off, loading, ready or sounding.
   let synthState = $state<"off" | "loading" | "ready" | "playing">("off");
@@ -183,7 +185,7 @@
   let currentSeconds = $state(0);
   let clock = $state("0:00.0");
   let playing = $state(false);
-  let muted = $state(false);
+  let muted = false;
   let countingIn = $state(false);
   let helpOpen = $state(false);
   let countInTimer = 0;
@@ -842,12 +844,9 @@
     if (practice.metronome.on) clicker.unlock();
   }
 
-  function toggleMute() {
-    const paused = audioEl?.paused ?? !playing;
-    const measure = currentMeasure;
-    const position = currentPosition;
-    const beat = paused ? pausedScoreBeat : null;
-    muted = !muted;
+  function toggleMute(next: boolean) {
+    muted = next;
+    muteState.set(next);
     if (audioEl) audioEl.muted = muted;
     const api = song.has_audio ? (companion.ready ? companion.api : null) : player.api;
     if (api?.score && !song.has_audio) {
@@ -856,13 +855,6 @@
     } else if (api?.score) {
       api.masterVolume = muted ? 0 : synthGain(practice.mix);
     }
-    if (!paused || measure < 0) return;
-    requestAnimationFrame(() => {
-      const instance = player.api;
-      if (!instance?.score) return;
-      instance.tickPosition = tickOfBar(measure) + (beat?.playbackStart ?? position);
-      if (beat && host) updatePlayingOutline(host, instance, beat);
-    });
   }
 
   /** Seconds one bar lasts on the wall clock, at the current speed. */
@@ -982,7 +974,6 @@
     const index = Math.min(barCount - 1, Math.max(0, target));
     tapIndex = index;
     currentPosition = 0;
-    pausedScoreBeat = null;
     if (song.has_audio && audioEl) {
       const targetTime = Math.max(0, startsNow()[index] ?? 0);
       audioEl.currentTime = targetTime;
@@ -1017,7 +1008,6 @@
     tapIndex = played;
     currentMeasure = played;
     currentPosition = beat.displayStart;
-    pausedScoreBeat = (audioEl?.paused ?? !playing) ? beat : null;
     if (song.has_audio && audioEl) {
       const starts = startsNow();
       const barStart = starts[played] ?? 0;
@@ -1815,7 +1805,7 @@
           {trackId}
           audioUrl={audioSrc}
           {audioEl}
-          {muted}
+          {muteState}
           canTranscribe={ui.workerKinds.includes("audio.transcribe")}
           anchorCount={Object.keys(song.document.sync.anchors).length}
           publishedSync={song.document.sync.points.some((point) => point != null)}
@@ -1988,15 +1978,7 @@
           placement="above"
           onclick={() => step(1)}
         />
-        <IconButton
-          class="ghost"
-          icon={muted ? "volumeX" : "volume2"}
-          label={t(muted ? "player.unmutePlayback" : "player.mutePlayback")}
-          testid="player-mute"
-          pressed={muted}
-          placement="above"
-          onclick={toggleMute}
-        />
+        <PlayerMuteButton {muteState} onchange={toggleMute} />
       </div>
 
       <div class="dock-progress">
