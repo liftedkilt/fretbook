@@ -130,6 +130,7 @@
   let scroller = $state<HTMLDivElement | null>(null);
   let audioEl = $state<HTMLAudioElement | null>(null);
   let pausedAudioSeek: { measure: number; position: number; seconds: number } | null = null;
+  let pausedScoreBeat: alphaTab.model.Beat | null = null;
   let stemsActive = false;
   // For tests: whether the synth beside the recording is off, loading, ready or sounding.
   let synthState = $state<"off" | "loading" | "ready" | "playing">("off");
@@ -812,7 +813,8 @@
     savePractice(song.id, practice);
     // While stems play, the recording stays silent and the stems carry the volume.
     if (audioEl) {
-      if (!stemsActive) audioEl.volume = muted ? 0 : recordingGain(practice.mix);
+      if (!stemsActive) audioEl.volume = recordingGain(practice.mix);
+      audioEl.muted = muted;
     }
     // A recording is mixed with the synth in the hidden companion player, which has no metronome:
     // the page's own clicks keep time there.
@@ -841,16 +843,26 @@
   }
 
   function toggleMute() {
+    const paused = audioEl?.paused ?? !playing;
+    const measure = currentMeasure;
+    const position = currentPosition;
+    const beat = paused ? pausedScoreBeat : null;
     muted = !muted;
-    if (audioEl && !stemsActive) audioEl.volume = muted ? 0 : recordingGain(practice.mix);
+    if (audioEl) audioEl.muted = muted;
     const api = song.has_audio ? (companion.ready ? companion.api : null) : player.api;
-    if (!api?.score) return;
-    if (!song.has_audio) {
+    if (api?.score && !song.has_audio) {
       api.metronomeVolume = !muted && practice.metronome.on ? practice.metronome.volume : 0;
       api.masterVolume = muted || (waitOn && practice.wait.silent) ? 0 : practice.mix.synth;
-    } else {
+    } else if (api?.score) {
       api.masterVolume = muted ? 0 : synthGain(practice.mix);
     }
+    if (!paused || measure < 0) return;
+    requestAnimationFrame(() => {
+      const instance = player.api;
+      if (!instance?.score) return;
+      instance.tickPosition = tickOfBar(measure) + (beat?.playbackStart ?? position);
+      if (beat && host) updatePlayingOutline(host, instance, beat);
+    });
   }
 
   /** Seconds one bar lasts on the wall clock, at the current speed. */
@@ -970,6 +982,7 @@
     const index = Math.min(barCount - 1, Math.max(0, target));
     tapIndex = index;
     currentPosition = 0;
+    pausedScoreBeat = null;
     if (song.has_audio && audioEl) {
       const targetTime = Math.max(0, startsNow()[index] ?? 0);
       audioEl.currentTime = targetTime;
@@ -1004,6 +1017,7 @@
     tapIndex = played;
     currentMeasure = played;
     currentPosition = beat.displayStart;
+    pausedScoreBeat = (audioEl?.paused ?? !playing) ? beat : null;
     if (song.has_audio && audioEl) {
       const starts = startsNow();
       const barStart = starts[played] ?? 0;
