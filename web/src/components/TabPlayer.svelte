@@ -899,7 +899,14 @@
   }
 
   function tickMetronome() {
-    if (!song.has_audio || !audioEl || audioEl.paused || countingIn || muted || !practice.metronome.on)
+    if (
+      !song.has_audio ||
+      !audioEl ||
+      audioEl.paused ||
+      countingIn ||
+      muted ||
+      !practice.metronome.on
+    )
       return;
     const starts = startsNow();
     if (starts.length === 0) return;
@@ -986,7 +993,9 @@
     if (song.has_audio && audioEl) {
       const targetTime = Math.max(0, startsNow()[index] ?? 0);
       audioEl.currentTime = targetTime;
-      pausedAudioSeek = audioEl.paused ? { measure: index, position: 0, seconds: targetTime } : null;
+      pausedAudioSeek = audioEl.paused
+        ? { measure: index, position: 0, seconds: targetTime }
+        : null;
       currentSeconds = targetTime;
       currentMeasure = index;
       if (scoreRun) scoreRun.begin(scoreRange(index));
@@ -1726,6 +1735,20 @@
         { value: "split", label: t("highway.split"), testid: "player-view-split" },
       ]}
     />
+    {#if document_.tracks.length > 1}
+      <label class="track-select">
+        <span>{t("player.track")}</span>
+        <select
+          data-testid="player-track"
+          value={trackId}
+          onchange={(event) => (trackId = event.currentTarget.value)}
+        >
+          {#each document_.tracks as item (item.id)}
+            <option value={item.id}>{item.name}</option>
+          {/each}
+        </select>
+      </label>
+    {/if}
     <div class="view-chips">
       {#if loopA != null && loopB != null}
         <button
@@ -1811,7 +1834,6 @@
           {readOnly}
           demo={ui.demoMode}
           tracks={song.document.tracks}
-          {trackId}
           audioUrl={audioSrc}
           {audioEl}
           {muted}
@@ -1874,7 +1896,6 @@
             stemsActive = active;
             if (!active) applyPractice();
           }}
-          ontrack={(id) => (trackId = id)}
           onnotation={toggleNotation}
           onstage={setStage}
           onlistenDevice={(next) => (listenDevice = next)}
@@ -2187,7 +2208,6 @@
       height: auto;
       max-height: min(58dvh, calc(100dvh - var(--dock-space) - var(--sp-6)));
     }
-
   }
 
   /* The Details section after the score leaves room for the dock, so no gap sits above it. */
@@ -2202,6 +2222,23 @@
     align-items: center;
     gap: var(--sp-2);
     margin-bottom: var(--sp-3);
+  }
+
+  .track-select {
+    display: flex;
+    flex: 0 1 24rem;
+    align-items: center;
+    gap: var(--sp-2);
+    min-width: 0;
+    max-width: 100%;
+    color: var(--text-2);
+    font-size: var(--fs-sm);
+  }
+
+  .track-select select {
+    flex: 1;
+    min-width: 0;
+    width: 0;
   }
 
   /* The active loop and speed, pushed to the right, each opening the practice panel. */

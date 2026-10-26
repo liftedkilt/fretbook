@@ -8,6 +8,7 @@
   import { canEdit } from "../lib/bands";
   import { t } from "../lib/i18n.svelte";
   import type { SongDetail, TabSong } from "../lib/types";
+  import { songVersion } from "../lib/songUpdates.svelte";
 
   let { id, transpose = 0 }: { id: string; transpose?: number } = $props();
 
@@ -18,6 +19,7 @@
 
   $effect(() => {
     const songId = id;
+    void songVersion(songId);
     let cancel = false;
     song = null;
     error = "";

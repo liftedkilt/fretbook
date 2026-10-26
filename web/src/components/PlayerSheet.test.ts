@@ -16,7 +16,6 @@ function props(extra: Record<string, unknown> = {}) {
       { id: "bass", name: "Bass" },
       { id: "guitar", name: "Guitar" },
     ],
-    trackId: "bass",
     audioUrl: "",
     audioEl: null,
     canTranscribe: true,
@@ -69,7 +68,6 @@ function props(extra: Record<string, unknown> = {}) {
     onupload: vi.fn(),
     onyoutube: vi.fn(),
     onstems: vi.fn(),
-    ontrack: vi.fn(),
     onnotation: vi.fn(),
     onstage: vi.fn(),
     onlistenDevice: vi.fn(),
@@ -114,7 +112,7 @@ describe("PlayerSheet", () => {
     expect(screen.getByTestId("fretboard-on")).toBeTruthy();
     expect(screen.getByTestId("player-notation")).toBeTruthy();
     expect(screen.getByTestId("stage-toggle")).toBeTruthy();
-    expect(screen.getByTestId("player-track")).toBeTruthy();
+    expect(screen.queryByTestId("player-track")).toBeNull();
     expect(localStorage.getItem("fretbook.playerSheetTab")).toBe("view");
   });
 

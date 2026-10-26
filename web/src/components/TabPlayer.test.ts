@@ -1,21 +1,32 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
-import type { Settings } from "@coderline/alphatab";
+import type { Settings, model } from "@coderline/alphatab";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import type { TabSong } from "../lib/types";
 import TabPlayer from "./TabPlayer.svelte";
 
-const lifecycle = vi.hoisted(() => ({ created: vi.fn(), destroyed: vi.fn() }));
+const lifecycle = vi.hoisted(() => ({
+  created: vi.fn(),
+  destroyed: vi.fn(),
+  loaded: vi.fn(),
+  rendered: vi.fn(),
+}));
 
 vi.mock("@coderline/alphatab", async (importOriginal) => {
   const original = await importOriginal<typeof import("@coderline/alphatab")>();
-  const event = () => ({ on: vi.fn() });
+  const event = () => {
+    const handlers: (() => void)[] = [];
+    return {
+      on: vi.fn((handler: () => void) => handlers.push(handler)),
+      emit: () => handlers.forEach((handler) => handler()),
+    };
+  };
   return {
     ...original,
     AlphaTabApi: class {
       settings: Settings;
-      score = { tracks: [] };
-      tracks = [];
+      score = new original.model.Score();
+      tracks: model.Track[] = [];
       player = { output: { updatePosition: vi.fn() } };
       scoreLoaded = event();
       playerReady = { on: (handler: () => void) => handler() };
@@ -26,7 +37,22 @@ vi.mock("@coderline/alphatab", async (importOriginal) => {
       playerFinished = event();
       playerPositionChanged = event();
       playerStateChanged = event();
-      tex = vi.fn();
+      tex = vi.fn((source: string, indexes: number[]) => {
+        const importer = new original.importer.AlphaTexImporter();
+        importer.initFromString(source, this.settings);
+        this.score = importer.readScore();
+        this.tracks = indexes.map((index) => this.score.tracks[index]);
+        lifecycle.loaded(this.score.tracks.length);
+        this.scoreLoaded.emit();
+      });
+      renderTracks = vi.fn((tracks: model.Track[]) => {
+        this.tracks = tracks;
+        lifecycle.rendered(tracks.map((track) => track.index));
+      });
+      updateSyncPoints = vi.fn();
+      changeTrackVolume = vi.fn();
+      changeTrackMute = vi.fn();
+      changeTrackSolo = vi.fn();
       destroy = lifecycle.destroyed;
 
       constructor(_element: HTMLElement, settings: Settings) {
@@ -91,6 +117,7 @@ it("keeps the loaded player when muting after a synchronous ready callback", asy
   const audio = screen.getByTestId("player-audio") as HTMLAudioElement;
   audio.currentTime = 0.75;
   const mute = screen.getByTestId("player-mute");
+  expect(screen.queryByTestId("player-track")).toBeNull();
 
   await fireEvent.click(mute);
   expect(audio.muted).toBe(true);
@@ -103,6 +130,43 @@ it("keeps the loaded player when muting after a synchronous ready callback", asy
   expect(audio.muted).toBe(false);
   expect(audio.currentTime).toBe(0.75);
   expect(mute).toHaveAttribute("aria-pressed", "false");
+  expect(lifecycle.created).toHaveBeenCalledTimes(1);
+  expect(lifecycle.destroyed).not.toHaveBeenCalled();
+});
+
+it("switches between imported instruments above the score without recreating the player", async () => {
+  const guitar = song.document.tracks[0];
+  const multiTrackSong: TabSong = {
+    ...song,
+    id: "multi-track",
+    document: {
+      ...song.document,
+      tracks: [
+        guitar,
+        {
+          ...guitar,
+          id: "bass",
+          name: "Bass",
+          instrument: "bass-guitar",
+          tuning_midi: [43, 38, 33, 28],
+          preferred: false,
+        },
+      ],
+    },
+  };
+  render(TabPlayer, { song: multiTrackSong, readOnly: true });
+  await waitFor(() => expect(lifecycle.loaded).toHaveBeenCalledWith(2));
+  const selector = screen.getByRole("combobox", { name: "Track" });
+  expect(screen.getByTestId("player-view-row")).toContainElement(selector);
+  expect(screen.queryByTestId("player-sheet")).toBeNull();
+  expect(selector).toHaveValue("guitar");
+
+  await fireEvent.change(selector, { target: { value: "bass" } });
+  await waitFor(() => expect(lifecycle.rendered).toHaveBeenLastCalledWith([1]));
+  expect(selector).toHaveValue("bass");
+
+  await fireEvent.change(selector, { target: { value: "guitar" } });
+  await waitFor(() => expect(lifecycle.rendered).toHaveBeenLastCalledWith([0]));
   expect(lifecycle.created).toHaveBeenCalledTimes(1);
   expect(lifecycle.destroyed).not.toHaveBeenCalled();
 });

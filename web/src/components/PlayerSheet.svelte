@@ -32,7 +32,6 @@
     readOnly,
     demo,
     tracks,
-    trackId,
     audioUrl,
     audioEl,
     muted = false,
@@ -86,7 +85,6 @@
     onupload,
     onyoutube,
     onstems,
-    ontrack,
     onnotation,
     onstage,
     onlistenDevice,
@@ -99,7 +97,6 @@
     readOnly: boolean;
     demo: boolean;
     tracks: { id: string; name: string }[];
-    trackId: string;
     audioUrl: string;
     audioEl: HTMLAudioElement | null;
     muted?: boolean;
@@ -153,7 +150,6 @@
     onupload: (file: File) => void;
     onyoutube: () => void;
     onstems: (active: boolean) => void;
-    ontrack: (id: string) => void;
     onnotation: () => void;
     onstage: (on: boolean) => void;
     onlistenDevice: (id: string) => void;
@@ -495,20 +491,6 @@
           <span class="switch-track"></span>
           {t("handsFree.stage")}
         </label>
-        {#if tracks.length > 1}
-          <label class="field">
-            <span>{t("player.track")}</span>
-            <select
-              data-testid="player-track"
-              value={trackId}
-              onchange={(event) => ontrack(event.currentTarget.value)}
-            >
-              {#each tracks as item (item.id)}
-                <option value={item.id}>{item.name}</option>
-              {/each}
-            </select>
-          </label>
-        {/if}
       </div>
     {/if}
   </div>
