@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import type { Writable } from "svelte/store";
   import { RATES } from "../lib/shortcuts";
   import { formatRate, loadSheetTab, saveSheetTab, type SheetTab } from "../lib/playerSheet";
   import { recordingGain, type PracticeSettings } from "../lib/practice";
@@ -37,7 +35,7 @@
     trackId,
     audioUrl,
     audioEl,
-    muteState,
+    muted = false,
     canTranscribe,
     anchorCount,
     publishedSync,
@@ -104,7 +102,7 @@
     trackId: string;
     audioUrl: string;
     audioEl: HTMLAudioElement | null;
-    muteState: Writable<boolean>;
+    muted?: boolean;
     canTranscribe: boolean;
     anchorCount: number;
     publishedSync: boolean;
@@ -161,9 +159,6 @@
     onlistenDevice: (id: string) => void;
     onlistenChannel: (channel: number) => void;
   } = $props();
-
-  let muted = $state(false);
-  onMount(() => muteState.subscribe((value) => (muted = value)));
 
   let root = $state<HTMLElement | null>(null);
   let tab = $state<SheetTab>("practice");

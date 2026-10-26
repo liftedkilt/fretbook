@@ -1,7 +1,6 @@
 <script lang="ts">
   import * as alphaTab from "@coderline/alphatab";
   import { onMount, untrack } from "svelte";
-  import { writable } from "svelte/store";
 
   import DockSpeed from "./DockSpeed.svelte";
   import DockTextButton from "./DockTextButton.svelte";
@@ -9,7 +8,6 @@
   import Highway from "./Highway.svelte";
   import Icon from "./Icon.svelte";
   import PlayerSheet from "./PlayerSheet.svelte";
-  import PlayerMuteButton from "./PlayerMuteButton.svelte";
   import SongHeader from "./SongHeader.svelte";
   import IconButton from "./ui/IconButton.svelte";
   import OverflowMenu from "./ui/OverflowMenu.svelte";
@@ -132,7 +130,6 @@
   let scroller = $state<HTMLDivElement | null>(null);
   let audioEl = $state<HTMLAudioElement | null>(null);
   let pausedAudioSeek: { measure: number; position: number; seconds: number } | null = null;
-  const muteState = writable(false);
   let stemsActive = false;
   // For tests: whether the synth beside the recording is off, loading, ready or sounding.
   let synthState = $state<"off" | "loading" | "ready" | "playing">("off");
@@ -185,7 +182,7 @@
   let currentSeconds = $state(0);
   let clock = $state("0:00.0");
   let playing = $state(false);
-  let muted = false;
+  let muted = $state(false);
   let countingIn = $state(false);
   let helpOpen = $state(false);
   let countInTimer = 0;
@@ -424,6 +421,10 @@
     const source = synthTex;
     const index = untrack(() => trackIndex);
     if (!element || !synthWanted || !source) return;
+    return untrack(() => mountCompanion(source, index));
+  });
+
+  function mountCompanion(source: string, index: number) {
     // The player needs a place in the page, but nothing in it is shown.
     const hidden = document.createElement("div");
     hidden.setAttribute("aria-hidden", "true");
@@ -468,7 +469,7 @@
       instance.destroy();
       hidden.remove();
     };
-  });
+  }
 
   $effect(() => {
     const element = host;
@@ -476,6 +477,15 @@
     const source = tex;
     const useAudio = song.has_audio;
     if (!element || !scrollElement) return;
+    return untrack(() => mountScorePlayer(element, scrollElement, source, useAudio));
+  });
+
+  function mountScorePlayer(
+    element: HTMLDivElement,
+    scrollElement: HTMLDivElement,
+    source: string,
+    useAudio: boolean,
+  ) {
     const settings = new alphaTab.Settings();
     settings.core.fontDirectory = new URL("font/", document.baseURI).href;
     settings.core.logLevel = alphaTab.LogLevel.Warning;
@@ -597,7 +607,7 @@
       element.querySelector(".at-playing-outline")?.remove();
       instance.destroy();
     };
-  });
+  }
 
   $effect(() => {
     if (!scoreReady) return;
@@ -844,9 +854,8 @@
     if (practice.metronome.on) clicker.unlock();
   }
 
-  function toggleMute(next: boolean) {
-    muted = next;
-    muteState.set(next);
+  function toggleMute() {
+    muted = !muted;
     if (audioEl) audioEl.muted = muted;
     const api = song.has_audio ? (companion.ready ? companion.api : null) : player.api;
     if (api?.score && !song.has_audio) {
@@ -1805,7 +1814,7 @@
           {trackId}
           audioUrl={audioSrc}
           {audioEl}
-          {muteState}
+          {muted}
           canTranscribe={ui.workerKinds.includes("audio.transcribe")}
           anchorCount={Object.keys(song.document.sync.anchors).length}
           publishedSync={song.document.sync.points.some((point) => point != null)}
@@ -1978,7 +1987,15 @@
           placement="above"
           onclick={() => step(1)}
         />
-        <PlayerMuteButton {muteState} onchange={toggleMute} />
+        <IconButton
+          class="ghost"
+          icon={muted ? "volumeX" : "volume2"}
+          label={t(muted ? "player.unmutePlayback" : "player.mutePlayback")}
+          testid="player-mute"
+          pressed={muted}
+          placement="above"
+          onclick={toggleMute}
+        />
       </div>
 
       <div class="dock-progress">
