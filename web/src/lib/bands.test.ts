@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { activeLibraryId, canEdit, sharePath } from "./bands";
+import { activeLibraryId, canEdit, sharePath, transferDestinations } from "./bands";
 
 describe("bands", () => {
   it("treats only the view role as read-only", () => {
@@ -18,5 +18,27 @@ describe("bands", () => {
     expect(activeLibraryId("", "local")).toBe("local");
     expect(activeLibraryId("  ", "local")).toBe("local");
     expect(activeLibraryId("band", "local")).toBe("band");
+  });
+
+  it("offers other editable libraries, personal first when the song is in a band", () => {
+    const libraries = [
+      { id: "local", role: "edit", kind: "personal" },
+      { id: "band1", role: "edit", kind: "band" },
+      { id: "band2", role: "edit", kind: "band" },
+      { id: "band-view", role: "view", kind: "band" },
+    ];
+    expect(transferDestinations(libraries, "local").map((item) => item.id)).toEqual([
+      "band1",
+      "band2",
+    ]);
+    expect(transferDestinations(libraries, "band1").map((item) => item.id)).toEqual([
+      "local",
+      "band2",
+    ]);
+    expect(transferDestinations(libraries, "  ").map((item) => item.id)).toEqual([
+      "local",
+      "band1",
+      "band2",
+    ]);
   });
 });

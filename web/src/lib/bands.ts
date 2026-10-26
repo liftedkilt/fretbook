@@ -15,3 +15,16 @@ export function activeLibraryId(stored: string, personalId: string): string {
   const trimmed = stored.trim();
   return trimmed || personalId;
 }
+
+/**
+ * Editable libraries other than the song's current one.
+ * The API rejects a copy or move into the same library (`library.same`).
+ * Order is kept, so the personal library stays first when the song is in a band.
+ */
+export function transferDestinations<T extends { id: string; role: string }>(
+  libraries: readonly T[],
+  currentLibraryId: string | null | undefined,
+): T[] {
+  const current = (currentLibraryId ?? "").trim();
+  return libraries.filter((item) => item.role === "edit" && item.id !== current);
+}
