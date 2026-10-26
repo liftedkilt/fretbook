@@ -8,7 +8,7 @@
     moveSongTo,
     revokeShare,
   } from "../lib/api";
-  import { sharePath } from "../lib/bands";
+  import { sharePath, transferDestinations } from "../lib/bands";
   import { t } from "../lib/i18n.svelte";
   import { hrefFor, navigate } from "../lib/router.svelte";
   import type { LibraryInfo, ShareLink } from "../lib/types";
@@ -17,9 +17,10 @@
   // The share and copy-or-move sheets for a song. The song page's overflow menu opens them.
   let {
     songId,
+    libraryId = "",
     shareOpen = $bindable(false),
     moveOpen = $bindable(false),
-  }: { songId: string; shareOpen?: boolean; moveOpen?: boolean } = $props();
+  }: { songId: string; libraryId?: string; shareOpen?: boolean; moveOpen?: boolean } = $props();
 
   let libraries = $state<LibraryInfo[]>([]);
   let shares = $state<ShareLink[]>([]);
@@ -40,21 +41,24 @@
 
   $effect(() => {
     if (!moveOpen) return;
-    void loadLibraries().catch((err: unknown) => {
+    const current = libraryId;
+    void loadLibraries(current).catch((err: unknown) => {
       error = err instanceof Error ? err.message : t("error.generic");
     });
   });
 
-  const editable = $derived(libraries.filter((item) => item.role === "edit"));
+  const destinations = $derived(transferDestinations(libraries, libraryId));
 
   async function loadShares() {
     if (!ui.shareLinks) return;
     shares = await listShares(songId);
   }
 
-  async function loadLibraries() {
-    libraries = await listLibraries();
-    if (!destination) destination = libraries.find((item) => item.role === "edit")?.id ?? "";
+  async function loadLibraries(current: string | undefined) {
+    const listed = await listLibraries();
+    const choices = transferDestinations(listed, current);
+    libraries = listed;
+    if (!choices.some((item) => item.id === destination)) destination = choices[0]?.id ?? "";
   }
 
   async function makeLink() {
@@ -173,8 +177,14 @@
   {#if error}<p class="alert" role="alert">{error}</p>{/if}
   <label>
     {t("sharing.destination")}
-    <select data-testid="move-destination" bind:value={destination}>
-      {#each editable as library (library.id)}
+    <select
+      data-testid="move-destination"
+      value={destination}
+      onchange={(event) => {
+        destination = event.currentTarget.value;
+      }}
+    >
+      {#each destinations as library (library.id)}
         <option value={library.id}>
           {library.kind === "personal" ? t("bands.yours") : library.name}
         </option>

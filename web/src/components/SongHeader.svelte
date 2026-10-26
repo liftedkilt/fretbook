@@ -401,7 +401,12 @@
 </SongMetadata>
 
 {#if !readOnly}
-  <SongLibraryActions songId={song.id} bind:shareOpen bind:moveOpen />
+  <SongLibraryActions
+    songId={song.id}
+    libraryId={song.library_id ?? ""}
+    bind:shareOpen
+    bind:moveOpen
+  />
   <ExportSheet
     open={exportOpen}
     subtitle={song.title}
