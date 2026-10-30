@@ -44,7 +44,7 @@ These are the constructor defaults. The tuner, wait mode, and scored play do not
 | MPM peak rule | first NSDF peak at least `cutoff` (0.90) times the highest peak | `mpm.ts`. McLeod's Tartini UI used 0.93. A lower cutoff lets a harmonic qualify, and the first qualifying peak is the higher one. |
 | Expected-note pull | a peak within 40 cents of the target may win if its NSDF height is at least half the strongest | Only when a caller has set an expected MIDI note. |
 | Clarity gate | 0.70 to publish a pitch; 0.90 for the internal legato tracker | `engine.ts`. Both gates are shared. Wait mode does not add a third. |
-| Silence | RMS below 0.003 (about −50 dBFS) publishes no pitch | No hysteresis, no high-pass, no input gain. |
+| Silence | RMS below 0.003 (about −50 dBFS) opens the gate; a sounding note stays open down to half that (hysteresis) | A one-pole high-pass at 25 Hz runs ahead of MPM ([#406](https://github.com/liftedkilt/fretbook/issues/406)). No input gain. |
 | Pitch hop | 20 ms, aligned to the onset hop | |
 | Onset | spectral flux, sensitivity 1.6, floor 1, refractory 60 ms, frame must be 12% louder than three hops earlier | `onset.ts`. A hammer-on can also synthesise an onset after three steady readings at clarity ≥ 0.9 on a **new pitch class**. An octave jump does not count (treated as a harmonic flip). The same note again never takes this path. |
 | Onset timestamp | backdated by one hop plus a quarter of the onset frame | About 21 ms at 48 kHz. Scored play treats this timestamp as the attack. |
@@ -99,7 +99,7 @@ William's report matches the split in the table above. The tuner and wait mode h
 
 **A4 is tuner-local and starts at 440 every time.** `let a4 = $state(440)` is not stored. Wait and scored omit `a4`, so the engine uses `DEFAULT_A4`. 432 Hz is about −32 cents against 440, inside the ±40 cent wait tolerance only when the string is dead on 432. The tuner display follows the slider because it recomputes cents itself. Wait mode trusts `event.cents`.
 
-**There is no high-pass and no gain.** Rumble and a DC offset go straight into the NSDF. With auto gain forced off (correct for cents; AGC pumps the level and moves the pitch), a quiet bass through a laptop mic sits on the 0.003 gate and drops out. The tuner holds those dropouts for 0.4 s. Wait mode, inside a 0.3 s settle window, treats them as "no pitch" and then says it heard nothing.
+**There is no gain.** (A 25 Hz high-pass and a keep threshold at half the open one now sit ahead of MPM, so rumble and DC no longer reach the NSDF and a decaying note does not flicker off; the paragraph below describes the quiet-bass case that remains.) Before that change, rumble and a DC offset went straight into the NSDF. With auto gain forced off (correct for cents; AGC pumps the level and moves the pitch), a quiet bass through a laptop mic sits on the 0.003 gate and drops out. The tuner holds those dropouts for 0.4 s. Wait mode, inside a 0.3 s settle window, treats them as "no pitch" and then says it heard nothing.
 
 **Bleed.** Wait mode mutes the chosen track and, unless "silent backing" is on, plays the others through the speakers. The mic onsets those notes. A wrong onset arms the matcher; the player's real attack can fall inside that settle window or inside the 60 ms refractory gap. Scored play has `bleedSuspected` for a recording. Wait mode has the silent-backing switch defaulting off, and no warning. The tuner reference tone is a second `AudioContext` into the speakers while the mic session is open, and pitch events are still applied.
 
