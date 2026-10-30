@@ -88,9 +88,10 @@
         data-testid="setlist-prev"
         disabled={previous === null}
         onclick={() => go(previous)}
+        aria-label={t("setlists.previous")}
         aria-keyshortcuts="Alt+ArrowLeft"
       >
-        <Icon name="prev" size={16} />{t("setlists.previous")}
+        <Icon name="prev" size={16} /><span class="step-label">{t("setlists.previous")}</span>
       </button>
       <span class="play-position" data-testid="setlist-position" aria-live="polite">
         {t("setlists.position", { position: index + 1, total })}
@@ -100,9 +101,10 @@
           class="primary"
           data-testid="setlist-next"
           onclick={() => go(next)}
+          aria-label={t("setlists.next")}
           aria-keyshortcuts="Alt+ArrowRight"
         >
-          {t("setlists.next")}<Icon name="next" size={16} />
+          <span class="step-label">{t("setlists.next")}</span><Icon name="next" size={16} />
         </button>
       {:else}
         <a
@@ -180,8 +182,12 @@
       background: var(--glass-solid, var(--surface));
     }
     .back-name,
+    .step-label,
     .hint {
       display: none;
+    }
+    .play-position {
+      white-space: nowrap;
     }
     .play-steps {
       flex: 1;
