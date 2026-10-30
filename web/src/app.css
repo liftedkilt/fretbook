@@ -3280,8 +3280,26 @@ textarea {
   summary,
   .menu-item,
   .back-link,
-  .brand {
+  .brand,
+  .switch,
+  .view-chip,
+  .lesson-link,
+  .page-header .back,
+  .links a {
     min-height: 44px !important;
+  }
+
+  /* iOS Safari zooms the page when a field under 16px takes focus. */
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1em) !important;
+  }
+
+  .links a,
+  .lesson-link {
+    display: inline-flex;
+    align-items: center;
   }
 
   button,
