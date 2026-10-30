@@ -31,6 +31,24 @@
   let pickerSong = $state<{ id: string; title: string } | null>(null);
   let searchInput = $state<HTMLInputElement>();
   let searchSeen = ui.search.trim();
+  let titleScrolled = $state(false);
+  let headerElement = $state<HTMLElement>();
+
+  function onScroll() {
+    if (!headerElement) {
+      titleScrolled = window.scrollY > 40;
+    } else {
+      const rect = headerElement.getBoundingClientRect();
+      titleScrolled = rect.bottom < 58;
+    }
+  }
+
+  $effect(() => {
+    ui.topbarTitle = titleScrolled ? (ui.filter === "all" ? t("library.welcome") : heading) : "";
+    return () => {
+      ui.topbarTitle = "";
+    };
+  });
 
   const filters: { id: LibraryFilter; key: string }[] = [
     { id: "all", key: "library.filterAll" },
@@ -194,18 +212,22 @@
   const paged = $derived(ui.nextCursor !== null && ui.nextCursor !== undefined);
 </script>
 
-<svelte:window onkeydown={onKeydown} />
+<svelte:window onkeydown={onKeydown} onscroll={onScroll} />
 
 <Page width="wide">
   <section class="library">
-    <LibraryPicker />
-    <LibrarySwitch active="songs" />
-    <PageHeader
-      title={ui.filter === "all" ? t("library.welcome") : heading}
-      eyebrow={t("library.heading")}
-      subtitle={t("library.count", { count: countFor(ui.filter) })}
-      subtitleTestId="library-count"
-    ></PageHeader>
+    <div class="library-bar">
+      <LibraryPicker />
+      <LibrarySwitch active="songs" />
+    </div>
+    <div bind:this={headerElement} class="library-header-wrap">
+      <PageHeader
+        class="library-header"
+        title={ui.filter === "all" ? t("library.welcome") : heading}
+        subtitle={t("library.count", { count: countFor(ui.filter) })}
+        subtitleTestId="library-count"
+      ></PageHeader>
+    </div>
 
     <RecentImports />
     {#if countFor("all") > 0}
@@ -223,37 +245,39 @@
             title={t("library.searchShortcut")}
           />
         </label>
-        <label class="sort">
-          <span class="visually-hidden">{t("library.sort")}</span>
-          <select
-            value={`${ui.sort}:${ui.order}`}
-            data-testid="library-sort"
-            aria-label={t("library.sort")}
-            onchange={(event) => {
-              const [sort, order] = event.currentTarget.value.split(":");
-              setSort(sort as LibrarySort, order as SortOrder);
-            }}
-          >
-            {#each sorts as item (`${item.sort}:${item.order}`)}
-              <option value={`${item.sort}:${item.order}`}>{t(item.key)}</option>
-            {/each}
-          </select>
-        </label>
-        <FiltersPopover
-          count={activeFilters.length}
-          onmanagetags={ui.demoMode ? undefined : () => (managingTags = true)}
-        />
-        {#if !ui.demoMode}
-          <span class="select-toggle">
-            <Chip
-              variant="filter"
-              label={t("tags.select")}
-              testid="library-select"
-              pressed={selecting}
-              onclick={toggleSelecting}
-            />
-          </span>
-        {/if}
+        <div class="toolbar-actions">
+          <label class="sort">
+            <span class="visually-hidden">{t("library.sort")}</span>
+            <select
+              value={`${ui.sort}:${ui.order}`}
+              data-testid="library-sort"
+              aria-label={t("library.sort")}
+              onchange={(event) => {
+                const [sort, order] = event.currentTarget.value.split(":");
+                setSort(sort as LibrarySort, order as SortOrder);
+              }}
+            >
+              {#each sorts as item (`${item.sort}:${item.order}`)}
+                <option value={`${item.sort}:${item.order}`}>{t(item.key)}</option>
+              {/each}
+            </select>
+          </label>
+          <FiltersPopover
+            count={activeFilters.length}
+            onmanagetags={ui.demoMode ? undefined : () => (managingTags = true)}
+          />
+          {#if !ui.demoMode}
+            <span class="select-toggle">
+              <Chip
+                variant="filter"
+                label={t("tags.select")}
+                testid="library-select"
+                pressed={selecting}
+                onclick={toggleSelecting}
+              />
+            </span>
+          {/if}
+        </div>
       </div>
 
       <div class="chip-line">
@@ -442,6 +466,13 @@
     min-width: 0;
   }
 
+  .toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    flex: 1;
+  }
+
   .search :global(.icon) {
     position: absolute;
     left: var(--sp-3);
@@ -473,6 +504,12 @@
   /* Chip rows scroll sideways; the right edge fades out so a clipped chip reads as "more". */
   .chip-line {
     margin-bottom: var(--sp-4);
+  }
+
+  @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
+    .chip-line {
+      margin-bottom: var(--sp-2);
+    }
   }
 
   .chips {
@@ -574,13 +611,61 @@
   }
 
   @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
-    .toolbar {
+    /* The picker and the Songs|Setlists switch share a row, so a song shows on the first screen. */
+    .library-bar {
+      display: flex;
       flex-wrap: wrap;
+      align-items: center;
+      gap: var(--sp-2);
+      margin-bottom: var(--sp-3);
+    }
+
+    .library-bar :global(.library-picker) {
+      flex: 1 1 12rem;
+      min-width: 0;
+    }
+
+    .library-bar :global(.library-switch) {
+      flex: none;
+      margin-bottom: 0;
+    }
+
+    :global(.library-header) {
+      margin-bottom: var(--sp-3);
+    }
+
+    :global(.library-header h1.display) {
+      font-size: var(--fs-title);
+    }
+
+    :global(.library-header .text) {
+      grid-template-columns: auto 1fr;
+      align-items: baseline;
+      column-gap: var(--sp-3);
+    }
+
+    .toolbar {
+      display: contents;
     }
 
     .search {
+      position: sticky;
+      top: calc(58px + env(safe-area-inset-top, 0px));
+      z-index: 20;
+      display: block;
       flex-basis: 100%;
       max-width: none;
+      margin: 0 calc(-1 * var(--pad));
+      padding: var(--sp-2) var(--pad);
+      background: var(--bg);
+    }
+
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-2);
+      margin-bottom: var(--sp-3);
+      width: 100%;
     }
 
     .sort {

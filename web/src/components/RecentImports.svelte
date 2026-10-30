@@ -373,12 +373,21 @@
   }
 
   @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
+    /* One line: the text gives way to the buttons. */
     .banner {
-      flex-wrap: wrap;
+      min-height: 40px;
+      gap: var(--sp-2);
+      padding: var(--sp-1) var(--sp-2);
     }
 
     .banner-text {
-      flex-basis: calc(100% - 40px);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .imports {
+      margin-bottom: var(--sp-3);
     }
   }
 

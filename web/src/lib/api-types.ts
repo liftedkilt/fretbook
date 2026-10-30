@@ -665,6 +665,8 @@ export interface paths {
          *
          *     Send exactly one of ``file``, ``text`` or ``url``. Text that is a single link is treated as a link.
          *     Input that matches no supported format is refused with `import.noFileImporter`.
+         *     `on_duplicate` (`skip`, `replace` or `keep_both`, the default) says what to do
+         *     when a file or text matches a song already in the library.
          */
         post: operations["import_auto_api_imports_auto_post"];
         delete?: never;
@@ -710,6 +712,9 @@ export interface paths {
         /**
          * Import File
          * @description Queue a Guitar Pro, MusicXML, ChordPro, or Fretbook JSON upload.
+         *
+         *     `on_duplicate` (`skip`, `replace` or `keep_both`, the default) says what to do
+         *     when it matches a song already in the library.
          */
         post: operations["import_file_api_imports_file_post"];
         delete?: never;
@@ -2411,6 +2416,12 @@ export interface components {
         Body_import_auto_api_imports_auto_post: {
             /** File */
             file?: string | null;
+            /**
+             * On Duplicate
+             * @default keep_both
+             * @enum {string}
+             */
+            on_duplicate: "skip" | "keep_both" | "replace";
             /** Text */
             text?: string | null;
             /** Url */
@@ -2435,6 +2446,12 @@ export interface components {
             file: string;
             /** Kind */
             kind?: string | null;
+            /**
+             * On Duplicate
+             * @default keep_both
+             * @enum {string}
+             */
+            on_duplicate: "skip" | "keep_both" | "replace";
         };
         /** Body_import_library_api_library_import_post */
         Body_import_library_api_library_import_post: {

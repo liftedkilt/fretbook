@@ -775,9 +775,10 @@ export function importUrl(
   return request<JobAccepted>("/api/imports", json("POST", body));
 }
 
-export function importFile(file: File): Promise<JobAccepted> {
+export function importFile(file: File, onDuplicate?: DuplicateAction): Promise<JobAccepted> {
   const data = new FormData();
   data.append("file", file);
+  if (onDuplicate) data.append("on_duplicate", onDuplicate);
   return request<JobAccepted>("/api/imports/file", { method: "POST", body: data });
 }
 
@@ -814,8 +815,10 @@ export function importAuto(input: {
   file?: File;
   text?: string;
   url?: string;
+  on_duplicate?: DuplicateAction;
 }): Promise<AutoImportAccepted> {
   const data = new FormData();
+  if (input.on_duplicate) data.append("on_duplicate", input.on_duplicate);
   if (input.file) data.append("file", input.file);
   if (input.text) data.append("text", input.text);
   if (input.url) data.append("url", input.url);

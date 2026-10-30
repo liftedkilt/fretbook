@@ -140,6 +140,11 @@
   onMount(() => {
     const onKey = (event: KeyboardEvent) => {
       if (isTyping(event.target)) return;
+      if (event.key === "Escape" && handsFree.stage) {
+        event.preventDefault();
+        setStage(false);
+        return;
+      }
       const action = pedalAction(event);
       if (action === "nextPage" || action === "previousPage") {
         event.preventDefault();
@@ -357,7 +362,9 @@
       onclick={() => setStage(!stage)}
       title={t("handsFree.stage")}
     >
-      <Icon name="monitor" size={16} /><span class="float-label">{t("handsFree.stage")}</span>
+      <Icon name={stage ? "minimize" : "monitor"} size={16} /><span class="float-label"
+        >{stage ? t("handsFree.exitStage") : t("handsFree.stage")}</span
+      >
     </button>
     <span class="float-divider" aria-hidden="true"></span>
     <div class="float-group">

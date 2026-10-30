@@ -194,6 +194,8 @@ test("the play bar stays on screen while the score scrolls, clear of the dock", 
     return { bar: r("[data-testid=setlist-play-bar]"), dock: r(".dock") };
   });
   expect(rects.bar.bottom).toBeLessThanOrEqual(rects.dock.top);
+  // One slim row, not the old 168px card.
+  expect(rects.bar.height).toBeLessThanOrEqual(64);
 });
 
 test("add a song to a setlist from the library and from the song page", async ({ page, seed }) => {

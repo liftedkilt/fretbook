@@ -496,6 +496,7 @@
     gap: var(--sp-2);
     overflow-x: auto;
     scrollbar-width: none;
+    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
   }
 
   .nav::-webkit-scrollbar {
@@ -671,6 +672,7 @@
       top: var(--sp-4);
       flex-direction: column;
       overflow: visible;
+      mask-image: none;
     }
 
     .nav a {

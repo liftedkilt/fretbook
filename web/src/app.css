@@ -1125,6 +1125,18 @@ textarea {
     border-radius: var(--r-sm);
   }
 
+  .topbar-title {
+    font-size: var(--fs-title);
+    font-weight: 600;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: center;
+    flex: 1;
+    min-width: 0;
+  }
+
   .topbar-actions {
     display: flex;
     gap: 0.4rem;
@@ -1721,7 +1733,16 @@ textarea {
   overflow: hidden;
 }
 
+/* Keeps the fretboard in view above the dock (which grows with the wait bar) on every width. */
+.player-page.has-fretboard .score {
+  height: max(260px, calc(100dvh - 96px - var(--dock-live, var(--dock-space)) - 190px));
+  scroll-margin-bottom: calc(var(--dock-live, var(--dock-space)) + 190px);
+}
+
 .fretboard-wrap {
+  position: sticky;
+  bottom: calc(var(--dock-live, var(--dock-space)) + 8px);
+  z-index: 1;
   margin-top: 0.75rem;
   padding: 0.75rem 1rem 0.5rem;
   background: var(--surface);
@@ -2128,9 +2149,6 @@ textarea {
 
   /* The fretboard rides just above the dock instead of sliding under it. */
   .fretboard-wrap {
-    position: sticky;
-    bottom: calc(var(--dock-space) + 8px);
-    z-index: 1;
     padding: 0.5rem 0.75rem 0.35rem;
   }
 
@@ -2140,7 +2158,7 @@ textarea {
 
   .player-page.has-fretboard .score {
     height: auto;
-    scroll-margin-bottom: calc(var(--dock-space) + 112px);
+    scroll-margin-bottom: calc(var(--dock-live, var(--dock-space)) + 112px);
   }
 
   .dock-select select {
@@ -2665,6 +2683,7 @@ textarea {
 
 .beat-card {
   display: grid;
+  min-width: 0;
   gap: 0.8rem;
   padding: 0.85rem;
   border-radius: var(--r-lg);

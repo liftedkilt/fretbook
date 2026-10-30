@@ -181,6 +181,8 @@
   let follow = $state(true);
   let rate = $state(1);
   let currentMeasure = $state(-1);
+  // Live height of the floating dock (it grows with the wait bar), so the fretboard and score clear it.
+  let dockHeight = $state(0);
   // Ticks into the current played bar, for the fretboard.
   let currentPosition = $state(0);
   // Seconds on the playback clock, for the scrolling note highway.
@@ -782,6 +784,11 @@
         if (pedal === "toggle") toggle();
         else if (pedal === "loop") toggleLoop();
         else pageBy(pedal === "nextPage" ? 1 : -1);
+        return;
+      }
+      if (event.key === "Escape" && handsFree.stage && !helpOpen) {
+        event.preventDefault();
+        setStage(false);
         return;
       }
       const action = shortcutFor(event);
@@ -1686,7 +1693,8 @@
 <div
   class="song-page player-page"
   class:stage={handsFree.stage}
-  class:has-fretboard={practice.fretboard.on}
+  class:has-fretboard={practice.fretboard.on || waitOn}
+  style:--dock-live={dockHeight > 0 ? `calc(${dockHeight + 14}px + var(--safe-b))` : undefined}
 >
   {#if lessonRef}<LessonRunBanner bind:this={lessonBanner} lesson={lessonRef} />{/if}
   <SongHeader
@@ -1999,7 +2007,7 @@
     {countingIn ? t("player.countingIn") : playing ? t("player.playing") : t("player.paused")}
   </p>
 
-  <div class="dock">
+  <div class="dock" bind:offsetHeight={dockHeight}>
     {#if waitOn}
       <div
         class="wait-status"
@@ -2127,6 +2135,14 @@
       </div>
 
       <div class="dock-tools">
+        {#if handsFree.stage}
+          <DockTextButton
+            icon="minimize"
+            label={t("handsFree.exitStage")}
+            testid="stage-exit"
+            onclick={() => setStage(false)}
+          />
+        {/if}
         <DockSpeed {rate} onchange={setRate} />
         <DockTextButton
           icon="repeat"

@@ -830,6 +830,8 @@
 
   .duration :global(.control.segmented) {
     width: 100%;
+    min-width: 0;
+    contain: paint;
   }
 
   .duration-name {
