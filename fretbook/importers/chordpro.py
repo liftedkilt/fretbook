@@ -6,6 +6,7 @@ import re
 from pathlib import Path
 
 from fretbook.chords import chordpro
+from fretbook.importers import sniff
 from fretbook.importers.base import ImportError, ImportRequest, ImportResult, Progress
 
 EXTENSIONS = (".cho", ".chordpro", ".chopro", ".crd", ".txt")
@@ -25,6 +26,12 @@ class ChordProImporter:
             raw = request.file_path.read_text(encoding="utf-8-sig")
         except UnicodeDecodeError as exc:
             raise ImportError("chord sheet is not UTF-8 text", "chords.notText") from exc
+        name = request.filename or request.file_path.name
+        if name.lower().endswith(".txt") and sniff.sniff_text(raw) not in (sniff.CHORDPRO, sniff.CHORDS_OVER_LYRICS):
+            raise ImportError(
+                "Couldn't recognise this text. Fretbook reads " + "; ".join(sniff.SUPPORTED_LABELS) + ".",
+                "import.noFileImporter",
+            )
         stem = Path(request.filename or request.file_path.name).stem
         try:
             text = chordpro.normalize(raw, title="" if chordpro.looks_like_chordpro(raw) else stem)

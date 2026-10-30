@@ -1,7 +1,9 @@
 from pathlib import Path
 
+import pytest
+
 from fretbook.chords.chordpro import from_chords_over_lyrics, is_chord_line, looks_like_chordpro, metadata, normalize
-from fretbook.importers.base import ImportRequest, silent_progress
+from fretbook.importers.base import ImportError, ImportRequest, silent_progress
 from fretbook.importers.chordpro import ChordProImporter
 
 SHEET = """[Verse 1]
@@ -63,3 +65,13 @@ def test_chord_sheet_file_import(tmp_path: Path) -> None:
 def test_define_directives_survive_import() -> None:
     text = "{define: Am7 base-fret 1 frets x 0 2 0 1 0}\n[Am7]Hello"
     assert normalize(text) == text + "\n"
+
+
+def test_plain_prose_txt_is_refused(tmp_path: Path) -> None:
+    path = tmp_path / "essay.txt"
+    path.write_text("This is just a paragraph of ordinary prose.\nNothing musical here at all.\n", encoding="utf-8")
+    with pytest.raises(ImportError) as info:
+        ChordProImporter().import_score(
+            ImportRequest(owner_id=1, filename="essay.txt", file_path=path), silent_progress
+        )
+    assert info.value.key == "import.noFileImporter"
