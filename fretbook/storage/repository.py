@@ -13,6 +13,7 @@ import json
 import re
 import sqlite3
 import uuid
+from collections.abc import Collection
 from dataclasses import asdict
 from typing import Any
 
@@ -487,16 +488,23 @@ class SongRepository:
         """Whether the owner has a song with the same title, artist and source (case-insensitive)."""
         return self.find_duplicate_id(owner_id, title, artist, source_kind) is not None
 
-    def find_duplicate_id(self, owner_id: str, title: str, artist: str, source_kind: str) -> str | None:
-        """The id of the owner's song with the same title, artist and source (case-insensitive), if any."""
+    def find_duplicate_id(
+        self, owner_id: str, title: str, artist: str, source_kind: str, exclude_ids: Collection[str] = ()
+    ) -> str | None:
+        """The id of the owner's song with the same title, artist and source (case-insensitive), if any.
+
+        Songs in ``exclude_ids`` are not considered.
+        """
+        excluded = list(exclude_ids)
+        skip = f" AND id NOT IN ({','.join('?' * len(excluded))})" if excluded else ""
         with self._session() as conn:
             row = conn.execute(
-                """
+                f"""
                 SELECT id FROM songs
-                WHERE owner_id = ? AND lower(title) = lower(?) AND lower(artist) = lower(?) AND source_kind = ?
+                WHERE owner_id = ? AND lower(title) = lower(?) AND lower(artist) = lower(?) AND source_kind = ?{skip}
                 ORDER BY created_at, id LIMIT 1
-                """,
-                (owner_id, title.strip(), artist.strip(), source_kind),
+                """,  # noqa: S608 - only placeholders are interpolated
+                (owner_id, title.strip(), artist.strip(), source_kind, *excluded),
             ).fetchone()
         return row["id"] if row else None
 

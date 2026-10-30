@@ -302,3 +302,34 @@ def test_backup_command(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys:
     assert failed.value.code == 1
     with pytest.raises(SystemExit):
         main(["backup", str(dest), "--keep", "0"])
+
+
+def _twins(client: TestClient) -> None:
+    for text in ("[G]version 1", "[G]version 2"):
+        made = client.post("/api/songs", json={"title": "Twin", "content_kind": "chords", "chordpro": text})
+        assert made.status_code in (200, 201), made.text
+
+
+def test_songs_sharing_a_title_in_one_archive_all_restore(tmp_path: Path) -> None:
+    source = _client(tmp_path, "src")
+    _twins(source)
+    archive = source.get("/api/library/export").content
+    target = _client(tmp_path, "dst")
+    result = _restore(target, archive)["result"]
+    assert (result["imported"], result["skipped"], result["copied"], result["failed"]) == (2, 0, 0, 0)
+    items = target.get("/api/songs").json()["items"]
+    assert len(items) == 2
+    bodies = {target.get(f"/api/songs/{song['id']}").json()["chordpro"] for song in items}
+    assert len(bodies) == 2
+
+
+def test_skip_mode_still_skips_a_preexisting_duplicate_of_same_title_songs(tmp_path: Path) -> None:
+    source = _client(tmp_path, "src")
+    _twins(source)
+    archive = source.get("/api/library/export").content
+    target = _client(tmp_path, "dst")
+    target.post("/api/songs", json={"title": "Twin", "content_kind": "chords", "chordpro": "[C]mine"})
+    result = _restore(target, archive)["result"]
+    # Both archived songs match the one that was already there, and neither is added.
+    assert (result["imported"], result["skipped"]) == (0, 2)
+    assert len(target.get("/api/songs").json()["items"]) == 1
