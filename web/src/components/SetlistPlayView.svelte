@@ -78,9 +78,10 @@
   <nav class="play-bar no-print" aria-label={t("setlists.playNav")} data-testid="setlist-play-bar">
     <a
       class="back-link"
+      aria-label={setlist.name}
       href={hrefFor(setlistPath(id))}
       onclick={(event) => followLink(event, setlistPath(id))}
-      ><Icon name="back" size={18} />{setlist.name}</a
+      ><Icon name="back" size={18} /><span class="back-name">{setlist.name}</span></a
     >
     <div class="play-steps">
       <button
@@ -112,18 +113,18 @@
         >
       {/if}
     </div>
-    {#if entry.note.trim() || (entry.transpose && entry.content_kind === "chords")}
-      <p class="play-note" data-testid="setlist-play-note">
-        {#if entry.note.trim()}<strong>{t("setlists.playNote")}:</strong> {entry.note}{/if}
-        {#if entry.transpose && entry.content_kind === "chords"}
-          <span class="muted"
-            >{t("setlists.playTranspose", { semitones: transposeLabel(entry.transpose) })}</span
-          >
-        {/if}
-      </p>
-    {/if}
     <p class="muted hint">{t("setlists.keysHint")}</p>
   </nav>
+  {#if entry.note.trim() || (entry.transpose && entry.content_kind === "chords")}
+    <p class="play-note no-print" data-testid="setlist-play-note">
+      {#if entry.note.trim()}<strong>{t("setlists.playNote")}:</strong> {entry.note}{/if}
+      {#if entry.transpose && entry.content_kind === "chords"}
+        <span class="muted"
+          >{t("setlists.playTranspose", { semitones: transposeLabel(entry.transpose) })}</span
+        >
+      {/if}
+    </p>
+  {/if}
   {#key `${index}:${entry.song_id}`}
     <SongView id={entry.song_id} transpose={entry.transpose} />
   {/key}
@@ -163,16 +164,30 @@
     margin: 0;
     font-size: 0.8rem;
   }
+  .play-note {
+    margin: 0 0 0.75rem;
+  }
   @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
+    /* One slim row on a phone: back arrow, previous, position, next. The name,
+       the shortcut hint and the note would otherwise eat the music's screen. */
     .play-bar {
       top: calc(58px + env(safe-area-inset-top, 0px) + 6px);
-      padding: 0.5rem 0.75rem;
-      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.25rem 0.5rem;
+      margin-bottom: 0.5rem;
       background: var(--glass-solid, var(--surface));
     }
-    /* The keyboard shortcuts hint is useless on a phone and eats sticky height. */
+    .back-name,
     .hint {
       display: none;
+    }
+    .play-steps {
+      flex: 1;
+      flex-wrap: nowrap;
+      justify-content: space-between;
+      gap: 0.5rem;
     }
   }
 </style>
