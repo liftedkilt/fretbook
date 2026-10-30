@@ -93,7 +93,7 @@
     }
   }
 
-  @media (max-width: 767px) {
+  @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
     .card {
       padding: var(--sp-4);
     }

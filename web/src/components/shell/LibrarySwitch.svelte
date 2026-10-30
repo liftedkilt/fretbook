@@ -26,7 +26,7 @@
     margin-bottom: var(--sp-4);
   }
 
-  @media (max-width: 767px) {
+  @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
     .library-switch {
       display: block;
     }

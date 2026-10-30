@@ -78,10 +78,11 @@
   let shareOpen = $state(false);
   let moveOpen = $state(false);
 
-  let phone = $state(typeof matchMedia !== "undefined" && matchMedia("(max-width: 767px)").matches);
+  const PHONE_QUERY = "(max-width: 767px), (max-height: 500px) and (pointer: coarse)";
+  let phone = $state(typeof matchMedia !== "undefined" && matchMedia(PHONE_QUERY).matches);
   $effect(() => {
     if (typeof matchMedia === "undefined") return;
-    const query = matchMedia("(max-width: 767px)");
+    const query = matchMedia(PHONE_QUERY);
     const update = () => (phone = query.matches);
     update();
     query.addEventListener("change", update);
@@ -449,7 +450,7 @@
     margin: 0;
   }
 
-  @media (max-width: 767px) {
+  @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
     :global(.page-header.song-header) {
       position: relative;
       gap: var(--sp-1);

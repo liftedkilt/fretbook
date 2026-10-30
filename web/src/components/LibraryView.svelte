@@ -573,7 +573,7 @@
     margin-top: var(--sp-2);
   }
 
-  @media (max-width: 767px) {
+  @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
     .toolbar {
       flex-wrap: wrap;
     }

@@ -63,7 +63,7 @@
   }
 
   /* Sit under the phone top bar, which is 58px plus the safe area. */
-  @media (max-width: 767px) {
+  @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
     .host {
       top: calc(58px + env(safe-area-inset-top, 0px) + var(--sp-3));
     }

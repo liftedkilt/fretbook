@@ -95,7 +95,7 @@
   }
 
   /* Clears the phone top bar (web/src/app.css .topbar). */
-  @media (max-width: 767px) {
+  @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
     .chrome {
       top: calc(58px + env(safe-area-inset-top, 0px));
     }
@@ -123,7 +123,7 @@
     background: var(--warn);
   }
 
-  @media (max-width: 767px) {
+  @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
     .save {
       margin-left: auto;
     }

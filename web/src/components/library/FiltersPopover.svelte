@@ -249,7 +249,7 @@
   }
 
   /* Phones: the popover spans the toolbar, not the button. */
-  @media (max-width: 767px) {
+  @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
     .filters {
       position: static;
     }

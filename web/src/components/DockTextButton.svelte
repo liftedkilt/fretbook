@@ -72,7 +72,7 @@
     color: var(--text);
   }
 
-  @media (max-width: 767px) {
+  @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
     .word {
       position: absolute;
       width: 1px;
