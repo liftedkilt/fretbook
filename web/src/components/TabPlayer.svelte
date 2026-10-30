@@ -497,14 +497,18 @@
       : 0;
     const useAudio = song.has_audio;
     if (!element || !scrollElement) return;
-    return untrack(() => mountScorePlayer(element, scrollElement, source, useAudio));
+    return untrack(() =>
+      mountScorePlayer(element, scrollElement, source, useAudio, onPhone, barHeight),
+    );
   });
 
   function mountScorePlayer(
     element: HTMLDivElement,
-    scrollElement: HTMLDivElement,
+    scrollElement: HTMLElement,
     source: string,
     useAudio: boolean,
+    onPhone: boolean,
+    barHeight: number,
   ) {
     const settings = new alphaTab.Settings();
     settings.core.fontDirectory = new URL("font/", document.baseURI).href;
