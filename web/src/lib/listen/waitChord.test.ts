@@ -152,6 +152,68 @@ describe("WaitMatcher on chords", () => {
   });
 });
 
+describe("WaitMatcher on tab dyads", () => {
+  // Open B with E on the D string: the double-stop from the report.
+  const DYAD = [52, 59];
+  const dyadStep = (): WaitStep => ({ ...chordStep(DYAD), string: 1 });
+  const noOnsets = (audio: Float32Array) => chromaOf(audio).map((e) => ({ ...e, onset: false }));
+  /** Two strings plucked together, each with its own level (the synth's strings are monophonic). */
+  const pluck = (levels: [number, number][], start = 0.5) => {
+    const out = new Float32Array(Math.ceil((start + 2) * sampleRate));
+    levels.forEach(([midi, gain], index) => {
+      const string = renderStrum([midi], start, start + 2, {
+        sampleRate,
+        instrument: "guitar",
+        seed: 1 + index,
+      });
+      string.forEach((value, i) => (out[i] += value * gain));
+    });
+    return out;
+  };
+  const dyad = (a: number, b: number) =>
+    pluck([
+      [52, a],
+      [59, b],
+    ]);
+  const accepts = (events: ChromaEvent[], from = 0) => {
+    const matcher = new WaitMatcher();
+    matcher.wait(dyadStep());
+    return events.some((event) => event.time >= from && matcher.pushChroma(event));
+  };
+
+  it("accepts a clean two-string pluck, balanced or not", () => {
+    for (const [a, b] of [
+      [0.8, 0.8],
+      [0.8, 0.3],
+      [0.3, 0.8],
+    ]) {
+      expect(accepts(chromaOf(dyad(a, b)))).toBe(true);
+    }
+  });
+
+  it("accepts a soft pluck whose attack the onset detector missed", () => {
+    expect(accepts(noOnsets(dyad(0.5, 0.5)))).toBe(true);
+  });
+
+  it("does not accept a dyad that was already ringing when the wait began", () => {
+    expect(accepts(noOnsets(dyad(0.8, 0.8)), 1.6)).toBe(false);
+  });
+
+  it("does not accept one string of the dyad, with or without an attack", () => {
+    const lone = pluck([[59, 1]]);
+    expect(accepts(chromaOf(lone))).toBe(false);
+    expect(accepts(noOnsets(lone))).toBe(false);
+  });
+
+  it("does not accept a different dyad", () => {
+    const other = pluck([
+      [50, 1],
+      [57, 1],
+    ]);
+    expect(accepts(noOnsets(other))).toBe(false);
+  });
+});
+
 function beat(position: number, notes: { string: number; fret: number }[]): Beat {
   return { position, duration: 960, notes };
 }
