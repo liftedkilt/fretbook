@@ -169,5 +169,15 @@ describe("ChordSheetView hands-free", () => {
     expect(toggle).toHaveAttribute("aria-pressed", "true");
     expect(document.querySelector(".chords-page")).toHaveClass("stage");
     expect(localStorage.getItem("fretbook.stage")).toBe("1");
+    expect(toggle).toHaveTextContent("Exit stage mode");
+  });
+
+  it("leaves stage mode with Escape", async () => {
+    render(ChordSheetView, { props: { song: song("[C]Hello") } });
+    await fireEvent.click(screen.getByTestId("stage-toggle"));
+    expect(document.querySelector(".chords-page")).toHaveClass("stage");
+    await fireEvent.keyDown(document.body, { key: "Escape" });
+    expect(document.querySelector(".chords-page")).not.toHaveClass("stage");
+    expect(localStorage.getItem("fretbook.stage")).toBe("0");
   });
 });

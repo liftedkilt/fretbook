@@ -764,6 +764,11 @@
         else pageBy(pedal === "nextPage" ? 1 : -1);
         return;
       }
+      if (event.key === "Escape" && handsFree.stage && !helpOpen) {
+        event.preventDefault();
+        setStage(false);
+        return;
+      }
       const action = shortcutFor(event);
       if (!action) return;
       // The help dialog is modal: only its own key works while it is open.
@@ -2098,6 +2103,14 @@
       </div>
 
       <div class="dock-tools">
+        {#if handsFree.stage}
+          <DockTextButton
+            icon="minimize"
+            label={t("handsFree.exitStage")}
+            testid="stage-exit"
+            onclick={() => setStage(false)}
+          />
+        {/if}
         <DockSpeed {rate} onchange={setRate} />
         <DockTextButton
           icon="repeat"
