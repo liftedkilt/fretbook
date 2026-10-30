@@ -154,12 +154,36 @@
     return () => cancelAnimationFrame(frame);
   });
 
+  function toggleStage(on: boolean) {
+    const paper = document.querySelector<HTMLElement>(".chord-paper");
+    if (!paper) {
+      setStage(on);
+      return;
+    }
+    const paperTop = paper.getBoundingClientRect().top + window.scrollY;
+    const paperY = Math.max(0, window.scrollY - paperTop);
+    const oldHeight = paper.scrollHeight;
+    const ratio = oldHeight > 0 ? paperY / oldHeight : 0;
+
+    setStage(on);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const newPaper = document.querySelector<HTMLElement>(".chord-paper");
+        if (!newPaper) return;
+        const newTop = newPaper.getBoundingClientRect().top + window.scrollY;
+        const target = Math.max(0, Math.round(newTop + ratio * newPaper.scrollHeight));
+        window.scrollTo(0, target);
+      });
+    });
+  }
+
   onMount(() => {
     const onKey = (event: KeyboardEvent) => {
       if (isTyping(event.target)) return;
       if (event.key === "Escape" && handsFree.stage) {
         event.preventDefault();
-        setStage(false);
+        toggleStage(false);
         return;
       }
       const action = pedalAction(event);
@@ -456,7 +480,7 @@
             icon: stage ? "minimize" : "monitor",
             active: stage,
             testid: "stage-toggle",
-            onclick: () => setStage(!stage),
+            onclick: () => toggleStage(!stage),
           },
         ]}
       />
@@ -466,7 +490,7 @@
         class="toggle"
         data-testid="stage-toggle"
         aria-pressed={stage}
-        onclick={() => setStage(!stage)}
+        onclick={() => toggleStage(!stage)}
         title={t("handsFree.stage")}
       >
         <Icon name={stage ? "minimize" : "monitor"} size={16} /><span class="float-label"

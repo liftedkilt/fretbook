@@ -161,6 +161,34 @@ test("the phone player keeps the fretboard clear of the dock and doesn't shift",
   }
 });
 
+test("the phone dock more menu is not clipped in stage mode at 375px", async ({ page, seed }) => {
+  const song = await seed.musicXmlTab();
+  await page.setViewportSize({ width: 375, height: 667 });
+  await page.goto(`/songs/${song.id}`);
+  await expect(page.getByTestId("player-play")).toBeVisible();
+
+  // Open the sheet and enter stage mode
+  await page.getByTestId("player-panel-toggle").click();
+  await page.getByTestId("player-sheet-tab-view").click();
+  await page.getByTestId("stage-toggle").click();
+
+  // Stage mode is on, practice sheet is closed
+  await expect(page.locator("html")).toHaveAttribute("data-stage");
+  await expect(page.getByTestId("player-sheet")).toBeHidden();
+
+  // Dock tools are visible and the more button is not clipped
+  const more = page.getByTestId("player-more");
+  await expect(more).toBeVisible();
+  const box = await more.boundingBox();
+  expect(box).toBeTruthy();
+  expect(box!.x + box!.width).toBeLessThanOrEqual(375);
+
+  // Exit stage mode leaves stage mode and leaves sheet closed
+  await page.getByTestId("stage-exit").click();
+  await expect(page.locator("html")).not.toHaveAttribute("data-stage");
+  await expect(page.getByTestId("player-sheet")).toBeHidden();
+});
+
 test("library cards and the tab bar fit a phone", async ({ page, seed }) => {
   await seed.create({ title: "First Song", artist: "Band" });
   await seed.create({ title: "Second Song", artist: "Band" });

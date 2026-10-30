@@ -78,3 +78,43 @@ test("leaving the song page leaves full screen", async ({ page, seed }) => {
   await expect(page.locator("html")).not.toHaveAttribute("data-fullscreen");
   await expect.poll(() => page.evaluate(() => document.fullscreenElement)).toBeNull();
 });
+
+test("iPhone focus mode preserves scroll position and exits via corner button", async ({
+  page,
+  seed,
+}) => {
+  const song = await seed.longBassTab(40);
+  // iPhone viewport with no Fullscreen API
+  await page.setViewportSize({ width: 390, height: 664 });
+  await page.addInitScript(() => {
+    Object.defineProperty(document, "fullscreenEnabled", { value: false, configurable: true });
+    // @ts-expect-error stubbing unsupported API
+    delete Element.prototype.requestFullscreen;
+  });
+  await page.goto(`/songs/${song.id}`);
+  await expect(page.getByTestId("player-score").locator("svg").first()).toBeVisible();
+
+  // Scroll down into the song
+  await page.evaluate(() => window.scrollTo(0, 500));
+  const beforeScroll = await page.evaluate(() => window.scrollY);
+  expect(beforeScroll).toBeGreaterThan(0);
+
+  // Open the ⋯ menu and tap Full screen (which toggles focus mode)
+  await page.getByTestId("player-more").click();
+  await page.getByTestId("player-fullscreen-menu").click();
+
+  // Focus mode layout is active
+  await expect(page.locator("html")).toHaveAttribute("data-fullscreen", "player");
+
+  // Scroll did NOT jump to 0
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+
+  // Corner exit button is visible on touch screens
+  const exitButton = page.getByTestId("player-focus-exit");
+  await expect(exitButton).toBeVisible();
+
+  // Clicking the corner exit button exits focus mode
+  await exitButton.click();
+  await expect(page.locator("html")).not.toHaveAttribute("data-fullscreen");
+  await expect(page.locator(".song-header")).toBeVisible();
+});

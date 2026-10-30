@@ -10,17 +10,37 @@
   import { t } from "../lib/i18n.svelte";
   import type { SongDetail, TabSong } from "../lib/types";
   import { songVersion } from "../lib/songUpdates.svelte";
+  import { handsFree, setStage } from "../lib/handsFree.svelte";
+  import { onDestroy, untrack } from "svelte";
 
   let {
     id,
     transpose = 0,
     belowHeader,
-  }: { id: string; transpose?: number; belowHeader?: Snippet } = $props();
+    inSetlist = false,
+  }: { id: string; transpose?: number; belowHeader?: Snippet; inSetlist?: boolean } = $props();
 
   let song = $state<SongDetail | null>(null);
   let error = $state("");
   // Bumped when a chord-sheet practice session is saved, so the history below reloads.
   let logged = $state(0);
+
+  // Outside a setlist, opening or navigating away from a song resets stage mode
+  // so the next song never opens with no header and no back arrow.
+  $effect(() => {
+    void id;
+    untrack(() => {
+      if (!inSetlist && handsFree.stage) {
+        setStage(false);
+      }
+    });
+  });
+
+  onDestroy(() => {
+    if (!inSetlist && handsFree.stage) {
+      setStage(false);
+    }
+  });
 
   $effect(() => {
     const songId = id;
