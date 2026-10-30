@@ -68,6 +68,20 @@ def refuse_by_content(kind: str | None) -> None:
         )
 
 
+_NO_FILE_IMPORTER = "Couldn't recognise this file. Fretbook reads " + "; ".join(sniff.SUPPORTED_LABELS) + "."
+
+
+def _is_prose(request: ImportRequest) -> bool:
+    """A ``.txt`` file of readable text that the sniffer matched to no format, as pasted prose is refused."""
+    if not (request.filename or "").lower().endswith(".txt") or request.file_path is None:
+        return False
+    try:
+        data = request.file_path.read_bytes()[: sniff.MAX_TEXT_CHARS * 2]
+    except OSError:
+        return False
+    return sniff._decode(data) is not None
+
+
 def resolve_importer(request: ImportRequest, importers: list[Importer] | None = None) -> Importer:
     pool = importers if importers is not None else default_importers()
     if request.kind:
@@ -78,6 +92,8 @@ def resolve_importer(request: ImportRequest, importers: list[Importer] | None = 
     if request.file_path is not None and request.file_path.is_file():
         found = sniff.sniff_path(request.file_path, request.filename).kind
         refuse_by_content(found)
+        if found is None and _is_prose(request):
+            raise ImportError(_NO_FILE_IMPORTER, "import.noFileImporter")
         wanted = _IMPORTER_FOR.get(found or "")
         for importer in pool:
             if importer.kind == wanted:
@@ -91,7 +107,4 @@ def resolve_importer(request: ImportRequest, importers: list[Importer] | None = 
             "YouTube frame import is issue #6 and is not available yet.",
             "import.noUrlImporter",
         )
-    raise ImportError(
-        "Couldn't recognise this file. Fretbook reads " + "; ".join(sniff.SUPPORTED_LABELS) + ".",
-        "import.noFileImporter",
-    )
+    raise ImportError(_NO_FILE_IMPORTER, "import.noFileImporter")

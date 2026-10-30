@@ -349,3 +349,13 @@ def test_fretbook_json_exports_round_trip_through_every_import_path(tmp_path: Pa
                 copy = _done(client, response)
                 assert copy["content_kind"] == content_kind
                 assert copy["source_kind"] == "fretbook-json"
+
+
+def test_plain_prose_text_file_is_refused_like_pasted_text(tmp_path: Path) -> None:
+    prose = "Dear diary,\nToday I went to the market and bought some apples. It was sunny.\nThe end."
+    with _client(tmp_path) as client:
+        pasted = _auto(client, data={"text": prose})
+        uploaded = _auto(client, files={"file": ("prose.txt", prose.encode(), "text/plain")})
+        assert pasted.status_code == uploaded.status_code == 400
+        assert uploaded.json()["detail"]["key"] == "import.noFileImporter"
+        assert not list((tmp_path / "inbox").iterdir())
