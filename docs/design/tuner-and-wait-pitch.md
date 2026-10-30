@@ -25,7 +25,7 @@ Callers, and what they turn on:
 
 | Caller | Expected note | Chroma | Latency calibration | What it does with a `PitchEvent` |
 | --- | --- | --- | --- | --- |
-| Tuner (`Tuner.svelte`) | never | off | no | `PitchSmoother`, then nearest open string or chromatic note. Ignores `midi`, `cents`, and `onset`. Recomputes cents from `frequency` so the A4 slider needs no restart. |
+| Tuner (`Tuner.svelte`) | locked string, or the settled string in auto mode (`ExpectedNotePrior`, `strictOctave` off) | off | no | `PitchSmoother`, then nearest open string or chromatic note. Ignores `midi`, `cents`, and `onset`. Recomputes cents from `frequency` so the A4 slider needs no restart. |
 | Wait mode (`WaitRun` → `WaitMatcher`) | `setExpectedMidi(midis[0])` on a single note; `null` on a chord or a dead note. `strictOctave` when "any octave" is off | on for chord steps only | no | Needs a fresh onset, then a matching pitch inside the settle window. |
 | Scored play (`ScoredRun` → `Scorer`) | never | off | yes, but only the `default:default` localStorage pair | Maps `onsetTime` onto the song clock. Any one note of a chord. |
 | Chord-sheet wait | same as wait mode | on | no | Same `WaitRun`. |
