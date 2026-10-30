@@ -1042,6 +1042,32 @@
     }
   }
 
+  /**
+   * On a phone alphaTab's scroll mode is off unless playing, so a seek while paused has to
+   * bring the cursor into view itself, once. alphaTab moves the cursor on its next frame.
+   */
+  function revealCursor() {
+    if (!phone || (playing && follow)) return;
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        const cursor = host?.querySelector<HTMLElement>(".at-cursor-bar");
+        if (!cursor) return;
+        const top = document.querySelector(".topbar")?.getBoundingClientRect().height ?? 0;
+        const box = cursor.getBoundingClientRect();
+        const dock =
+          document.querySelector("[data-testid=player-fretboard]") ??
+          document.querySelector(".dock-bar");
+        const bottom = Math.min(innerHeight, dock?.getBoundingClientRect().top ?? innerHeight);
+        if (box.top >= top && box.bottom <= bottom) return;
+        const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+        scrollTo({
+          top: Math.max(0, scrollY + box.top - top - 16),
+          behavior: reduce ? "auto" : "smooth",
+        });
+      }),
+    );
+  }
+
   function step(direction: number) {
     goToBar((currentMeasure < 0 ? 0 : currentMeasure) + direction);
   }
@@ -1073,6 +1099,7 @@
         if (waitState !== "idle") waitState = "idle";
       }
     }
+    revealCursor();
   }
 
   function seekToBeat(
