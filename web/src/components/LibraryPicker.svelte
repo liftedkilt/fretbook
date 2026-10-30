@@ -74,4 +74,33 @@
   select {
     min-width: 12rem;
   }
+
+  @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
+    .library-picker {
+      flex-wrap: nowrap;
+      gap: var(--sp-2);
+      margin: 0;
+    }
+
+    /* The select names itself; the "Library" label only repeats the page. */
+    label span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    label {
+      flex: 1;
+      min-width: 0;
+    }
+
+    select {
+      min-width: 0;
+      width: 100%;
+      text-overflow: ellipsis;
+    }
+  }
 </style>

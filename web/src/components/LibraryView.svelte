@@ -198,11 +198,13 @@
 
 <Page width="wide">
   <section class="library">
-    <LibraryPicker />
-    <LibrarySwitch active="songs" />
+    <div class="library-bar">
+      <LibraryPicker />
+      <LibrarySwitch active="songs" />
+    </div>
     <PageHeader
+      class="library-header"
       title={ui.filter === "all" ? t("library.welcome") : heading}
-      eyebrow={t("library.heading")}
       subtitle={t("library.count", { count: countFor(ui.filter) })}
       subtitleTestId="library-count"
     ></PageHeader>
@@ -475,6 +477,12 @@
     margin-bottom: var(--sp-4);
   }
 
+  @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
+    .chip-line {
+      margin-bottom: var(--sp-2);
+    }
+  }
+
   .chips {
     display: flex;
     gap: var(--sp-2);
@@ -574,6 +582,39 @@
   }
 
   @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
+    /* The picker and the Songs|Setlists switch share a row, so a song shows on the first screen. */
+    .library-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--sp-2);
+      margin-bottom: var(--sp-3);
+    }
+
+    .library-bar :global(.library-picker) {
+      flex: 1 1 12rem;
+      min-width: 0;
+    }
+
+    .library-bar :global(.library-switch) {
+      flex: none;
+      margin-bottom: 0;
+    }
+
+    :global(.library-header) {
+      margin-bottom: var(--sp-3);
+    }
+
+    :global(.library-header h1.display) {
+      font-size: var(--fs-title);
+    }
+
+    :global(.library-header .text) {
+      grid-template-columns: auto 1fr;
+      align-items: baseline;
+      column-gap: var(--sp-3);
+    }
+
     .toolbar {
       flex-wrap: wrap;
     }
