@@ -1412,6 +1412,29 @@
     );
   }
 
+  // The dock grows while wait mode shows its status line, so the fretboard and the score
+  // clear the dock's real height instead of a fixed guess.
+  $effect(() => {
+    const dock = document.querySelector<HTMLElement>(".dock");
+    const page =
+      dock?.closest<HTMLElement>(".player-page") ??
+      document.querySelector<HTMLElement>(".player-page");
+    if (!dock || !page || typeof ResizeObserver === "undefined") return;
+    const measure = () => {
+      const { top } = dock.getBoundingClientRect();
+      page.style.setProperty("--dock-live", `${Math.round(window.innerHeight - top)}px`);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(dock);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+      page.style.removeProperty("--dock-live");
+    };
+  });
+
   // The score sits beside the sheet. alphaTab sizes itself from the window, and the
   // sheet fills the gap above the dock instead of running underneath it.
   $effect(() => {
@@ -1472,7 +1495,7 @@
 <div
   class="song-page player-page"
   class:stage={handsFree.stage}
-  class:has-fretboard={practice.fretboard.on}
+  class:has-fretboard={practice.fretboard.on || waitOn}
 >
   {#if lessonRef}<LessonRunBanner bind:this={lessonBanner} lesson={lessonRef} />{/if}
   <SongHeader

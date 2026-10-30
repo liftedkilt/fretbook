@@ -155,6 +155,55 @@ test("the phone player keeps the fretboard clear of the dock and doesn't shift",
   }
 });
 
+// Issue #344: the fretboard (and wait mode's expected-note dot) must sit inside the
+// viewport, above the dock and the wait bar, on a desktop and on a phone.
+test("the fretboard stays visible above the dock and wait bar", async ({ page, seed }) => {
+  const song = await seed.musicXmlTab();
+
+  for (const size of [
+    { width: 1440, height: 900 },
+    { width: 390, height: 664 },
+  ]) {
+    await page.setViewportSize(size);
+    await page.goto(`/songs/${song.id}`);
+    await expect(page.getByTestId("player-play")).toBeVisible();
+    await page.getByTestId("player-panel-toggle").click();
+    await page.getByTestId("player-sheet-tab-view").click();
+    await page.getByTestId("fretboard-on").check();
+    await page
+      .getByTestId("player-sheet-tab-practice")
+      .click()
+      .catch(() => {});
+    await page
+      .getByTestId("wait-toggle")
+      .click({ timeout: 3000 })
+      .catch(() => {});
+    await page.getByTestId("player-panel-toggle").click();
+    await expect(page.getByTestId("player-fretboard")).toBeVisible();
+
+    const clear = async () => {
+      const r = await page.evaluate(() => {
+        const box = (selector: string) => document.querySelector(selector)!.getBoundingClientRect();
+        const wait = document.querySelector(".dock .wait-status");
+        const dock = (wait ?? document.querySelector(".dock-bar")!).getBoundingClientRect();
+        return {
+          fretboard: box("[data-testid=player-fretboard]"),
+          dockTop: dock.top,
+          height: window.innerHeight,
+        };
+      });
+      expect(r.fretboard.top).toBeGreaterThanOrEqual(0);
+      expect(r.fretboard.bottom).toBeLessThanOrEqual(r.dockTop + 1);
+      expect(r.fretboard.bottom).toBeLessThanOrEqual(r.height);
+    };
+    await clear();
+    await page.getByTestId("player-play").click();
+    await page.waitForTimeout(1000);
+    await clear();
+    await page.getByTestId("player-play").click();
+  }
+});
+
 test("library cards and the tab bar fit a phone", async ({ page, seed }) => {
   await seed.create({ title: "First Song", artist: "Band" });
   await seed.create({ title: "Second Song", artist: "Band" });

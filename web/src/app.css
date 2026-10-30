@@ -1700,6 +1700,12 @@ textarea {
   height: max(280px, calc(52dvh - 160px));
 }
 
+/* With the fretboard shown, the score leaves room for it above the dock. */
+.player-page.has-fretboard .score {
+  height: max(240px, calc(100dvh - 330px - 170px));
+  scroll-margin-bottom: calc(var(--dock-live, var(--dock-space)) + 170px);
+}
+
 .score {
   height: max(420px, calc(100dvh - 330px));
   overflow: auto;
@@ -1722,6 +1728,9 @@ textarea {
 }
 
 .fretboard-wrap {
+  position: sticky;
+  bottom: calc(var(--dock-live, var(--dock-space)) + 8px);
+  z-index: 1;
   margin-top: 0.75rem;
   padding: 0.75rem 1rem 0.5rem;
   background: var(--surface);
@@ -2105,9 +2114,6 @@ textarea {
 
   /* The fretboard rides just above the dock instead of sliding under it. */
   .fretboard-wrap {
-    position: sticky;
-    bottom: calc(var(--dock-space) + 8px);
-    z-index: 1;
     padding: 0.5rem 0.75rem 0.35rem;
   }
 
@@ -2116,8 +2122,8 @@ textarea {
   }
 
   .player-page.has-fretboard .score {
-    height: max(260px, calc(100dvh - 96px - var(--dock-space) - 112px));
-    scroll-margin-bottom: calc(var(--dock-space) + 112px);
+    height: max(260px, calc(100dvh - 96px - var(--dock-live, var(--dock-space)) - 112px));
+    scroll-margin-bottom: calc(var(--dock-live, var(--dock-space)) + 112px);
   }
 
   .dock-select select {
