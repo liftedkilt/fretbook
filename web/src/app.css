@@ -2638,6 +2638,7 @@ textarea {
 
 .beat-card {
   display: grid;
+  min-width: 0;
   gap: 0.8rem;
   padding: 0.85rem;
   border-radius: var(--r-lg);

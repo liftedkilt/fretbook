@@ -33,6 +33,25 @@
 
   const tabs = $derived(role === "tablist");
 
+  // Fade the edge that has more options past it, so a scrolling track is visibly scrollable.
+  function edges(node: HTMLElement) {
+    function update() {
+      const max = node.scrollWidth - node.clientWidth;
+      node.toggleAttribute("data-more-start", node.scrollLeft > 1);
+      node.toggleAttribute("data-more-end", node.scrollLeft < max - 1);
+    }
+    update();
+    node.addEventListener("scroll", update, { passive: true });
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(update);
+    observer?.observe(node);
+    return {
+      destroy() {
+        node.removeEventListener("scroll", update);
+        observer?.disconnect();
+      },
+    };
+  }
+
   function move(event: KeyboardEvent) {
     const keys = ["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp", "Home", "End"];
     if (!keys.includes(event.key)) return;
@@ -65,6 +84,7 @@
   aria-label={label}
   aria-orientation="horizontal"
   data-testid={testid}
+  use:edges
   onkeydown={move}
 >
   {#each options as option (option.value)}
@@ -98,6 +118,24 @@
     scrollbar-width: none;
   }
 
+  .control.segmented[data-more-end] {
+    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  }
+
+  .control.segmented[data-more-start] {
+    mask-image: linear-gradient(to right, transparent, #000 28px);
+  }
+
+  .control.segmented[data-more-start][data-more-end] {
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 28px,
+      #000 calc(100% - 28px),
+      transparent
+    );
+  }
+
   .control.segmented::-webkit-scrollbar {
     display: none;
   }
@@ -107,6 +145,7 @@
     align-items: center;
     justify-content: center;
     gap: var(--sp-1);
+    flex: none;
     min-height: 36px;
     padding: 0 var(--sp-3);
     border: 0;
