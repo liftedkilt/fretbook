@@ -1703,6 +1703,8 @@ textarea {
   padding: 0.75rem 0.25rem 1.5rem;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  /* alphaTab's cursor layer has an inline z-index: 1000; keep it inside the score. */
+  isolation: isolate;
 }
 
 .score[data-hidden="true"] {
