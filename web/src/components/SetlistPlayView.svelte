@@ -78,18 +78,20 @@
   <nav class="play-bar no-print" aria-label={t("setlists.playNav")} data-testid="setlist-play-bar">
     <a
       class="back-link"
+      aria-label={setlist.name}
       href={hrefFor(setlistPath(id))}
       onclick={(event) => followLink(event, setlistPath(id))}
-      ><Icon name="back" size={18} />{setlist.name}</a
+      ><Icon name="back" size={18} /><span class="back-name">{setlist.name}</span></a
     >
     <div class="play-steps">
       <button
         data-testid="setlist-prev"
         disabled={previous === null}
         onclick={() => go(previous)}
+        aria-label={t("setlists.previous")}
         aria-keyshortcuts="Alt+ArrowLeft"
       >
-        <Icon name="prev" size={16} />{t("setlists.previous")}
+        <Icon name="prev" size={16} /><span class="step-label">{t("setlists.previous")}</span>
       </button>
       <span class="play-position" data-testid="setlist-position" aria-live="polite">
         {t("setlists.position", { position: index + 1, total })}
@@ -99,9 +101,10 @@
           class="primary"
           data-testid="setlist-next"
           onclick={() => go(next)}
+          aria-label={t("setlists.next")}
           aria-keyshortcuts="Alt+ArrowRight"
         >
-          {t("setlists.next")}<Icon name="next" size={16} />
+          <span class="step-label">{t("setlists.next")}</span><Icon name="next" size={16} />
         </button>
       {:else}
         <a
@@ -112,18 +115,18 @@
         >
       {/if}
     </div>
-    {#if entry.note.trim() || (entry.transpose && entry.content_kind === "chords")}
-      <p class="play-note" data-testid="setlist-play-note">
-        {#if entry.note.trim()}<strong>{t("setlists.playNote")}:</strong> {entry.note}{/if}
-        {#if entry.transpose && entry.content_kind === "chords"}
-          <span class="muted"
-            >{t("setlists.playTranspose", { semitones: transposeLabel(entry.transpose) })}</span
-          >
-        {/if}
-      </p>
-    {/if}
     <p class="muted hint">{t("setlists.keysHint")}</p>
   </nav>
+  {#if entry.note.trim() || (entry.transpose && entry.content_kind === "chords")}
+    <p class="play-note no-print" data-testid="setlist-play-note">
+      {#if entry.note.trim()}<strong>{t("setlists.playNote")}:</strong> {entry.note}{/if}
+      {#if entry.transpose && entry.content_kind === "chords"}
+        <span class="muted"
+          >{t("setlists.playTranspose", { semitones: transposeLabel(entry.transpose) })}</span
+        >
+      {/if}
+    </p>
+  {/if}
   {#key `${index}:${entry.song_id}`}
     <SongView id={entry.song_id} transpose={entry.transpose} />
   {/key}
@@ -163,16 +166,34 @@
     margin: 0;
     font-size: 0.8rem;
   }
+  .play-note {
+    margin: 0 0 0.75rem;
+  }
   @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
+    /* One slim row on a phone: back arrow, previous, position, next. The name,
+       the shortcut hint and the note would otherwise eat the music's screen. */
     .play-bar {
       top: calc(58px + env(safe-area-inset-top, 0px) + 6px);
-      padding: 0.5rem 0.75rem;
-      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.25rem 0.5rem;
+      margin-bottom: 0.5rem;
       background: var(--glass-solid, var(--surface));
     }
-    /* The keyboard shortcuts hint is useless on a phone and eats sticky height. */
+    .back-name,
+    .step-label,
     .hint {
       display: none;
+    }
+    .play-position {
+      white-space: nowrap;
+    }
+    .play-steps {
+      flex: 1;
+      flex-wrap: nowrap;
+      justify-content: space-between;
+      gap: 0.5rem;
     }
   }
 </style>
