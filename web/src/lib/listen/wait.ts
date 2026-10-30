@@ -40,7 +40,11 @@ export interface WaitOptions {
   centsTolerance: number;
   /** How long after an attack the pitch may settle, seconds. */
   settleSeconds: number;
-  /** An attack this far before the cursor stopped still counts (latency), seconds. */
+  /**
+   * An attack this far before the cursor stopped still counts, seconds.
+   * Not the calibrated round-trip (scored play subtracts that on its own clock).
+   * See docs/design/tuner-and-wait-pitch.md.
+   */
   earlySeconds: number;
   /** Lowest chroma match (0..1) that counts as the chord. Lenient: a missing string still passes. */
   chordThreshold: number;

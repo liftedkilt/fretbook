@@ -67,6 +67,8 @@ export class PitchEngine {
   constructor(options: EngineOptions) {
     this.sampleRate = options.sampleRate;
     this.a4 = options.a4 ?? DEFAULT_A4;
+    // 28 Hz sits just above a 5-string drop A (27.5 Hz). The fixed window that follows is
+    // the bass-vs-latency tradeoff in docs/design/tuner-and-wait-pitch.md.
     this.windowSize = windowSizeFor(this.sampleRate, options.minFrequency ?? 28);
     this.mpm = new MpmDetector({
       sampleRate: this.sampleRate,
