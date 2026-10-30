@@ -19,7 +19,7 @@ const chordStep = (midis: number[]): WaitStep => ({
   tick: 0,
   kind: "chord",
   midis,
-  pcs: pcs(midis),
+  pcs: pcs(midis).sort((a, b) => a - b),
   string: 0,
   fret: 0,
 });
@@ -68,6 +68,24 @@ describe("WaitMatcher on chords", () => {
     ] as const) {
       expect(hearsAt(sine(root), [...wanted])).toBeNull();
     }
+  });
+
+  it("does not accept one plucked string, whose overtones fall on the chord's other notes", () => {
+    for (const [note, wanted] of [
+      [48, C],
+      [60, C],
+      [43, G],
+      [50, D],
+      [45, AM],
+    ] as const) {
+      expect(hearsAt(strum([note]), [...wanted]), `midi ${note}`).toBeNull();
+    }
+    expect(hearsAt(strum([48, 60]), C)).toBeNull();
+  });
+
+  it("still accepts a root and third, or a root and fifth, as the issue allows", () => {
+    expect(hearsAt(strum([48, 52]), C)).not.toBeNull();
+    expect(hearsAt(strum([48, 55]), C)).not.toBeNull();
   });
 
   it("still accepts the chord with one string missing", () => {

@@ -229,7 +229,7 @@ export class WaitMatcher {
     }
     // A window that still holds sound from before the strum would score the previous chord.
     if (event.time - event.span < armedAt - 0.03) return false;
-    const score = chromaScore(event.bins, step.pcs ?? []);
+    const score = chromaScore(event.bins, step.pcs ?? [], Math.min(...step.midis));
     this.chordScore = Math.max(this.chordScore, score);
     return score >= this.options.chordThreshold;
   }
