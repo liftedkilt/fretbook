@@ -523,9 +523,10 @@
     settings.player.scrollElement = scrollElement;
     // Negative: the playing system stops a little below the top edge, not above it.
     settings.player.scrollOffsetY = -(16 + barHeight);
-    settings.player.scrollMode = untrack(() => follow)
-      ? alphaTab.ScrollMode.Continuous
-      : alphaTab.ScrollMode.Off;
+    // On a phone, scrolling the page is reserved for playback: placing the cursor on load
+    // must not move the page away from the top of the song.
+    settings.player.scrollMode =
+      untrack(() => follow) && !onPhone ? alphaTab.ScrollMode.Continuous : alphaTab.ScrollMode.Off;
     const instance = new alphaTab.AlphaTabApi(element, settings);
     player.api = instance;
     let mouseDownBeat: alphaTab.model.Beat | null = null;
@@ -1541,6 +1542,15 @@
       if (waitRun) stopWait();
       if (scoreRun) stopScore();
     });
+  });
+
+  $effect(() => {
+    const api = player.api;
+    void scoreReady;
+    if (!phone || !api) return;
+    api.settings.player.scrollMode =
+      playing && follow ? alphaTab.ScrollMode.Continuous : alphaTab.ScrollMode.Off;
+    api.updateSettings();
   });
 
   function setFollow(checked: boolean) {
