@@ -83,7 +83,7 @@ test("iPhone focus mode preserves scroll position and exits via corner button", 
   page,
   seed,
 }) => {
-  const song = await seed.musicXmlTab();
+  const song = await seed.longBassTab(40);
   // iPhone viewport with no Fullscreen API
   await page.setViewportSize({ width: 390, height: 664 });
   await page.addInitScript(() => {
@@ -107,8 +107,7 @@ test("iPhone focus mode preserves scroll position and exits via corner button", 
   await expect(page.locator("html")).toHaveAttribute("data-fullscreen", "player");
 
   // Scroll did NOT jump to 0
-  const duringScroll = await page.evaluate(() => window.scrollY);
-  expect(duringScroll).toBeGreaterThan(0);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
 
   // Corner exit button is visible on touch screens
   const exitButton = page.getByTestId("player-focus-exit");
