@@ -95,9 +95,9 @@ describe("needle", () => {
     expect(needlePosition(80)).toBe(1);
   });
 
-  it("calls three cents in tune", () => {
-    expect(isInTune(3)).toBe(true);
-    expect(isInTune(-3.1)).toBe(false);
+  it("calls six cents in tune", () => {
+    expect(isInTune(6)).toBe(true);
+    expect(isInTune(-6.1)).toBe(false);
   });
 });
 
@@ -185,6 +185,35 @@ describe("TuneTracker", () => {
     expect(tracker.update(4, 1, 0).newlyTuned).toBe(false);
     tracker.reset();
     expect(tracker.tuned.size).toBe(0);
+  });
+
+  it("uses a ±6 cent zone", () => {
+    expect(isInTune(6)).toBe(true);
+    expect(isInTune(-6)).toBe(true);
+    expect(isInTune(6.5)).toBe(false);
+    const tracker = new TuneTracker(1);
+    tracker.update(0, 2, 5);
+    expect(tracker.update(1, 2, -5).confirmed).toBe(true);
+  });
+
+  it("holds through a single outlier reading once the pitch is median-smoothed", () => {
+    const a4 = 440;
+    const hz = (cents: number) => a4 * 2 ** (cents / 1200);
+    const run = (readings: number[]) => {
+      const smoother = new PitchSmoother();
+      const tracker = new TuneTracker(1);
+      let last = { progress: 0, confirmed: false, newlyTuned: false };
+      readings.forEach((cents, i) => {
+        const time = i * 0.25;
+        const frequency = smoother.push(time, hz(cents));
+        last = tracker.update(time, 0, centsFromString(frequency!, [69], 0, a4)!);
+      });
+      return last;
+    };
+    // 40 cents sharp for one reading in the middle: the median stays in the zone.
+    expect(run([2, 3, 2, 40, 3, 2, 3]).confirmed).toBe(true);
+    // Real drift: the median leaves the zone and the hold starts over.
+    expect(run([2, 3, 2, 40, 40, 40, 40]).confirmed).toBe(false);
   });
 
   it("confirms chromatic holds without remembering them", () => {
