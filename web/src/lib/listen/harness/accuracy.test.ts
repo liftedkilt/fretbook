@@ -131,9 +131,7 @@ describe("committed WAV fixtures", { timeout: 30_000 }, () => {
       expect(report.octaveErrors).toBe(0);
       expect(report.onsetRecall).toBeGreaterThanOrEqual(0.9);
       expect(report.onsetPrecision).toBeGreaterThanOrEqual(0.85);
-      const times = runEngine(wav.samples, wav.sampleRate)
-        .filter((e) => e.onsetTime !== null)
-        .map((e) => e.onsetTime as number);
+      const times = report.onsetTimes;
       expect(times).toHaveLength(CLEAN_ONSETS[name].length);
       times.forEach((time, i) =>
         expect(Math.abs(time - CLEAN_ONSETS[name][i])).toBeLessThan(0.005),

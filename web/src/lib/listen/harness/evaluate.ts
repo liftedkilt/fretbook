@@ -23,6 +23,8 @@ export interface Report {
   attacksFound: number;
   attacksExpected: number;
   falseOnsets: number;
+  /** Every onset time the engine reported, in order. */
+  onsetTimes: number[];
   worst: string[];
 }
 
@@ -140,6 +142,7 @@ export function evaluate(
     attacksFound: found,
     attacksExpected: sorted.length,
     falseOnsets,
+    onsetTimes: claimed,
     worst,
   };
 }
