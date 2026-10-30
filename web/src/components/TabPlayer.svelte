@@ -66,8 +66,12 @@
     type ListenSession,
   } from "../lib/listen";
   import { pitchClassName } from "../lib/listen/chordTones";
-  import { getLocalCalibration } from "../lib/listen/calibration";
-  import { getSavedChannel, getSavedDevice } from "../lib/listen/devicePrefs";
+  import {
+    getSavedA4,
+    getSavedChannel,
+    getSavedDevice,
+    getStoredCalibration,
+  } from "../lib/listen/devicePrefs";
   import {
     bleedSuspected,
     buildScoredSteps,
@@ -265,6 +269,7 @@
   function listenWithInput(options: ListenOptions): Promise<ListenSession> {
     return startListening({
       ...options,
+      a4: getSavedA4(),
       deviceId: listenDevice || undefined,
       channel: listenChannel,
       onLevel: ({ peak }) => (listenLevel = peak),
@@ -1411,7 +1416,7 @@
       listen: listenWithInput,
       match: {
         anyOctave: practice.wait.anyOctave,
-        latencySeconds: (getLocalCalibration("default", "default") ?? 0) / 1000,
+        latencySeconds: (getStoredCalibration(listenDevice) ?? 0) / 1000,
       },
       hintSeconds: practice.wait.hintSeconds,
       onWait: (step) => {
@@ -1562,8 +1567,8 @@
     scoreError = "";
     scoreBleed = false;
     scoreGrades = {};
-    // Round trip from the calibration for the default device pair, in seconds.
-    const latency = getLocalCalibration("default", "default");
+    // Round trip from the stored calibration for the chosen devices, else the default pair.
+    const latency = getStoredCalibration(listenDevice);
     scoreCalibrated = latency !== null;
     const run: ScoredRun = new ScoredRun({
       steps: scoredSteps,

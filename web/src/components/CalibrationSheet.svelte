@@ -13,6 +13,7 @@
     type CalibrationProgress,
     type CalibrationResult,
   } from "../lib/listen/calibration";
+  import { saveDevice, saveOutput } from "../lib/listen/devicePrefs";
   import { listInputDevices, type InputDevice } from "../lib/listen/input";
   import { closeSheet, ui } from "../lib/ui.svelte";
 
@@ -176,6 +177,8 @@
     saveMessage = "";
     errorMessage = "";
     setLocalCalibration(selectedOutput, selectedInput, offsetMs);
+    saveOutput(selectedOutput);
+    saveDevice(selectedInput === "default" ? "" : selectedInput);
     try {
       await apiSaveCalibration({
         output_device: selectedOutput,

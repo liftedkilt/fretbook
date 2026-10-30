@@ -12,7 +12,7 @@
     type ListenSession,
     type PitchEvent,
   } from "../lib/listen";
-  import { getSavedChannel, getSavedDevice } from "../lib/listen/devicePrefs";
+  import { getSavedA4, getSavedChannel, getSavedDevice, saveA4 } from "../lib/listen/devicePrefs";
   import { midiToFrequency } from "../lib/listen/notes";
   import { midiToName } from "../lib/tuning";
   import {
@@ -49,7 +49,7 @@
     page?: Snippet<[Snippet, Snippet]>;
   } = $props();
 
-  let a4 = $state(440);
+  let a4 = $state(getSavedA4());
   let running = $state(false);
   let starting = $state(false);
   let problem = $state<ListenProblem | null>(null);
@@ -273,7 +273,10 @@
           step="1"
           value={a4}
           aria-label={t("tuner.a4")}
-          oninput={(event) => (a4 = clampA4(Number(event.currentTarget.value)))}
+          oninput={(event) => {
+            a4 = clampA4(Number(event.currentTarget.value));
+            saveA4(a4);
+          }}
         />
         <output data-testid="tuner-a4-value">{a4} Hz</output>
       </span>
