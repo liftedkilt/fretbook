@@ -55,6 +55,48 @@ test("practice and the player stay within a phone and a tablet", async ({ page, 
   }
 });
 
+// Issue #333: player panel must fit desktop, phone landscape and phone portrait without overflowing sideways.
+test("the player sheet fits desktop and phone landscape without scrolling sideways", async ({
+  page,
+  seed,
+}) => {
+  const song = await seed.musicXmlTab();
+  for (const size of [
+    { width: 1440, height: 900 },
+    { width: 844, height: 390 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(size);
+    await page.goto(`/songs/${song.id}`);
+    await expect(page.getByTestId("player-score").locator("svg").first()).toBeVisible();
+
+    // 1. Open with the dock toggle
+    await page.getByTestId("player-panel-toggle").click();
+    await expect(page.getByTestId("player-sheet")).toBeVisible();
+
+    const box = await page.evaluate(() => ({
+      scroll: document.documentElement.scrollWidth,
+      inner: window.innerWidth,
+    }));
+    expect(box.scroll).toBeLessThanOrEqual(box.inner);
+
+    const closeBtn = page.getByTestId("player-sheet-close");
+    await expect(closeBtn).toBeVisible();
+    const closeBox = (await closeBtn.boundingBox())!;
+    expect(closeBox.x + closeBox.width).toBeLessThanOrEqual(size.width);
+
+    // 2. Close with ✕
+    await closeBtn.click();
+    await expect(page.getByTestId("player-sheet")).toBeHidden();
+
+    // 3. Open and close with the dock toggle
+    await page.getByTestId("player-panel-toggle").click();
+    await expect(page.getByTestId("player-sheet")).toBeVisible();
+    await page.getByTestId("player-panel-toggle").click();
+    await expect(page.getByTestId("player-sheet")).toBeHidden();
+  }
+});
+
 // Issue #245: on a phone the fretboard sits above the dock instead of under it, the
 // secondary buttons fold into a ⋯ popover, and the score doesn't move while it plays.
 test("the phone player keeps the fretboard clear of the dock and doesn't shift", async ({
