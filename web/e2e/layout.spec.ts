@@ -271,3 +271,27 @@ test("the phone speed picker sits entirely on screen", async ({ page, seed }) =>
     expect(box.x + box.width).toBeLessThanOrEqual(width);
   }
 });
+
+// Follow-scroll parks the playing system below the sticky song header, not under it (#383).
+test("the phone player keeps the playing line below the sticky header", async ({ page, seed }) => {
+  const song = await seed.longBassTab(60);
+  await page.setViewportSize({ width: 390, height: 664 });
+  await page.goto(`/songs/${song.id}`);
+  await expect(page.getByTestId("player-score").locator("svg").first()).toBeVisible();
+  await page.getByTestId("player-play").click();
+  const header = page.locator(".song-header");
+  await expect(header).toBeVisible();
+  // Wait until follow has scrolled the page, then check the playing line against the header.
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY), { timeout: 30_000 })
+    .toBeGreaterThan(300);
+  // Sample the cursor while the page follows it: it must never sit under the header.
+  const bar = (await header.boundingBox())!;
+  let lowest = Infinity;
+  for (let i = 0; i < 20; i += 1) {
+    const cursor = await page.locator(".at-cursor-bar").first().boundingBox();
+    if (cursor) lowest = Math.min(lowest, cursor.y);
+    await page.waitForTimeout(250);
+  }
+  expect(lowest).toBeGreaterThanOrEqual(bar.y + bar.height - 1);
+});
