@@ -116,7 +116,7 @@ describe("PlayerSheet", () => {
     expect(localStorage.getItem("fretbook.playerSheetTab")).toBe("view");
   });
 
-  it("puts the recording tools on Audio and Sync, and explains why wait mode is off", async () => {
+  it("puts the recording tools on Audio and Sync, and explains why wait mode is off when unavailable", async () => {
     localStorage.clear();
     const given = props({
       hasAudio: true,
@@ -125,7 +125,7 @@ describe("PlayerSheet", () => {
     });
     render(PlayerSheet, { props: given });
 
-    expect(screen.getByTestId("wait-unavailable").textContent).toMatch(/recording/i);
+    expect(screen.getByTestId("wait-unavailable").textContent).toMatch(/not available/i);
     expect(screen.queryByTestId("wait-toggle")).toBeNull();
     expect(screen.queryByTestId("wait-panel")).toBeNull();
     expect(screen.queryByTestId("listen-panel")).toBeNull();

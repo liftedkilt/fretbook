@@ -248,7 +248,11 @@
   let waitError = $state("");
   let waitGrades = $state<Record<string, GemState>>({});
   let waitRun: WaitRun | null = null;
+  // A recording cannot stop on every miss, so wait mode swaps the score player to the synth for
+  // the run and the recording stays silent; turning wait off remounts the recording player.
+  let waitSynth = $state(false);
   let waitFlash = 0;
+  let waitStarting = false;
   // The input chosen in the listen panel, shared by wait mode and the scored play-along.
   const savedDevice = getSavedDevice();
   let listenDevice = $state(savedDevice);
@@ -294,16 +298,18 @@
   const audioSrc = $derived(
     song.audio_url ? new URL(song.audio_url, document.baseURI).toString() : "",
   );
+  // The recording drives playback, except while wait mode borrows the synth.
+  const audioMode = $derived(song.has_audio && !waitSynth);
   // With audio, the <audio> clock and sync points set the pace, so a BPM edit must not rebuild the score.
   // Without audio, alphaTab's synth plays at the written tempo, so it does.
-  const renderBpm = $derived(song.has_audio ? untrack(() => song.document.bpm) : document_.bpm);
+  const renderBpm = $derived(audioMode ? untrack(() => song.document.bpm) : document_.bpm);
   // Every track is loaded so the synth can play and mix them all; only the chosen one is drawn.
   const tex = $derived(scoreToAlphaTex({ ...document_, bpm: renderBpm }, song.title, song.artist));
   // The score at its written tempo, for the synth that plays next to a recording.
   const synthTex = $derived(
     song.has_audio ? scoreToAlphaTex(document_, song.title, song.artist) : "",
   );
-  const synthWanted = $derived(song.has_audio && synthGain(practice.mix) > 0);
+  const synthWanted = $derived(song.has_audio && !waitSynth && synthGain(practice.mix) > 0);
   const trackIndex = $derived(Math.max(0, document_.tracks.indexOf(track)));
   const waitSteps = $derived(buildWaitSteps(document_, track, { chords: practice.wait.chords }));
   // In a loop the count is of the looped bars' notes, so it never runs past its total.
@@ -387,7 +393,7 @@
   }
 
   function paintAudioClock() {
-    if (!song.has_audio || !audioEl) return;
+    if (!audioMode || !audioEl) return;
     if (audioEl.paused && pausedAudioSeek) {
       currentMeasure = pausedAudioSeek.measure;
       currentPosition = pausedAudioSeek.position;
@@ -518,7 +524,7 @@
     const barHeight = onPhone
       ? (document.querySelector(".topbar")?.getBoundingClientRect().height ?? 0)
       : 0;
-    const useAudio = song.has_audio;
+    const useAudio = audioMode;
     if (!element || !scrollElement) return;
     return untrack(() =>
       mountScorePlayer(element, scrollElement, source, useAudio, onPhone, barHeight),
@@ -859,7 +865,7 @@
       }
       case "volumeDown":
       case "volumeUp": {
-        const key = song.has_audio ? "audio" : "synth";
+        const key = audioMode ? "audio" : "synth";
         const delta = action === "volumeUp" ? 0.05 : -0.05;
         practice.mix[key] = Math.round(clamp01(practice.mix[key] + delta, 1) * 100) / 100;
         return practiceChanged();
@@ -883,9 +889,9 @@
     }
     // A recording is mixed with the synth in the hidden companion player, which has no metronome:
     // the page's own clicks keep time there.
-    const api = song.has_audio ? (companion.ready ? companion.api : null) : player.api;
+    const api = audioMode ? (companion.ready ? companion.api : null) : player.api;
     if (!api?.score) return;
-    if (!song.has_audio) {
+    if (!audioMode) {
       api.metronomeVolume = !muted && practice.metronome.on ? practice.metronome.volume : 0;
       api.masterVolume = muted || (waitOn && practice.wait.silent) ? 0 : practice.mix.synth;
     } else {
@@ -910,8 +916,8 @@
   function toggleMute() {
     muted = !muted;
     if (audioEl) audioEl.muted = muted;
-    const api = song.has_audio ? (companion.ready ? companion.api : null) : player.api;
-    if (api?.score && !song.has_audio) {
+    const api = audioMode ? (companion.ready ? companion.api : null) : player.api;
+    if (api?.score && !audioMode) {
       api.metronomeVolume = !muted && practice.metronome.on ? practice.metronome.volume : 0;
       api.masterVolume = muted || (waitOn && practice.wait.silent) ? 0 : practice.mix.synth;
     } else if (api?.score) {
@@ -921,7 +927,7 @@
 
   /** Seconds one bar lasts on the wall clock, at the current speed. */
   function barLength(index: number): number {
-    const starts = song.has_audio ? startsNow() : [];
+    const starts = audioMode ? startsNow() : [];
     const length =
       starts.length > index + 1 ? starts[index + 1] - starts[index] : barSeconds(document_)[index];
     return (length ?? 2) / rate;
@@ -952,14 +958,7 @@
   }
 
   function tickMetronome() {
-    if (
-      !song.has_audio ||
-      !audioEl ||
-      audioEl.paused ||
-      countingIn ||
-      muted ||
-      !practice.metronome.on
-    )
+    if (!audioMode || !audioEl || audioEl.paused || countingIn || muted || !practice.metronome.on)
       return;
     const starts = startsNow();
     if (starts.length === 0) return;
@@ -1005,7 +1004,7 @@
       ? Math.max(1, practice.countIn.bars)
       : practice.countIn.bars;
 
-    if (song.has_audio && audioEl) {
+    if (audioMode && audioEl) {
       if (audioEl.paused) {
         if (pausedAudioSeek) audioEl.currentTime = pausedAudioSeek.seconds;
         runCountIn(currentMeasure, () => api.play(), countBars);
@@ -1052,7 +1051,7 @@
     const index = Math.min(barCount - 1, Math.max(0, target));
     tapIndex = index;
     currentPosition = 0;
-    if (song.has_audio && audioEl) {
+    if (audioMode && audioEl) {
       const targetTime = Math.max(0, startsNow()[index] ?? 0);
       audioEl.currentTime = targetTime;
       pausedAudioSeek = audioEl.paused
@@ -1089,7 +1088,7 @@
     tapIndex = played;
     currentMeasure = played;
     currentPosition = beat.displayStart;
-    if (song.has_audio && audioEl) {
+    if (audioMode && audioEl) {
       const starts = startsNow();
       const barStart = starts[played] ?? 0;
       const barEnd = starts[played + 1] ?? barStart;
@@ -1312,7 +1311,7 @@
     const targetBar = loopA;
     scheduler.reset();
 
-    if (song.has_audio && audioEl) {
+    if (audioMode && audioEl) {
       const element = audioEl;
       const starts = startsNow();
       const targetTime = Math.max(0, starts[targetBar] ?? 0);
@@ -1346,8 +1345,7 @@
   }
 
   async function startWait() {
-    const api = player.api;
-    if (!api || song.has_audio || waitRun) return;
+    if (!player.api || waitRun || waitStarting) return;
     if (scoreRun) stopScore();
     waitError = "";
     waitGrades = {};
@@ -1394,11 +1392,25 @@
       },
       onHint: () => (waitHint = true),
     });
+    waitStarting = true;
     try {
       await run.start();
     } catch (err) {
+      waitStarting = false;
       waitError = err instanceof ListenError ? describeProblem(err.problem) : message(err);
       return;
+    }
+    if (song.has_audio) {
+      audioEl?.pause();
+      cancelCountIn();
+      waitSynth = true;
+      if (!(await synthPlayerReady())) {
+        waitSynth = false;
+        waitStarting = false;
+        run.stop();
+        waitError = t("wait.synthFailed");
+        return;
+      }
     }
     waitRun = run;
     listenSession = run.listening;
@@ -1408,11 +1420,40 @@
     waitHeard = null;
     waitNext = null;
     waitState = "idle";
-    waitRun.seek(currentMeasure > 0 ? tickOfBar(currentMeasure) : 0);
+    waitStarting = false;
+    const bar = currentMeasure;
+    if (song.has_audio && player.api && bar > 0) player.api.tickPosition = tickOfBar(bar);
+    waitRun.seek(bar > 0 ? tickOfBar(bar) : 0);
     applyPractice();
   }
 
-  function stopWait() {
+  /** After a remount, waits for the score player to have loaded its score. */
+  async function synthPlayerReady(): Promise<boolean> {
+    for (let waited = 0; waited < 15000; waited += 50) {
+      await new Promise((resolve) => window.setTimeout(resolve, 50));
+      if (player.api?.score && scoreReady > 0 && waitSynth) return true;
+    }
+    return false;
+  }
+
+  /** Ends wait mode; with a recording it also brings the recording player back at the same bar. */
+  function stopWait(): Promise<void> {
+    const bar = currentMeasure;
+    const restore = waitSynth;
+    endWait();
+    if (!restore) return Promise.resolve();
+    waitSynth = false;
+    return (async () => {
+      for (let waited = 0; waited < 15000; waited += 50) {
+        await new Promise((resolve) => window.setTimeout(resolve, 50));
+        if (player.api?.score && scoreReady > 0 && !waitSynth) break;
+      }
+      if (!waitSynth && bar >= 0) goToBar(bar);
+      applyPractice();
+    })();
+  }
+
+  function endWait() {
     window.clearTimeout(waitFlash);
     waitRun?.stop();
     waitRun = null;
@@ -1438,7 +1479,7 @@
   });
 
   function songNow(): number {
-    if (song.has_audio && audioEl) return audioEl.currentTime;
+    if (audioMode && audioEl) return audioEl.currentTime;
     return playing
       ? currentSeconds + ((performance.now() - clockStamp) / 1000) * rate
       : currentSeconds;
@@ -1455,7 +1496,7 @@
 
   async function startScore() {
     if (!player.api || scoreRun) return;
-    if (waitRun) stopWait();
+    if (waitRun) await stopWait();
     scoreError = "";
     scoreBleed = false;
     scoreGrades = {};
@@ -1916,7 +1957,7 @@
             <Highway
               document={document_}
               {track}
-              hasAudio={song.has_audio}
+              hasAudio={audioMode}
               currentTime={currentSeconds}
               {playing}
               {rate}
@@ -1984,7 +2025,8 @@
           {speedTrainerCompleted}
           {rate}
           {waitOn}
-          waitAvailable={!song.has_audio}
+          waitAvailable={true}
+          waitUsesSynth={song.has_audio}
           {waitError}
           {scoreOn}
           {scoreSummary}

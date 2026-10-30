@@ -59,6 +59,23 @@ export class Seeder {
     return { id, title: "Practice Riff" };
   }
 
+  /** `musicXmlTab` with `click-track.wav` attached as its recording. */
+  async musicXmlTabWithAudio(): Promise<SeededSong> {
+    const song = await this.musicXmlTab();
+    await this.ok(
+      await this.request.post(`/api/songs/${song.id}/audio`, {
+        multipart: {
+          file: {
+            name: "click-track.wav",
+            mimeType: "audio/wav",
+            buffer: readFileSync(fixture("click-track.wav")),
+          },
+        },
+      }),
+    );
+    return song;
+  }
+
   /** A chord sheet from `sunny-chords.cho`. */
   async chordSheet(): Promise<SeededSong> {
     const id = await this.importFile("sunny-chords.cho", "text/plain");
