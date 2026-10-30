@@ -16,6 +16,7 @@
   import { sectionMarks } from "../lib/playerSheet";
   import SetlistPicker from "./SetlistPicker.svelte";
   import FullscreenToggle from "./FullscreenToggle.svelte";
+  import { fullscreenScale, isFullscreen } from "../lib/fullscreen";
   import AutoSyncSheet from "./AutoSyncSheet.svelte";
   import TranscribeSheet from "./TranscribeSheet.svelte";
   import RetuneSheet from "./RetuneSheet.svelte";
@@ -436,7 +437,7 @@
     settings.core.enableLazyLoading = false;
     settings.display.staveProfile = staveProfile(untrack(() => ui.notation));
     separateEffectBands(settings);
-    settings.display.scale = untrack(() => (handsFree.stage ? STAGE_SCALE : 1));
+    settings.display.scale = untrack(scoreScale);
     settings.player.playerMode = useAudio
       ? alphaTab.PlayerMode.EnabledExternalMedia
       : alphaTab.PlayerMode.EnabledSynthesizer;
@@ -976,10 +977,35 @@
     });
   }
 
-  // Stage mode draws the score larger and hides everything around it.
+  // Stage mode and full screen draw the score larger so it fills the window.
+  let fullscreenWidth = $state(0);
+  function scoreScale(): number {
+    if (handsFree.stage) return STAGE_SCALE;
+    return fullscreenWidth > 0 ? fullscreenScale(fullscreenWidth) : 1;
+  }
+
+  // The layout changes with the full screen attribute; measure again once it has settled.
+  $effect(() => {
+    const sync = () => {
+      fullscreenWidth = isFullscreen() ? window.innerWidth : 0;
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => window.dispatchEvent(new Event("resize"))),
+      );
+    };
+    document.addEventListener("fullscreenchange", sync);
+    const follow = () => {
+      if (fullscreenWidth > 0) fullscreenWidth = window.innerWidth;
+    };
+    window.addEventListener("resize", follow);
+    return () => {
+      document.removeEventListener("fullscreenchange", sync);
+      window.removeEventListener("resize", follow);
+    };
+  });
+
   $effect(() => {
     const api = player.api;
-    const scale = handsFree.stage ? STAGE_SCALE : 1;
+    const scale = scoreScale();
     if (!api || api.settings.display.scale === scale) return;
     api.settings.display.scale = scale;
     api.updateSettings();
