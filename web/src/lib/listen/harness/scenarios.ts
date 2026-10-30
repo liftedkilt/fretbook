@@ -52,6 +52,12 @@ const legatoGuitar = [
   ...line([71, 69], 0.5, 0.45, 1.9),
 ];
 
+/** Drop A (MIDI 21, 27.5 Hz) and low B on a 5-string, below the old 28 Hz search floor. */
+export const dropAScenario: Scenario = (() => {
+  const notes = line([21, 23, 26, 21, 28], 1, 0.9);
+  return { name: "bass drop A and low B", instrument: "bass", notes, seconds: total(notes) };
+})();
+
 export const SCENARIOS: Scenario[] = [
   { name: "bass range B0-G3", instrument: "bass", notes: bassRange, seconds: total(bassRange) },
   {
@@ -86,6 +92,7 @@ export const SCENARIOS: Scenario[] = [
     seconds: 4.2,
     noiseFloor: 0.004,
   },
+  dropAScenario,
 ];
 
 export function renderScenario(scenario: Scenario, sampleRate: number, seed = 7): Float32Array {
