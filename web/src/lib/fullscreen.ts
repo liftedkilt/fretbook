@@ -9,7 +9,7 @@
 
 export const FULLSCREEN_ATTRIBUTE = "data-fullscreen";
 
-/** False where the page cannot go full screen, for example iPhone Safari. */
+/** False where the page cannot go full screen, for example iPhone Safari (see `watchFocusMode`). */
 export function fullscreenSupported(doc: Document = document): boolean {
   return (
     Boolean(doc.fullscreenEnabled) && typeof doc.documentElement.requestFullscreen === "function"
@@ -72,4 +72,38 @@ export function fullscreenScale(width: number): number {
   if (!Number.isFinite(width) || width <= BASE_WIDTH) return 1;
   const scale = Math.min(MAX_FULLSCREEN_SCALE, width / BASE_WIDTH);
   return Math.round(scale * 20) / 20;
+}
+
+/**
+ * Focus mode: the same chrome-free layout without the Fullscreen API, for browsers that have none
+ * (iPhone Safari). Only the attribute changes, so the page keeps the browser's own bars. Esc leaves
+ * it. Returns a cleanup that drops the attribute and the listener.
+ */
+export function watchFocusMode(
+  onchange: (on: boolean) => void,
+  doc: Document = document,
+): { set: (on: boolean) => void; stop: () => void } {
+  let on = false;
+  const set = (value: boolean) => {
+    on = value;
+    if (on) doc.documentElement.setAttribute(FULLSCREEN_ATTRIBUTE, "player");
+    else doc.documentElement.removeAttribute(FULLSCREEN_ATTRIBUTE);
+    onchange(on);
+  };
+  const onKey = (event: Event) => {
+    if (on && (event as KeyboardEvent).key === "Escape") set(false);
+  };
+  doc.addEventListener("keydown", onKey);
+  return {
+    set,
+    stop: () => {
+      doc.removeEventListener("keydown", onKey);
+      doc.documentElement.removeAttribute(FULLSCREEN_ATTRIBUTE);
+    },
+  };
+}
+
+/** True while the chrome-free layout is on, whether by the Fullscreen API or by focus mode. */
+export function layoutFocused(doc: Document = document): boolean {
+  return doc.documentElement.hasAttribute(FULLSCREEN_ATTRIBUTE);
 }

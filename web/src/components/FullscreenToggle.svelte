@@ -7,18 +7,34 @@
     enterFullscreen,
     exitFullscreen,
     fullscreenSupported,
+    watchFocusMode,
     watchFullscreen,
   } from "../lib/fullscreen";
 
   const supported = fullscreenSupported();
   let on = $state(false);
 
+  // Where the Fullscreen API is missing (iPhone Safari) the same button toggles a CSS-only focus mode.
+  const focus = watchFocusMode((value) => {
+    if (!supported) on = value;
+  });
+
   $effect(() => {
-    if (!supported) return;
-    return watchFullscreen((value) => (on = value));
+    if (!supported) return focus.stop;
+    const stop = watchFullscreen((value) => (on = value));
+    return () => {
+      stop();
+      focus.stop();
+    };
   });
 
   async function toggle() {
+    if (!supported) {
+      const next = !on;
+      focus.set(next);
+      if (next) window.scrollTo({ top: 0 });
+      return;
+    }
     if (on) {
       await exitFullscreen();
       return;
@@ -29,14 +45,12 @@
   const label = $derived(on ? t("fullscreen.exit") : t("fullscreen.enter"));
 </script>
 
-{#if supported}
-  <IconButton
-    class="ghost fullscreen-dock"
-    icon={on ? "minimize" : "maximize"}
-    {label}
-    testid="player-fullscreen"
-    pressed={on}
-    placement="above"
-    onclick={() => void toggle()}
-  />
-{/if}
+<IconButton
+  class="ghost fullscreen-dock"
+  icon={on ? "minimize" : "maximize"}
+  {label}
+  testid="player-fullscreen"
+  pressed={on}
+  placement="above"
+  onclick={() => void toggle()}
+/>

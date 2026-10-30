@@ -4299,6 +4299,11 @@ kbd {
   display: none;
 }
 
+/* The song page sets data-stage on <html> in stage mode: the top bar goes too. */
+:root[data-stage] .topbar {
+  display: none;
+}
+
 .chords-page.stage .chord-paper {
   line-height: 1.6;
 }
