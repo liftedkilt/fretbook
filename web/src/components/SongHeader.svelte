@@ -457,62 +457,95 @@
     margin: 0;
   }
 
+  /* On a phone the header is the page's contextual top bar: one sticky row with back, the title
+     and artist, the star and "⋯". It replaces the brand bar; the cover and facts move into the
+     Song details sheet. */
   @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
     :global(.page-header.song-header) {
-      position: relative;
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
       gap: var(--sp-1);
-      margin-bottom: var(--sp-3);
+      min-height: calc(52px + env(safe-area-inset-top, 0px));
+      margin: -20px calc(-16px - var(--safe-r)) var(--sp-3) calc(-16px - var(--safe-l));
+      padding: env(safe-area-inset-top, 0px) calc(8px + var(--safe-r)) 0 calc(4px + var(--safe-l));
+      background: var(--glass);
+      border-bottom: 1px solid var(--glass-line);
+      backdrop-filter: blur(20px) saturate(1.6);
+      -webkit-backdrop-filter: blur(20px) saturate(1.6);
+    }
+
+    /* Just the arrow; the label stays for assistive tech. */
+    :global(.page-header.song-header .back) {
+      flex: none;
+      width: 44px;
+      justify-content: center;
+      padding: 0;
+    }
+
+    :global(.page-header.song-header .back span) {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
     }
 
     :global(.page-header.song-header .row) {
-      flex-wrap: nowrap;
-    }
-
-    :global(.page-header.song-header .identity) {
+      flex: 1 1 0;
       flex-wrap: nowrap;
       align-items: center;
-      gap: var(--sp-3);
-      min-width: 0;
-    }
-
-    /* The actions sit on the back link's row, at the right. */
-    :global(.page-header.song-header .actions) {
-      position: absolute;
-      top: 0;
-      right: 0;
+      gap: var(--sp-1);
       width: auto;
     }
 
-    :global(.page-header.song-header .cover) {
-      width: 48px;
-      border-radius: var(--r-sm);
+    :global(.page-header.song-header .identity) {
+      flex: 1 1 0;
+      flex-wrap: nowrap;
+      align-items: center;
+      min-width: 0;
     }
 
-    :global(.page-header.song-header .cover-mono) {
-      inset: 0;
-      display: grid;
-      place-items: center;
-      font-size: 1.05rem;
-    }
-
-    :global(.page-header.song-header .cover-art) {
+    :global(.page-header.song-header .leading) {
       display: none;
+    }
+
+    :global(.page-header.song-header .text) {
+      gap: 0;
+    }
+
+    :global(.page-header.song-header .actions) {
+      flex-wrap: nowrap;
+      gap: 0;
+      width: auto;
+      margin-left: auto;
     }
 
     :global(.page-header.song-header h1) {
       overflow: hidden;
-      font-size: var(--fs-title);
-      line-height: 1.1;
+      font-size: var(--fs-body);
+      font-weight: 650;
+      font-family: var(--font-sans);
+      line-height: 1.25;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
     :global(.page-header.song-header .subtitle) {
       overflow: hidden;
-      font-size: var(--fs-sm);
-      line-height: 1.45;
+      font-size: var(--fs-xs);
+      line-height: 1.3;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+
+    :global(.page-header.song-header .below) {
+      flex-basis: 100%;
+      padding: 0 var(--sp-3);
     }
   }
 
