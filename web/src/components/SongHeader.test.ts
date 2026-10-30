@@ -128,7 +128,9 @@ describe("SongHeader", () => {
 
   it("keeps the non-editing actions for a band viewer", async () => {
     render(SongHeader, props({ readOnly: true, onretune: vi.fn() }));
-    expect(screen.getByTestId("song-favourite")).toBeTruthy();
+    // The star and tags are saved on the song, which the server only lets an editor change.
+    expect(screen.queryByTestId("song-favourite")).toBeNull();
+    expect(screen.queryByTestId("song-tag-new")).toBeNull();
     expect(screen.getByTestId("song-retune")).toBeTruthy();
     expect(screen.queryByTestId("song-edit-link")).toBeNull();
     await fireEvent.click(screen.getByTestId("song-more"));
