@@ -2153,6 +2153,11 @@ textarea {
     gap: 2px;
   }
 
+  /* Full screen lives in the ⋯ menu on a phone; the button stays mounted to drive it. */
+  .fullscreen-dock {
+    display: none;
+  }
+
   /* The fretboard rides just above the dock instead of sliding under it. */
   .fretboard-wrap {
     padding: 0.5rem 0.75rem 0.35rem;

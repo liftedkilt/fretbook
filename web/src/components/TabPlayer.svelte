@@ -47,12 +47,6 @@
     setStage,
     STAGE_SCALE,
   } from "../lib/handsFree.svelte";
-  import {
-    enterFullscreen,
-    exitFullscreen,
-    fullscreenSupported,
-    isFullscreen,
-  } from "../lib/fullscreen";
   import { t } from "../lib/i18n.svelte";
   import {
     buildFretEvents,
@@ -1129,13 +1123,7 @@
     return () => query.removeEventListener("change", update);
   });
 
-  async function toggleFullscreen() {
-    if (isFullscreen()) {
-      await exitFullscreen();
-      return;
-    }
-    if (await enterFullscreen()) window.scrollTo({ top: 0 });
-  }
+  let fullscreenToggle = $state<FullscreenToggle | null>(null);
 
   function toggleLoop() {
     if (loopA != null && loopB != null) return clearLoop();
@@ -2177,8 +2165,8 @@
             pressed={follow}
             onclick={() => setFollow(!follow)}
           />
-          <FullscreenToggle />
         {/if}
+        <FullscreenToggle bind:this={fullscreenToggle} />
         <OverflowMenu
           label={t("player.more")}
           testid="player-more"
@@ -2202,17 +2190,13 @@
                     testid: "player-follow-toggle",
                     onclick: () => setFollow(!follow),
                   },
-                  ...(fullscreenSupported()
-                    ? [
-                        {
-                          id: "fullscreen",
-                          label: t("fullscreen.enter"),
-                          icon: "maximize",
-                          testid: "player-fullscreen",
-                          onclick: () => void toggleFullscreen(),
-                        },
-                      ]
-                    : []),
+                  {
+                    id: "fullscreen",
+                    label: fullscreenToggle?.isOn() ? t("fullscreen.exit") : t("fullscreen.enter"),
+                    icon: fullscreenToggle?.isOn() ? "minimize" : "maximize",
+                    testid: "player-fullscreen-menu",
+                    onclick: () => void fullscreenToggle?.toggle(),
+                  },
                 ]
               : []),
             {
@@ -2328,6 +2312,10 @@
     }
 
     /* A bottom sheet: full width, attached to the edge, with the dock hidden behind it. */
+    .dock-tools {
+      flex-wrap: nowrap;
+    }
+
     .player-sheet {
       position: fixed;
       top: auto;

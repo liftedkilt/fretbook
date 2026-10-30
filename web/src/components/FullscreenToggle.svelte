@@ -42,6 +42,10 @@
     if (await enterFullscreen()) window.scrollTo({ top: 0 });
   }
 
+  // The phone dock folds this button into its "⋯" menu, which drives it from here.
+  export const isOn = () => on;
+  export { toggle };
+
   const label = $derived(on ? t("fullscreen.exit") : t("fullscreen.enter"));
 </script>
 
