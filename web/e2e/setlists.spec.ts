@@ -177,9 +177,13 @@ test("the play bar stays on screen while the score scrolls, clear of the dock", 
 
   await page.evaluate(() => {
     document.body.style.minHeight = "4000px";
+    // Inside the song page, like a long score: the sticky bars stay within their parent.
     document
-      .querySelector(".content")!
-      .insertAdjacentHTML("beforeend", '<div style="height:3000px" aria-hidden="true"></div>');
+      .querySelector(".song-header")!
+      .parentElement!.insertAdjacentHTML(
+        "beforeend",
+        '<div style="height:3000px" aria-hidden="true"></div>',
+      );
   });
   // Wheel over the sticky play bar: the score keeps wheel events that land on it.
   await page.mouse.move(200, 100);
@@ -198,6 +202,47 @@ test("the play bar stays on screen while the score scrolls, clear of the dock", 
   expect(rects.bar.bottom).toBeLessThanOrEqual(rects.dock.top);
   // One slim row, not the old 168px card.
   expect(rects.bar.height).toBeLessThanOrEqual(64);
+});
+
+test("on a phone the play bar sits under the song header and Next goes to the next song", async ({
+  page,
+  seed,
+}) => {
+  await seed.create({ title: "Alpha", chordpro: SHEET("Alpha") });
+  await seed.create({ title: "Bravo", chordpro: SHEET("Bravo") });
+  await page.setViewportSize({ width: 390, height: 664 });
+
+  await page.goto("/setlists");
+  await page.getByTestId("setlist-new").click();
+  await page.getByTestId("setlist-new-name").fill("Phone gig");
+  await page.getByTestId("setlist-create").click();
+  await addSongs(page, ["Alpha", "Bravo"]);
+  await page.getByTestId("setlist-play").click();
+  await expect(page.getByTestId("setlist-play-bar")).toBeVisible();
+  await expect(page.getByTestId("song-heading")).toHaveText("Alpha");
+
+  // The bar starts right under the header, with no strip above the header.
+  const layout = await page.evaluate(() => {
+    const r = (sel: string) => document.querySelector(sel)!.getBoundingClientRect();
+    return { header: r(".song-header"), bar: r("[data-testid=setlist-play-bar]") };
+  });
+  expect(layout.header.top).toBeLessThanOrEqual(1);
+  expect(layout.bar.top).toBeGreaterThanOrEqual(layout.header.bottom - 1);
+
+  // Every bar button is hit-testable: nothing (the header) covers it.
+  for (const id of ["setlist-prev", "setlist-position", "setlist-next"]) {
+    const covered = await page.getByTestId(id).evaluate((el) => {
+      const box = el.getBoundingClientRect();
+      const top = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+      return !(top && (top === el || el.contains(top)));
+    });
+    expect(covered, id).toBe(false);
+  }
+
+  await page.getByTestId("setlist-next").click();
+  await expect(page).toHaveURL(/\/play\/2$/);
+  await expect(page.getByTestId("song-heading")).toHaveText("Bravo");
+  await expect(page.getByTestId("setlist-position")).toHaveText("Song 2 of 2");
 });
 
 test("add a song to a setlist from the library and from the song page", async ({ page, seed }) => {

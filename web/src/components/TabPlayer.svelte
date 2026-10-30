@@ -1,6 +1,6 @@
 <script lang="ts">
   import * as alphaTab from "@coderline/alphatab";
-  import { onMount, untrack } from "svelte";
+  import { onMount, untrack, type Snippet } from "svelte";
 
   import DockSpeed from "./DockSpeed.svelte";
   import DockTextButton from "./DockTextButton.svelte";
@@ -124,7 +124,8 @@
     song: initial,
     readOnly = false,
     shared = false,
-  }: { song: TabSong; readOnly?: boolean; shared?: boolean } = $props();
+    belowHeader,
+  }: { song: TabSong; readOnly?: boolean; shared?: boolean; belowHeader?: Snippet } = $props();
   let pickerOpen = $state(false);
 
   // The player owns its copy: taps, BPM edits, and uploads change it in place.
@@ -1819,6 +1820,7 @@
     {song}
     {readOnly}
     {shared}
+    {belowHeader}
     eyebrow={instrumentLabel(track.instrument)}
     strings={track.tuning_midi.length}
     facts={[

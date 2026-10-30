@@ -37,6 +37,18 @@
     };
   });
 
+  // Same breakpoint as the song header: on a phone the bar sticks under it, not above it.
+  const PHONE_QUERY = "(max-width: 767px), (max-height: 500px) and (pointer: coarse)";
+  let phone = $state(typeof matchMedia !== "undefined" && matchMedia(PHONE_QUERY).matches);
+  $effect(() => {
+    if (typeof matchMedia === "undefined") return;
+    const query = matchMedia(PHONE_QUERY);
+    const update = () => (phone = query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  });
+
   const total = $derived(setlist?.entries.length ?? 0);
   const index = $derived(playIndex(position, total));
   const entry = $derived(setlist?.entries[index] ?? null);
@@ -64,24 +76,14 @@
 
 <svelte:window onkeydown={onKeydown} />
 
-{#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
-{#if setlist && !entry}
-  <div class="empty-state compact" data-testid="setlist-play-empty">
-    <p class="muted">{t("setlists.playEmpty")}</p>
-    <a
-      class="button"
-      href={hrefFor(setlistPath(id))}
-      onclick={(event) => followLink(event, setlistPath(id))}>{t("setlists.back")}</a
-    >
-  </div>
-{:else if setlist && entry}
+{#snippet playBar()}
   <nav class="play-bar no-print" aria-label={t("setlists.playNav")} data-testid="setlist-play-bar">
     <a
       class="back-link"
-      aria-label={setlist.name}
+      aria-label={setlist?.name}
       href={hrefFor(setlistPath(id))}
       onclick={(event) => followLink(event, setlistPath(id))}
-      ><Icon name="back" size={18} /><span class="back-name">{setlist.name}</span></a
+      ><Icon name="back" size={18} /><span class="back-name">{setlist?.name}</span></a
     >
     <div class="play-steps">
       <button
@@ -117,25 +119,51 @@
     </div>
     <p class="muted hint">{t("setlists.keysHint")}</p>
   </nav>
-  {#if entry.note.trim() || (entry.transpose && entry.content_kind === "chords")}
+{/snippet}
+
+{#snippet playNote()}
+  {#if entry?.note.trim() || (entry?.transpose && entry?.content_kind === "chords")}
     <p class="play-note no-print" data-testid="setlist-play-note">
-      {#if entry.note.trim()}<strong>{t("setlists.playNote")}:</strong> {entry.note}{/if}
-      {#if entry.transpose && entry.content_kind === "chords"}
+      {#if entry?.note.trim()}<strong>{t("setlists.playNote")}:</strong> {entry?.note}{/if}
+      {#if entry?.transpose && entry?.content_kind === "chords"}
         <span class="muted"
-          >{t("setlists.playTranspose", { semitones: transposeLabel(entry.transpose) })}</span
+          >{t("setlists.playTranspose", { semitones: transposeLabel(entry?.transpose) })}</span
         >
       {/if}
     </p>
   {/if}
+{/snippet}
+
+{#snippet playHeader()}
+  {@render playBar()}
+  {@render playNote()}
+{/snippet}
+
+{#if error}<p class="alert" role="alert"><Icon name="alert" size={18} />{error}</p>{/if}
+{#if setlist && !entry}
+  <div class="empty-state compact" data-testid="setlist-play-empty">
+    <p class="muted">{t("setlists.playEmpty")}</p>
+    <a
+      class="button"
+      href={hrefFor(setlistPath(id))}
+      onclick={(event) => followLink(event, setlistPath(id))}>{t("setlists.back")}</a
+    >
+  </div>
+{:else if setlist && entry}
+  {#if !phone}{@render playHeader()}{/if}
   {#key `${index}:${entry.song_id}`}
-    <SongView id={entry.song_id} transpose={entry.transpose} />
+    <SongView
+      id={entry.song_id}
+      transpose={entry.transpose}
+      belowHeader={phone ? playHeader : undefined}
+    />
   {/key}
 {:else if !error}
   <p class="muted" role="status">{t("app.loading")}</p>
 {/if}
 
 <style>
-  /* Stays under the phone top bar (z 30) and clear of the dock (z 40, bottom). */
+  /* Clear of the dock (z 40, bottom). On a phone it sticks under the song header (z 30). */
   .play-bar {
     position: sticky;
     top: 12px;
@@ -173,7 +201,7 @@
     /* One slim row on a phone: back arrow, previous, position, next. The name,
        the shortcut hint and the note would otherwise eat the music's screen. */
     .play-bar {
-      top: calc(58px + env(safe-area-inset-top, 0px) + 6px);
+      top: calc(52px + env(safe-area-inset-top, 0px));
       display: flex;
       align-items: center;
       gap: 0.5rem;
