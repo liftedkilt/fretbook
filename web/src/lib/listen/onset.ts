@@ -1,5 +1,12 @@
 import { FFT } from "./fft";
 
+/** The soft rule wants flux this many times the recent median, and a hop at least 4% louder. */
+const SOFT_RATIO = 4;
+const SOFT_RISE = 1.04;
+const QUIET_RISE = 3;
+/** The soft rule also waits this many hops after any onset, which hides an attack's own ripple. */
+const SOFT_GAP_FRAMES = 14;
+
 export interface OnsetOptions {
   sampleRate: number;
   /** Analysis frame length (power of two) and hop, in samples. */
@@ -32,6 +39,7 @@ export class OnsetDetector {
   private readonly minGapFrames: number;
   private readonly silenceRms: number;
   private readonly floor: number;
+  private readonly softFloor: number;
   private readonly bins: number;
   private readonly firstBin: number;
   private readonly history: number[] = [];
@@ -50,6 +58,7 @@ export class OnsetDetector {
     this.sensitivity = options.sensitivity ?? 1.6;
     this.silenceRms = options.silenceRms ?? 0.003;
     this.floor = options.fluxFloor ?? 1;
+    this.softFloor = this.floor * 0.3;
     this.minGapFrames = Math.max(
       1,
       Math.round(((options.minGap ?? 0.06) * options.sampleRate) / this.hopSize),
@@ -108,13 +117,24 @@ export class OnsetDetector {
     const mean =
       this.history.length > 0 ? this.history.reduce((a, b) => a + b, 0) / this.history.length : 0;
     const threshold = this.sensitivity * mean + this.floor;
+    const peak = this.flux1 >= this.flux2 && this.flux1 > flux;
+    const settled = rms > this.silenceRms * 0.5 && this.sinceOnset > this.minGapFrames;
+    // The regular rule is untouched, so a clean attack keeps its timestamp. The soft rule only
+    // adds onsets the regular one rejects: a quiet pluck whose flux is under the absolute floor,
+    // or a repluck on a ringing string that adds less than the 12% the regular rule wants.
+    // Both still need to stand well clear of the recent flux.
     if (
-      this.flux1 > threshold &&
-      this.flux1 >= this.flux2 &&
-      this.flux1 > flux &&
-      rms > this.silenceRms * 0.5 &&
-      this.louderThanBefore() &&
-      this.sinceOnset > this.minGapFrames
+      peak &&
+      settled &&
+      ((this.flux1 > threshold && this.louderThanBefore()) ||
+        (this.flux1 > this.softFloor &&
+          this.sinceOnset > SOFT_GAP_FRAMES &&
+          ((this.flux1 > SOFT_RATIO * this.medianFlux() + this.softFloor &&
+            this.louderThanBefore(SOFT_RISE)) ||
+            // A pluck out of near silence nearly doubles the hop energy, and the damping of
+            // the note before it can inflate the median.
+            (this.flux1 > SOFT_RATIO * this.lowerQuartileFlux() + this.softFloor &&
+              this.louderThanBefore(QUIET_RISE)))))
     ) {
       result = { hopsAgo: 1, strength: this.flux1 };
       this.sinceOnset = 1;
@@ -126,11 +146,23 @@ export class OnsetDetector {
     return result;
   }
 
+  private medianFlux(): number {
+    if (this.history.length === 0) return 0;
+    const sorted = [...this.history].sort((a, b) => a - b);
+    return sorted[sorted.length >> 1];
+  }
+
+  private lowerQuartileFlux(): number {
+    if (this.history.length === 0) return 0;
+    const sorted = [...this.history].sort((a, b) => a - b);
+    return sorted[sorted.length >> 2];
+  }
+
   /** A real attack adds energy; a string being damped, or a click on a fade, does not. */
-  private louderThanBefore(): boolean {
+  private louderThanBefore(rise = 1.12): boolean {
     const history = this.rmsHistory;
     // history[last] is this frame, [last - 1] the flux peak, [0] three hops earlier.
     if (history.length < 4) return true;
-    return Math.max(history[2], history[3]) > history[0] * 1.12 + 1e-5;
+    return Math.max(history[2], history[3]) > history[0] * rise + 1e-5;
   }
 }

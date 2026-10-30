@@ -130,7 +130,6 @@ export const SCENARIOS: Scenario[] = [
     instrument: "bass",
     notes: softRepluck,
     seconds: total(softRepluck),
-    pending: "#410: the +12% energy rule and 60 ms gap miss a soft second pluck",
   },
   {
     name: "bass with quiet second voice",
