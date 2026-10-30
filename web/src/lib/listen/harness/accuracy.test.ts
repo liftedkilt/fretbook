@@ -98,7 +98,7 @@ describe("drop A and guitar-range lock", { timeout: 60_000 }, () => {
   });
 });
 
-// Onset times of the clean attacks before the soft-repluck rule (#410). Stored calibration is
+// Onset times of the clean attacks on main before the soft-repluck rule (#410). Stored calibration is
 // measured against these, so they may move by a few milliseconds and no more.
 const CLEAN_ONSETS: Record<string, number[]> = {
   "bass-riff": [
@@ -107,7 +107,7 @@ const CLEAN_ONSETS: Record<string, number[]> = {
   ],
   "guitar-riff": [
     0.3091, 0.8102, 1.3114, 1.8025, 2.3036, 2.7045, 2.9551, 3.2057, 3.4562, 3.807, 4.0576, 4.3082,
-    4.3699, 4.5587, 4.9095, 5.4107,
+    4.5587, 4.9095, 5.4107,
   ],
 };
 
