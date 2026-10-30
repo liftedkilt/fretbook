@@ -202,3 +202,17 @@ test("library cards and the tab bar fit a phone", async ({ page, seed }) => {
     expect(showing!.y + showing!.height).toBeLessThanOrEqual(bar!.y - 26);
   }
 });
+
+test("the phone library shows a song on the first screen", async ({ page, seed }) => {
+  await seed.musicXmlTab();
+  await page.setViewportSize({ width: 390, height: 664 });
+  await page.goto("/");
+  const card = page.getByTestId("song-card").first();
+  await expect(card).toBeVisible();
+  const box = await card.boundingBox();
+  // The tab bar starts at 590, so a whole card has to fit above it.
+  expect(box!.y).toBeLessThan(400);
+  const bar = await page.locator(".tabbar").boundingBox();
+  expect(box!.y + box!.height).toBeLessThanOrEqual(bar!.y);
+  await noSidewaysScroll(page);
+});
