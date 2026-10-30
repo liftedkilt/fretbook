@@ -514,6 +514,59 @@ describe("LibraryView", () => {
     expect(screen.queryByTestId("library-active-filter")).toBeNull();
   });
 
+  it("opens phone filters in the space under the button and closes from Done", async () => {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn((query: string) => ({
+        matches: query.includes("max-width"),
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    );
+    const originalRect = HTMLElement.prototype.getBoundingClientRect;
+    const rect = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function (this: HTMLElement) {
+        if (this.dataset.testid === "library-filters") return new DOMRect(200, 240, 80, 44);
+        return originalRect.call(this);
+      });
+    const focus = vi.spyOn(HTMLElement.prototype, "focus");
+    const previousHeight = window.innerHeight;
+    Object.defineProperty(window, "innerHeight", { configurable: true, value: 664 });
+
+    try {
+      await load([makeSong({ id: "1", title: "One", tags: ["funk"] })]);
+      ui.tagList = [{ tag: "funk", count: 1 }];
+      render(LibraryView);
+
+      await fireEvent.click(screen.getByTestId("library-filters"));
+      const dialog = await screen.findByRole("dialog", { name: "Filters" });
+      // 664 - (240 + 44) - 8px gap. The sheet stops under the trigger.
+      expect(dialog).toHaveStyle({ maxHeight: "372px" });
+      expect(
+        focus.mock.calls.some(
+          (call) => (call[0] as { preventScroll?: boolean } | undefined)?.preventScroll === true,
+        ),
+      ).toBe(true);
+      await waitFor(() => expect(document.documentElement.style.overflow).toBe("hidden"));
+
+      await fireEvent.click(screen.getByTestId("library-filters-done"));
+      await waitFor(() => expect(screen.queryByRole("dialog", { name: "Filters" })).toBeNull());
+      expect(screen.getByTestId("library-filters")).toHaveFocus();
+      await waitFor(() => expect(document.documentElement.style.overflow).toBe(""));
+    } finally {
+      focus.mockRestore();
+      rect.mockRestore();
+      vi.unstubAllGlobals();
+      document.documentElement.style.overflow = "";
+      Object.defineProperty(window, "innerHeight", { configurable: true, value: previousHeight });
+    }
+  });
+
   it("keeps delete last in the song menu", async () => {
     await load([makeSong({ id: "1", title: "Menu Song" })]);
     render(LibraryView);
