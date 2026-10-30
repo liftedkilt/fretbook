@@ -541,14 +541,40 @@
     return Math.max(0, Math.round(bottom));
   }
 
+  // alphaTab reads `scrollElement` once and keeps it. `updateSettings` does not drop that
+  // cache, so a layout change would keep scrolling the previous box.
+  function dropCachedScrollContainer(api: alphaTab.AlphaTabApi) {
+    const facade = api.uiFacade as { _scrollContainer?: unknown } | undefined;
+    if (!facade) return;
+    facade._scrollContainer = null;
+  }
+
+  // A new alphaTab instance starts at bar 1 and 1×. Put the current speed and bar back
+  // so a player-mode rebuild (recording ↔ synth) does not disagree with the dock.
+  function restoreTransport(instance: alphaTab.AlphaTabApi, useAudio: boolean) {
+    const speed = untrack(() => rate);
+    instance.playbackSpeed = speed;
+    if (useAudio && audioEl) audioEl.playbackRate = speed;
+    const bar = untrack(() => currentMeasure);
+    if (useAudio || bar < 0) return;
+    instance.tickPosition = tickOfBar(bar);
+  }
+
+  // `phone` is read only for the first settings. Crossing the breakpoint retargets
+  // scrolling in place; rebuilding here would stop playback and drop speed and the loop.
   $effect(() => {
     const element = host;
     const source = tex;
-    const onPhone = phone;
-    const scrollElement = onPhone ? (document.scrollingElement as HTMLElement | null) : scroller;
+    const scrollHost = scroller;
     const useAudio = audioMode;
-    if (!element || !scrollElement) return;
-    return untrack(() => mountScorePlayer(element, scrollElement, source, useAudio, onPhone));
+    if (!element || !scrollHost) return;
+    return untrack(() => {
+      const onPhone = phone;
+      const scrollElement = onPhone
+        ? ((document.scrollingElement as HTMLElement | null) ?? scrollHost)
+        : scrollHost;
+      return mountScorePlayer(element, scrollElement, source, useAudio, onPhone);
+    });
   });
 
   function mountScorePlayer(
@@ -600,9 +626,11 @@
       queueMicrotask(() => {
         scoreReady += 1;
         applyPractice();
+        restoreTransport(instance, useAudio);
       });
     });
     instance.playerReady.on(() => {
+      instance.playbackSpeed = untrack(() => rate);
       if (!useAudio || !audioEl) return;
       const output = instance.player?.output as
         alphaTab.synth.IExternalMediaSynthOutput | undefined;
@@ -695,6 +723,9 @@
       window.removeEventListener("resize", refreshOffset);
       element.querySelector(".at-playing-outline")?.remove();
       instance.destroy();
+      // This instance is no longer playing. Speed and the bar are put back on the next
+      // one. A recording that is still running paints the button from its own clock.
+      if (playing) playing = false;
     };
   }
 
@@ -1709,13 +1740,38 @@
     });
   });
 
+  // Retarget scrolling when the layout crosses the phone breakpoint, without rebuilding
+  // the player. On a phone the page scrolls only while playback is following.
   $effect(() => {
+    const onPhone = phone;
     const api = player.api;
     void scoreReady;
-    if (!phone || !api) return;
-    api.settings.player.scrollMode =
-      playing && follow ? alphaTab.ScrollMode.Continuous : alphaTab.ScrollMode.Off;
+    if (!api) return;
+    const scrollElement = onPhone
+      ? ((document.scrollingElement as HTMLElement | null) ?? scroller)
+      : scroller;
+    if (!scrollElement) return;
+    const offsetY = -(16 + (onPhone ? stickyChromeBottom() : 0));
+    const mode = onPhone
+      ? playing && follow
+        ? alphaTab.ScrollMode.Continuous
+        : alphaTab.ScrollMode.Off
+      : follow
+        ? alphaTab.ScrollMode.Continuous
+        : alphaTab.ScrollMode.Off;
+    const settings = api.settings.player;
+    if (
+      settings.scrollElement === scrollElement &&
+      settings.scrollOffsetY === offsetY &&
+      settings.scrollMode === mode
+    ) {
+      return;
+    }
+    settings.scrollElement = scrollElement;
+    settings.scrollOffsetY = offsetY;
+    settings.scrollMode = mode;
     api.updateSettings();
+    dropCachedScrollContainer(api);
   });
 
   function setFollow(checked: boolean) {
