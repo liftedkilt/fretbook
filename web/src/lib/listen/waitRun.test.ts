@@ -26,9 +26,10 @@ const attack = (time: number, midi: number): PitchEvent => ({
   onsetTime: time - 0.02,
 });
 
-function setup(steps: WaitStep[], hintSeconds = 0) {
+function setup(steps: WaitStep[], hintSeconds = 0, match?: { anyOctave: boolean }) {
   let options!: ListenOptions;
   const expected: (number | null)[] = [];
+  const strict: (boolean | undefined)[] = [];
   const chroma: boolean[] = [];
   const stopped = vi.fn(async () => undefined);
   const session: ListenSession = {
@@ -36,7 +37,10 @@ function setup(steps: WaitStep[], hintSeconds = 0) {
     channelCount: 1,
     currentTime: 0,
     setChannel: () => undefined,
-    setExpectedMidi: (midi) => expected.push(midi),
+    setExpectedMidi: (midi, strictOctave) => {
+      expected.push(midi);
+      strict.push(strictOctave);
+    },
     setChroma: (on) => chroma.push(on),
     stop: stopped,
   };
@@ -44,6 +48,7 @@ function setup(steps: WaitStep[], hintSeconds = 0) {
   const run = new WaitRun({
     steps,
     hintSeconds,
+    match,
     listen: async (given) => {
       options = given;
       return session;
@@ -56,6 +61,7 @@ function setup(steps: WaitStep[], hintSeconds = 0) {
     run,
     calls,
     expected,
+    strict,
     chroma,
     stopped,
     hear: (event: PitchEvent) => options.onPitch(event),
@@ -66,6 +72,18 @@ function setup(steps: WaitStep[], hintSeconds = 0) {
 describe("WaitRun", () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
+
+  it("asks the detector for strict octaves only when any-octave is off", async () => {
+    for (const [anyOctave, want] of [
+      [false, true],
+      [true, false],
+    ] as const) {
+      const { run, strict } = setup([step(0, 28)], 0, { anyOctave });
+      await run.start();
+      run.reach(0);
+      expect(strict.at(-1)).toBe(want);
+    }
+  });
 
   it("follows a click on the score: drops the wait and stops on the clicked step", async () => {
     const { run, calls, expected } = setup([step(0, 28), step(960, 33), step(1920, 28)]);

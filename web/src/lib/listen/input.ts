@@ -110,7 +110,8 @@ export interface ListenSession {
   /** The microphone clock in seconds, the same clock as `PitchEvent.time`. */
   readonly currentTime: number;
   setChannel(index: number): void;
-  setExpectedMidi(midi: number | null): void;
+  /** `strictOctave`: the expected note must not pull a reading down to a lower octave. */
+  setExpectedMidi(midi: number | null, strictOctave?: boolean): void;
   /** Start or stop the pitch-class readings used to check chords. */
   setChroma(on: boolean): void;
   stop(): Promise<void>;
@@ -166,7 +167,8 @@ export async function startListening(options: ListenOptions): Promise<ListenSess
         return context.currentTime;
       },
       setChannel: (index) => send({ type: "channel", index }),
-      setExpectedMidi: (midi) => send({ type: "expected", midi }),
+      setExpectedMidi: (midi, strictOctave = false) =>
+        send({ type: "expected", midi, strictOctave }),
       setChroma: (on) => send({ type: "chroma", on }),
       async stop() {
         source.disconnect();

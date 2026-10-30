@@ -21,6 +21,8 @@ export interface DetectOptions {
   /** When set, a peak within `expectedToleranceCents` of this frequency wins over an octave error. */
   expectedFrequency?: number | null;
   expectedToleranceCents?: number;
+  /** Never let the expected note pull the pick to a lower octave than the unbiased estimate. */
+  strictOctave?: boolean;
 }
 
 /** Smallest power-of-two window that fits two periods of `minFrequency`. */
@@ -110,6 +112,8 @@ export class MpmDetector {
       let nearestError = Infinity;
       for (const p of peaks) {
         const error = Math.abs(centsBetween(this.refine(p).frequency, expected));
+        // A note an octave up also repeats at the expected period; strict mode must not fold it down.
+        if (options.strictOctave && p > chosen) continue;
         if (error < tolerance && error < nearestError && nsdf[p] >= 0.5 * highest) {
           nearest = p;
           nearestError = error;

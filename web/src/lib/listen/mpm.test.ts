@@ -75,3 +75,33 @@ describe("MpmDetector", () => {
     expect(plain).not.toBeNull();
   });
 });
+
+describe("strict octave", () => {
+  const rate = 48000;
+  const win = windowSizeFor(rate, 28);
+  const det = new MpmDetector({ sampleRate: rate, windowSize: win });
+  const e3 = midiToFrequency(52);
+  const centsOff = (f: number | undefined, target: number) =>
+    Math.abs(1200 * Math.log2((f ?? 1) / target));
+
+  for (const octaves of [1, 2]) {
+    it(`does not fold a note ${octaves} octave(s) up down to the expected note`, () => {
+      const played = e3 * 2 ** octaves;
+      const samples = tone(played, rate, win, [1, 0.5, 0.25]);
+      const strict = det.detect(samples, { expectedFrequency: e3, strictOctave: true });
+      expect(centsOff(strict?.frequency, played)).toBeLessThan(10);
+    });
+  }
+
+  it("still resolves towards the expected note when strict mode is off", () => {
+    const samples = tone(e3 * 2, rate, win, [1, 0.5, 0.25]);
+    const guided = det.detect(samples, { expectedFrequency: e3 });
+    expect(centsOff(guided?.frequency, e3)).toBeLessThan(10);
+  });
+
+  it("still hears the expected note itself in strict mode", () => {
+    const samples = tone(e3, rate, win, [1, 0.5, 0.25]);
+    const strict = det.detect(samples, { expectedFrequency: e3, strictOctave: true });
+    expect(centsOff(strict?.frequency, e3)).toBeLessThan(10);
+  });
+});

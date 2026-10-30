@@ -25,7 +25,8 @@ class PitchProcessor extends AudioWorkletProcessor {
     this.channel = config.channel ?? 0;
     this.engine = new PitchEngine({ sampleRate, a4: config.a4, minFrequency: config.minFrequency });
     this.port.onmessage = (message: MessageEvent<WorkletCommand>) => {
-      if (message.data.type === "expected") this.engine.setExpectedMidi(message.data.midi);
+      if (message.data.type === "expected")
+        this.engine.setExpectedMidi(message.data.midi, message.data.strictOctave);
       else if (message.data.type === "channel") this.channel = message.data.index;
       else if (message.data.type === "chroma") this.engine.setChroma(message.data.on);
     };

@@ -9,7 +9,7 @@ export type WorkletMessage =
 
 /** What the main thread posts to the AudioWorklet. */
 export type WorkletCommand =
-  | { type: "expected"; midi: number | null }
+  | { type: "expected"; midi: number | null; strictOctave?: boolean }
   | { type: "channel"; index: number }
   | { type: "chroma"; on: boolean };
 
