@@ -115,6 +115,8 @@ export function chromaScore(bins: readonly number[], pitchClasses: readonly numb
   const share = inChord / total;
   // A note is present when it holds a fair part of what an even split of the chord would give.
   const even = inChord / wanted.length;
-  const present = wanted.filter((pc) => bins[pc] >= 0.35 * even).length / wanted.length;
-  return share * (0.4 + 0.6 * present);
+  const presentCount = wanted.filter((pc) => bins[pc] >= 0.35 * even).length;
+  // One note is not a chord: a lone root would otherwise score exactly the lenient threshold.
+  if (wanted.length >= 2 && presentCount < 2) return 0;
+  return share * (0.4 + 0.6 * (presentCount / wanted.length));
 }
