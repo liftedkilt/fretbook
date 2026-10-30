@@ -8,6 +8,7 @@ import {
   fullscreenScale,
   fullscreenSupported,
   isFullscreen,
+  watchFocusMode,
   watchFullscreen,
 } from "./fullscreen";
 
@@ -98,5 +99,21 @@ describe("fullscreenScale", () => {
     expect(fullscreenScale(1650)).toBe(1.5);
     expect(fullscreenScale(1920)).toBe(1.75);
     expect(fullscreenScale(3840)).toBe(1.75);
+  });
+});
+
+describe("focus mode", () => {
+  it("toggles the layout attribute without the Fullscreen API and leaves on Esc", () => {
+    const { doc, attributes } = fakeDocument({ enabled: false });
+    const seen: boolean[] = [];
+    const focus = watchFocusMode((on) => seen.push(on), doc);
+    focus.set(true);
+    expect(attributes.get(FULLSCREEN_ATTRIBUTE)).toBe("player");
+    doc.dispatchEvent(Object.assign(new Event("keydown"), { key: "Escape" }));
+    expect(attributes.has(FULLSCREEN_ATTRIBUTE)).toBe(false);
+    expect(seen).toEqual([true, false]);
+    focus.set(true);
+    focus.stop();
+    expect(attributes.has(FULLSCREEN_ATTRIBUTE)).toBe(false);
   });
 });

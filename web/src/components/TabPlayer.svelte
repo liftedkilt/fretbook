@@ -16,7 +16,7 @@
   import { sectionMarks } from "../lib/playerSheet";
   import SetlistPicker from "./SetlistPicker.svelte";
   import FullscreenToggle from "./FullscreenToggle.svelte";
-  import { fullscreenScale, isFullscreen } from "../lib/fullscreen";
+  import { FULLSCREEN_ATTRIBUTE, fullscreenScale, layoutFocused } from "../lib/fullscreen";
   import AutoSyncSheet from "./AutoSyncSheet.svelte";
   import TranscribeSheet from "./TranscribeSheet.svelte";
   import RetuneSheet from "./RetuneSheet.svelte";
@@ -1131,18 +1131,20 @@
   // The layout changes with the full screen attribute; measure again once it has settled.
   $effect(() => {
     const sync = () => {
-      fullscreenWidth = isFullscreen() ? window.innerWidth : 0;
+      fullscreenWidth = layoutFocused() ? window.innerWidth : 0;
       requestAnimationFrame(() =>
         requestAnimationFrame(() => window.dispatchEvent(new Event("resize"))),
       );
     };
-    document.addEventListener("fullscreenchange", sync);
+    // Real full screen and the iPhone focus mode both flip the same attribute.
+    const watcher = new MutationObserver(sync);
+    watcher.observe(document.documentElement, { attributeFilter: [FULLSCREEN_ATTRIBUTE] });
     const follow = () => {
       if (fullscreenWidth > 0) fullscreenWidth = window.innerWidth;
     };
     window.addEventListener("resize", follow);
     return () => {
-      document.removeEventListener("fullscreenchange", sync);
+      watcher.disconnect();
       window.removeEventListener("resize", follow);
     };
   });
@@ -1643,6 +1645,13 @@
       exporting = false;
     }
   }
+
+  // Stage mode also hides the app's top bar (app.css), which sits outside this component.
+  $effect(() => {
+    if (!handsFree.stage) return;
+    document.documentElement.setAttribute("data-stage", "");
+    return () => document.documentElement.removeAttribute("data-stage");
+  });
 </script>
 
 <div
