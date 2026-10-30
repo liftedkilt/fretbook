@@ -1045,7 +1045,16 @@
     "skip": "Skip this note",
     "progress": "{hits} of {total} notes",
     "done": "Done: {hits} of {total} notes played.",
-    "hit": "Right note"
+    "hit": "Right note",
+    "skipped": "Skipped",
+    "next": "Next: {note}",
+    "mutedNote": "muted note",
+    "heardNote": "Heard {note}",
+    "heardFlat": "Heard {note}, a little flat",
+    "heardSharp": "Heard {note}, a little sharp",
+    "heardEarly": "Too early: wait for the cursor",
+    "heardNothing": "Nothing heard: pluck a bit harder",
+    "heardOther": "Not the chord yet, try again"
   },
   "waitMode": {
     "fretboard": "Where to play the expected note"
