@@ -5,6 +5,7 @@ import {
   FULLSCREEN_ATTRIBUTE,
   enterFullscreen,
   exitFullscreen,
+  fullscreenScale,
   fullscreenSupported,
   isFullscreen,
   watchFullscreen,
@@ -83,5 +84,19 @@ describe("fullscreen", () => {
     expect(await enterFullscreen(doc)).toBe(false);
     expect(attributes.has(FULLSCREEN_ATTRIBUTE)).toBe(false);
     await expect(exitFullscreen(doc)).resolves.toBeUndefined();
+  });
+});
+
+describe("fullscreenScale", () => {
+  it("keeps small windows at full size", () => {
+    expect(fullscreenScale(800)).toBe(1);
+    expect(fullscreenScale(1100)).toBe(1);
+    expect(fullscreenScale(Number.NaN)).toBe(1);
+  });
+
+  it("grows with the window and stops at the cap", () => {
+    expect(fullscreenScale(1650)).toBe(1.5);
+    expect(fullscreenScale(1920)).toBe(1.75);
+    expect(fullscreenScale(3840)).toBe(1.75);
   });
 });

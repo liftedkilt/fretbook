@@ -62,3 +62,14 @@ export function watchFullscreen(
     void exitFullscreen(doc);
   };
 }
+
+/** The widest score alphaTab draws at scale 1 before it wraps bars at a comfortable size. */
+const BASE_WIDTH = 1100;
+const MAX_FULLSCREEN_SCALE = 1.75;
+
+/** How large to draw the score in full screen so it fills a window of `width` pixels. */
+export function fullscreenScale(width: number): number {
+  if (!Number.isFinite(width) || width <= BASE_WIDTH) return 1;
+  const scale = Math.min(MAX_FULLSCREEN_SCALE, width / BASE_WIDTH);
+  return Math.round(scale * 20) / 20;
+}
