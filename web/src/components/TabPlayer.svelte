@@ -34,7 +34,7 @@
   import { holdCelebrations, onPracticeLogged, snapshotFromStats } from "../lib/celebrate";
   import { AudioMedia } from "../lib/alphatab/audioHandler";
   import { planFollow, SynthFollower } from "../lib/alphatab/synthFollow";
-  import { separateEffectBands } from "../lib/alphatab/display";
+  import { hideScoreHeader, separateEffectBands } from "../lib/alphatab/display";
   import { preferredTrack, scoreToAlphaTex } from "../lib/alphatex";
   import { Clicker } from "../lib/clicker";
   import { recordingGain, synthGain } from "../lib/practice";
@@ -564,6 +564,7 @@
     settings.core.enableLazyLoading = false;
     settings.display.staveProfile = staveProfile(untrack(() => ui.notation));
     separateEffectBands(settings);
+    if (onPhone) hideScoreHeader(settings, alphaTab);
     settings.display.scale = untrack(scoreScale);
     settings.player.playerMode = useAudio
       ? alphaTab.PlayerMode.EnabledExternalMedia
@@ -1973,6 +1974,7 @@
         <span>{t("player.track")}</span>
         <select
           data-testid="player-track"
+          aria-label={t("player.track")}
           value={trackId}
           onchange={(event) => (trackId = event.currentTarget.value)}
         >
@@ -2623,6 +2625,26 @@
 
   /* Saved loops stay in the practice panel on a phone: they would push the music down. */
   @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
+    /* One row: the view switch, then the track picker without its label, then the chips. */
+    .view-row {
+      flex-wrap: nowrap;
+      gap: var(--sp-2);
+      margin-bottom: var(--sp-2);
+    }
+
+    .track-select {
+      flex: 1 1 0;
+    }
+
+    .track-select span {
+      display: none;
+    }
+
+    .view-chips {
+      flex: none;
+      margin-left: 0;
+    }
+
     .song-saved-loops {
       display: none;
     }
