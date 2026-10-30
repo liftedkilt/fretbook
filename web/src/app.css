@@ -1117,6 +1117,11 @@ textarea {
     -webkit-backdrop-filter: blur(20px) saturate(1.6);
   }
 
+  /* A pushed page carries its own bar (back, title, star, ⋯), so the brand bar steps aside. */
+  .shell:has(.song-header) .topbar {
+    display: none;
+  }
+
   .topbar .brand {
     padding: 0;
   }
@@ -2087,64 +2092,65 @@ textarea {
 }
 
 @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
+  /* One row attached to the bottom edge, padded for the home indicator. A thin progress line
+     runs along its top edge; loop, follow and full screen live in the ⋯ menu. */
   .dock {
-    left: calc(8px + var(--safe-l));
-    right: calc(8px + var(--safe-r));
-    bottom: calc(8px + var(--safe-b));
+    left: 0;
+    right: 0;
+    bottom: 0;
+    gap: 0;
+    max-width: none;
+  }
+
+  .dock.sheet-open {
+    display: none;
   }
 
   .dock-bar {
     position: relative;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      "progress"
-      "transport"
-      "tools";
-    gap: 10px 8px;
-    padding: 10px 10px 8px;
-    border-radius: var(--r-lg);
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 4px;
+    padding: 6px calc(8px + var(--safe-r)) calc(6px + var(--safe-b)) calc(8px + var(--safe-l));
+    border-width: 1px 0 0;
+    border-radius: 0;
+    box-shadow: 0 -6px 20px rgb(0 0 0 / 0.12);
   }
 
   .dock-progress {
-    grid-area: progress;
-    padding: 0 6px;
-  }
-
-  .dock-transport {
-    grid-area: transport;
-    justify-content: center;
-  }
-
-  /* Selects, sync panel and ⋯ share one row; the rest open from the ⋯ above the dock. */
-  .dock-tools {
-    grid-area: tools;
-    justify-content: space-between;
-    gap: 8px;
-  }
-
-  .dock-more {
-    display: inline-flex;
-  }
-
-  .dock-secondary {
-    display: none;
     position: absolute;
+    top: -1px;
     right: 0;
-    bottom: calc(100% + 8px);
-    gap: 4px;
-    padding: 6px;
-    border-radius: var(--r-lg);
-    background: var(--glass-solid);
-    border: 1px solid var(--glass-line);
-    box-shadow: var(--shadow-lg);
+    left: 0;
+    padding: 0;
   }
 
-  .dock-secondary[data-open] {
-    display: flex;
+  .dock-status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+
+  .scrubber {
+    height: 16px;
+    margin-top: -7px;
+  }
+
+  .scrubber input[type="range"] {
+    height: 16px;
   }
 
   .dock-transport {
-    gap: 16px;
+    justify-content: flex-start;
+    gap: 2px;
+  }
+
+  .dock-tools {
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    gap: 2px;
   }
 
   /* The fretboard rides just above the dock instead of sliding under it. */
@@ -2166,17 +2172,17 @@ textarea {
   }
 
   .play-button {
-    width: 48px;
-    height: 48px;
-    min-height: 48px;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
   }
 
   :root {
-    --dock-space: calc(212px + var(--safe-b));
+    --dock-space: calc(64px + var(--safe-b));
   }
 
   .player-page {
-    padding-bottom: calc(246px + var(--safe-b));
+    padding-bottom: calc(var(--dock-space) + 16px);
   }
 
   /* Short enough to fit between the top bar and the dock once scrolled into view. */

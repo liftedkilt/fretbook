@@ -47,6 +47,12 @@
     setStage,
     STAGE_SCALE,
   } from "../lib/handsFree.svelte";
+  import {
+    enterFullscreen,
+    exitFullscreen,
+    fullscreenSupported,
+    isFullscreen,
+  } from "../lib/fullscreen";
   import { t } from "../lib/i18n.svelte";
   import {
     buildFretEvents,
@@ -1111,6 +1117,26 @@
   }
 
   /** Pedal: clear the loop, else loop the bar being played (or the first one). */
+  // On a phone the dock is one row; loop, follow and full screen move into its "⋯" menu.
+  const PHONE_QUERY = "(max-width: 767px), (max-height: 500px) and (pointer: coarse)";
+  let phone = $state(typeof matchMedia !== "undefined" && matchMedia(PHONE_QUERY).matches);
+  $effect(() => {
+    if (typeof matchMedia === "undefined") return;
+    const query = matchMedia(PHONE_QUERY);
+    const update = () => (phone = query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  });
+
+  async function toggleFullscreen() {
+    if (isFullscreen()) {
+      await exitFullscreen();
+      return;
+    }
+    if (await enterFullscreen()) window.scrollTo({ top: 0 });
+  }
+
   function toggleLoop() {
     if (loopA != null && loopB != null) return clearLoop();
     if (barCount <= 0) return;
@@ -1576,6 +1602,8 @@
 
   let exporting = $state(false);
   let panelOpen = $state(false);
+  // A phone's sheet has two heights; the grabber toggles them.
+  let sheetTall = $state(false);
   let sheetSlot = $state<HTMLDivElement | null>(null);
   const marks = $derived(sectionMarks(document_.bars, order));
   const currentSection = $derived.by(() => {
@@ -1873,7 +1901,14 @@
       </div>
     </div>
     {#if panelOpen && !handsFree.stage}
-      <div class="player-sheet" bind:this={sheetSlot}>
+      <div class="player-sheet" class:tall={sheetTall} bind:this={sheetSlot}>
+        <button
+          type="button"
+          class="sheet-grabber"
+          data-testid="player-sheet-grabber"
+          aria-label={sheetTall ? t("playerSheet.shrink") : t("playerSheet.expand")}
+          onclick={() => (sheetTall = !sheetTall)}
+        ></button>
         <PlayerSheet
           userId={ui.me?.user_id ?? ""}
           songId={song.id}
@@ -1978,7 +2013,7 @@
     {countingIn ? t("player.countingIn") : playing ? t("player.playing") : t("player.paused")}
   </p>
 
-  <div class="dock" bind:offsetHeight={dockHeight}>
+  <div class="dock" class:sheet-open={panelOpen && !handsFree.stage} bind:offsetHeight={dockHeight}>
     {#if waitOn}
       <div
         class="wait-status"
@@ -2115,13 +2150,15 @@
           />
         {/if}
         <DockSpeed {rate} onchange={setRate} />
-        <DockTextButton
-          icon="repeat"
-          label={t("player.loop")}
-          testid="player-loop-toggle"
-          pressed={loopA != null && loopB != null}
-          onclick={toggleLoop}
-        />
+        {#if !phone}
+          <DockTextButton
+            icon="repeat"
+            label={t("player.loop")}
+            testid="player-loop-toggle"
+            pressed={loopA != null && loopB != null}
+            onclick={toggleLoop}
+          />
+        {/if}
         <DockTextButton
           icon="target"
           label={t("playerSheet.practice")}
@@ -2131,20 +2168,53 @@
           controls={panelOpen ? "player-sheet" : undefined}
           onclick={() => (panelOpen = !panelOpen)}
         />
-        <IconButton
-          class="ghost"
-          placement="above"
-          icon="crosshair"
-          label={t("player.follow")}
-          pressed={follow}
-          onclick={() => setFollow(!follow)}
-        />
-        <FullscreenToggle />
+        {#if !phone}
+          <IconButton
+            class="ghost"
+            placement="above"
+            icon="crosshair"
+            label={t("player.follow")}
+            pressed={follow}
+            onclick={() => setFollow(!follow)}
+          />
+          <FullscreenToggle />
+        {/if}
         <OverflowMenu
           label={t("player.more")}
           testid="player-more"
           placement="above"
           items={[
+            ...(phone
+              ? [
+                  {
+                    id: "loop",
+                    label: t("player.loop"),
+                    icon: "repeat",
+                    active: loopA != null && loopB != null,
+                    testid: "player-loop-toggle",
+                    onclick: toggleLoop,
+                  },
+                  {
+                    id: "follow",
+                    label: t("player.follow"),
+                    icon: "crosshair",
+                    active: follow,
+                    testid: "player-follow-toggle",
+                    onclick: () => setFollow(!follow),
+                  },
+                  ...(fullscreenSupported()
+                    ? [
+                        {
+                          id: "fullscreen",
+                          label: t("fullscreen.enter"),
+                          icon: "maximize",
+                          testid: "player-fullscreen",
+                          onclick: () => void toggleFullscreen(),
+                        },
+                      ]
+                    : []),
+                ]
+              : []),
             {
               id: "shortcuts",
               label: t("shortcuts.title"),
@@ -2233,6 +2303,10 @@
     justify-content: flex-end;
   }
 
+  .sheet-grabber {
+    display: none;
+  }
+
   .scrubber-mark {
     position: absolute;
     top: 0;
@@ -2253,16 +2327,55 @@
       justify-content: space-between;
     }
 
+    /* A bottom sheet: full width, attached to the edge, with the dock hidden behind it. */
     .player-sheet {
       position: fixed;
       top: auto;
-      right: var(--sp-2);
-      bottom: var(--dock-space);
-      left: var(--sp-2);
-      z-index: 35;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 45;
+      display: flex;
+      flex-direction: column;
       width: auto;
       height: auto;
-      max-height: min(58dvh, calc(100dvh - var(--dock-space) - var(--sp-6)));
+      max-height: min(55dvh, 100dvh - var(--sp-7));
+      padding-bottom: var(--safe-b);
+      overflow: hidden;
+      border-radius: var(--r-lg) var(--r-lg) 0 0;
+      background: var(--glass-solid);
+      border-top: 1px solid var(--glass-line);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .player-sheet.tall {
+      max-height: calc(100dvh - var(--sp-8));
+    }
+
+    .player-sheet > :global(:not(.sheet-grabber)) {
+      min-height: 0;
+      overflow-y: auto;
+    }
+
+    .sheet-grabber {
+      display: block;
+      flex: none;
+      width: 100%;
+      height: 24px;
+      min-height: 24px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+
+    .sheet-grabber::before {
+      content: "";
+      display: block;
+      width: 40px;
+      height: 4px;
+      margin: 0 auto;
+      border-radius: 2px;
+      background: var(--line-strong);
     }
   }
 
