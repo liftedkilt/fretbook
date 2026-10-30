@@ -199,6 +199,9 @@ def test_band_isolation_copy_and_move(app_factory, provider) -> None:  # noqa: F
         assert forbidden.status_code == 403
         assert forbidden.json()["detail"]["key"] == "library.readOnly"
         assert bea_client.post(f"/api/songs/{song['id']}/shares", json={}).status_code == 403
+        # Tags and the star are stored on the song, so a viewer cannot change them either.
+        assert bea_client.put(f"/api/songs/{song['id']}/favourite", json={"favourite": True}).status_code == 403
+        assert bea_client.put(f"/api/songs/{song['id']}/tags", json={"tags": ["x"]}).status_code == 403
 
         uploaded = ada_client.post(
             f"/api/songs/{song['id']}/audio",

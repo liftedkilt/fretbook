@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, untrack } from "svelte";
+  import { onMount, untrack, type Snippet } from "svelte";
 
   import CapoSuggestions from "./CapoSuggestions.svelte";
   import ChordSetupPicker from "./ChordSetupPicker.svelte";
@@ -7,6 +7,7 @@
   import ChordStrip from "./ChordStrip.svelte";
   import ChordWait from "./ChordWait.svelte";
   import Icon from "./Icon.svelte";
+  import OverflowMenu from "./ui/OverflowMenu.svelte";
   import SetlistPicker from "./SetlistPicker.svelte";
   import SongHeader from "./SongHeader.svelte";
   import { parse } from "../lib/chordpro";
@@ -34,14 +35,30 @@
     initialTranspose = 0,
     readOnly = false,
     shared = false,
+    belowHeader,
   }: {
     song: SongDetail;
     initialTranspose?: number;
     readOnly?: boolean;
     shared?: boolean;
+    belowHeader?: Snippet;
   } = $props();
 
+  // Same phone test as the tab player: narrow, or a short coarse-pointer landscape screen.
+  const PHONE = "(max-width: 767px), (max-height: 500px) and (pointer: coarse)";
+  let phone = $state(window.matchMedia?.(PHONE).matches ?? false);
+  $effect(() => {
+    const query = window.matchMedia?.(PHONE);
+    if (!query) return;
+    const sync = () => (phone = query.matches);
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  });
+
   let pickerOpen = $state(false);
+  // The chord diagrams take a screen of their own on a phone, so they start collapsed there.
+  let diagramsOpen = $state(untrack(() => !phone));
+  let wait = $state<ChordWait | null>(null);
   let transpose = $state(untrack(() => initialTranspose));
   const transposeLabel = $derived(transpose > 0 ? `+${transpose}` : String(transpose));
   let flats = $state(false);
@@ -190,6 +207,9 @@
       ?.scrollIntoView?.({ block: "center", behavior: "smooth" });
   });
 
+  const smaller = () => (size = Math.max(0.8, Math.round((size - 0.1) * 10) / 10));
+  const larger = () => (size = Math.min(1.8, Math.round((size + 0.1) * 10) / 10));
+
   function exportUrl(kind: string): string {
     return new URL(`api/songs/${song.id}/export.${kind}`, document.baseURI).toString();
   }
@@ -221,11 +241,37 @@
   }
 </script>
 
+{#snippet transposeControls()}
+  <button
+    class="icon-button ghost"
+    data-testid="transpose-down"
+    onclick={() => (transpose -= 1)}
+    aria-label={t("chords.down")}><Icon name="minus" size={18} /></button
+  >
+  <button
+    class="float-value"
+    data-testid="transpose-value"
+    onclick={() => (transpose = 0)}
+    disabled={transpose === 0}
+    aria-label={`${transposeLabel}: ${t("chords.reset")}`}
+    title={t("chords.reset")}
+  >
+    {transposeLabel}
+  </button>
+  <button
+    class="icon-button ghost"
+    data-testid="transpose-up"
+    onclick={() => (transpose += 1)}
+    aria-label={t("chords.up")}><Icon name="plus" size={18} /></button
+  >
+{/snippet}
+
 <div class="song-page chords-page" class:stage data-stage={stage}>
   <SongHeader
     {song}
     {readOnly}
     {shared}
+    {belowHeader}
     eyebrow={t("library.chordSheet")}
     facts={capo > 0 ? [{ label: t("player.capo", { fret: capo }) }] : []}
     onsetlist={() => (pickerOpen = true)}
@@ -270,25 +316,44 @@
       aria-label={t("chordDiagrams.heading")}
     >
       <div class="chord-diagrams-head no-print">
-        <ChordSetupPicker
-          compact
-          instrument={setup.instrument.id}
-          tuning={setup.tuning.id}
-          onchange={changeSetup}
-        />
+        {#if phone}
+          <button
+            type="button"
+            class="button ghost diagrams-toggle"
+            data-testid="chord-diagrams-toggle"
+            aria-expanded={diagramsOpen}
+            aria-controls="chord-diagrams-body"
+            onclick={() => (diagramsOpen = !diagramsOpen)}
+          >
+            <Icon name="chords" size={16} />
+            {diagramsOpen ? t("chordDiagrams.hide") : t("chordDiagrams.show")}
+          </button>
+        {/if}
+        {#if diagramsOpen || !phone}
+          <ChordSetupPicker
+            compact
+            instrument={setup.instrument.id}
+            tuning={setup.tuning.id}
+            onchange={changeSetup}
+          />
+        {/if}
         {#if capo}
           <span class="capo-note" data-testid="chord-capo"
             >{t("chordDiagrams.capoNote", { fret: capo })}</span
           >
         {/if}
       </div>
-      <ChordStrip
-        {entries}
-        strings={setup.tuning.strings.length}
-        onpick={pickVoicing}
-        onplay={(entry) =>
-          entry.voicing && playStrum(strumNotes(entry.voicing, setup.tuning.strings, capo))}
-      />
+      {#if diagramsOpen || !phone}
+        <div id="chord-diagrams-body">
+          <ChordStrip
+            {entries}
+            strings={setup.tuning.strings.length}
+            onpick={pickVoicing}
+            onplay={(entry) =>
+              entry.voicing && playStrum(strumNotes(entry.voicing, setup.tuning.strings, capo))}
+          />
+        </div>
+      {/if}
     </section>
   {/if}
 
@@ -305,65 +370,60 @@
     <ChordSheet text={song.chordpro ?? ""} transpose={shapeShift} {flats} active={activeChord} />
   </div>
 
-  <div class="float-dock no-print" role="toolbar" aria-label={t("chords.controls")}>
-    <div class="float-group">
-      <span class="float-label">{t("chords.transpose")}</span>
+  <div class="float-dock no-print" class:phone role="toolbar" aria-label={t("chords.controls")}>
+    {#if phone}
       <button
-        class="icon-button ghost"
-        data-testid="transpose-down"
-        onclick={() => (transpose -= 1)}
-        aria-label={t("chords.down")}><Icon name="minus" size={18} /></button
+        class="icon-button ghost play"
+        data-testid="autoscroll"
+        aria-pressed={scrolling}
+        aria-label={t("handsFree.autoScroll")}
+        onclick={() => (scrolling = !scrolling)}
       >
-      <button
-        class="float-value"
-        data-testid="transpose-value"
-        onclick={() => (transpose = 0)}
-        disabled={transpose === 0}
-        aria-label={`${transposeLabel}: ${t("chords.reset")}`}
-        title={t("chords.reset")}
-      >
-        {transposeLabel}
+        <Icon name={scrolling ? "pause" : "play"} size={20} />
       </button>
+    {:else}
+      <div class="float-group">
+        <span class="float-label">{t("chords.transpose")}</span>
+        {@render transposeControls()}
+      </div>
+      <span class="float-divider" aria-hidden="true"></span>
       <button
-        class="icon-button ghost"
-        data-testid="transpose-up"
-        onclick={() => (transpose += 1)}
-        aria-label={t("chords.up")}><Icon name="plus" size={18} /></button
+        class="toggle"
+        data-testid="chords-flats"
+        aria-pressed={flats}
+        onclick={() => (flats = !flats)}
+        title={t("chords.flats")}
       >
-    </div>
-    <span class="float-divider" aria-hidden="true"></span>
-    <button
-      class="toggle"
-      data-testid="chords-flats"
-      aria-pressed={flats}
-      onclick={() => (flats = !flats)}
-      title={t("chords.flats")}
-    >
-      <span aria-hidden="true">{flats ? "♭" : "♯"}</span><span class="float-label"
-        >{t("chords.flats")}</span
-      >
-    </button>
-    <span class="float-divider" aria-hidden="true"></span>
+        <span aria-hidden="true">{flats ? "♭" : "♯"}</span><span class="float-label"
+          >{t("chords.flats")}</span
+        >
+      </button>
+      <span class="float-divider" aria-hidden="true"></span>
+    {/if}
     <ChordWait
+      bind:this={wait}
+      hideToggle={phone}
       text={song.chordpro ?? ""}
       transpose={shapeShift}
       {flats}
       capo={appliedCapo ?? undefined}
       onactive={(key) => (activeChord = key)}
     />
-    <span class="float-divider" aria-hidden="true"></span>
+    {#if !phone}<span class="float-divider" aria-hidden="true"></span>{/if}
     <div class="float-group">
-      <button
-        class="toggle"
-        data-testid="autoscroll"
-        aria-pressed={scrolling}
-        onclick={() => (scrolling = !scrolling)}
-        title={t("handsFree.autoScroll")}
-      >
-        <Icon name={scrolling ? "pause" : "play"} size={16} /><span class="float-label"
-          >{t("handsFree.autoScroll")}</span
+      {#if !phone}
+        <button
+          class="toggle"
+          data-testid="autoscroll"
+          aria-pressed={scrolling}
+          onclick={() => (scrolling = !scrolling)}
+          title={t("handsFree.autoScroll")}
         >
-      </button>
+          <Icon name={scrolling ? "pause" : "play"} size={16} /><span class="float-label"
+            >{t("handsFree.autoScroll")}</span
+          >
+        </button>
+      {/if}
       <button
         class="icon-button ghost"
         data-testid="autoscroll-slower"
@@ -378,36 +438,76 @@
         aria-label={t("handsFree.scrollFaster")}><Icon name="plus" size={18} /></button
       >
     </div>
-    <span class="float-divider" aria-hidden="true"></span>
-    <button
-      class="toggle"
-      data-testid="stage-toggle"
-      aria-pressed={stage}
-      onclick={() => toggleStage(!stage)}
-      title={t("handsFree.stage")}
-    >
-      <Icon name={stage ? "minimize" : "monitor"} size={16} /><span class="float-label"
-        >{stage ? t("handsFree.exitStage") : t("handsFree.stage")}</span
-      >
-    </button>
-    <span class="float-divider" aria-hidden="true"></span>
-    <div class="float-group">
+    {#if phone}
+      <span class="float-divider" aria-hidden="true"></span>
+      <div class="float-group">{@render transposeControls()}</div>
+      <OverflowMenu
+        label={t("player.more")}
+        testid="chords-more"
+        placement="above"
+        items={[
+          {
+            id: "flats",
+            label: t("chords.flats"),
+            icon: "chords",
+            active: flats,
+            testid: "chords-flats",
+            onclick: () => (flats = !flats),
+          },
+          {
+            id: "wait",
+            label: wait?.isOn() ? t("chordWait.stop") : t("chordWait.start"),
+            icon: "hourglass",
+            active: wait?.isOn() ?? false,
+            testid: "chord-wait-menu",
+            onclick: () => wait?.toggleRun(),
+          },
+          {
+            id: "smaller",
+            label: t("chords.smaller"),
+            icon: "minus",
+            onclick: smaller,
+          },
+          {
+            id: "larger",
+            label: t("chords.larger"),
+            icon: "plus",
+            onclick: larger,
+          },
+          {
+            id: "stage",
+            label: stage ? t("handsFree.exitStage") : t("handsFree.stage"),
+            icon: stage ? "minimize" : "monitor",
+            active: stage,
+            testid: "stage-toggle",
+            onclick: () => toggleStage(!stage),
+          },
+        ]}
+      />
+    {:else}
+      <span class="float-divider" aria-hidden="true"></span>
       <button
-        class="icon-button ghost"
-        onclick={() => (size = Math.max(0.8, Math.round((size - 0.1) * 10) / 10))}
-        aria-label={t("chords.smaller")}
+        class="toggle"
+        data-testid="stage-toggle"
+        aria-pressed={stage}
+        onclick={() => toggleStage(!stage)}
+        title={t("handsFree.stage")}
       >
-        <span class="text-size small" aria-hidden="true">A</span>
+        <Icon name={stage ? "minimize" : "monitor"} size={16} /><span class="float-label"
+          >{stage ? t("handsFree.exitStage") : t("handsFree.stage")}</span
+        >
       </button>
-      <span class="float-label">{t("chords.size")}</span>
-      <button
-        class="icon-button ghost"
-        onclick={() => (size = Math.min(1.8, Math.round((size + 0.1) * 10) / 10))}
-        aria-label={t("chords.larger")}
-      >
-        <span class="text-size" aria-hidden="true">A</span>
-      </button>
-    </div>
+      <span class="float-divider" aria-hidden="true"></span>
+      <div class="float-group">
+        <button class="icon-button ghost" onclick={smaller} aria-label={t("chords.smaller")}>
+          <span class="text-size small" aria-hidden="true">A</span>
+        </button>
+        <span class="float-label">{t("chords.size")}</span>
+        <button class="icon-button ghost" onclick={larger} aria-label={t("chords.larger")}>
+          <span class="text-size" aria-hidden="true">A</span>
+        </button>
+      </div>
+    {/if}
   </div>
   <SetlistPicker
     song={pickerOpen ? { id: song.id, title: song.title } : null}
@@ -455,13 +555,45 @@
     }
   }
 
-  /* Two rows on a phone, rather than a dock wider than the screen. */
-  @media (max-width: 560px) {
+  /* One row on a phone, attached to the bottom edge like the tab player's dock. */
+  @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
     .float-dock {
-      flex-wrap: wrap;
-      justify-content: center;
-      width: calc(100vw - 24px);
-      border-radius: var(--r-lg);
+      right: 0;
+      bottom: 0;
+      left: 0;
+      justify-content: space-between;
+      gap: 2px;
+      width: auto;
+      max-width: none;
+      padding: 6px calc(8px + var(--safe-r)) calc(6px + var(--safe-b)) calc(8px + var(--safe-l));
+      border-width: 1px 0 0;
+      border-radius: 0;
+      box-shadow: 0 -6px 20px rgb(0 0 0 / 0.12);
+      transform: none;
+    }
+
+    .float-dock .play {
+      width: 44px;
+      height: 44px;
+      min-height: 44px;
+      background: var(--grad);
+      color: #fff;
+    }
+
+    .float-dock .play[aria-pressed="true"] {
+      filter: brightness(1.08);
+    }
+
+    .diagrams-toggle {
+      min-height: 36px;
+    }
+  }
+
+  /* In phone landscape the lyrics get the height: a smaller cover and no extra header chrome. */
+  @media (max-height: 500px) and (pointer: coarse) {
+    .chords-page :global(.cover-lg),
+    .chords-page :global(.song-eyebrow) {
+      display: none;
     }
   }
 

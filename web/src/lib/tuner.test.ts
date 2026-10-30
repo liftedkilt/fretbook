@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { midiToFrequency } from "./listen/notes";
 import {
+  ExpectedNotePrior,
   playReferenceTone,
   A4_MAX,
   A4_MIN,
@@ -95,9 +96,9 @@ describe("needle", () => {
     expect(needlePosition(80)).toBe(1);
   });
 
-  it("calls three cents in tune", () => {
-    expect(isInTune(3)).toBe(true);
-    expect(isInTune(-3.1)).toBe(false);
+  it("calls six cents in tune", () => {
+    expect(isInTune(6)).toBe(true);
+    expect(isInTune(-6.1)).toBe(false);
   });
 });
 
@@ -185,6 +186,35 @@ describe("TuneTracker", () => {
     expect(tracker.update(4, 1, 0).newlyTuned).toBe(false);
     tracker.reset();
     expect(tracker.tuned.size).toBe(0);
+  });
+
+  it("uses a ±6 cent zone", () => {
+    expect(isInTune(6)).toBe(true);
+    expect(isInTune(-6)).toBe(true);
+    expect(isInTune(6.5)).toBe(false);
+    const tracker = new TuneTracker(1);
+    tracker.update(0, 2, 5);
+    expect(tracker.update(1, 2, -5).confirmed).toBe(true);
+  });
+
+  it("holds through a single outlier reading once the pitch is median-smoothed", () => {
+    const a4 = 440;
+    const hz = (cents: number) => a4 * 2 ** (cents / 1200);
+    const run = (readings: number[]) => {
+      const smoother = new PitchSmoother();
+      const tracker = new TuneTracker(1);
+      let last = { progress: 0, confirmed: false, newlyTuned: false };
+      readings.forEach((cents, i) => {
+        const time = i * 0.25;
+        const frequency = smoother.push(time, hz(cents));
+        last = tracker.update(time, 0, centsFromString(frequency!, [69], 0, a4)!);
+      });
+      return last;
+    };
+    // 40 cents sharp for one reading in the middle: the median stays in the zone.
+    expect(run([2, 3, 2, 40, 3, 2, 3]).confirmed).toBe(true);
+    // Real drift: the median leaves the zone and the hold starts over.
+    expect(run([2, 3, 2, 40, 40, 40, 40]).confirmed).toBe(false);
   });
 
   it("confirms chromatic holds without remembering them", () => {
@@ -308,5 +338,50 @@ describe("instruments and custom tuning", () => {
     expect(loaded.tuning).toBe("dropD");
     expect(loaded.customMidi).toEqual([43, 38, 33, 26]);
     vi.unstubAllGlobals();
+  });
+});
+
+describe("ExpectedNotePrior", () => {
+  const hz = (midi: number, cents = 0) => midiToFrequency(midi) * 2 ** (cents / 1200);
+
+  it("always hints the locked string", () => {
+    const prior = new ExpectedNotePrior();
+    expect(prior.push(null, STANDARD, 440, 5)).toBe(40);
+    expect(prior.push(hz(64), STANDARD, 440, 5)).toBe(40);
+  });
+
+  it("waits for a stable nearest string in auto mode", () => {
+    const prior = new ExpectedNotePrior();
+    expect(prior.push(hz(45, 4), STANDARD, 440, null)).toBeNull();
+    expect(prior.push(hz(45, 3), STANDARD, 440, null)).toBeNull();
+    expect(prior.push(hz(45, 5), STANDARD, 440, null)).toBe(45);
+  });
+
+  it("does not hint from a reading far from every string", () => {
+    const prior = new ExpectedNotePrior();
+    for (let i = 0; i < 6; i++) expect(prior.push(hz(47, 0), STANDARD, 440, null)).toBeNull();
+  });
+
+  it("does not count readings that alternate between strings", () => {
+    const prior = new ExpectedNotePrior();
+    for (let i = 0; i < 6; i++) {
+      expect(prior.push(hz(i % 2 ? 45 : 50), STANDARD, 440, null)).toBeNull();
+    }
+  });
+
+  it("clears the hint after a jump of more than 80 cents", () => {
+    const prior = new ExpectedNotePrior();
+    for (let i = 0; i < 3; i++) prior.push(hz(45), STANDARD, 440, null);
+    expect(prior.push(hz(45, 70), STANDARD, 440, null)).toBe(45);
+    expect(prior.push(hz(50), STANDARD, 440, null)).toBeNull();
+    expect(prior.push(hz(50), STANDARD, 440, null)).toBeNull();
+    expect(prior.push(hz(50), STANDARD, 440, null)).toBe(50);
+  });
+
+  it("clears the hint when the pitch drops out", () => {
+    const prior = new ExpectedNotePrior();
+    for (let i = 0; i < 3; i++) prior.push(hz(45), STANDARD, 440, null);
+    expect(prior.push(null, STANDARD, 440, null)).toBeNull();
+    expect(prior.push(hz(45), STANDARD, 440, null)).toBeNull();
   });
 });

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
   import ChordPractice from "./ChordPractice.svelte";
   import ChordSheetView from "./ChordSheetView.svelte";
   import SongDetails from "./SongDetails.svelte";
@@ -15,8 +16,9 @@
   let {
     id,
     transpose = 0,
+    belowHeader,
     inSetlist = false,
-  }: { id: string; transpose?: number; inSetlist?: boolean } = $props();
+  }: { id: string; transpose?: number; belowHeader?: Snippet; inSetlist?: boolean } = $props();
 
   let song = $state<SongDetail | null>(null);
   let error = $state("");
@@ -71,7 +73,7 @@
   {@const editable = canEdit(song.library_role)}
   <Page width="wide">
     {#if song.content_kind === "chords"}
-      <ChordSheetView {song} initialTranspose={transpose} readOnly={!editable} />
+      <ChordSheetView {song} initialTranspose={transpose} readOnly={!editable} {belowHeader} />
       <!-- The same width and left edge as the sheet above. -->
       <div class="chords-lower">
         {#key song.id}
@@ -81,7 +83,7 @@
       </div>
     {:else}
       {#key song.id}
-        <TabPlayer song={song as TabSong} readOnly={!editable} />
+        <TabPlayer song={song as TabSong} readOnly={!editable} {belowHeader} />
       {/key}
       <SongDetails {song} />
     {/if}

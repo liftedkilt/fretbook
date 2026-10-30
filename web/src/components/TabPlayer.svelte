@@ -1,6 +1,6 @@
 <script lang="ts">
   import * as alphaTab from "@coderline/alphatab";
-  import { onMount, untrack } from "svelte";
+  import { onMount, untrack, type Snippet } from "svelte";
 
   import DockSpeed from "./DockSpeed.svelte";
   import DockTextButton from "./DockTextButton.svelte";
@@ -34,7 +34,7 @@
   import { holdCelebrations, onPracticeLogged, snapshotFromStats } from "../lib/celebrate";
   import { AudioMedia } from "../lib/alphatab/audioHandler";
   import { planFollow, SynthFollower } from "../lib/alphatab/synthFollow";
-  import { separateEffectBands } from "../lib/alphatab/display";
+  import { hideScoreHeader, separateEffectBands } from "../lib/alphatab/display";
   import { preferredTrack, scoreToAlphaTex } from "../lib/alphatex";
   import { Clicker } from "../lib/clicker";
   import { recordingGain, synthGain } from "../lib/practice";
@@ -66,8 +66,12 @@
     type ListenSession,
   } from "../lib/listen";
   import { pitchClassName } from "../lib/listen/chordTones";
-  import { getLocalCalibration } from "../lib/listen/calibration";
-  import { getSavedChannel, getSavedDevice } from "../lib/listen/devicePrefs";
+  import {
+    getSavedA4,
+    getSavedChannel,
+    getSavedDevice,
+    getStoredCalibration,
+  } from "../lib/listen/devicePrefs";
   import {
     bleedSuspected,
     buildScoredSteps,
@@ -124,7 +128,8 @@
     song: initial,
     readOnly = false,
     shared = false,
-  }: { song: TabSong; readOnly?: boolean; shared?: boolean } = $props();
+    belowHeader,
+  }: { song: TabSong; readOnly?: boolean; shared?: boolean; belowHeader?: Snippet } = $props();
   let pickerOpen = $state(false);
 
   // The player owns its copy: taps, BPM edits, and uploads change it in place.
@@ -246,6 +251,7 @@
   // The step just hit, kept for the 400 ms the fretboard shows it green.
   let waitHitStep = $state<WaitStep | null>(null);
   let waitError = $state("");
+  let waitBleed = $state(false);
   let waitGrades = $state<Record<string, GemState>>({});
   let waitRun: WaitRun | null = null;
   // A recording cannot stop on every miss, so wait mode swaps the score player to the synth for
@@ -263,6 +269,7 @@
   function listenWithInput(options: ListenOptions): Promise<ListenSession> {
     return startListening({
       ...options,
+      a4: getSavedA4(),
       deviceId: listenDevice || undefined,
       channel: listenChannel,
       onLevel: ({ peak }) => (listenLevel = peak),
@@ -516,19 +523,58 @@
     return () => query.removeEventListener("change", sync);
   });
 
+  // The sticky chrome a followed system must stay below: the song header, the setlist play bar.
+  const STICKY_CHROME = ".topbar, .song-header, .play-bar";
+  function stickyChromeBottom(): number {
+    let bottom = 0;
+    for (const el of document.querySelectorAll(STICKY_CHROME)) {
+      const style = getComputedStyle(el);
+      if (style.display === "none" || (style.position !== "sticky" && style.position !== "fixed"))
+        continue;
+      // Where it sits once stuck, not where it is now: a play bar still in flow is lower down.
+      const stuck =
+        style.position === "sticky"
+          ? (Number.parseFloat(style.top) || 0) + el.getBoundingClientRect().height
+          : el.getBoundingClientRect().bottom;
+      bottom = Math.max(bottom, stuck);
+    }
+    return Math.max(0, Math.round(bottom));
+  }
+
+  // alphaTab reads `scrollElement` once and keeps it. `updateSettings` does not drop that
+  // cache, so a layout change would keep scrolling the previous box.
+  function dropCachedScrollContainer(api: alphaTab.AlphaTabApi) {
+    const facade = api.uiFacade as { _scrollContainer?: unknown } | undefined;
+    if (!facade) return;
+    facade._scrollContainer = null;
+  }
+
+  // A new alphaTab instance starts at bar 1 and 1×. Put the current speed and bar back
+  // so a player-mode rebuild (recording ↔ synth) does not disagree with the dock.
+  function restoreTransport(instance: alphaTab.AlphaTabApi, useAudio: boolean) {
+    const speed = untrack(() => rate);
+    instance.playbackSpeed = speed;
+    if (useAudio && audioEl) audioEl.playbackRate = speed;
+    const bar = untrack(() => currentMeasure);
+    if (useAudio || bar < 0) return;
+    instance.tickPosition = tickOfBar(bar);
+  }
+
+  // `phone` is read only for the first settings. Crossing the breakpoint retargets
+  // scrolling in place; rebuilding here would stop playback and drop speed and the loop.
   $effect(() => {
     const element = host;
     const source = tex;
-    const onPhone = phone;
-    const scrollElement = onPhone ? (document.scrollingElement as HTMLElement | null) : scroller;
-    const barHeight = onPhone
-      ? (document.querySelector(".topbar")?.getBoundingClientRect().height ?? 0)
-      : 0;
+    const scrollHost = scroller;
     const useAudio = audioMode;
-    if (!element || !scrollElement) return;
-    return untrack(() =>
-      mountScorePlayer(element, scrollElement, source, useAudio, onPhone, barHeight),
-    );
+    if (!element || !scrollHost) return;
+    return untrack(() => {
+      const onPhone = phone;
+      const scrollElement = onPhone
+        ? ((document.scrollingElement as HTMLElement | null) ?? scrollHost)
+        : scrollHost;
+      return mountScorePlayer(element, scrollElement, source, useAudio, onPhone);
+    });
   });
 
   function mountScorePlayer(
@@ -537,7 +583,6 @@
     source: string,
     useAudio: boolean,
     onPhone: boolean,
-    barHeight: number,
   ) {
     const settings = new alphaTab.Settings();
     settings.core.fontDirectory = new URL("font/", document.baseURI).href;
@@ -545,6 +590,7 @@
     settings.core.enableLazyLoading = false;
     settings.display.staveProfile = staveProfile(untrack(() => ui.notation));
     separateEffectBands(settings);
+    if (onPhone) hideScoreHeader(settings, alphaTab);
     settings.display.scale = untrack(scoreScale);
     settings.player.playerMode = useAudio
       ? alphaTab.PlayerMode.EnabledExternalMedia
@@ -555,22 +601,36 @@
     settings.player.enableUserInteraction = true;
     settings.player.scrollElement = scrollElement;
     // Negative: the playing system stops a little below the top edge, not above it.
-    settings.player.scrollOffsetY = -(16 + barHeight);
+    settings.player.scrollOffsetY = -(16 + (onPhone ? stickyChromeBottom() : 0));
     // On a phone, scrolling the page is reserved for playback: placing the cursor on load
     // must not move the page away from the top of the song.
     settings.player.scrollMode =
       untrack(() => follow) && !onPhone ? alphaTab.ScrollMode.Continuous : alphaTab.ScrollMode.Off;
     const instance = new alphaTab.AlphaTabApi(element, settings);
     player.api = instance;
+    // The sticky chrome changes with stage, focus and setlist play-through: keep the offset current.
+    const refreshOffset = () => {
+      instance.settings.player.scrollOffsetY = -(16 + (onPhone ? stickyChromeBottom() : 0));
+    };
+    const chromeWatch = new ResizeObserver(refreshOffset);
+    const chromeMutations = new MutationObserver(refreshOffset);
+    if (onPhone) {
+      for (const el of document.querySelectorAll(STICKY_CHROME)) chromeWatch.observe(el);
+      chromeMutations.observe(document.documentElement, { attributes: true });
+      chromeMutations.observe(document.body, { childList: true, subtree: true });
+      window.addEventListener("resize", refreshOffset);
+    }
     let mouseDownBeat: alphaTab.model.Beat | null = null;
     let scoreSelectionDragged = false;
     instance.scoreLoaded.on(() => {
       queueMicrotask(() => {
         scoreReady += 1;
         applyPractice();
+        restoreTransport(instance, useAudio);
       });
     });
     instance.playerReady.on(() => {
+      instance.playbackSpeed = untrack(() => rate);
       if (!useAudio || !audioEl) return;
       const output = instance.player?.output as
         alphaTab.synth.IExternalMediaSynthOutput | undefined;
@@ -658,8 +718,14 @@
     return () => {
       scoreReady = 0;
       player.api = null;
+      chromeWatch.disconnect();
+      chromeMutations.disconnect();
+      window.removeEventListener("resize", refreshOffset);
       element.querySelector(".at-playing-outline")?.remove();
       instance.destroy();
+      // This instance is no longer playing. Speed and the bar are put back on the next
+      // one. A recording that is still running paints the button from its own clock.
+      if (playing) playing = false;
     };
   }
 
@@ -1432,13 +1498,14 @@
     if (!player.api || waitRun || waitStarting) return;
     if (scoreRun) stopScore();
     waitError = "";
+    waitBleed = false;
     waitGrades = {};
     const run = new WaitRun({
       steps: waitSteps,
       listen: listenWithInput,
       match: {
         anyOctave: practice.wait.anyOctave,
-        latencySeconds: (getLocalCalibration("default", "default") ?? 0) / 1000,
+        latencySeconds: (getStoredCalibration(listenDevice) ?? 0) / 1000,
       },
       hintSeconds: practice.wait.hintSeconds,
       onWait: (step) => {
@@ -1478,6 +1545,7 @@
         player.api?.play();
       },
       onHint: () => (waitHint = true),
+      onBleed: () => (waitBleed = !practice.wait.silent),
     });
     waitStarting = true;
     try {
@@ -1553,6 +1621,7 @@
     waitHeard = null;
     waitNext = null;
     waitHint = false;
+    waitBleed = false;
     waitGrades = {};
     applyPractice();
   }
@@ -1587,8 +1656,8 @@
     scoreError = "";
     scoreBleed = false;
     scoreGrades = {};
-    // Round trip from the calibration for the default device pair, in seconds.
-    const latency = getLocalCalibration("default", "default");
+    // Round trip from the stored calibration for the chosen devices, else the default pair.
+    const latency = getStoredCalibration(listenDevice);
     scoreCalibrated = latency !== null;
     const run: ScoredRun = new ScoredRun({
       steps: scoredSteps,
@@ -1728,13 +1797,38 @@
     });
   });
 
+  // Retarget scrolling when the layout crosses the phone breakpoint, without rebuilding
+  // the player. On a phone the page scrolls only while playback is following.
   $effect(() => {
+    const onPhone = phone;
     const api = player.api;
     void scoreReady;
-    if (!phone || !api) return;
-    api.settings.player.scrollMode =
-      playing && follow ? alphaTab.ScrollMode.Continuous : alphaTab.ScrollMode.Off;
+    if (!api) return;
+    const scrollElement = onPhone
+      ? ((document.scrollingElement as HTMLElement | null) ?? scroller)
+      : scroller;
+    if (!scrollElement) return;
+    const offsetY = -(16 + (onPhone ? stickyChromeBottom() : 0));
+    const mode = onPhone
+      ? playing && follow
+        ? alphaTab.ScrollMode.Continuous
+        : alphaTab.ScrollMode.Off
+      : follow
+        ? alphaTab.ScrollMode.Continuous
+        : alphaTab.ScrollMode.Off;
+    const settings = api.settings.player;
+    if (
+      settings.scrollElement === scrollElement &&
+      settings.scrollOffsetY === offsetY &&
+      settings.scrollMode === mode
+    ) {
+      return;
+    }
+    settings.scrollElement = scrollElement;
+    settings.scrollOffsetY = offsetY;
+    settings.scrollMode = mode;
     api.updateSettings();
+    dropCachedScrollContainer(api);
   });
 
   function setFollow(checked: boolean) {
@@ -1897,6 +1991,7 @@
     {song}
     {readOnly}
     {shared}
+    {belowHeader}
     eyebrow={instrumentLabel(track.instrument)}
     strings={track.tuning_midi.length}
     facts={[
@@ -2013,6 +2108,7 @@
         <span>{t("player.track")}</span>
         <select
           data-testid="player-track"
+          aria-label={t("player.track")}
           value={trackId}
           onchange={(event) => (trackId = event.currentTarget.value)}
         >
@@ -2273,6 +2369,9 @@
           <span class="pill pill-accent" data-testid="wait-hint"
             >{t("wait.hint", { string: waitStep.string + 1, fret: waitStep.fret })}</span
           >
+        {/if}
+        {#if waitBleed}
+          <span class="pill" role="alert" data-testid="wait-bleed">{t("wait.bleed")}</span>
         {/if}
         <span class="muted small">{t("wait.progress", { hits: waitHits, total: waitTotal })}</span>
         {#if waitState === "waiting"}
@@ -2672,6 +2771,26 @@
 
   /* Saved loops stay in the practice panel on a phone: they would push the music down. */
   @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
+    /* One row: the view switch, then the track picker without its label, then the chips. */
+    .view-row {
+      flex-wrap: nowrap;
+      gap: var(--sp-2);
+      margin-bottom: var(--sp-2);
+    }
+
+    .track-select {
+      flex: 1 1 0;
+    }
+
+    .track-select span {
+      display: none;
+    }
+
+    .view-chips {
+      flex: none;
+      margin-left: 0;
+    }
+
     .song-saved-loops {
       display: none;
     }

@@ -1094,6 +1094,7 @@ textarea {
 @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
   :root {
     --side-w: 0px;
+    --pad: 16px;
     font-size: var(--fs-body);
   }
 
@@ -1153,7 +1154,7 @@ textarea {
 
   .content {
     margin-left: 0;
-    padding: 20px calc(16px + var(--safe-r)) 48px calc(16px + var(--safe-l));
+    padding: 20px calc(var(--pad) + var(--safe-r)) 48px calc(var(--pad) + var(--safe-l));
   }
 
   .shell-library .content {
@@ -1162,6 +1163,16 @@ textarea {
 
   .toast {
     bottom: calc(90px + var(--safe-b));
+  }
+}
+
+@media (max-height: 500px) and (pointer: coarse) {
+  .content {
+    padding-top: var(--sp-2);
+  }
+
+  .shell-library .content {
+    padding-bottom: calc(60px + var(--safe-b));
   }
 }
 
@@ -2134,12 +2145,29 @@ textarea {
   }
 
   .scrubber {
+    /* The thin line along the dock's top edge. Its bottom stays 1px above the
+       transport buttons: dock border 1px + padding 6px, minus this 16px box, minus a 1px gap. */
     height: 16px;
-    margin-top: -7px;
+    margin-top: -10px;
   }
 
   .scrubber input[type="range"] {
-    height: 16px;
+    /* The base rule's min-height: 44px used to override height: 16px and cover the
+       top of Play, Prev, Next and Mute. Keep a 44px target and grow it upward only:
+       the track stays in the bottom 16px (the content box) and the padding above it
+       is the rest of the hit area, clear of the transport row. */
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    box-sizing: border-box;
+    width: 100%;
+    height: 44px;
+    min-height: 44px;
+    margin: 0;
+    padding: 28px 0 0;
+    /* A pill radius on this 44px box would clip the line, which sits at the bottom. */
+    border-radius: 0;
+    background-origin: content-box;
   }
 
   .dock-transport {

@@ -4,8 +4,13 @@ import { DEFAULT_A4, centsBetween, describePitch, midiToFrequency } from "./list
 export const A4_MIN = 432;
 export const A4_MAX = 446;
 
-/** A string counts as in tune within this many cents. */
-export const IN_TUNE_CENTS = 3;
+/**
+ * A string counts as in tune within this many cents. Phone tuners use a similarly wide green zone,
+ * and a string this close is inside what most players can hear; large real drift still resets the hold.
+ * The hold is fed the cents of the median-smoothed pitch (see `PitchSmoother`), so one stray reading
+ * does not fail it.
+ */
+export const IN_TUNE_CENTS = 6;
 
 /** Readings this close to centre are shown as exactly centred, so the display does not twitch. */
 export const DEAD_ZONE_CENTS = 1.5;
@@ -267,6 +272,62 @@ export class PitchSmoother {
   reset(): void {
     this.window = [];
     this.last = null;
+  }
+}
+
+/** Smoothed readings in a row on one string before auto mode tells the detector about it. */
+export const PRIOR_STABLE_READINGS = 3;
+
+/** Auto mode only trusts a string for the hint when the reading is this close to it. */
+export const PRIOR_MAX_CENTS = 50;
+
+/**
+ * Picks the MIDI note to give the detector as its expected note, so a weak low fundamental is
+ * not read an octave high. A locked string is always the hint. In auto mode the hint starts only
+ * once the smoothed pitch has settled on one string, and drops as soon as the pitch moves more
+ * than `NEW_NOTE_CENTS` away from it, so a wrong guess cannot stick.
+ */
+export class ExpectedNotePrior {
+  private candidate: number | null = null;
+  private count = 0;
+  private hinted: number | null = null;
+
+  /** `frequency` is the smoothed pitch (`null` when nothing is heard); `locked` is a string index. */
+  push(
+    frequency: number | null,
+    strings: number[],
+    a4: number,
+    locked: number | null,
+  ): number | null {
+    if (locked !== null) {
+      this.reset();
+      return strings[locked] ?? null;
+    }
+    if (frequency === null) {
+      this.reset();
+      return null;
+    }
+    if (this.hinted !== null) {
+      const away = centsBetween(frequency, midiToFrequency(strings[this.hinted], a4));
+      if (Math.abs(away) <= NEW_NOTE_CENTS) return strings[this.hinted];
+      this.reset();
+    }
+    const match = nearestString(frequency, strings, a4);
+    if (!match || Math.abs(match.cents) > PRIOR_MAX_CENTS) {
+      this.candidate = null;
+      this.count = 0;
+      return null;
+    }
+    this.count = match.index === this.candidate ? this.count + 1 : 1;
+    this.candidate = match.index;
+    if (this.count >= PRIOR_STABLE_READINGS) this.hinted = match.index;
+    return this.hinted === null ? null : strings[this.hinted];
+  }
+
+  reset(): void {
+    this.candidate = null;
+    this.count = 0;
+    this.hinted = null;
   }
 }
 

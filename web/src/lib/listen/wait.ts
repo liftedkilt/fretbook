@@ -56,6 +56,8 @@ export interface WaitOptions {
   chordThreshold: number;
   /** How long after a strum the chord may keep being checked, seconds. */
   chordSettleSeconds: number;
+  /** Matching chroma readings in a row that count a two-note dyad without an onset. */
+  dyadSteadyReadings: number;
 }
 
 export const DEFAULT_WAIT_OPTIONS: WaitOptions = {
@@ -68,6 +70,7 @@ export const DEFAULT_WAIT_OPTIONS: WaitOptions = {
   wrongReadings: 2,
   chordThreshold: 0.6,
   chordSettleSeconds: 1.2,
+  dyadSteadyReadings: 2,
 };
 
 export interface WaitStepOptions {
@@ -156,6 +159,10 @@ export class WaitMatcher {
   private clock = 0;
   private armedAt: number | null = null;
   private chordArmedAt: number | null = null;
+  /** Fresh-window readings of a dyad seen since the wait began; the matching ones in a row. */
+  private dyadSteady = 0;
+  /** A reading that did not match the dyad has been seen, so what matches now is new sound. */
+  private dyadClear = false;
   /** The best chord match since the strum that is being checked, 0..1. */
   chordScore = 0;
   /** Wrong notes heard while waiting on the current step. */
@@ -179,6 +186,8 @@ export class WaitMatcher {
     this.since = this.clock;
     this.armedAt = null;
     this.chordArmedAt = null;
+    this.dyadSteady = 0;
+    this.dyadClear = false;
     this.chordScore = 0;
     this.wrong = 0;
     this.heard = null;
@@ -219,7 +228,7 @@ export class WaitMatcher {
       this.chordScore = 0;
     }
     const armedAt = this.chordArmedAt;
-    if (armedAt === null) return false;
+    if (armedAt === null) return this.pushDyadSteady(event, step);
     if (event.time - armedAt > this.options.chordSettleSeconds) {
       // That strum was not the chord; wait for the next one.
       this.wrong += 1;
@@ -229,9 +238,35 @@ export class WaitMatcher {
     }
     // A window that still holds sound from before the strum would score the previous chord.
     if (event.time - event.span < armedAt - 0.03) return false;
-    const score = chromaScore(event.bins, step.pcs ?? []);
+    const score = chromaScore(event.bins, step.pcs ?? [], Math.min(...step.midis));
     this.chordScore = Math.max(this.chordScore, score);
     return score >= this.options.chordThreshold;
+  }
+
+  /**
+   * A two-note dyad is thin: a soft pluck can slip under the onset detector, and then no strum
+   * ever arms the check. Without an attack, a window that started after the wait began and
+   * matches the dyad for a few readings in a row counts, provided something that did not match
+   * (silence, the previous beat) was seen first, so a dyad still ringing from before cannot pass.
+   */
+  private pushDyadSteady(event: ChromaEvent, step: WaitStep): boolean {
+    const wanted = step.pcs ?? [];
+    if (wanted.length !== 2 || step.label) return false;
+    if (event.time - event.span < this.since) {
+      // The window still holds sound from before the wait: what it reads says nothing yet.
+      this.dyadSteady = 0;
+      return false;
+    }
+    const score = chromaScore(event.bins, wanted);
+    if (score < this.options.chordThreshold) {
+      this.dyadClear = true;
+      this.dyadSteady = 0;
+      return false;
+    }
+    if (!this.dyadClear) return false;
+    this.chordScore = Math.max(this.chordScore, score);
+    this.dyadSteady += 1;
+    return this.dyadSteady >= this.options.dyadSteadyReadings;
   }
 
   /** True when `event` completes the step being waited on. */

@@ -12,14 +12,16 @@
     type ListenSession,
     type PitchEvent,
   } from "../lib/listen";
-  import { getSavedChannel, getSavedDevice } from "../lib/listen/devicePrefs";
+  import { getSavedA4, getSavedChannel, getSavedDevice, saveA4 } from "../lib/listen/devicePrefs";
   import { midiToFrequency } from "../lib/listen/notes";
   import { midiToName } from "../lib/tuning";
   import {
     A4_MAX,
     A4_MIN,
+    ExpectedNotePrior,
     PitchSmoother,
     TuneTracker,
+    IN_TUNE_CENTS,
     centsFromString,
     chromaticMatch,
     clampA4,
@@ -49,7 +51,7 @@
     page?: Snippet<[Snippet, Snippet]>;
   } = $props();
 
-  let a4 = $state(440);
+  let a4 = $state(getSavedA4());
   let running = $state(false);
   let starting = $state(false);
   let problem = $state<ListenProblem | null>(null);
@@ -71,6 +73,8 @@
   let session = $state<ListenSession | null>(null);
   const tracker = new TuneTracker();
   const smoother = new PitchSmoother();
+  const prior = new ExpectedNotePrior();
+  let sentExpected: number | null = null;
 
   function readMuted(): boolean {
     try {
@@ -113,15 +117,25 @@
       ? ""
       : ticked
         ? t("tuner.inTune")
-        : shown === 0 || Math.abs(shown) <= 3
+        : Math.abs(shown) <= IN_TUNE_CENTS
           ? t("tuner.holdSteady")
           : shown < 0
             ? t("tuner.tuneUp")
             : t("tuner.tuneDown"),
   );
 
+  /** Tell the detector the string being tuned; it only needs a message when the note changes. */
+  function sendExpected(midi: number | null) {
+    if (midi === sentExpected) return;
+    sentExpected = midi;
+    session?.setExpectedMidi(midi, false);
+  }
+
   function onPitch(event: PitchEvent) {
+    // The reference tone comes out of the speakers and into the mic: it is not the string.
+    if (tone) return;
     const frequency = smoother.push(event.time, event.frequency);
+    if (strings && auto) sendExpected(prior.push(frequency, strings, a4, null));
     if (frequency === null) {
       reading = null;
       ticked = tracker.update(event.time, null, null).confirmed;
@@ -156,8 +170,7 @@
     starting = true;
     problem = null;
     try {
-      // The locked string changes the cents display only. The detector is not given that
-      // pitch as a target; see docs/design/tuner-and-wait-pitch.md.
+      sentExpected = null;
       session = await startListening({
         a4,
         deviceId: deviceId || undefined,
@@ -166,6 +179,7 @@
         onLevel: ({ peak }) => (level = peak),
       });
       running = true;
+      syncLockedExpected();
     } catch (error) {
       problem = error instanceof ListenError ? error.problem : "other";
     } finally {
@@ -173,7 +187,14 @@
     }
   }
 
+  /** A locked string is the hint from the start; auto mode earns its hint from the readings. */
+  function syncLockedExpected() {
+    prior.reset();
+    sendExpected(running && strings && !auto ? strings[locked] : null);
+  }
+
   function clearReading() {
+    prior.reset();
     reading = null;
     ticked = false;
     trail = [];
@@ -185,6 +206,7 @@
     const current = session;
     session = null;
     running = false;
+    sentExpected = null;
     level = 0;
     clearReading();
     stopTone();
@@ -226,6 +248,12 @@
       stopTone();
       startOver();
     });
+  });
+
+  // Follow the locked string, and drop the hint when switching back to auto
+  $effect(() => {
+    void [running, auto, locked, strings];
+    untrack(syncLockedExpected);
   });
 
   // Stop if deactivated
@@ -271,7 +299,10 @@
           step="1"
           value={a4}
           aria-label={t("tuner.a4")}
-          oninput={(event) => (a4 = clampA4(Number(event.currentTarget.value)))}
+          oninput={(event) => {
+            a4 = clampA4(Number(event.currentTarget.value));
+            saveA4(a4);
+          }}
         />
         <output data-testid="tuner-a4-value">{a4} Hz</output>
       </span>

@@ -396,4 +396,20 @@
       padding-left: 40px;
     }
   }
+
+  @media (max-height: 500px) and (pointer: coarse) {
+    .song {
+      padding: var(--sp-1) 0;
+    }
+
+    .link {
+      grid-template-columns: 48px minmax(0, 1fr);
+      gap: var(--sp-2);
+      min-height: 48px;
+    }
+
+    .art :global(.cover) {
+      width: 48px;
+    }
+  }
 </style>

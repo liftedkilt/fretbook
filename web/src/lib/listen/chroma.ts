@@ -38,6 +38,16 @@ export function chromaWindowSize(sampleRate: number): number {
   return size;
 }
 
+/** An overtone is weaker than the note it belongs to; a peak this strong is a played note. */
+const HARMONIC_SHARE = 0.7;
+/** Overtones 2 to 6 of a string: the octave, the fifth, the double octave, the third, the fifth. */
+const HARMONICS = [2, 3, 4, 5, 6];
+const HARMONIC_TOLERANCE = 0.025;
+
+function isHarmonicOf(frequency: number, base: number): boolean {
+  return HARMONICS.some((h) => Math.abs(frequency / (h * base) - 1) < HARMONIC_TOLERANCE);
+}
+
 /** Folds a window of audio into twelve pitch-class energies. */
 export class ChromaAnalyzer {
   readonly size: number;
@@ -85,6 +95,7 @@ export class ChromaAnalyzer {
     }
     if (strongest <= 0) return bins;
     const floor = strongest * this.peakFloor;
+    const peaks: { frequency: number; magnitude: number; harmonic: boolean }[] = [];
     for (let k = this.firstBin; k <= this.lastBin; k++) {
       const m = this.mags[k];
       if (m < floor || m < this.mags[k - 1] || m <= this.mags[k + 1]) continue;
@@ -94,9 +105,24 @@ export class ChromaAnalyzer {
       const c = Math.log(this.mags[k + 1] + 1e-12);
       const denominator = a - 2 * b + c;
       const shift = denominator === 0 ? 0 : (0.5 * (a - c)) / denominator;
-      const frequency = (k + shift) * this.binHz;
-      const pitchClass = ((Math.round(frequencyToMidiFloat(frequency)) % 12) + 12) % 12;
-      bins[pitchClass] += m;
+      peaks.push({ frequency: (k + shift) * this.binHz, magnitude: m, harmonic: false });
+    }
+    // A plucked string carries overtones that fall on other chord tones (its 3rd harmonic is a
+    // fifth up, its 5th a major third), so a lone root would look like a dyad or a triad. A peak
+    // that sits on a low harmonic of a stronger, lower peak is that note's overtone, not a note.
+    for (const peak of peaks) {
+      peak.harmonic = peaks.some(
+        (base) =>
+          !base.harmonic &&
+          base.frequency < peak.frequency &&
+          peak.magnitude < base.magnitude * HARMONIC_SHARE &&
+          isHarmonicOf(peak.frequency, base.frequency),
+      );
+    }
+    for (const peak of peaks) {
+      if (peak.harmonic) continue;
+      const pitchClass = ((Math.round(frequencyToMidiFloat(peak.frequency)) % 12) + 12) % 12;
+      bins[pitchClass] += peak.magnitude;
     }
     return bins;
   }
@@ -107,7 +133,11 @@ export class ChromaAnalyzer {
  * count: how much of the energy sits on the chord's notes, and how many of the chord's notes are
  * there at all. A wrong string costs a little of each; a different chord costs most of both.
  */
-export function chromaScore(bins: readonly number[], pitchClasses: readonly number[]): number {
+export function chromaScore(
+  bins: readonly number[],
+  pitchClasses: readonly number[],
+  bass?: number,
+): number {
   const wanted = [...new Set(pitchClasses.map((pc) => ((pc % 12) + 12) % 12))];
   const total = bins.reduce((sum, value) => sum + value, 0);
   if (total <= 0 || wanted.length === 0) return 0;
@@ -118,5 +148,9 @@ export function chromaScore(bins: readonly number[], pitchClasses: readonly numb
   const presentCount = wanted.filter((pc) => bins[pc] >= 0.35 * even).length;
   // One note is not a chord: a lone root would otherwise score exactly the lenient threshold.
   if (wanted.length >= 2 && presentCount < 2) return 0;
+  // Without overtones muddying the reading, two shared notes make a chord look like a neighbour
+  // (C and Am share C and E). The chord's lowest note, when given, has to be there.
+  if (bass !== undefined && wanted.length >= 3 && bins[((bass % 12) + 12) % 12] < 0.35 * even)
+    return 0;
   return share * (0.4 + 0.6 * (presentCount / wanted.length));
 }

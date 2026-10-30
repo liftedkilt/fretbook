@@ -1058,7 +1058,8 @@
     "heardSharp": "Heard {note}, a little sharp",
     "heardEarly": "Too early: wait for the cursor",
     "heardNothing": "Nothing heard: pluck a bit harder",
-    "heardOther": "Not the chord yet, try again"
+    "heardOther": "Not the chord yet, try again",
+    "bleed": "The microphone seems to hear the backing. Use headphones, or turn on Silent, so it does not set off notes."
   },
   "waitMode": {
     "fretboard": "Where to play the expected note"
@@ -1537,6 +1538,8 @@
   },
   "chordDiagrams": {
     "heading": "Chord diagrams",
+    "show": "Show chord diagrams",
+    "hide": "Hide chord diagrams",
     "toolTitle": "Chord library",
     "toolDescription": "Look up any chord, see several voicings for guitar, bass or ukulele, and hear it strummed.",
     "openTool": "Open chord library",

@@ -7,6 +7,7 @@ import TunerSheet from "./TunerSheet.svelte";
 
 let emit: (frequency: number | null, time?: number) => void = () => {};
 const stopSession = vi.fn(async () => {});
+const setExpectedMidi = vi.fn();
 const startListening = vi.fn();
 
 vi.mock("../lib/api", () => ({
@@ -74,12 +75,13 @@ beforeEach(() => {
   ui.sheet = "";
   ui.tunerRequest = null;
   stopSession.mockClear();
+  setExpectedMidi.mockClear();
   oscillators.length = 0;
   contextClose.mockClear();
   startListening.mockReset();
   startListening.mockImplementation(async (options: { onPitch: (event: unknown) => void }) => {
     emit = (frequency, time) => options.onPitch(event(frequency, time));
-    return { stop: stopSession };
+    return { stop: stopSession, setExpectedMidi };
   });
   HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
     this.open = true;
@@ -168,11 +170,51 @@ describe("TunerSheet", () => {
     openTuner({ tuning: [64, 59, 55, 50, 45, 40], capo: 0 });
     await fireEvent.click(await screen.findByTestId("tuner-auto"));
     await fireEvent.click(screen.getByTestId("tuner-string-5"));
+    await fireEvent.click(screen.getByTestId("tuner-string-5")); // stop the reference tone it started
     await fireEvent.click(screen.getByTestId("tuner-start"));
     emit(midiToFrequency(45), 0);
     await tick();
     expect(screen.getByTestId("tuner-note")).toHaveTextContent("E2");
     expect(screen.getByTestId("tuner-cents")).toHaveTextContent("+500");
+  });
+
+  it("ignores the mic while the reference tone plays, and listens again when it stops", async () => {
+    render(TunerSheet);
+    openTuner({ tuning: [64, 59, 55, 50, 45, 40], capo: 0 });
+    await fireEvent.click(await screen.findByTestId("tuner-start"));
+    await fireEvent.click(screen.getByTestId("tuner-string-3"));
+    emit(midiToFrequency(50), 0);
+    await tick();
+    expect(screen.getByTestId("tuner-note")).toHaveTextContent("–");
+    await fireEvent.click(screen.getByTestId("tuner-string-3"));
+    emit(midiToFrequency(50), 1);
+    await tick();
+    expect(screen.getByTestId("tuner-note")).toHaveTextContent("D3");
+  });
+
+  it("tells the detector the locked string", async () => {
+    render(TunerSheet);
+    openTuner({ tuning: [64, 59, 55, 50, 45, 40], capo: 0 });
+    await fireEvent.click(await screen.findByTestId("tuner-auto"));
+    await fireEvent.click(screen.getByTestId("tuner-string-5"));
+    await fireEvent.click(screen.getByTestId("tuner-start"));
+    await tick();
+    expect(setExpectedMidi).toHaveBeenLastCalledWith(40, false);
+    await fireEvent.click(screen.getByTestId("tuner-string-4"));
+    await tick();
+    expect(setExpectedMidi).toHaveBeenLastCalledWith(45, false);
+  });
+
+  it("hints in auto mode only once a string is steady, and drops it after a jump", async () => {
+    render(TunerSheet);
+    openTuner({ tuning: [64, 59, 55, 50, 45, 40], capo: 0 });
+    await fireEvent.click(await screen.findByTestId("tuner-start"));
+    await tick();
+    expect(setExpectedMidi).not.toHaveBeenCalledWith(45, false);
+    for (let i = 0; i < 3; i++) emit(midiToFrequency(45), i * 0.02);
+    expect(setExpectedMidi).toHaveBeenLastCalledWith(45, false);
+    for (let i = 0; i < 2; i++) emit(midiToFrequency(50), 1 + i * 0.02);
+    expect(setExpectedMidi).toHaveBeenLastCalledWith(null, false);
   });
 
   it("offers the capo and tunes the raised pitches on request", async () => {

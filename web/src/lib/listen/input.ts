@@ -95,7 +95,7 @@ export interface ListenOptions {
   /** Which channel of a multi-channel interface carries the instrument (0-based). */
   channel?: number;
   a4?: number;
-  /** Lowest note to track in Hz; 28 covers a 5-string bass tuned down a little. */
+  /** Lowest note to track in Hz; the default 25 covers drop A (27.5 Hz) on a 5-string bass. */
   minFrequency?: number;
   onPitch: (event: PitchEvent) => void;
   /** Pitch-class readings; they arrive only after `setChroma(true)`. */

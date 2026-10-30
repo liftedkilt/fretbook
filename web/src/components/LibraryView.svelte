@@ -232,19 +232,21 @@
     <RecentImports />
     {#if countFor("all") > 0}
       <div class="toolbar">
-        <label class="search">
-          <Icon name="search" size={18} />
-          <input
-            type="search"
-            data-testid="library-search"
-            bind:this={searchInput}
-            bind:value={ui.search}
-            placeholder={t("library.search")}
-            aria-label={t("library.search")}
-            aria-keyshortcuts="/"
-            title={t("library.searchShortcut")}
-          />
-        </label>
+        <div class="search">
+          <label class="search-field">
+            <Icon name="search" size={18} />
+            <input
+              type="search"
+              data-testid="library-search"
+              bind:this={searchInput}
+              bind:value={ui.search}
+              placeholder={t("library.search")}
+              aria-label={t("library.search")}
+              aria-keyshortcuts="/"
+              title={t("library.searchShortcut")}
+            />
+          </label>
+        </div>
         <div class="toolbar-actions">
           <label class="sort">
             <span class="visually-hidden">{t("library.sort")}</span>
@@ -466,6 +468,12 @@
     min-width: 0;
   }
 
+  .search-field {
+    position: relative;
+    display: block;
+    width: 100%;
+  }
+
   .toolbar-actions {
     display: flex;
     align-items: center;
@@ -473,7 +481,7 @@
     flex: 1;
   }
 
-  .search :global(.icon) {
+  .search-field :global(.icon) {
     position: absolute;
     left: var(--sp-3);
     top: 50%;
@@ -482,7 +490,8 @@
     pointer-events: none;
   }
 
-  .search input {
+  .search-field input {
+    width: 100%;
     min-height: 44px;
     padding-left: var(--sp-6);
     border-radius: var(--r-sm);
@@ -630,7 +639,7 @@
       margin-bottom: 0;
     }
 
-    :global(.library-header) {
+    :global(header.page-header.library-header) {
       margin-bottom: var(--sp-3);
     }
 
@@ -690,6 +699,49 @@
 
     .skeleton {
       display: none;
+    }
+  }
+
+  @media (max-height: 500px) and (pointer: coarse) {
+    .library-bar {
+      margin-bottom: 0;
+    }
+
+    :global(header.page-header.library-header) {
+      margin-bottom: 0;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-2);
+      margin-bottom: var(--sp-1);
+      position: sticky;
+      top: calc(58px + env(safe-area-inset-top, 0px));
+      z-index: 20;
+      margin-left: calc(-1 * var(--pad));
+      margin-right: calc(-1 * var(--pad));
+      padding: var(--sp-1) var(--pad);
+      background: var(--bg);
+    }
+
+    .search {
+      position: static;
+      flex: 1;
+      max-width: 440px;
+      margin: 0;
+      padding: 0;
+      background: transparent;
+    }
+
+    .toolbar-actions {
+      flex: none;
+      margin-bottom: 0;
+      width: auto;
+    }
+
+    .chip-line {
+      margin-bottom: 0;
     }
   }
 </style>
