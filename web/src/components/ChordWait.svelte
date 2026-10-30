@@ -6,7 +6,12 @@
   import { parse } from "../lib/chordpro";
   import { t } from "../lib/i18n.svelte";
   import { chordSheetSteps } from "../lib/listen/chordSheetWait";
-  import { getSavedChannel, getSavedDevice } from "../lib/listen/devicePrefs";
+  import {
+    getSavedA4,
+    getSavedChannel,
+    getSavedDevice,
+    getStoredCalibration,
+  } from "../lib/listen/devicePrefs";
   import {
     describeProblem,
     ListenError,
@@ -22,6 +27,7 @@
     transpose = 0,
     flats = false,
     capo,
+    hideToggle = false,
     onactive,
   }: {
     text: string;
@@ -29,6 +35,8 @@
     flats?: boolean;
     /** Replaces the sheet's own `{capo:}` when the reader applied a capo suggestion. */
     capo?: number;
+    /** The dock's ⋯ menu drives the run on a phone, through `toggle` and `isOn`. */
+    hideToggle?: boolean;
     onactive: (key: string | null) => void;
   } = $props();
 
@@ -60,10 +68,12 @@
       listen: (options) =>
         startListening({
           ...options,
+          a4: getSavedA4(),
           deviceId: deviceId || undefined,
           channel,
           onLevel: ({ peak }) => (level = peak),
         }),
+      match: { latencySeconds: (getStoredCalibration(deviceId) ?? 0) / 1000 },
       hintSeconds: 0,
       onWait: (_, index) => {
         current = index;
@@ -112,6 +122,14 @@
     else void start();
   }
 
+  export function toggleRun() {
+    toggle();
+  }
+
+  export function isOn() {
+    return on;
+  }
+
   // The steps belong to the sheet as it was when the run began: a transposition or an edit ends it.
   $effect(() => {
     void built;
@@ -132,6 +150,8 @@
   >
     <button
       class="toggle"
+      class:visually-hidden={hideToggle}
+      hidden={hideToggle}
       data-testid="chord-wait-toggle"
       aria-pressed={on}
       title={t("chordWait.about")}

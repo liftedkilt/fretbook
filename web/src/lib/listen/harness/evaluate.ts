@@ -6,6 +6,8 @@ export interface TruthNote {
   start: number;
   duration: number;
   legato?: boolean;
+  /** 0..1, passed to the synth. */
+  velocity?: number;
 }
 
 export interface Report {

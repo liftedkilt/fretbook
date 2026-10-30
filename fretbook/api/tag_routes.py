@@ -1,4 +1,4 @@
-"""Tags and favourites. They are the caller's own and never change a song's revision."""
+"""Tags and favourites. They belong to the song, so a band viewer cannot change them. They never change its revision."""
 
 from __future__ import annotations
 

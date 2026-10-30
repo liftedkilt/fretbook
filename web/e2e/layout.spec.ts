@@ -240,6 +240,12 @@ test("the phone library shows a song on the first screen", async ({ page, seed }
   expect(box!.y + box!.height).toBeLessThanOrEqual(bar!.y);
   await noSidewaysScroll(page);
 
+  // The search icon sits inside the input field.
+  const searchInput = (await page.getByTestId("library-search").boundingBox())!;
+  const searchIcon = (await page.locator(".search svg").boundingBox())!;
+  expect(searchIcon.x).toBeGreaterThan(searchInput.x);
+  expect(searchIcon.x + searchIcon.width).toBeLessThan(searchInput.x + searchInput.width);
+
   // The large title collapses into the top bar on scroll and search stays sticky.
   await page.evaluate(() => window.scrollTo(0, 200));
   await expect(page.getByTestId("topbar-title")).toBeVisible();
@@ -253,6 +259,82 @@ test("the phone library shows a song on the first screen", async ({ page, seed }
   // Scrolling back restores the top bar.
   await page.evaluate(() => window.scrollTo(0, 0));
   await expect(page.getByTestId("topbar-title")).toHaveCount(0);
+});
+
+// Issue #384: the phone scrubber's 44px target used to cover the top of the transport
+// buttons, so a tap on Play sought instead of starting playback.
+test("a phone tap on Play hits the button, and the scrubber still has a 44px target", async ({
+  page,
+  seed,
+}) => {
+  const song = await seed.longBassTab(40);
+  await page.setViewportSize({ width: 390, height: 664 });
+  await page.goto(`/songs/${song.id}`);
+  const play = page.getByTestId("player-play");
+  const status = page.getByTestId("player-status");
+  await expect(page.getByTestId("player-score").locator("svg").first()).toBeVisible();
+  await expect(play).toBeVisible();
+  await expect(status).toHaveAttribute("data-measure", "-1");
+  await expect(page.locator(".scrubber input")).toHaveAttribute("max", "39");
+
+  const layout = await page.evaluate(() => {
+    const input = document.querySelector(".scrubber input");
+    if (!(input instanceof HTMLInputElement)) return null;
+    const inputBox = input.getBoundingClientRect();
+    const buttons = ["player-prev", "player-play", "player-next", "player-mute"].map((id) => {
+      const button = document.querySelector(`[data-testid="${id}"]`);
+      const rect = button?.getBoundingClientRect();
+      const hit = (y: number) => {
+        if (!rect) return null;
+        const el = document.elementFromPoint(rect.left + rect.width / 2, y);
+        return el?.closest("button")?.getAttribute("data-testid") ?? null;
+      };
+      return {
+        id,
+        top: rect ? hit(rect.top) : null,
+        below: rect ? hit(rect.top + 4) : null,
+        gap: rect ? rect.top - inputBox.bottom : null,
+      };
+    });
+    const above = document.elementFromPoint(inputBox.left + inputBox.width / 2, inputBox.top + 2);
+    return {
+      height: inputBox.height,
+      aboveIsScrubber: above === input,
+      buttons,
+    };
+  });
+  expect(layout).not.toBeNull();
+  if (!layout) return;
+  expect(layout.height).toBeGreaterThanOrEqual(44);
+  expect(layout.aboveIsScrubber).toBe(true);
+  for (const button of layout.buttons) {
+    expect(button.gap, button.id).toBeGreaterThan(0);
+    expect(button.top, button.id).toBe(button.id);
+    expect(button.below, button.id).toBe(button.id);
+  }
+
+  // The reported tap: a few pixels below the top edge seeks when the scrubber covers it.
+  const next = page.getByTestId("player-next");
+  const nextBox = (await next.boundingBox())!;
+  await next.click({ position: { x: nextBox.width / 2, y: 6 } });
+  await expect(status).toHaveAttribute("data-measure", "1");
+
+  const playBox = (await play.boundingBox())!;
+  await play.click({ position: { x: playBox.width / 2, y: 4 } });
+  // A seek would move the bar immediately. Playback only advances after the synth starts,
+  // so this read must not retry: the measure leaves 1 once the song is actually playing.
+  expect(await status.getAttribute("data-measure")).toBe("1");
+  await expect(play).toHaveAttribute("data-playing", "true", { timeout: 30_000 });
+
+  // The padding above the line is part of the target: a tap there still seeks.
+  await play.click();
+  await expect(play).toHaveAttribute("data-playing", "false");
+  const scrubber = page.locator(".scrubber input");
+  const scrubberBox = (await scrubber.boundingBox())!;
+  await scrubber.click({ position: { x: scrubberBox.width * 0.8, y: 2 } });
+  await expect
+    .poll(async () => Number(await status.getAttribute("data-measure")))
+    .toBeGreaterThan(15);
 });
 
 test("the phone speed picker sits entirely on screen", async ({ page, seed }) => {
@@ -270,4 +352,62 @@ test("the phone speed picker sits entirely on screen", async ({ page, seed }) =>
     expect(box.x).toBeGreaterThanOrEqual(0);
     expect(box.x + box.width).toBeLessThanOrEqual(width);
   }
+});
+
+// Follow-scroll parks the playing system below the sticky song header, not under it (#383).
+test("the phone player keeps the playing line below the sticky header", async ({ page, seed }) => {
+  const song = await seed.longBassTab(60);
+  await page.setViewportSize({ width: 390, height: 664 });
+  await page.goto(`/songs/${song.id}`);
+  await expect(page.getByTestId("player-score").locator("svg").first()).toBeVisible();
+  await page.getByTestId("player-play").click();
+  const header = page.locator(".song-header");
+  await expect(header).toBeVisible();
+  // Wait until follow has scrolled the page, then check the playing line against the header.
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY), { timeout: 30_000 })
+    .toBeGreaterThan(300);
+  // Sample the cursor while the page follows it: it must never sit under the header.
+  const bar = (await header.boundingBox())!;
+  let lowest = Infinity;
+  for (let i = 0; i < 20; i += 1) {
+    const cursor = await page.locator(".at-cursor-bar").first().boundingBox();
+    if (cursor) lowest = Math.min(lowest, cursor.y);
+    await page.waitForTimeout(250);
+  }
+  expect(lowest).toBeGreaterThanOrEqual(bar.y + bar.height - 1);
+});
+
+test.describe("phone landscape library", () => {
+  test.use({ hasTouch: true });
+
+  test("the phone library in landscape shows a song above the tab bar and does not scroll sideways", async ({
+    page,
+    seed,
+  }) => {
+    for (let i = 1; i <= 6; i += 1) {
+      await seed.create({ title: `Song ${i}`, artist: "Artist" });
+    }
+    await page.setViewportSize({ width: 844, height: 390 });
+    await page.goto("/");
+    const card = page.getByTestId("song-card").first();
+    await expect(card).toBeVisible();
+    const box = await card.boundingBox();
+    const bar = await page.locator(".tabbar").boundingBox();
+    expect(box!.y + box!.height).toBeLessThanOrEqual(bar!.y);
+    expect(bar!.height).toBeLessThanOrEqual(44);
+    await noSidewaysScroll(page);
+
+    // The search icon sits inside the input field.
+    const searchInput = (await page.getByTestId("library-search").boundingBox())!;
+    const searchIcon = (await page.locator(".search svg").boundingBox())!;
+    expect(searchIcon.x).toBeGreaterThan(searchInput.x);
+    expect(searchIcon.x + searchIcon.width).toBeLessThan(searchInput.x + searchInput.width);
+
+    // Sticky search stays sticky when scrolling.
+    await page.evaluate(() => window.scrollTo(0, 200));
+    const scrolledSearch = (await page.getByTestId("library-search").boundingBox())!;
+    expect(scrolledSearch.y).toBeGreaterThanOrEqual(58);
+    expect(scrolledSearch.y).toBeLessThan(120);
+  });
 });

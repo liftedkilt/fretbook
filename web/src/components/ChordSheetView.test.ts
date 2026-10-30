@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { resetPedals, setPedal, setStage } from "../lib/handsFree.svelte";
 import type { SongDetail } from "../lib/types";
@@ -179,5 +179,47 @@ describe("ChordSheetView hands-free", () => {
     await fireEvent.keyDown(document.body, { key: "Escape" });
     expect(document.querySelector(".chords-page")).not.toHaveClass("stage");
     expect(localStorage.getItem("fretbook.stage")).toBe("0");
+  });
+});
+
+describe("ChordSheetView on a phone", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    setStage(false);
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: true,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("collapses the chord diagrams until asked", async () => {
+    render(ChordSheetView, { props: { song: song("[C]Hello [G]world") } });
+    const toggle = screen.getByTestId("chord-diagrams-toggle");
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByTestId("chord-strip")).toBeNull();
+    await fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(names()).toEqual(["C", "G"]);
+  });
+
+  it("keeps play, speed and transpose in one row and the rest in the more menu", async () => {
+    render(ChordSheetView, { props: { song: song("[C]Hello [G]world") } });
+    const dock = screen.getByRole("toolbar");
+    expect(dock).toHaveClass("phone");
+    for (const id of ["autoscroll", "autoscroll-faster", "transpose-up", "chords-more"]) {
+      expect(screen.getByTestId(id)).toBeInTheDocument();
+    }
+    expect(screen.queryByTestId("stage-toggle")).toBeNull();
+    await fireEvent.click(screen.getByTestId("chords-more"));
+    await fireEvent.click(screen.getByTestId("stage-toggle"));
+    expect(document.querySelector(".chords-page")).toHaveClass("stage");
+    await fireEvent.click(screen.getByTestId("chords-more"));
+    await fireEvent.click(screen.getByTestId("chords-flats"));
+    await fireEvent.click(screen.getByTestId("chords-more"));
+    expect(screen.getByTestId("chords-flats")).toHaveTextContent("Flats");
   });
 });

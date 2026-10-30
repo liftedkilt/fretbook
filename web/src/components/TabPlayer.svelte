@@ -34,7 +34,7 @@
   import { holdCelebrations, onPracticeLogged, snapshotFromStats } from "../lib/celebrate";
   import { AudioMedia } from "../lib/alphatab/audioHandler";
   import { planFollow, SynthFollower } from "../lib/alphatab/synthFollow";
-  import { separateEffectBands } from "../lib/alphatab/display";
+  import { hideScoreHeader, separateEffectBands } from "../lib/alphatab/display";
   import { preferredTrack, scoreToAlphaTex } from "../lib/alphatex";
   import { Clicker } from "../lib/clicker";
   import { recordingGain, synthGain } from "../lib/practice";
@@ -66,8 +66,12 @@
     type ListenSession,
   } from "../lib/listen";
   import { pitchClassName } from "../lib/listen/chordTones";
-  import { getLocalCalibration } from "../lib/listen/calibration";
-  import { getSavedChannel, getSavedDevice } from "../lib/listen/devicePrefs";
+  import {
+    getSavedA4,
+    getSavedChannel,
+    getSavedDevice,
+    getStoredCalibration,
+  } from "../lib/listen/devicePrefs";
   import {
     bleedSuspected,
     buildScoredSteps,
@@ -265,6 +269,7 @@
   function listenWithInput(options: ListenOptions): Promise<ListenSession> {
     return startListening({
       ...options,
+      a4: getSavedA4(),
       deviceId: listenDevice || undefined,
       channel: listenChannel,
       onLevel: ({ peak }) => (listenLevel = peak),
@@ -518,8 +523,22 @@
     return () => query.removeEventListener("change", sync);
   });
 
-  function topBarHeight(): number {
-    return document.querySelector(".topbar")?.getBoundingClientRect().height ?? 0;
+  // The sticky chrome a followed system must stay below: the song header, the setlist play bar.
+  const STICKY_CHROME = ".topbar, .song-header, .play-bar";
+  function stickyChromeBottom(): number {
+    let bottom = 0;
+    for (const el of document.querySelectorAll(STICKY_CHROME)) {
+      const style = getComputedStyle(el);
+      if (style.display === "none" || (style.position !== "sticky" && style.position !== "fixed"))
+        continue;
+      // Where it sits once stuck, not where it is now: a play bar still in flow is lower down.
+      const stuck =
+        style.position === "sticky"
+          ? (Number.parseFloat(style.top) || 0) + el.getBoundingClientRect().height
+          : el.getBoundingClientRect().bottom;
+      bottom = Math.max(bottom, stuck);
+    }
+    return Math.max(0, Math.round(bottom));
   }
 
   // alphaTab reads `scrollElement` once and keeps it. `updateSettings` does not drop that
@@ -554,8 +573,7 @@
       const scrollElement = onPhone
         ? ((document.scrollingElement as HTMLElement | null) ?? scrollHost)
         : scrollHost;
-      const barHeight = onPhone ? topBarHeight() : 0;
-      return mountScorePlayer(element, scrollElement, source, useAudio, onPhone, barHeight);
+      return mountScorePlayer(element, scrollElement, source, useAudio, onPhone);
     });
   });
 
@@ -565,7 +583,6 @@
     source: string,
     useAudio: boolean,
     onPhone: boolean,
-    barHeight: number,
   ) {
     const settings = new alphaTab.Settings();
     settings.core.fontDirectory = new URL("font/", document.baseURI).href;
@@ -573,6 +590,7 @@
     settings.core.enableLazyLoading = false;
     settings.display.staveProfile = staveProfile(untrack(() => ui.notation));
     separateEffectBands(settings);
+    if (onPhone) hideScoreHeader(settings, alphaTab);
     settings.display.scale = untrack(scoreScale);
     settings.player.playerMode = useAudio
       ? alphaTab.PlayerMode.EnabledExternalMedia
@@ -583,13 +601,25 @@
     settings.player.enableUserInteraction = true;
     settings.player.scrollElement = scrollElement;
     // Negative: the playing system stops a little below the top edge, not above it.
-    settings.player.scrollOffsetY = -(16 + barHeight);
+    settings.player.scrollOffsetY = -(16 + (onPhone ? stickyChromeBottom() : 0));
     // On a phone, scrolling the page is reserved for playback: placing the cursor on load
     // must not move the page away from the top of the song.
     settings.player.scrollMode =
       untrack(() => follow) && !onPhone ? alphaTab.ScrollMode.Continuous : alphaTab.ScrollMode.Off;
     const instance = new alphaTab.AlphaTabApi(element, settings);
     player.api = instance;
+    // The sticky chrome changes with stage, focus and setlist play-through: keep the offset current.
+    const refreshOffset = () => {
+      instance.settings.player.scrollOffsetY = -(16 + (onPhone ? stickyChromeBottom() : 0));
+    };
+    const chromeWatch = new ResizeObserver(refreshOffset);
+    const chromeMutations = new MutationObserver(refreshOffset);
+    if (onPhone) {
+      for (const el of document.querySelectorAll(STICKY_CHROME)) chromeWatch.observe(el);
+      chromeMutations.observe(document.documentElement, { attributes: true });
+      chromeMutations.observe(document.body, { childList: true, subtree: true });
+      window.addEventListener("resize", refreshOffset);
+    }
     let mouseDownBeat: alphaTab.model.Beat | null = null;
     let scoreSelectionDragged = false;
     instance.scoreLoaded.on(() => {
@@ -688,6 +718,9 @@
     return () => {
       scoreReady = 0;
       player.api = null;
+      chromeWatch.disconnect();
+      chromeMutations.disconnect();
+      window.removeEventListener("resize", refreshOffset);
       element.querySelector(".at-playing-outline")?.remove();
       instance.destroy();
       // This instance is no longer playing. Speed and the bar are put back on the next
@@ -1415,7 +1448,7 @@
       listen: listenWithInput,
       match: {
         anyOctave: practice.wait.anyOctave,
-        latencySeconds: (getLocalCalibration("default", "default") ?? 0) / 1000,
+        latencySeconds: (getStoredCalibration(listenDevice) ?? 0) / 1000,
       },
       hintSeconds: practice.wait.hintSeconds,
       onWait: (step) => {
@@ -1566,8 +1599,8 @@
     scoreError = "";
     scoreBleed = false;
     scoreGrades = {};
-    // Round trip from the calibration for the default device pair, in seconds.
-    const latency = getLocalCalibration("default", "default");
+    // Round trip from the stored calibration for the chosen devices, else the default pair.
+    const latency = getStoredCalibration(listenDevice);
     scoreCalibrated = latency !== null;
     const run: ScoredRun = new ScoredRun({
       steps: scoredSteps,
@@ -1718,7 +1751,7 @@
       ? ((document.scrollingElement as HTMLElement | null) ?? scroller)
       : scroller;
     if (!scrollElement) return;
-    const offsetY = -(16 + (onPhone ? topBarHeight() : 0));
+    const offsetY = -(16 + (onPhone ? stickyChromeBottom() : 0));
     const mode = onPhone
       ? playing && follow
         ? alphaTab.ScrollMode.Continuous
@@ -1997,6 +2030,7 @@
         <span>{t("player.track")}</span>
         <select
           data-testid="player-track"
+          aria-label={t("player.track")}
           value={trackId}
           onchange={(event) => (trackId = event.currentTarget.value)}
         >
@@ -2647,6 +2681,26 @@
 
   /* Saved loops stay in the practice panel on a phone: they would push the music down. */
   @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
+    /* One row: the view switch, then the track picker without its label, then the chips. */
+    .view-row {
+      flex-wrap: nowrap;
+      gap: var(--sp-2);
+      margin-bottom: var(--sp-2);
+    }
+
+    .track-select {
+      flex: 1 1 0;
+    }
+
+    .track-select span {
+      display: none;
+    }
+
+    .view-chips {
+      flex: none;
+      margin-left: 0;
+    }
+
     .song-saved-loops {
       display: none;
     }

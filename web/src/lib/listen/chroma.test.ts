@@ -96,30 +96,34 @@ describe("chroma of synthesized strums", () => {
   const score = (played: number[], wanted: number[], end = 0.5, up = false) => {
     const audio = renderStrum(played, 0.1, 1.2, { sampleRate, instrument: "guitar", up });
     const stop = Math.round(end * sampleRate);
-    return chromaScore(analyzer.analyse(audio.slice(stop - analyzer.size, stop)), wanted);
+    return chromaScore(
+      analyzer.analyse(audio.slice(stop - analyzer.size, stop)),
+      pcs(wanted),
+      Math.min(...wanted),
+    );
   };
 
   it("scores the right chord high, up or down", () => {
     for (const end of [0.3, 0.5]) {
-      expect(score(C, pcs(C), end)).toBeGreaterThan(0.7);
-      expect(score(C, pcs(C), end, true)).toBeGreaterThan(0.7);
-      expect(score(G, pcs(G), end)).toBeGreaterThan(0.7);
+      expect(score(C, C, end)).toBeGreaterThan(0.7);
+      expect(score(C, C, end, true)).toBeGreaterThan(0.7);
+      expect(score(G, G, end)).toBeGreaterThan(0.7);
     }
   });
 
   it("scores a chord with a string missing above the threshold", () => {
     const withoutLow = C.slice(1);
     const withoutMiddle = C.filter((_, i) => i !== 2);
-    expect(score(withoutLow, pcs(C))).toBeGreaterThan(0.6);
-    expect(score(withoutMiddle, pcs(C))).toBeGreaterThan(0.6);
+    expect(score(withoutLow, C)).toBeGreaterThan(0.6);
+    expect(score(withoutMiddle, C)).toBeGreaterThan(0.6);
   });
 
   it("puts one wrong string between the right chord and a wrong one", () => {
     const oneWrong = [48, 52, 54, 60, 64];
     for (const end of [0.3, 0.5]) {
-      const right = score(C, pcs(C), end);
-      const wrongString = score(oneWrong, pcs(C), end);
-      const wrongChord = score(D, pcs(C), end);
+      const right = score(C, C, end);
+      const wrongString = score(oneWrong, C, end);
+      const wrongChord = score(D, C, end);
       expect(right).toBeGreaterThan(wrongString);
       expect(wrongString).toBeGreaterThan(wrongChord);
     }
@@ -127,9 +131,9 @@ describe("chroma of synthesized strums", () => {
 
   it("keeps a close wrong chord (Am for C, C for Am) below the threshold", () => {
     for (const end of [0.3, 0.5]) {
-      expect(score(AM, pcs(C), end)).toBeLessThan(0.6);
-      expect(score(C, pcs(AM), end)).toBeLessThan(0.6);
-      expect(score(D, pcs(G), end)).toBeLessThan(0.6);
+      expect(score(AM, C, end)).toBeLessThan(0.6);
+      expect(score(C, AM, end)).toBeLessThan(0.6);
+      expect(score(D, G, end)).toBeLessThan(0.6);
     }
   });
 });

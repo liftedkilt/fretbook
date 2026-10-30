@@ -19,7 +19,7 @@ const chordStep = (midis: number[]): WaitStep => ({
   tick: 0,
   kind: "chord",
   midis,
-  pcs: pcs(midis),
+  pcs: pcs(midis).sort((a, b) => a - b),
   string: 0,
   fret: 0,
 });
@@ -68,6 +68,24 @@ describe("WaitMatcher on chords", () => {
     ] as const) {
       expect(hearsAt(sine(root), [...wanted])).toBeNull();
     }
+  });
+
+  it("does not accept one plucked string, whose overtones fall on the chord's other notes", () => {
+    for (const [note, wanted] of [
+      [48, C],
+      [60, C],
+      [43, G],
+      [50, D],
+      [45, AM],
+    ] as const) {
+      expect(hearsAt(strum([note]), [...wanted]), `midi ${note}`).toBeNull();
+    }
+    expect(hearsAt(strum([48, 60]), C)).toBeNull();
+  });
+
+  it("still accepts a root and third, or a root and fifth, as the issue allows", () => {
+    expect(hearsAt(strum([48, 52]), C)).not.toBeNull();
+    expect(hearsAt(strum([48, 55]), C)).not.toBeNull();
   });
 
   it("still accepts the chord with one string missing", () => {
@@ -149,6 +167,68 @@ describe("WaitMatcher on chords", () => {
     expect(matcher.pushChroma(reading)).toBe(false);
     matcher.wait({ ...chordStep([48]), kind: "note" });
     expect(matcher.pushChroma(reading)).toBe(false);
+  });
+});
+
+describe("WaitMatcher on tab dyads", () => {
+  // Open B with E on the D string: the double-stop from the report.
+  const DYAD = [52, 59];
+  const dyadStep = (): WaitStep => ({ ...chordStep(DYAD), string: 1 });
+  const noOnsets = (audio: Float32Array) => chromaOf(audio).map((e) => ({ ...e, onset: false }));
+  /** Two strings plucked together, each with its own level (the synth's strings are monophonic). */
+  const pluck = (levels: [number, number][], start = 0.5) => {
+    const out = new Float32Array(Math.ceil((start + 2) * sampleRate));
+    levels.forEach(([midi, gain], index) => {
+      const string = renderStrum([midi], start, start + 2, {
+        sampleRate,
+        instrument: "guitar",
+        seed: 1 + index,
+      });
+      string.forEach((value, i) => (out[i] += value * gain));
+    });
+    return out;
+  };
+  const dyad = (a: number, b: number) =>
+    pluck([
+      [52, a],
+      [59, b],
+    ]);
+  const accepts = (events: ChromaEvent[], from = 0) => {
+    const matcher = new WaitMatcher();
+    matcher.wait(dyadStep());
+    return events.some((event) => event.time >= from && matcher.pushChroma(event));
+  };
+
+  it("accepts a clean two-string pluck, balanced or not", () => {
+    for (const [a, b] of [
+      [0.8, 0.8],
+      [0.8, 0.3],
+      [0.3, 0.8],
+    ]) {
+      expect(accepts(chromaOf(dyad(a, b)))).toBe(true);
+    }
+  });
+
+  it("accepts a soft pluck whose attack the onset detector missed", () => {
+    expect(accepts(noOnsets(dyad(0.5, 0.5)))).toBe(true);
+  });
+
+  it("does not accept a dyad that was already ringing when the wait began", () => {
+    expect(accepts(noOnsets(dyad(0.8, 0.8)), 1.6)).toBe(false);
+  });
+
+  it("does not accept one string of the dyad, with or without an attack", () => {
+    const lone = pluck([[59, 1]]);
+    expect(accepts(chromaOf(lone))).toBe(false);
+    expect(accepts(noOnsets(lone))).toBe(false);
+  });
+
+  it("does not accept a different dyad", () => {
+    const other = pluck([
+      [50, 1],
+      [57, 1],
+    ]);
+    expect(accepts(noOnsets(other))).toBe(false);
   });
 });
 
