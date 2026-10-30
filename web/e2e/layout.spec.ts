@@ -89,10 +89,15 @@ test("the player sheet fits desktop and phone landscape without scrolling sidewa
     await closeBtn.click();
     await expect(page.getByTestId("player-sheet")).toBeHidden();
 
-    // 3. Open and close with the dock toggle
+    // 3. Open and close with the dock toggle. On a phone the sheet covers the dock, so ✕ closes it.
     await page.getByTestId("player-panel-toggle").click();
     await expect(page.getByTestId("player-sheet")).toBeVisible();
-    await page.getByTestId("player-panel-toggle").click();
+    if (size.width <= 767) {
+      await expect(page.locator(".dock")).toBeHidden();
+      await page.getByTestId("player-sheet-close").click();
+    } else {
+      await page.getByTestId("player-panel-toggle").click();
+    }
     await expect(page.getByTestId("player-sheet")).toBeHidden();
   }
 });
@@ -117,7 +122,8 @@ test("the phone player keeps the fretboard clear of the dock and doesn't shift",
     await page.getByTestId("player-sheet-tab-view").click();
     await page.getByTestId("fretboard-on").check();
     await expect(page.getByTestId("stage-toggle")).toBeVisible();
-    await page.getByTestId("player-panel-toggle").click();
+    // The sheet hides the dock on a phone, so close it from the sheet.
+    await page.getByTestId("player-sheet-close").click();
     await expect(page.getByTestId("player-fretboard")).toBeVisible();
 
     const rects = () =>

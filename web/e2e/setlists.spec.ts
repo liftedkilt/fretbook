@@ -181,6 +181,8 @@ test("the play bar stays on screen while the score scrolls, clear of the dock", 
       .querySelector(".content")!
       .insertAdjacentHTML("beforeend", '<div style="height:3000px" aria-hidden="true"></div>');
   });
+  // Wheel over the sticky play bar: the score keeps wheel events that land on it.
+  await page.mouse.move(200, 100);
   await page.mouse.wheel(0, 800);
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(400);
 
