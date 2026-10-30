@@ -51,6 +51,29 @@ const strum = (midis: number[], start = 0.5) =>
   renderStrum(midis, start, start + 2, { sampleRate, instrument: "guitar" });
 
 describe("WaitMatcher on chords", () => {
+  it("does not accept the root alone as the chord", () => {
+    // A pure sine, as in the report: a real string's overtones would add other chord tones.
+    const sine = (midi: number) => {
+      const audio = new Float32Array(sampleRate * 2.5);
+      const hz = 440 * 2 ** ((midi - 69) / 12);
+      for (let i = Math.round(0.5 * sampleRate); i < audio.length; i++) {
+        audio[i] = 0.5 * Math.sin((2 * Math.PI * hz * i) / sampleRate);
+      }
+      return audio;
+    };
+    for (const [root, wanted] of [
+      [48, C],
+      [60, C],
+      [43, G],
+    ] as const) {
+      expect(hearsAt(sine(root), [...wanted])).toBeNull();
+    }
+  });
+
+  it("still accepts the chord with one string missing", () => {
+    expect(hearsAt(strum([48, 55, 60, 64]), C)).not.toBeNull();
+  });
+
   it("accepts the right chord shortly after the strum", () => {
     const at = hearsAt(strum(C), C);
     expect(at).not.toBeNull();

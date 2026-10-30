@@ -71,6 +71,25 @@ describe("chromaScore", () => {
   });
 });
 
+describe("chromaScore on a lone note", () => {
+  const wanted = [0, 4, 7];
+  const only = (...pcs: number[]) => {
+    const bins = new Array(12).fill(0);
+    for (const pc of pcs) bins[pc] = 1;
+    return bins;
+  };
+
+  it("rejects the root alone, or any single chord tone", () => {
+    const threshold = 0.6;
+    for (const pc of wanted) expect(chromaScore(only(pc), wanted)).toBeLessThan(threshold);
+  });
+
+  it("still passes with one chord tone missing", () => {
+    expect(chromaScore(only(0, 7), wanted)).toBeGreaterThanOrEqual(0.6);
+    expect(chromaScore(only(0, 4), wanted)).toBeGreaterThanOrEqual(0.6);
+  });
+});
+
 describe("chroma of synthesized strums", () => {
   const analyzer = new ChromaAnalyzer({ sampleRate });
   // Windows ending 0.3 s and 0.5 s after the strum began.
