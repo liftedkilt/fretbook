@@ -89,7 +89,7 @@
         onclick={() => go(previous)}
         aria-keyshortcuts="Alt+ArrowLeft"
       >
-        <Icon name="prev" size={16} />{t("setlists.previous")}
+        <Icon name="prev" size={16} /><span class="step-label">{t("setlists.previous")}</span>
       </button>
       <span class="play-position" data-testid="setlist-position" aria-live="polite">
         {t("setlists.position", { position: index + 1, total })}
@@ -101,7 +101,7 @@
           onclick={() => go(next)}
           aria-keyshortcuts="Alt+ArrowRight"
         >
-          {t("setlists.next")}<Icon name="next" size={16} />
+          <span class="step-label">{t("setlists.next")}</span><Icon name="next" size={16} />
         </button>
       {:else}
         <a
@@ -173,6 +173,34 @@
     /* The keyboard shortcuts hint is useless on a phone and eats sticky height. */
     .hint {
       display: none;
+    }
+    /* One slim row: prev, position, next. The back link lives on the setlist page. */
+    .play-bar {
+      gap: 0.25rem;
+      padding: 0.25rem 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .back-link {
+      display: none;
+    }
+    .play-steps {
+      flex-wrap: nowrap;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+    .step-label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+    .play-note {
+      font-size: 0.9rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
   }
 </style>
