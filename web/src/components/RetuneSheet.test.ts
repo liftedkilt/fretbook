@@ -21,6 +21,7 @@ vi.mock("@coderline/alphatab", () => ({
   NotationElement: { ScoreTitle: 0, ScoreSubTitle: 1, ScoreArtist: 2 },
   LogLevel: { Warning: 0 },
   PlayerMode: { Disabled: 0 },
+  ScrollMode: { Off: 0 },
   StaveProfile: { Tab: 0 },
   AlphaTabApi: class {
     tex() {}
