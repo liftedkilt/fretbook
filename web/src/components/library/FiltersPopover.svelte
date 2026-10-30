@@ -24,22 +24,61 @@
     { id: "hard", key: "difficulty.levelHard" },
   ];
 
+  // Same breakpoint as the library's phone layout, including a short landscape phone.
+  const PHONE_QUERY = "(max-width: 767px), (max-height: 500px) and (pointer: coarse)";
+
   let open = $state(false);
   let root = $state<HTMLDivElement | null>(null);
   let panel = $state<HTMLDivElement | null>(null);
   let button = $state<HTMLButtonElement | null>(null);
+  let phone = $state(typeof matchMedia !== "undefined" && matchMedia(PHONE_QUERY).matches);
+  // Caps the phone sheet to the space under the trigger so the trigger stays on screen.
+  let sheetMax = $state("");
   const panelId = `library-filters-${Math.random().toString(36).slice(2, 8)}`;
 
+  $effect(() => {
+    if (typeof matchMedia === "undefined") return;
+    const query = matchMedia(PHONE_QUERY);
+    const update = () => (phone = query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  });
+
+  function placeSheet() {
+    if (!phone || !button) {
+      sheetMax = "";
+      return;
+    }
+    const gap = 8;
+    const below = window.innerHeight - button.getBoundingClientRect().bottom - gap;
+    const cap = Math.round(window.innerHeight * 0.85);
+    const height = Math.min(cap, Math.max(0, below));
+    sheetMax = height > 0 ? `${Math.floor(height)}px` : "";
+  }
+
+  function focusInside() {
+    // Focusing a chip used to scroll the library so the trigger left the screen.
+    panel
+      ?.querySelector<HTMLElement>(".sheet-body button, .sheet-body select, .sheet-body input")
+      ?.focus({ preventScroll: true });
+  }
+
   async function toggle() {
-    open = !open;
-    if (!open) return;
+    if (open) {
+      close(false);
+      return;
+    }
+    placeSheet();
+    open = true;
     await tick();
-    panel?.querySelector<HTMLElement>("button, select, input")?.focus();
+    placeSheet();
+    focusInside();
   }
 
   function close(restore: boolean) {
     open = false;
-    if (restore) button?.focus();
+    if (restore) button?.focus({ preventScroll: true });
   }
 
   $effect(() => {
@@ -55,6 +94,23 @@
     return () => {
       document.removeEventListener("pointerdown", onDown);
       document.removeEventListener("keydown", onKey);
+    };
+  });
+
+  // A phone sheet must not chain a swipe into scrolling the library underneath it.
+  $effect(() => {
+    if (!open || !phone) return;
+    placeSheet();
+    const rootStyle = document.documentElement.style;
+    const previous = rootStyle.overflow;
+    rootStyle.overflow = "hidden";
+    const onResize = () => placeSheet();
+    window.addEventListener("resize", onResize);
+    window.visualViewport?.addEventListener("resize", onResize);
+    return () => {
+      rootStyle.overflow = previous;
+      window.removeEventListener("resize", onResize);
+      window.visualViewport?.removeEventListener("resize", onResize);
     };
   });
 
@@ -85,80 +141,96 @@
       id={panelId}
       role="dialog"
       aria-label={t("libraryToolbar.filters")}
+      style:max-height={phone && sheetMax ? sheetMax : undefined}
       bind:this={panel}
     >
-      <div class="group" role="group" aria-label={t("difficulty.filters")}>
-        <span class="heading">{t("libraryToolbar.level")}</span>
-        <div class="chip-row">
-          {#each levels as item (item.id)}
-            <Chip
-              variant="filter"
-              label={t(item.key)}
-              testid={`library-level-${item.id}`}
-              pressed={ui.level === item.id}
-              onclick={() => (ui.level = item.id)}
-            />
-          {/each}
+      <div class="sheet-chrome">
+        <div class="sheet-head">
+          <span class="sheet-title">{t("libraryToolbar.filters")}</span>
+          <button
+            type="button"
+            class="done"
+            data-testid="library-filters-done"
+            onclick={() => close(true)}
+          >
+            {t("libraryToolbar.done")}
+          </button>
         </div>
       </div>
-
-      {#if ui.facets.keys.length || ui.facets.genres.length}
-        <div class="selects" role="group" aria-label={t("metadata.filters")}>
-          {#if ui.facets.keys.length}
-            <label class="facet">
-              <span class="heading">{t("metadata.filterKey")}</span>
-              <select data-testid="library-key-filter" bind:value={ui.keyFilter}>
-                <option value="">{t("metadata.filterAny")}</option>
-                {#each ui.facets.keys as item (item.name)}
-                  <option value={item.name}>{keyLabel(item.name, t)} ({item.count})</option>
-                {/each}
-              </select>
-            </label>
-          {/if}
-          {#if ui.facets.genres.length}
-            <label class="facet">
-              <span class="heading">{t("metadata.filterGenre")}</span>
-              <select data-testid="library-genre-filter" bind:value={ui.genreFilter}>
-                <option value="">{t("metadata.filterAny")}</option>
-                {#each ui.facets.genres as item (item.name)}
-                  <option value={item.name}>{item.name} ({item.count})</option>
-                {/each}
-              </select>
-            </label>
-          {/if}
-        </div>
-      {/if}
-
-      {#if ui.tagList.length}
-        <div class="group" role="group" aria-label={t("tags.filters")}>
-          <span class="heading">{t("libraryToolbar.tags")}</span>
+      <div class="sheet-body">
+        <div class="group" role="group" aria-label={t("difficulty.filters")}>
+          <span class="heading">{t("libraryToolbar.level")}</span>
           <div class="chip-row">
-            {#each ui.tagList as item (item.tag)}
+            {#each levels as item (item.id)}
               <Chip
-                variant="tag"
-                label={item.tag}
-                count={item.count}
-                testid="library-tag"
-                pressed={tagOn(item.tag)}
-                onclick={() => toggleTagFilter(item.tag)}
+                variant="filter"
+                label={t(item.key)}
+                testid={`library-level-${item.id}`}
+                pressed={ui.level === item.id}
+                onclick={() => (ui.level = item.id)}
               />
             {/each}
           </div>
-          {#if onmanagetags}
-            <button
-              type="button"
-              class="button ghost manage"
-              data-testid="library-manage-tags"
-              onclick={() => {
-                close(false);
-                onmanagetags();
-              }}
-            >
-              {t("manageTags.open")}
-            </button>
-          {/if}
         </div>
-      {/if}
+
+        {#if ui.facets.keys.length || ui.facets.genres.length}
+          <div class="selects" role="group" aria-label={t("metadata.filters")}>
+            {#if ui.facets.keys.length}
+              <label class="facet">
+                <span class="heading">{t("metadata.filterKey")}</span>
+                <select data-testid="library-key-filter" bind:value={ui.keyFilter}>
+                  <option value="">{t("metadata.filterAny")}</option>
+                  {#each ui.facets.keys as item (item.name)}
+                    <option value={item.name}>{keyLabel(item.name, t)} ({item.count})</option>
+                  {/each}
+                </select>
+              </label>
+            {/if}
+            {#if ui.facets.genres.length}
+              <label class="facet">
+                <span class="heading">{t("metadata.filterGenre")}</span>
+                <select data-testid="library-genre-filter" bind:value={ui.genreFilter}>
+                  <option value="">{t("metadata.filterAny")}</option>
+                  {#each ui.facets.genres as item (item.name)}
+                    <option value={item.name}>{item.name} ({item.count})</option>
+                  {/each}
+                </select>
+              </label>
+            {/if}
+          </div>
+        {/if}
+
+        {#if ui.tagList.length}
+          <div class="group" role="group" aria-label={t("tags.filters")}>
+            <span class="heading">{t("libraryToolbar.tags")}</span>
+            <div class="chip-row">
+              {#each ui.tagList as item (item.tag)}
+                <Chip
+                  variant="tag"
+                  label={item.tag}
+                  count={item.count}
+                  testid="library-tag"
+                  pressed={tagOn(item.tag)}
+                  onclick={() => toggleTagFilter(item.tag)}
+                />
+              {/each}
+            </div>
+            {#if onmanagetags}
+              <button
+                type="button"
+                class="button ghost manage"
+                data-testid="library-manage-tags"
+                onclick={() => {
+                  close(false);
+                  onmanagetags();
+                }}
+              >
+                {t("manageTags.open")}
+              </button>
+            {/if}
+          </div>
+        {/if}
+      </div>
     </div>
   {/if}
 </div>
@@ -219,6 +291,14 @@
     box-shadow: var(--shadow-md);
   }
 
+  .sheet-chrome {
+    display: none;
+  }
+
+  .sheet-body {
+    display: contents;
+  }
+
   .group,
   .facet {
     display: grid;
@@ -248,16 +328,71 @@
     justify-self: start;
   }
 
-  /* Phones: the popover spans the toolbar, not the button. */
+  /* Phones: a bottom sheet that stays inside the viewport, with a way to close it. */
   @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
     .filters {
       position: static;
     }
 
     .panel {
+      position: fixed;
+      top: auto;
+      bottom: 0;
       left: 0;
-      right: 0;
+      z-index: 46;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
       width: auto;
+      max-height: min(70dvh, calc(100dvh - var(--sp-8) - var(--sp-7) - var(--sp-5)));
+      padding: 0;
+      overflow: hidden;
+      border-bottom: 0;
+      border-radius: var(--r-lg) var(--r-lg) 0 0;
+      overscroll-behavior: contain;
+    }
+
+    .sheet-chrome {
+      display: block;
+      flex: none;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .sheet-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--sp-3);
+      padding: var(--sp-1) var(--sp-2) var(--sp-1) var(--sp-4);
+    }
+
+    .sheet-title {
+      font-size: var(--fs-sm);
+      font-weight: 650;
+    }
+
+    .done {
+      min-height: 44px;
+      padding: 0 var(--sp-3);
+      border: 0;
+      background: transparent;
+      color: var(--accent-text);
+      font-size: var(--fs-sm);
+      font-weight: 650;
+    }
+
+    .done:hover {
+      background: var(--accent-soft);
+    }
+
+    .sheet-body {
+      display: grid;
+      gap: var(--sp-4);
+      min-height: 0;
+      overflow-y: auto;
+      padding: var(--sp-4);
+      padding-bottom: calc(var(--sp-4) + var(--safe-b));
+      overscroll-behavior: contain;
     }
   }
 </style>

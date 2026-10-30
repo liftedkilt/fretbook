@@ -167,6 +167,13 @@ for (const scheme of ["light", "dark"] as const) {
       found.push(...(await violations(page, "library-active-filters")));
       await page.getByTestId("library-clear-filters").click();
 
+      await page.setViewportSize({ width: 390, height: 664 });
+      await page.getByTestId("library-filters").click();
+      await expect(page.getByTestId("library-filters-done")).toBeVisible();
+      found.push(...(await violations(page, "library-filters-phone")));
+      await page.getByTestId("library-filters-done").click();
+      await page.setViewportSize({ width: 1280, height: 720 });
+
       await page.getByTestId("song-menu").first().click();
       await expect(page.getByRole("menu")).toBeVisible();
       found.push(...(await violations(page, "song-menu")));

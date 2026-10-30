@@ -2433,6 +2433,7 @@
     "active": "Active filters",
     "remove": "Remove filter: {filter}",
     "clear": "Clear",
+    "done": "Done",
     "sort": {
       "updatedDesc": "Recently updated",
       "updatedAsc": "Least recently updated",

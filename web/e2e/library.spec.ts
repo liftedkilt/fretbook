@@ -119,7 +119,10 @@ test("the toolbar is one row on a desktop and the popover holds the filters", as
   }
 
   await page.getByTestId("library-filters").click();
-  await expect(page.getByRole("dialog", { name: "Filters" })).toBeVisible();
+  const dialog = page.getByRole("dialog", { name: "Filters" });
+  await expect(dialog).toBeVisible();
+  await expect(page.getByTestId("library-filters-done")).toBeHidden();
+  expect(await dialog.evaluate((el) => getComputedStyle(el).position)).toBe("absolute");
   await page.getByTestId("library-level-easy").click();
   await expect(page.getByTestId("library-filters-count")).toHaveText("1");
   await page.keyboard.press("Escape");
@@ -128,6 +131,87 @@ test("the toolbar is one row on a desktop and the popover holds the filters", as
   await expect(page.getByTestId("library-active-filter")).toHaveText("Easy (1–3)");
   await page.getByTestId("library-clear-filters").click();
   await expect(page.getByTestId("library-active-filter")).toHaveCount(0);
+});
+
+test("on a phone the filters open as a sheet without scrolling the page", async ({
+  page,
+  seed,
+}) => {
+  const song = await seed.create({ title: "Phone Riff", artist: "Band" });
+  await page.request.put(`/api/songs/${song.id}/tags`, {
+    data: { tags: ["funk", "slap", "jazz", "blues", "rock", "latin"] },
+  });
+  await page.setViewportSize({ width: 390, height: 664 });
+  await page.goto("/");
+  await expect(page.getByTestId("song-card")).toHaveCount(1);
+  const trigger = page.getByTestId("library-filters");
+  await expect(trigger).toBeVisible();
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+
+  await trigger.click();
+  const dialog = page.getByRole("dialog", { name: "Filters" });
+  await expect(dialog).toBeVisible();
+  await expect(page.getByTestId("library-filters-done")).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  await expect(page.getByTestId("topbar-title")).toHaveCount(0);
+
+  const fit = await page.evaluate(() => {
+    const viewH = window.innerHeight;
+    const viewW = window.innerWidth;
+    const box = (el: Element | null) => {
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return { top: r.top, right: r.right, bottom: r.bottom, left: r.left, height: r.height };
+    };
+    const inside = (r: ReturnType<typeof box>) =>
+      !!r &&
+      r.height > 0 &&
+      r.top >= -1 &&
+      r.left >= -1 &&
+      r.bottom <= viewH + 1 &&
+      r.right <= viewW + 1;
+    const panel = document.querySelector('[role="dialog"]');
+    const chips = [...document.querySelectorAll('[data-testid="library-tag"]')];
+    const body = chips[0]?.closest(".sheet-body");
+    const bodyBox = box(body ?? null);
+    const chipBoxes = chips.map((chip) => box(chip));
+    // A chip in the sheet's scrollport counts: the sheet scrolls, the page does not.
+    const chipsInSheet = chipBoxes.every((r) => {
+      if (!r || !bodyBox || !body) return false;
+      const onScreen = r.bottom <= viewH + 1 && r.top >= -1 && r.left >= -1 && r.right <= viewW + 1;
+      if (onScreen && r.top >= bodyBox.top - 1 && r.bottom <= bodyBox.bottom + 1) return true;
+      return (
+        body.scrollHeight > body.clientHeight + 1 &&
+        bodyBox.bottom <= viewH + 1 &&
+        bodyBox.top >= -1
+      );
+    });
+    const first = chipBoxes[0];
+    return {
+      position: panel ? getComputedStyle(panel).position : "",
+      dialog: inside(box(panel)),
+      done: inside(box(document.querySelector('[data-testid="library-filters-done"]'))),
+      trigger: inside(box(document.querySelector('[data-testid="library-filters"]'))),
+      chipCount: chips.length,
+      firstChipVisible:
+        !!first && !!bodyBox && first.top >= bodyBox.top - 1 && first.bottom <= bodyBox.bottom + 1,
+      chipsInSheet,
+    };
+  });
+  expect(fit.position).toBe("fixed");
+  expect(fit.dialog).toBe(true);
+  expect(fit.done).toBe(true);
+  expect(fit.trigger).toBe(true);
+  expect(fit.chipCount).toBeGreaterThan(1);
+  expect(fit.firstChipVisible).toBe(true);
+  expect(fit.chipsInSheet).toBe(true);
+
+  await page.getByTestId("library-level-easy").click();
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  await page.getByTestId("library-filters-done").click();
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
 });
 
 test("a song's menu holds edit, setlist and a delete that names the song", async ({
