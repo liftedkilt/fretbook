@@ -4,7 +4,7 @@ import type { ChromaEvent } from "./chroma";
 import type { PitchEvent } from "./engine";
 import type { ListenOptions, ListenSession } from "./input";
 import type { WaitStep } from "./wait";
-import { COMPLETE_HIT_SHARE, WaitRun } from "./waitRun";
+import { BLEED_WRONG_NOTES, COMPLETE_HIT_SHARE, WaitRun } from "./waitRun";
 
 const step = (tick: number, midi: number, kind: "note" | "dead" = "note"): WaitStep => ({
   bar: 0,
@@ -50,6 +50,7 @@ function setup(steps: WaitStep[], hintSeconds = 0, match?: { anyOctave: boolean 
     hint: [] as number[],
     hitFlags: [] as boolean[],
     heard: [] as string[],
+    bleed: 0,
   };
   const run = new WaitRun({
     steps,
@@ -65,6 +66,7 @@ function setup(steps: WaitStep[], hintSeconds = 0, match?: { anyOctave: boolean 
       calls.hitFlags.push(hit);
     },
     onHeard: (heard) => calls.heard.push(heard.kind),
+    onBleed: () => (calls.bleed += 1),
     onHint: (_, index) => calls.hint.push(index),
   });
   return {
@@ -82,6 +84,23 @@ function setup(steps: WaitStep[], hintSeconds = 0, match?: { anyOctave: boolean 
 describe("WaitRun", () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
+
+  it("reports bleed once after several wrong notes in a row, and not when a hit breaks the streak", async () => {
+    const { run, calls, hear } = setup([step(0, 40), step(960, 41)]);
+    await run.start();
+    // A wrong attack is reported once its settle window has passed without the right note.
+    const wrongNote = (time: number) => {
+      hear(attack(time, 45));
+      hear({ ...attack(time + 0.5, 45), onset: false });
+    };
+    run.reach(0);
+    for (let i = 0; i < BLEED_WRONG_NOTES - 1; i++) wrongNote(1 + i);
+    hear(attack(10, 40));
+    expect(calls.bleed).toBe(0);
+    run.reach(1);
+    for (let i = 0; i < BLEED_WRONG_NOTES + 2; i++) wrongNote(20 + i);
+    expect(calls.bleed).toBe(1);
+  });
 
   it("tells whether a step was played or skipped, and what was heard on the way", async () => {
     const { run, calls, hear } = setup([step(0, 40), step(960, 41)]);

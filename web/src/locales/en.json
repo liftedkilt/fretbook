@@ -1058,7 +1058,8 @@
     "heardSharp": "Heard {note}, a little sharp",
     "heardEarly": "Too early: wait for the cursor",
     "heardNothing": "Nothing heard: pluck a bit harder",
-    "heardOther": "Not the chord yet, try again"
+    "heardOther": "Not the chord yet, try again",
+    "bleed": "The microphone seems to hear the backing. Use headphones, or turn on Silent, so it does not set off notes."
   },
   "waitMode": {
     "fretboard": "Where to play the expected note"

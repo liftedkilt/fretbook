@@ -1058,7 +1058,8 @@
     "heardSharp": "Ouvi {note}, um pouco alta",
     "heardEarly": "Cedo demais: espere o cursor",
     "heardNothing": "Nada ouvido: toque um pouco mais forte",
-    "heardOther": "Ainda não é o acorde, tente de novo"
+    "heardOther": "Ainda não é o acorde, tente de novo",
+    "bleed": "O microfone parece captar o acompanhamento. Use fones de ouvido ou ative o modo Silencioso para que ele não dispare notas."
   },
   "waitMode": {
     "fretboard": "Onde tocar a nota esperada"

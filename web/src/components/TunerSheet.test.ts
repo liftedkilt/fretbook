@@ -168,11 +168,26 @@ describe("TunerSheet", () => {
     openTuner({ tuning: [64, 59, 55, 50, 45, 40], capo: 0 });
     await fireEvent.click(await screen.findByTestId("tuner-auto"));
     await fireEvent.click(screen.getByTestId("tuner-string-5"));
+    await fireEvent.click(screen.getByTestId("tuner-string-5")); // stop the reference tone it started
     await fireEvent.click(screen.getByTestId("tuner-start"));
     emit(midiToFrequency(45), 0);
     await tick();
     expect(screen.getByTestId("tuner-note")).toHaveTextContent("E2");
     expect(screen.getByTestId("tuner-cents")).toHaveTextContent("+500");
+  });
+
+  it("ignores the mic while the reference tone plays, and listens again when it stops", async () => {
+    render(TunerSheet);
+    openTuner({ tuning: [64, 59, 55, 50, 45, 40], capo: 0 });
+    await fireEvent.click(await screen.findByTestId("tuner-start"));
+    await fireEvent.click(screen.getByTestId("tuner-string-3"));
+    emit(midiToFrequency(50), 0);
+    await tick();
+    expect(screen.getByTestId("tuner-note")).toHaveTextContent("–");
+    await fireEvent.click(screen.getByTestId("tuner-string-3"));
+    emit(midiToFrequency(50), 1);
+    await tick();
+    expect(screen.getByTestId("tuner-note")).toHaveTextContent("D3");
   });
 
   it("offers the capo and tunes the raised pitches on request", async () => {

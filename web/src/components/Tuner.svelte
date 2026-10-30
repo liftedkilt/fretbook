@@ -121,6 +121,8 @@
   );
 
   function onPitch(event: PitchEvent) {
+    // The reference tone comes out of the speakers and into the mic: it is not the string.
+    if (tone) return;
     const frequency = smoother.push(event.time, event.frequency);
     if (frequency === null) {
       reading = null;
