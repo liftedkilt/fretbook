@@ -1130,20 +1130,9 @@
     }
   }
 
-  /** Pedal: clear the loop, else loop the bar being played (or the first one). */
-  // On a phone the dock is one row; loop, follow and full screen move into its "⋯" menu.
-  const PHONE_QUERY = "(max-width: 767px), (max-height: 500px) and (pointer: coarse)";
-  let phone = $state(typeof matchMedia !== "undefined" && matchMedia(PHONE_QUERY).matches);
-  $effect(() => {
-    if (typeof matchMedia === "undefined") return;
-    const query = matchMedia(PHONE_QUERY);
-    const update = () => (phone = query.matches);
-    update();
-    query.addEventListener("change", update);
-    return () => query.removeEventListener("change", update);
-  });
-
   let fullscreenToggle = $state<FullscreenToggle | null>(null);
+
+  /** Pedal: clear the loop, else loop the bar being played (or the first one). */
 
   function toggleLoop() {
     if (loopA != null && loopB != null) return clearLoop();
