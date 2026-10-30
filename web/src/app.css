@@ -2153,6 +2153,14 @@ textarea {
     gap: 2px;
   }
 
+  @media (max-width: 380px) {
+    .dock-bar {
+      gap: 2px;
+      padding-left: calc(6px + var(--safe-l));
+      padding-right: calc(6px + var(--safe-r));
+    }
+  }
+
   /* Full screen lives in the ⋯ menu on a phone; the button stays mounted to drive it. */
   .fullscreen-dock {
     display: none;

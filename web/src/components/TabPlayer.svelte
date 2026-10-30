@@ -815,6 +815,8 @@
       }
       if (event.key === "Escape" && handsFree.stage && !helpOpen) {
         event.preventDefault();
+        trackScroll();
+        panelOpen = false;
         setStage(false);
         return;
       }
@@ -1216,25 +1218,81 @@
     return fullscreenWidth > 0 ? fullscreenScale(fullscreenWidth) : 1;
   }
 
-  // The layout changes with the full screen attribute; measure again once it has settled.
+  // The layout changes with the full screen attribute or stage mode; keep scroll place once settled.
+  let lastScoreOffset = 0;
+  let lastCursorInView = false;
+  let lastScale = 1;
+
+  function trackScroll() {
+    if (!scroller) return;
+    if (phone) {
+      lastScoreOffset = Math.max(0, -scroller.getBoundingClientRect().top);
+      const cursor = host?.querySelector<HTMLElement>(".at-cursor-bar");
+      if (cursor) {
+        const top = document.querySelector(".topbar")?.getBoundingClientRect().height ?? 0;
+        const box = cursor.getBoundingClientRect();
+        const dock =
+          document.querySelector("[data-testid=player-fretboard]") ??
+          document.querySelector(".dock-bar");
+        const bottom = Math.min(innerHeight, dock?.getBoundingClientRect().top ?? innerHeight);
+        lastCursorInView = box.top >= top && box.bottom <= bottom;
+      } else {
+        lastCursorInView = false;
+      }
+    } else {
+      lastScoreOffset = scroller.scrollTop;
+    }
+  }
+
   $effect(() => {
+    lastScale = scoreScale();
     const sync = () => {
+      const prevOffset = lastScoreOffset;
+      const prevCursorInView = lastCursorInView;
+      const prevScale = lastScale;
+      const currentScale = scoreScale();
+      const scaleRatio = prevScale > 0 ? currentScale / prevScale : 1;
+      lastScale = currentScale;
+
       fullscreenWidth = layoutFocused() ? window.innerWidth : 0;
-      requestAnimationFrame(() =>
-        requestAnimationFrame(() => window.dispatchEvent(new Event("resize"))),
-      );
+      requestAnimationFrame(() => {
+        window.dispatchEvent(new Event("resize"));
+        requestAnimationFrame(() => {
+          if (phone && scroller) {
+            if (prevCursorInView) {
+              revealCursor();
+            } else if (prevOffset > 0) {
+              const scoreDocTop = scroller.getBoundingClientRect().top + window.scrollY;
+              window.scrollTo(0, Math.max(0, Math.round(scoreDocTop + prevOffset * scaleRatio)));
+            }
+          } else if (scroller && prevOffset > 0) {
+            scroller.scrollTop = Math.round(prevOffset * scaleRatio);
+          }
+        });
+      });
     };
-    // Real full screen and the iPhone focus mode both flip the same attribute.
+    // Real full screen, iPhone focus mode, and stage mode all flip layout attributes on <html>.
     const watcher = new MutationObserver(sync);
-    watcher.observe(document.documentElement, { attributeFilter: [FULLSCREEN_ATTRIBUTE] });
+    watcher.observe(document.documentElement, {
+      attributeFilter: [FULLSCREEN_ATTRIBUTE, "data-stage"],
+    });
     const follow = () => {
       if (fullscreenWidth > 0) fullscreenWidth = window.innerWidth;
     };
     window.addEventListener("resize", follow);
+    window.addEventListener("scroll", trackScroll, { passive: true });
     return () => {
       watcher.disconnect();
       window.removeEventListener("resize", follow);
+      window.removeEventListener("scroll", trackScroll);
     };
+  });
+
+  $effect(() => {
+    const el = scroller;
+    if (!el || phone) return;
+    el.addEventListener("scroll", trackScroll, { passive: true });
+    return () => el.removeEventListener("scroll", trackScroll);
   });
 
   $effect(() => {
@@ -1242,7 +1300,6 @@
     const scale = scoreScale();
     if (!api || api.settings.display.scale === scale) return;
     api.settings.display.scale = scale;
-    api.updateSettings();
     api.render();
   });
 
@@ -1806,6 +1863,11 @@
     document.documentElement.setAttribute("data-stage", "");
     return () => document.documentElement.removeAttribute("data-stage");
   });
+
+  // Entering stage mode closes the practice sheet so leaving stage mode doesn't reopen it.
+  $effect(() => {
+    if (handsFree.stage) panelOpen = false;
+  });
 </script>
 
 <div
@@ -1814,6 +1876,22 @@
   class:has-fretboard={practice.fretboard.on || waitOn}
   style:--dock-live={dockHeight > 0 ? `calc(${dockHeight + 14}px + var(--safe-b))` : undefined}
 >
+  {#if handsFree.stage && !fullscreenToggle?.isOn()}
+    <button
+      type="button"
+      class="stage-corner-exit"
+      data-testid="stage-corner-exit"
+      aria-label={t("handsFree.exitStage")}
+      title={t("handsFree.exitStage")}
+      onclick={() => {
+        trackScroll();
+        panelOpen = false;
+        setStage(false);
+      }}
+    >
+      <Icon name="close" size={18} />
+    </button>
+  {/if}
   {#if lessonRef}<LessonRunBanner bind:this={lessonBanner} lesson={lessonRef} />{/if}
   <SongHeader
     {song}
@@ -2100,7 +2178,11 @@
             if (!active) applyPractice();
           }}
           onnotation={toggleNotation}
-          onstage={setStage}
+          onstage={(on) => {
+            trackScroll();
+            if (on) panelOpen = false;
+            setStage(on);
+          }}
           onlistenDevice={(next) => (listenDevice = next)}
           onlistenChannel={(next) => (listenChannel = next)}
         />
@@ -2288,7 +2370,10 @@
             icon="minimize"
             label={t("handsFree.exitStage")}
             testid="stage-exit"
-            onclick={() => setStage(false)}
+            onclick={() => {
+              panelOpen = false;
+              setStage(false);
+            }}
           />
         {/if}
         <DockSpeed {rate} onchange={setRate} />
@@ -2301,15 +2386,17 @@
             onclick={toggleLoop}
           />
         {/if}
-        <DockTextButton
-          icon="target"
-          label={t("playerSheet.practice")}
-          testid="player-panel-toggle"
-          pressed={waitOn || scoreOn}
-          expanded={panelOpen}
-          controls={panelOpen ? "player-sheet" : undefined}
-          onclick={() => (panelOpen = !panelOpen)}
-        />
+        {#if !handsFree.stage}
+          <DockTextButton
+            icon="target"
+            label={t("playerSheet.practice")}
+            testid="player-panel-toggle"
+            pressed={waitOn || scoreOn}
+            expanded={panelOpen}
+            controls={panelOpen ? "player-sheet" : undefined}
+            onclick={() => (panelOpen = !panelOpen)}
+          />
+        {/if}
         {#if !phone}
           <IconButton
             class="ghost"
@@ -2320,7 +2407,7 @@
             onclick={() => setFollow(!follow)}
           />
         {/if}
-        <FullscreenToggle bind:this={fullscreenToggle} />
+        <FullscreenToggle bind:this={fullscreenToggle} onbeforetoggle={trackScroll} />
         <OverflowMenu
           label={t("player.more")}
           testid="player-more"
@@ -2349,7 +2436,10 @@
                     label: fullscreenToggle?.isOn() ? t("fullscreen.exit") : t("fullscreen.enter"),
                     icon: fullscreenToggle?.isOn() ? "minimize" : "maximize",
                     testid: "player-fullscreen-menu",
-                    onclick: () => void fullscreenToggle?.toggle(),
+                    onclick: () => {
+                      trackScroll();
+                      void fullscreenToggle?.toggle();
+                    },
                   },
                 ]
               : []),
@@ -2584,6 +2674,38 @@
   @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
     .song-saved-loops {
       display: none;
+    }
+  }
+  .stage-corner-exit {
+    display: none;
+    position: fixed;
+    top: calc(12px + env(safe-area-inset-top, 0px));
+    right: calc(12px + env(safe-area-inset-right, 0px));
+    z-index: 100;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--r-pill, 9999px);
+    border: 1px solid var(--line-strong, var(--line));
+    background: var(--surface-2, var(--surface));
+    color: var(--text-2);
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.15);
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
+  }
+
+  .stage-corner-exit:hover {
+    background: var(--surface-3);
+    color: var(--text);
+  }
+
+  @media (pointer: coarse), (hover: none), (max-width: 767px) {
+    .stage-corner-exit {
+      display: inline-flex;
     }
   }
 </style>

@@ -1,9 +1,6 @@
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import type { Settings, model } from "@coderline/alphatab";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
-
-import type { TabSong } from "../lib/types";
-import TabPlayer from "./TabPlayer.svelte";
 
 const lifecycle = vi.hoisted(() => ({
   created: vi.fn(),
@@ -11,6 +8,9 @@ const lifecycle = vi.hoisted(() => ({
   loaded: vi.fn(),
   rendered: vi.fn(),
 }));
+
+import type { TabSong } from "../lib/types";
+import TabPlayer from "./TabPlayer.svelte";
 
 vi.mock("@coderline/alphatab", async (importOriginal) => {
   const original = await importOriginal<typeof import("@coderline/alphatab")>();
@@ -53,6 +53,7 @@ vi.mock("@coderline/alphatab", async (importOriginal) => {
       changeTrackVolume = vi.fn();
       changeTrackMute = vi.fn();
       changeTrackSolo = vi.fn();
+      ["render"] = vi.fn();
       destroy = lifecycle.destroyed;
 
       constructor(_element: HTMLElement, settings: Settings) {
@@ -169,4 +170,36 @@ it("switches between imported instruments above the score without recreating the
   await waitFor(() => expect(lifecycle.rendered).toHaveBeenLastCalledWith([0]));
   expect(lifecycle.created).toHaveBeenCalledTimes(1);
   expect(lifecycle.destroyed).not.toHaveBeenCalled();
+});
+
+it("closes the practice sheet on stage mode, hides practice dock button, and leaves sheet closed on exit", async () => {
+  render(TabPlayer, { song, readOnly: true });
+  await waitFor(() => expect(lifecycle.created).toHaveBeenCalledTimes(1));
+
+  // Open the practice panel
+  const practiceToggle = screen.getByTestId("player-panel-toggle");
+  await fireEvent.click(practiceToggle);
+  expect(screen.getByTestId("player-sheet")).toBeInTheDocument();
+
+  // Switch to the View tab in PlayerSheet
+  await fireEvent.click(screen.getByTestId("player-sheet-tab-view"));
+
+  // Enter stage mode from the practice sheet
+  const stageCheckbox = screen.getByTestId("stage-toggle");
+  await fireEvent.click(stageCheckbox.querySelector("input") ?? stageCheckbox);
+
+  // Practice sheet is closed
+  await waitFor(() => expect(screen.queryByTestId("player-sheet")).toBeNull());
+  // Practice toggle is hidden from dock tools in stage mode (preventing clipping on narrow screens)
+  expect(screen.queryByTestId("player-panel-toggle")).toBeNull();
+  // Exit stage button is available
+  const exitButton = screen.getByTestId("stage-exit");
+  expect(exitButton).toBeInTheDocument();
+
+  // Leaving stage mode via exit button
+  await fireEvent.click(exitButton);
+  // Practice sheet does NOT reopen
+  expect(screen.queryByTestId("player-sheet")).toBeNull();
+  // Practice dock button is restored
+  expect(screen.getByTestId("player-panel-toggle")).toBeInTheDocument();
 });

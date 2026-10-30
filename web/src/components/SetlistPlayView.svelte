@@ -2,7 +2,8 @@
   import Icon from "./Icon.svelte";
   import SongView from "./SongView.svelte";
   import { getSetlist } from "../lib/api";
-  import { handsFree, isTyping, pedalAction } from "../lib/handsFree.svelte";
+  import { handsFree, isTyping, pedalAction, setStage } from "../lib/handsFree.svelte";
+  import { onDestroy } from "svelte";
   import { t } from "../lib/i18n.svelte";
   import { followLink, hrefFor, navigate } from "../lib/router.svelte";
   import {
@@ -60,6 +61,9 @@
     event.preventDefault();
     go(step > 0 ? next : previous);
   }
+  onDestroy(() => {
+    if (handsFree.stage) setStage(false);
+  });
 </script>
 
 <svelte:window onkeydown={onKeydown} />
@@ -128,7 +132,7 @@
     </p>
   {/if}
   {#key `${index}:${entry.song_id}`}
-    <SongView id={entry.song_id} transpose={entry.transpose} />
+    <SongView id={entry.song_id} transpose={entry.transpose} inSetlist={true} />
   {/key}
 {:else if !error}
   <p class="muted" role="status">{t("app.loading")}</p>
