@@ -134,6 +134,7 @@
   let host = $state<HTMLDivElement | null>(null);
   let scroller = $state<HTMLDivElement | null>(null);
   let audioEl = $state<HTMLAudioElement | null>(null);
+  let pausedAudioSeek: { measure: number; position: number; seconds: number } | null = null;
   let stemsActive = false;
   // For tests: whether the synth beside the recording is off, loading, ready or sounding.
   let synthState = $state<"off" | "loading" | "ready" | "playing">("off");
@@ -186,12 +187,45 @@
   let currentSeconds = $state(0);
   let clock = $state("0:00.0");
   let playing = $state(false);
+  let muted = $state(false);
   let countingIn = $state(false);
   let helpOpen = $state(false);
   let countInTimer = 0;
   let saveLabel = $state("");
   let saveTimer = 0;
   let pendingSync: (() => Promise<void>) | null = null;
+
+  function updatePlayingOutline(
+    element: HTMLDivElement,
+    instance: alphaTab.AlphaTabApi,
+    beat: alphaTab.model.Beat,
+  ) {
+    if (!beat.notes.length) {
+      element.querySelector(".at-playing-outline")?.remove();
+      return;
+    }
+    const bounds = instance.boundsLookup?.findBeat(beat);
+    if (!bounds) return;
+    const staff = bounds.barBounds.visualBounds;
+    let outline = element.querySelector<SVGSVGElement>(".at-playing-outline");
+    if (!outline) {
+      outline = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      outline.setAttribute("class", "at-playing-outline");
+      outline.setAttribute("viewBox", "0 0 40 180");
+      outline.setAttribute("preserveAspectRatio", "none");
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute(
+        "d",
+        "M20 2 C31 2 38 11 38 22 V138 C38 154 31 168 20 178 C9 168 2 154 2 138 V22 C2 11 9 2 20 2 Z",
+      );
+      outline.appendChild(path);
+      element.appendChild(outline);
+    }
+    outline.style.left = `${bounds.onNotesX - 10}px`;
+    outline.style.top = `${staff.y - 14}px`;
+    outline.style.width = "20px";
+    outline.style.height = `${staff.h + 26}px`;
+  }
 
   // Wait mode: the synth plays and stops on each beat of the chosen track until it is played.
   type WaitState = "idle" | "waiting" | "hit" | "done";
@@ -331,6 +365,15 @@
 
   function paintAudioClock() {
     if (!song.has_audio || !audioEl) return;
+    if (audioEl.paused && pausedAudioSeek) {
+      currentMeasure = pausedAudioSeek.measure;
+      currentPosition = pausedAudioSeek.position;
+      currentSeconds = pausedAudioSeek.seconds;
+      clock = formatTime(pausedAudioSeek.seconds);
+      playing = false;
+      return;
+    }
+    if (!audioEl.paused) pausedAudioSeek = null;
     const seconds = audioEl.currentTime;
     const output = player.api?.player?.output as
       alphaTab.synth.IExternalMediaSynthOutput | undefined;
@@ -383,6 +426,10 @@
     const source = synthTex;
     const index = untrack(() => trackIndex);
     if (!element || !synthWanted || !source) return;
+    return untrack(() => mountCompanion(source, index));
+  });
+
+  function mountCompanion(source: string, index: number) {
     // The player needs a place in the page, but nothing in it is shown.
     const hidden = document.createElement("div");
     hidden.setAttribute("aria-hidden", "true");
@@ -427,7 +474,7 @@
       instance.destroy();
       hidden.remove();
     };
-  });
+  }
 
   $effect(() => {
     const element = host;
@@ -435,6 +482,15 @@
     const source = tex;
     const useAudio = song.has_audio;
     if (!element || !scrollElement) return;
+    return untrack(() => mountScorePlayer(element, scrollElement, source, useAudio));
+  });
+
+  function mountScorePlayer(
+    element: HTMLDivElement,
+    scrollElement: HTMLDivElement,
+    source: string,
+    useAudio: boolean,
+  ) {
     const settings = new alphaTab.Settings();
     settings.core.fontDirectory = new URL("font/", document.baseURI).href;
     settings.core.logLevel = alphaTab.LogLevel.Warning;
@@ -457,6 +513,8 @@
       : alphaTab.ScrollMode.Off;
     const instance = new alphaTab.AlphaTabApi(element, settings);
     player.api = instance;
+    let mouseDownBeat: alphaTab.model.Beat | null = null;
+    let scoreSelectionDragged = false;
     instance.scoreLoaded.on(() => {
       queueMicrotask(() => {
         scoreReady += 1;
@@ -473,6 +531,7 @@
     });
     // Without audio, alphaTab's own events say where playback is, tempo changes included.
     instance.playedBeatChanged.on((beat) => {
+      updatePlayingOutline(element, instance, beat);
       if (useAudio) return;
       currentMeasure = followPlayed(
         playedBars(untrack(() => song.document.bars)),
@@ -503,8 +562,20 @@
     });
     // A click on the score moves alphaTab's cursor; wait mode follows it to the clicked beat.
     instance.beatMouseDown.on((beat) => {
-      if (!waitRun || beat.voice.bar.staff.track.index !== untrack(() => trackIndex)) return;
-      followWaitClick(beat.voice.bar.index, beat.displayStart);
+      mouseDownBeat = beat;
+      scoreSelectionDragged = false;
+      if (waitRun && beat.voice.bar.staff.track.index === untrack(() => trackIndex))
+        followWaitClick(beat.voice.bar.index, beat.displayStart);
+    });
+    instance.beatMouseMove.on((beat) => {
+      if (mouseDownBeat && mouseDownBeat !== beat) scoreSelectionDragged = true;
+    });
+    instance.beatMouseUp.on((beat) => {
+      const clickedBeat = mouseDownBeat;
+      const dragged = scoreSelectionDragged || Boolean(beat && clickedBeat && beat !== clickedBeat);
+      mouseDownBeat = null;
+      scoreSelectionDragged = false;
+      if (clickedBeat && !dragged) seekToBeat(instance, element, clickedBeat);
     });
     instance.playerFinished.on(() => {
       if (scoreRun?.running) {
@@ -538,9 +609,10 @@
     return () => {
       scoreReady = 0;
       player.api = null;
+      element.querySelector(".at-playing-outline")?.remove();
       instance.destroy();
     };
-  });
+  }
 
   $effect(() => {
     if (!scoreReady) return;
@@ -757,16 +829,19 @@
   function applyPractice() {
     savePractice(song.id, practice);
     // While stems play, the recording stays silent and the stems carry the volume.
-    if (audioEl && !stemsActive) audioEl.volume = recordingGain(practice.mix);
+    if (audioEl) {
+      if (!stemsActive) audioEl.volume = recordingGain(practice.mix);
+      audioEl.muted = muted;
+    }
     // A recording is mixed with the synth in the hidden companion player, which has no metronome:
     // the page's own clicks keep time there.
     const api = song.has_audio ? (companion.ready ? companion.api : null) : player.api;
     if (!api?.score) return;
     if (!song.has_audio) {
-      api.metronomeVolume = practice.metronome.on ? practice.metronome.volume : 0;
-      api.masterVolume = waitOn && practice.wait.silent ? 0 : practice.mix.synth;
+      api.metronomeVolume = !muted && practice.metronome.on ? practice.metronome.volume : 0;
+      api.masterVolume = muted || (waitOn && practice.wait.silent) ? 0 : practice.mix.synth;
     } else {
-      api.masterVolume = synthGain(practice.mix);
+      api.masterVolume = muted ? 0 : synthGain(practice.mix);
     }
     api.score.tracks.forEach((item, index) => {
       const id = document_.tracks[index]?.id;
@@ -784,6 +859,18 @@
     if (practice.metronome.on) clicker.unlock();
   }
 
+  function toggleMute() {
+    muted = !muted;
+    if (audioEl) audioEl.muted = muted;
+    const api = song.has_audio ? (companion.ready ? companion.api : null) : player.api;
+    if (api?.score && !song.has_audio) {
+      api.metronomeVolume = !muted && practice.metronome.on ? practice.metronome.volume : 0;
+      api.masterVolume = muted || (waitOn && practice.wait.silent) ? 0 : practice.mix.synth;
+    } else if (api?.score) {
+      api.masterVolume = muted ? 0 : synthGain(practice.mix);
+    }
+  }
+
   /** Seconds one bar lasts on the wall clock, at the current speed. */
   function barLength(index: number): number {
     const starts = song.has_audio ? startsNow() : [];
@@ -799,9 +886,11 @@
     const bar = Math.min(Math.max(index, 0), Math.max(barCount - 1, 0));
     const signature = document_.bars[bar]?.signature ?? [4, 4];
     const plan = countInClicks(signature, barLength(bar), bars);
-    clicker.unlock();
-    const volume = Math.max(practice.metronome.volume, 0.3);
-    for (const click of plan.clicks) clicker.click(click.time, click.accent, volume);
+    if (!muted) {
+      clicker.unlock();
+      const volume = Math.max(practice.metronome.volume, 0.3);
+      for (const click of plan.clicks) clicker.click(click.time, click.accent, volume);
+    }
     countingIn = true;
     countInTimer = window.setTimeout(() => {
       countingIn = false;
@@ -815,7 +904,14 @@
   }
 
   function tickMetronome() {
-    if (!song.has_audio || !audioEl || audioEl.paused || countingIn || !practice.metronome.on)
+    if (
+      !song.has_audio ||
+      !audioEl ||
+      audioEl.paused ||
+      countingIn ||
+      muted ||
+      !practice.metronome.on
+    )
       return;
     const starts = startsNow();
     if (starts.length === 0) return;
@@ -853,8 +949,10 @@
       : practice.countIn.bars;
 
     if (song.has_audio && audioEl) {
-      if (audioEl.paused) runCountIn(currentMeasure, () => api.play(), countBars);
-      else api.pause();
+      if (audioEl.paused) {
+        if (pausedAudioSeek) audioEl.currentTime = pausedAudioSeek.seconds;
+        runCountIn(currentMeasure, () => api.play(), countBars);
+      } else api.pause();
       return;
     }
     if (api.playerState === alphaTab.synth.PlayerState.Playing) api.pause();
@@ -900,6 +998,9 @@
     if (song.has_audio && audioEl) {
       const targetTime = Math.max(0, startsNow()[index] ?? 0);
       audioEl.currentTime = targetTime;
+      pausedAudioSeek = audioEl.paused
+        ? { measure: index, position: 0, seconds: targetTime }
+        : null;
       currentSeconds = targetTime;
       currentMeasure = index;
       if (scoreRun) scoreRun.begin(scoreRange(index));
@@ -915,6 +1016,45 @@
         if (waitState !== "idle") waitState = "idle";
       }
     }
+  }
+
+  function seekToBeat(
+    instance: alphaTab.AlphaTabApi,
+    element: HTMLDivElement,
+    beat: alphaTab.model.Beat,
+  ) {
+    const doc = song.document;
+    const played = followPlayed(order, beat.voice.bar.index, currentMeasure);
+    if (played < 0) return;
+    const tick = tickOfBar(played) + beat.playbackStart;
+    instance.tickPosition = tick;
+    tapIndex = played;
+    currentMeasure = played;
+    currentPosition = beat.displayStart;
+    if (song.has_audio && audioEl) {
+      const starts = startsNow();
+      const barStart = starts[played] ?? 0;
+      const barEnd = starts[played + 1] ?? barStart;
+      const ticks = playedBarTicks(doc, played);
+      const ratio = ticks > 0 ? Math.max(0, Math.min(1, beat.playbackStart / ticks)) : 0;
+      const seconds = Math.max(0, barStart + (barEnd - barStart) * ratio);
+      audioEl.currentTime = seconds;
+      pausedAudioSeek = audioEl.paused
+        ? { measure: played, position: beat.displayStart, seconds }
+        : null;
+      currentSeconds = seconds;
+      clock = formatTime(seconds);
+    } else {
+      currentSeconds = timeAtBarPosition(
+        highwayStarts(doc, false),
+        played,
+        beat.displayStart,
+        playedBarTicks(doc, played),
+      );
+      clock = formatTime(currentSeconds);
+    }
+    if (scoreRun) scoreRun.begin(scoreRange(played));
+    updatePlayingOutline(element, instance, beat);
   }
 
   /** The player clicked a beat of the score while wait mode is on: wait on it, or play on from it. */
@@ -1429,6 +1569,12 @@
   let panelOpen = $state(false);
   let sheetSlot = $state<HTMLDivElement | null>(null);
   const marks = $derived(sectionMarks(document_.bars, order));
+  const currentSection = $derived.by(() => {
+    for (let index = marks.length - 1; index >= 0; index -= 1) {
+      if (marks[index].index <= currentMeasure) return marks[index].label;
+    }
+    return "";
+  });
   const loopStyle = $derived(
     loopA != null && loopB != null && barCount > 1
       ? `left:${(loopA / barCount) * 100}%;width:${((loopB - loopA + 1) / barCount) * 100}%`
@@ -1620,6 +1766,20 @@
         { value: "split", label: t("highway.split"), testid: "player-view-split" },
       ]}
     />
+    {#if document_.tracks.length > 1}
+      <label class="track-select">
+        <span>{t("player.track")}</span>
+        <select
+          data-testid="player-track"
+          value={trackId}
+          onchange={(event) => (trackId = event.currentTarget.value)}
+        >
+          {#each document_.tracks as item (item.id)}
+            <option value={item.id}>{item.name}</option>
+          {/each}
+        </select>
+      </label>
+    {/if}
     <div class="view-chips">
       {#if loopA != null && loopB != null}
         <button
@@ -1705,9 +1865,9 @@
           {readOnly}
           demo={ui.demoMode}
           tracks={song.document.tracks}
-          {trackId}
           audioUrl={audioSrc}
           {audioEl}
+          {muted}
           canTranscribe={ui.workerKinds.includes("audio.transcribe")}
           anchorCount={Object.keys(song.document.sync.anchors).length}
           publishedSync={song.document.sync.points.some((point) => point != null)}
@@ -1767,7 +1927,6 @@
             stemsActive = active;
             if (!active) applyPractice();
           }}
-          ontrack={(id) => (trackId = id)}
           onnotation={toggleNotation}
           onstage={setStage}
           onlistenDevice={(next) => (listenDevice = next)}
@@ -1880,6 +2039,15 @@
           placement="above"
           onclick={() => step(1)}
         />
+        <IconButton
+          class="ghost"
+          icon={muted ? "volumeX" : "volume2"}
+          label={t(muted ? "player.unmutePlayback" : "player.mutePlayback")}
+          testid="player-mute"
+          pressed={muted}
+          placement="above"
+          onclick={toggleMute}
+        />
       </div>
 
       <div class="dock-progress">
@@ -1891,6 +2059,9 @@
               {t("player.statusIdle", { time: clock })}
             {/if}
           </span>
+          {#if currentSection}
+            <span class="dock-section" title={currentSection}>{currentSection}</span>
+          {/if}
           {#if saveLabel}<span class="muted">{saveLabel}</span>{/if}
         </div>
         <div class="scrubber">
@@ -1900,9 +2071,7 @@
               class="scrubber-mark"
               style="left:{(mark.index / Math.max(barCount, 1)) * 100}%"
               aria-hidden="true"
-            >
-              <span class="scrubber-mark-label">{mark.label}</span>
-            </span>
+            ></span>
           {/each}
           <input
             type="range"
@@ -2050,20 +2219,6 @@
     pointer-events: none;
   }
 
-  .scrubber-mark-label {
-    position: absolute;
-    top: var(--sp-2);
-    left: 50%;
-    max-width: calc(var(--sp-8) + var(--sp-4));
-    overflow: hidden;
-    color: var(--text-3);
-    font-size: var(--fs-xs);
-    line-height: 1.2;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    transform: translateX(-50%);
-  }
-
   @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
     .player-body {
       display: block;
@@ -2084,10 +2239,6 @@
       height: auto;
       max-height: min(58dvh, calc(100dvh - var(--dock-space) - var(--sp-6)));
     }
-
-    .scrubber-mark-label {
-      display: none;
-    }
   }
 
   /* The Details section after the score leaves room for the dock, so no gap sits above it. */
@@ -2102,6 +2253,23 @@
     align-items: center;
     gap: var(--sp-2);
     margin-bottom: var(--sp-3);
+  }
+
+  .track-select {
+    display: flex;
+    flex: 0 1 24rem;
+    align-items: center;
+    gap: var(--sp-2);
+    min-width: 0;
+    max-width: 100%;
+    color: var(--text-2);
+    font-size: var(--fs-sm);
+  }
+
+  .track-select select {
+    flex: 1;
+    min-width: 0;
+    width: 0;
   }
 
   /* The active loop and speed, pushed to the right, each opening the practice panel. */

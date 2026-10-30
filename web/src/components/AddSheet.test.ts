@@ -1,6 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ui } from "../lib/ui.svelte";
+import { navigate } from "../lib/router.svelte";
+import { songVersion } from "../lib/songUpdates.svelte";
 import AddSheet from "./AddSheet.svelte";
 
 const mockCreateTab = vi.fn();
@@ -179,7 +181,9 @@ describe("AddSheet", () => {
     expect(ui.sheet).toBe("");
   });
 
-  it("imports from url source in link mode", async () => {
+  it("refreshes the imported song even when its page is already open", async () => {
+    navigate("/songs/imported-song-id");
+    const version = songVersion("imported-song-id");
     mockImportUrl.mockResolvedValueOnce({ job_id: "job-123" });
     mockWaitForJob.mockResolvedValueOnce({
       status: "done",
@@ -198,6 +202,50 @@ describe("AddSheet", () => {
 
     expect(mockImportUrl).toHaveBeenCalledWith("https://example.com/song.musicxml", "", null);
     expect(mockWaitForJob).toHaveBeenCalledWith("job-123", expect.any(Function));
+    expect(ui.sheet).toBe("");
+    expect(songVersion("imported-song-id")).toBe(version + 1);
+  });
+
+  it("passes every selected Songsterr instrument to the import", async () => {
+    const url = "https://www.songsterr.com/a/wsa/example-tab-s123";
+    mockPreviewImport.mockResolvedValueOnce({
+      title: "Example",
+      artist: "",
+      tracks: [
+        {
+          part_id: 1,
+          name: "Lead",
+          instrument: "guitar",
+          is_bass: false,
+          tuning: [64, 59, 55, 50, 45, 40],
+          capo: 0,
+        },
+        {
+          part_id: 2,
+          name: "Rhythm",
+          instrument: "guitar",
+          is_bass: false,
+          tuning: [64, 59, 55, 50, 45, 40],
+          capo: 0,
+        },
+      ],
+    });
+    mockImportUrl.mockResolvedValueOnce({ job_id: "multi-track" });
+    mockWaitForJob.mockResolvedValueOnce({
+      status: "done",
+      result: { song_id: "multi-track-song" },
+    });
+    mockListSongs.mockResolvedValue(emptyPage);
+    render(AddSheet);
+    await fireEvent.click(screen.getByTestId("add-mode-link"));
+    await fireEvent.input(screen.getByTestId("add-url"), { target: { value: url } });
+    await fireEvent.click(screen.getByRole("button", { name: "Import link" }));
+
+    const rhythm = await screen.findByRole("checkbox", { name: /Rhythm/ });
+    await fireEvent.click(rhythm);
+    await fireEvent.click(screen.getByRole("button", { name: "Import selected" }));
+
+    expect(mockImportUrl).toHaveBeenCalledWith(url, "", [1, 2]);
     expect(ui.sheet).toBe("");
   });
 

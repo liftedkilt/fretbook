@@ -42,6 +42,7 @@
     Job,
   } from "../lib/types";
   import { closeSheet, defaultFamily, refreshSongs, ui } from "../lib/ui.svelte";
+  import { invalidateSong } from "../lib/songUpdates.svelte";
 
   type Mode = "any" | "link" | "file" | "paste" | "tab" | "chords";
 
@@ -107,6 +108,8 @@
   }
 
   function finish(path: string) {
+    const songId = path.match(/^\/songs\/([^/]+)(?:\/edit)?$/)?.[1];
+    if (songId) invalidateSong(songId);
     const lesson = ui.addForLesson;
     void refreshSongs();
     closeSheet();

@@ -229,7 +229,7 @@ def test_chord_sheets(tmp_path: Path) -> None:
         assert client.get("/api/songs").json()["items"][0]["content_kind"] == "chords"
 
 
-def test_songsterr_preview_and_selected_guitar(tmp_path: Path, monkeypatch) -> None:
+def test_songsterr_preview_and_selected_parts(tmp_path: Path, monkeypatch) -> None:
     from tests.test_songsterr import URL, FakeFetcher
 
     from fretbook.importers.registry import SongsterrImporter as Real
@@ -270,6 +270,18 @@ def test_songsterr_preview_and_selected_guitar(tmp_path: Path, monkeypatch) -> N
         assert guitar_song["preferred_instrument"] == "guitar"
         assert guitar_song["string_count"] == 6
         assert guitar_song["document"]["tracks"][0]["tuning_midi"] == [64, 59, 55, 50, 45, 40]
+
+        mixed = client.post("/api/imports", json={"url": URL, "part_ids": [1, 2]})
+        mixed_job = _wait(client, mixed.json()["job_id"])
+        assert mixed_job["status"] == "done", mixed_job
+        mixed_song = client.get(f"/api/songs/{mixed_job['result']['song_id']}").json()
+        assert mixed_song["id"] == bass_song["id"]
+        assert [(track["id"], track["instrument"]) for track in mixed_song["document"]["tracks"]] == [
+            ("trk_1", "guitar"),
+            ("trk_2", "bass-guitar"),
+        ]
+        assert mixed_song["source_ref"]["part_ids"] == [1, 2]
+        assert mixed_song["preferred_track_id"] == "trk_2"
 
 
 def test_file_imports(tmp_path: Path) -> None:

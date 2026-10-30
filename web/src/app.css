@@ -1740,6 +1740,20 @@ textarea {
   box-shadow: 0 0 12px rgba(255, 122, 80, 0.7);
 }
 
+.at-playing-outline {
+  position: absolute;
+  z-index: 1001;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.at-playing-outline path {
+  fill: none;
+  stroke: #000;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
 /* Wait mode: the cursor pulses while it waits for a note and turns green on a hit. */
 .score[data-wait="waiting"] .at-cursor-beat {
   width: 6px !important;
@@ -1872,6 +1886,15 @@ textarea {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   overflow: hidden;
+}
+
+.dock-section {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-3);
+  text-align: center;
+  text-overflow: ellipsis;
 }
 
 .scrubber {

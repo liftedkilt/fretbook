@@ -32,9 +32,9 @@
     readOnly,
     demo,
     tracks,
-    trackId,
     audioUrl,
     audioEl,
+    muted = false,
     canTranscribe,
     anchorCount,
     publishedSync,
@@ -85,7 +85,6 @@
     onupload,
     onyoutube,
     onstems,
-    ontrack,
     onnotation,
     onstage,
     onlistenDevice,
@@ -98,9 +97,9 @@
     readOnly: boolean;
     demo: boolean;
     tracks: { id: string; name: string }[];
-    trackId: string;
     audioUrl: string;
     audioEl: HTMLAudioElement | null;
+    muted?: boolean;
     canTranscribe: boolean;
     anchorCount: number;
     publishedSync: boolean;
@@ -151,7 +150,6 @@
     onupload: (file: File) => void;
     onyoutube: () => void;
     onstems: (active: boolean) => void;
-    ontrack: (id: string) => void;
     onnotation: () => void;
     onstage: (on: boolean) => void;
     onlistenDevice: (id: string) => void;
@@ -371,7 +369,12 @@
     {:else if tab === "audio"}
       <PracticePanel {practice} {hasAudio} {tracks} onchange={onpractice} />
       {#if showSyncTools}
-        <StemMixer {songId} {audioEl} master={recordingGain(practice.mix)} onactive={onstems} />
+        <StemMixer
+          {songId}
+          {audioEl}
+          master={muted ? 0 : recordingGain(practice.mix)}
+          onactive={onstems}
+        />
       {/if}
       {#if !readOnly}
         <div class="panel-group">
@@ -488,20 +491,6 @@
           <span class="switch-track"></span>
           {t("handsFree.stage")}
         </label>
-        {#if tracks.length > 1}
-          <label class="field">
-            <span>{t("player.track")}</span>
-            <select
-              data-testid="player-track"
-              value={trackId}
-              onchange={(event) => ontrack(event.currentTarget.value)}
-            >
-              {#each tracks as item (item.id)}
-                <option value={item.id}>{item.name}</option>
-              {/each}
-            </select>
-          </label>
-        {/if}
       </div>
     {/if}
   </div>
