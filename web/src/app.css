@@ -1094,6 +1094,7 @@ textarea {
 @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
   :root {
     --side-w: 0px;
+    --pad: 16px;
     font-size: var(--fs-body);
   }
 
@@ -1153,7 +1154,7 @@ textarea {
 
   .content {
     margin-left: 0;
-    padding: 20px calc(16px + var(--safe-r)) 48px calc(16px + var(--safe-l));
+    padding: 20px calc(var(--pad) + var(--safe-r)) 48px calc(var(--pad) + var(--safe-l));
   }
 
   .shell-library .content {
@@ -1162,6 +1163,16 @@ textarea {
 
   .toast {
     bottom: calc(90px + var(--safe-b));
+  }
+}
+
+@media (max-height: 500px) and (pointer: coarse) {
+  .content {
+    padding-top: var(--sp-2);
+  }
+
+  .shell-library .content {
+    padding-bottom: calc(60px + var(--safe-b));
   }
 }
 
