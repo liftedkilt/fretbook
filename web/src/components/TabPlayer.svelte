@@ -518,19 +518,32 @@
     return () => query.removeEventListener("change", sync);
   });
 
+  // The sticky chrome a followed system must stay below: the song header, the setlist play bar.
+  const STICKY_CHROME = ".topbar, .song-header, .play-bar";
+  function stickyChromeBottom(): number {
+    let bottom = 0;
+    for (const el of document.querySelectorAll(STICKY_CHROME)) {
+      const style = getComputedStyle(el);
+      if (style.display === "none" || (style.position !== "sticky" && style.position !== "fixed"))
+        continue;
+      // Where it sits once stuck, not where it is now: a play bar still in flow is lower down.
+      const stuck =
+        style.position === "sticky"
+          ? (Number.parseFloat(style.top) || 0) + el.getBoundingClientRect().height
+          : el.getBoundingClientRect().bottom;
+      bottom = Math.max(bottom, stuck);
+    }
+    return Math.max(0, Math.round(bottom));
+  }
+
   $effect(() => {
     const element = host;
     const source = tex;
     const onPhone = phone;
     const scrollElement = onPhone ? (document.scrollingElement as HTMLElement | null) : scroller;
-    const barHeight = onPhone
-      ? (document.querySelector(".topbar")?.getBoundingClientRect().height ?? 0)
-      : 0;
     const useAudio = audioMode;
     if (!element || !scrollElement) return;
-    return untrack(() =>
-      mountScorePlayer(element, scrollElement, source, useAudio, onPhone, barHeight),
-    );
+    return untrack(() => mountScorePlayer(element, scrollElement, source, useAudio, onPhone));
   });
 
   function mountScorePlayer(
@@ -539,7 +552,6 @@
     source: string,
     useAudio: boolean,
     onPhone: boolean,
-    barHeight: number,
   ) {
     const settings = new alphaTab.Settings();
     settings.core.fontDirectory = new URL("font/", document.baseURI).href;
@@ -557,13 +569,25 @@
     settings.player.enableUserInteraction = true;
     settings.player.scrollElement = scrollElement;
     // Negative: the playing system stops a little below the top edge, not above it.
-    settings.player.scrollOffsetY = -(16 + barHeight);
+    settings.player.scrollOffsetY = -(16 + (onPhone ? stickyChromeBottom() : 0));
     // On a phone, scrolling the page is reserved for playback: placing the cursor on load
     // must not move the page away from the top of the song.
     settings.player.scrollMode =
       untrack(() => follow) && !onPhone ? alphaTab.ScrollMode.Continuous : alphaTab.ScrollMode.Off;
     const instance = new alphaTab.AlphaTabApi(element, settings);
     player.api = instance;
+    // The sticky chrome changes with stage, focus and setlist play-through: keep the offset current.
+    const refreshOffset = () => {
+      instance.settings.player.scrollOffsetY = -(16 + (onPhone ? stickyChromeBottom() : 0));
+    };
+    const chromeWatch = new ResizeObserver(refreshOffset);
+    const chromeMutations = new MutationObserver(refreshOffset);
+    if (onPhone) {
+      for (const el of document.querySelectorAll(STICKY_CHROME)) chromeWatch.observe(el);
+      chromeMutations.observe(document.documentElement, { attributes: true });
+      chromeMutations.observe(document.body, { childList: true, subtree: true });
+      window.addEventListener("resize", refreshOffset);
+    }
     let mouseDownBeat: alphaTab.model.Beat | null = null;
     let scoreSelectionDragged = false;
     instance.scoreLoaded.on(() => {
@@ -660,6 +684,9 @@
     return () => {
       scoreReady = 0;
       player.api = null;
+      chromeWatch.disconnect();
+      chromeMutations.disconnect();
+      window.removeEventListener("resize", refreshOffset);
       element.querySelector(".at-playing-outline")?.remove();
       instance.destroy();
     };
