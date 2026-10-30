@@ -240,6 +240,12 @@ test("the phone library shows a song on the first screen", async ({ page, seed }
   expect(box!.y + box!.height).toBeLessThanOrEqual(bar!.y);
   await noSidewaysScroll(page);
 
+  // The search icon sits inside the input field.
+  const searchInput = (await page.getByTestId("library-search").boundingBox())!;
+  const searchIcon = (await page.locator(".search svg").boundingBox())!;
+  expect(searchIcon.x).toBeGreaterThan(searchInput.x);
+  expect(searchIcon.x + searchIcon.width).toBeLessThan(searchInput.x + searchInput.width);
+
   // The large title collapses into the top bar on scroll and search stays sticky.
   await page.evaluate(() => window.scrollTo(0, 200));
   await expect(page.getByTestId("topbar-title")).toBeVisible();
@@ -294,4 +300,38 @@ test("the phone player keeps the playing line below the sticky header", async ({
     await page.waitForTimeout(250);
   }
   expect(lowest).toBeGreaterThanOrEqual(bar.y + bar.height - 1);
+});
+
+test.describe("phone landscape library", () => {
+  test.use({ hasTouch: true });
+
+  test("the phone library in landscape shows a song above the tab bar and does not scroll sideways", async ({
+    page,
+    seed,
+  }) => {
+    for (let i = 1; i <= 6; i += 1) {
+      await seed.create({ title: `Song ${i}`, artist: "Artist" });
+    }
+    await page.setViewportSize({ width: 844, height: 390 });
+    await page.goto("/");
+    const card = page.getByTestId("song-card").first();
+    await expect(card).toBeVisible();
+    const box = await card.boundingBox();
+    const bar = await page.locator(".tabbar").boundingBox();
+    expect(box!.y + box!.height).toBeLessThanOrEqual(bar!.y);
+    expect(bar!.height).toBeLessThanOrEqual(44);
+    await noSidewaysScroll(page);
+
+    // The search icon sits inside the input field.
+    const searchInput = (await page.getByTestId("library-search").boundingBox())!;
+    const searchIcon = (await page.locator(".search svg").boundingBox())!;
+    expect(searchIcon.x).toBeGreaterThan(searchInput.x);
+    expect(searchIcon.x + searchIcon.width).toBeLessThan(searchInput.x + searchInput.width);
+
+    // Sticky search stays sticky when scrolling.
+    await page.evaluate(() => window.scrollTo(0, 200));
+    const scrolledSearch = (await page.getByTestId("library-search").boundingBox())!;
+    expect(scrolledSearch.y).toBeGreaterThanOrEqual(58);
+    expect(scrolledSearch.y).toBeLessThan(120);
+  });
 });

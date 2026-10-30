@@ -115,4 +115,36 @@
         0 0 0 5px var(--bg);
     }
   }
+
+  @media (max-height: 500px) and (pointer: coarse) {
+    .tabbar {
+      height: 40px;
+      bottom: calc(2px + var(--safe-b));
+      grid-template-columns: 1fr 1fr 44px 1fr 1fr;
+      padding: 0 var(--sp-2);
+      border-radius: var(--r-md);
+    }
+
+    .tab-item {
+      flex-direction: row;
+      gap: 4px;
+      font-size: 0.65rem;
+    }
+
+    .tab-item :global(.icon) {
+      width: 16px;
+      height: 16px;
+    }
+
+    .tab-add span {
+      width: 32px;
+      height: 32px;
+      margin-top: 0;
+    }
+
+    .tab-add span :global(.icon) {
+      width: 18px;
+      height: 18px;
+    }
+  }
 </style>
