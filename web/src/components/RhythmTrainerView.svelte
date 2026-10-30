@@ -8,8 +8,7 @@
   import { routePath } from "../lib/router.svelte";
   import { Clicker } from "../lib/clicker";
   import { t } from "../lib/i18n.svelte";
-  import { getLocalCalibration } from "../lib/listen/calibration";
-  import { getSavedChannel, getSavedDevice } from "../lib/listen/devicePrefs";
+  import { getSavedChannel, getSavedDevice, getStoredCalibration } from "../lib/listen/devicePrefs";
   import { describeProblem, ListenError, startListening } from "../lib/listen/input";
   import type { ListenSession } from "../lib/listen/input";
   import { clampBpm, MAX_BPM, MIN_BPM } from "../lib/metronome";
@@ -92,7 +91,7 @@
     result && played ? barBreakdown(played.pattern, played.bars, result.match.errors) : [],
   );
   const cells = $derived(Array.from({ length: cellCount(pattern) }, (_, i) => i));
-  const calibration = $derived(useMic ? getLocalCalibration("default", "default") : null);
+  const calibration = $derived(useMic ? getStoredCalibration(micDevice) : null);
   const bins = $derived(result ? histogram(result.match.errors) : []);
   const binMax = $derived(Math.max(1, ...bins.map((b) => b.count)));
   const clicker = new Clicker();
@@ -218,7 +217,7 @@
     const startedAt = Date.now();
     const runPattern = pattern;
     const runBars = bars;
-    const latency = useMic ? getLocalCalibration("default", "default") : null;
+    const latency = useMic ? getStoredCalibration(micDevice) : null;
     run = new RhythmRun({
       pattern,
       bpm,

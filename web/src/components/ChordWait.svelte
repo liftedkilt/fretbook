@@ -6,7 +6,12 @@
   import { parse } from "../lib/chordpro";
   import { t } from "../lib/i18n.svelte";
   import { chordSheetSteps } from "../lib/listen/chordSheetWait";
-  import { getSavedChannel, getSavedDevice } from "../lib/listen/devicePrefs";
+  import {
+    getSavedA4,
+    getSavedChannel,
+    getSavedDevice,
+    getStoredCalibration,
+  } from "../lib/listen/devicePrefs";
   import {
     describeProblem,
     ListenError,
@@ -60,10 +65,12 @@
       listen: (options) =>
         startListening({
           ...options,
+          a4: getSavedA4(),
           deviceId: deviceId || undefined,
           channel,
           onLevel: ({ peak }) => (level = peak),
         }),
+      match: { latencySeconds: (getStoredCalibration(deviceId) ?? 0) / 1000 },
       hintSeconds: 0,
       onWait: (_, index) => {
         current = index;
