@@ -1379,7 +1379,10 @@
     const run = new WaitRun({
       steps: waitSteps,
       listen: listenWithInput,
-      match: { anyOctave: practice.wait.anyOctave },
+      match: {
+        anyOctave: practice.wait.anyOctave,
+        latencySeconds: (getLocalCalibration("default", "default") ?? 0) / 1000,
+      },
       hintSeconds: practice.wait.hintSeconds,
       onWait: (step) => {
         player.api?.pause();
