@@ -1,7 +1,13 @@
 import type { ChromaEvent } from "./chroma";
 import type { PitchEvent } from "./engine";
 import type { ListenSession, ListenOptions } from "./input";
-import { DEFAULT_WAIT_OPTIONS, WaitMatcher, type WaitOptions, type WaitStep } from "./wait";
+import {
+  DEFAULT_WAIT_OPTIONS,
+  WaitMatcher,
+  type WaitHeard,
+  type WaitOptions,
+  type WaitStep,
+} from "./wait";
 
 /** A run counts as played through when this share of the steps were played (the rest may have been skipped). */
 export const COMPLETE_HIT_SHARE = 0.8;
@@ -16,7 +22,9 @@ export interface WaitRunOptions {
   /** The player stopped on a step: show it and wait for the note. */
   onWait: (step: WaitStep, index: number) => void;
   /** The note was played: let the player go on. */
-  onHit: (step: WaitStep, index: number) => void;
+  onHit: (step: WaitStep, index: number, hit: boolean) => void;
+  /** An attack was heard that did not count: a wrong note, out of tune, too early. */
+  onHeard?: (heard: WaitHeard, step: WaitStep, index: number) => void;
   /** The beat has been waiting for `hintSeconds`. */
   onHint: (step: WaitStep, index: number) => void;
 }
@@ -37,6 +45,16 @@ export class WaitRun {
   private readonly handled = new Set<number>();
   private readonly played = new Set<number>();
   hits = 0;
+
+  /** How many different steps were played since the run last started from the first step. */
+  get playedCount(): number {
+    return this.played.size;
+  }
+
+  /** Whether `index` was played (not skipped) in this run. */
+  wasPlayed(index: number): boolean {
+    return this.played.has(index);
+  }
 
   constructor(private readonly options: WaitRunOptions) {
     this.matcher = new WaitMatcher({ ...DEFAULT_WAIT_OPTIONS, ...options.match });
@@ -134,11 +152,22 @@ export class WaitRun {
   }
 
   private hear(event: PitchEvent): void {
+    const before = this.matcher.heard;
     if (this.matcher.push(event)) this.finish(true);
+    else this.noteHeard(before);
   }
 
   private hearChroma(event: ChromaEvent): void {
+    const before = this.matcher.heard;
     if (this.matcher.pushChroma(event)) this.finish(true);
+    else this.noteHeard(before);
+  }
+
+  private noteHeard(before: WaitHeard | null): void {
+    const heard = this.matcher.heard;
+    if (heard && heard !== before && this.current >= 0) {
+      this.options.onHeard?.(heard, this.options.steps[this.current], this.current);
+    }
   }
 
   private finish(hit: boolean): void {
@@ -151,7 +180,7 @@ export class WaitRun {
       this.hits += 1;
       this.played.add(index);
     }
-    this.options.onHit(step, index);
+    this.options.onHit(step, index, hit);
   }
 
   private release(): void {

@@ -120,6 +120,17 @@ export function pitchMatches(heard: number, expected: number, anyOctave: boolean
   return anyOctave ? (((heard - expected) % 12) + 12) % 12 === 0 : heard === expected;
 }
 
+/** What the matcher made of the last attack that did not complete the step. */
+export interface WaitHeard {
+  /**
+   * `wrong`: another note (or chord); `flat`/`sharp`: the right note, out of tune; `early`: an
+   * attack from before the cursor stopped; `none`: an attack with no pitch in it.
+   */
+  kind: "wrong" | "flat" | "sharp" | "early" | "none";
+  /** The pitch heard, when there was one. */
+  midi?: number;
+}
+
 /**
  * Decides when the step the cursor is waiting on has been played. An attack that happens after
  * the cursor stopped arms it; a matching pitch within `settleSeconds` of that attack is a hit.
@@ -136,6 +147,10 @@ export class WaitMatcher {
   chordScore = 0;
   /** Wrong notes heard while waiting on the current step. */
   wrong = 0;
+  /** The last attack that did not count, for the player to show; a new object for each one. */
+  heard: WaitHeard | null = null;
+  /** The latest pitch reading since the armed attack, judged when the settle window ends. */
+  private pending: WaitHeard | null = null;
 
   constructor(private readonly options: WaitOptions = DEFAULT_WAIT_OPTIONS) {}
 
@@ -147,6 +162,8 @@ export class WaitMatcher {
     this.chordArmedAt = null;
     this.chordScore = 0;
     this.wrong = 0;
+    this.heard = null;
+    this.pending = null;
   }
 
   get waiting(): WaitStep | null {
@@ -163,7 +180,10 @@ export class WaitMatcher {
     if (!step || step.kind !== "chord") return false;
     if (event.onset) {
       const at = event.onsetTime ?? event.time;
-      if (at < this.since - this.options.earlySeconds) return false;
+      if (at < this.since - this.options.earlySeconds) {
+        this.heard = { kind: "early" };
+        return false;
+      }
       this.chordArmedAt = at;
       this.chordScore = 0;
     }
@@ -172,6 +192,7 @@ export class WaitMatcher {
     if (event.time - armedAt > this.options.chordSettleSeconds) {
       // That strum was not the chord; wait for the next one.
       this.wrong += 1;
+      this.heard = { kind: "wrong" };
       this.chordArmedAt = null;
       return false;
     }
@@ -190,21 +211,31 @@ export class WaitMatcher {
     if (!step || step.kind === "chord") return false;
     if (event.onset) {
       const at = event.onsetTime ?? event.time;
-      if (at < this.since - this.options.earlySeconds) return false;
+      if (at < this.since - this.options.earlySeconds) {
+        this.heard = { kind: "early" };
+        return false;
+      }
       if (step.kind === "dead") return true;
       this.armedAt = at;
+      this.pending = null;
     }
     if (step.kind === "dead" || this.armedAt === null) return false;
     if (event.time - this.armedAt > this.options.settleSeconds) {
       // The attack was something else; wait for the next one.
       if (event.midi !== null) this.wrong += 1;
+      this.heard = this.pending ?? { kind: "none" };
+      this.pending = null;
       this.armedAt = null;
       return false;
     }
     if (event.midi === null || event.cents === null) return false;
-    if (Math.abs(event.cents) > this.options.centsTolerance) return false;
     const heard = event.midi;
-    return step.midis.some((midi) => pitchMatches(heard, midi, this.options.anyOctave));
+    const right = step.midis.some((midi) => pitchMatches(heard, midi, this.options.anyOctave));
+    if (right && Math.abs(event.cents) <= this.options.centsTolerance) return true;
+    this.pending = right
+      ? { kind: event.cents < 0 ? "flat" : "sharp", midi: heard }
+      : { kind: "wrong", midi: heard };
+    return false;
   }
 }
 

@@ -1047,7 +1047,16 @@
     "skip": "Pular esta nota",
     "progress": "{hits} de {total} notas",
     "done": "Pronto: {hits} de {total} notas tocadas.",
-    "hit": "Nota certa"
+    "hit": "Nota certa",
+    "skipped": "Pulada",
+    "next": "Próxima: {note}",
+    "mutedNote": "nota abafada",
+    "heardNote": "Ouvi {note}",
+    "heardFlat": "Ouvi {note}, um pouco baixa",
+    "heardSharp": "Ouvi {note}, um pouco alta",
+    "heardEarly": "Cedo demais: espere o cursor",
+    "heardNothing": "Nada ouvido: toque um pouco mais forte",
+    "heardOther": "Ainda não é o acorde, tente de novo"
   },
   "waitMode": {
     "fretboard": "Onde tocar a nota esperada"

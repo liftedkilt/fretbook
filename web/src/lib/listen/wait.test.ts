@@ -260,6 +260,56 @@ describe("WaitMatcher", () => {
   });
 });
 
+describe("WaitMatcher heard", () => {
+  const attackAt = (time: number, midi: number | null, cents = 0) =>
+    event(time, midi, { onset: true, onsetTime: time - 0.02, cents: midi === null ? null : cents });
+
+  function wrongAfter(events: PitchEvent[]) {
+    const matcher = new WaitMatcher();
+    matcher.push(event(1, null));
+    matcher.wait(note(40));
+    expect(feed(matcher, events)).toBe(-1);
+    return matcher.heard;
+  }
+
+  it("reports another note once the settle window ends", () => {
+    const heard = wrongAfter([attackAt(1.1, 45), event(1.2, 45), event(1.5, 45)]);
+    expect(heard).toEqual({ kind: "wrong", midi: 45 });
+  });
+
+  it("reports the right note out of tune as flat or sharp", () => {
+    expect(wrongAfter([attackAt(1.1, 40, -50), event(1.5, 40, { cents: -50 })])?.kind).toBe("flat");
+    expect(wrongAfter([attackAt(1.1, 40, 50), event(1.5, 40, { cents: 50 })])?.kind).toBe("sharp");
+  });
+
+  it("reports an attack with no pitch as nothing heard", () => {
+    expect(wrongAfter([attackAt(1.1, null), event(1.5, null)])).toEqual({ kind: "none" });
+  });
+
+  it("reports an attack from before the cursor stopped as early", () => {
+    const matcher = new WaitMatcher();
+    matcher.push(event(5, null));
+    matcher.wait(note(40));
+    matcher.push(event(5.5, 40, { onset: true, onsetTime: 5.4 }));
+    // The cursor stopped at 5; an attack before that is ignored but noticed.
+    const late = new WaitMatcher();
+    late.push(event(9, null));
+    late.wait(note(40));
+    late.push(event(9.2, 40, { onset: true, onsetTime: 8.5 }));
+    expect(late.heard).toEqual({ kind: "early" });
+    expect(matcher.heard).toBeNull();
+  });
+
+  it("clears when the next step starts", () => {
+    const matcher = new WaitMatcher();
+    matcher.push(event(9, null));
+    matcher.wait(note(40));
+    matcher.push(event(9.2, 40, { onset: true, onsetTime: 8.5 }));
+    matcher.wait(note(41));
+    expect(matcher.heard).toBeNull();
+  });
+});
+
 describe("WaitMatcher with the pitch engine", () => {
   const sampleRate = 48000;
 

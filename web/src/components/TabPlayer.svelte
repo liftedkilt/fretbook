@@ -79,7 +79,7 @@
   } from "../lib/listen/scored";
   import { colourScoreGrades } from "../lib/alphatab/gradeColors";
   import { ScoredRun } from "../lib/listen/scoredRun";
-  import { buildWaitSteps, stepIndexAt, type WaitStep } from "../lib/listen/wait";
+  import { buildWaitSteps, stepIndexAt, type WaitHeard, type WaitStep } from "../lib/listen/wait";
   import { WaitRun } from "../lib/listen/waitRun";
   import { waitFocus } from "../lib/listen/waitFretboard";
   import { followPlayed, playedBars } from "../lib/playback";
@@ -233,7 +233,12 @@
   type WaitState = "idle" | "waiting" | "hit" | "done";
   let waitOn = $state(false);
   let waitState = $state<WaitState>("idle");
-  let waitHits = $state(0);
+  // Bumped when a step is played, so the count below follows the run.
+  let waitPlayedVersion = $state(0);
+  // What was heard on the step being waited on that did not count, and the note after a hit.
+  let waitHeard = $state<WaitHeard | null>(null);
+  let waitSkipped = $state(false);
+  let waitNext = $state<WaitStep | null>(null);
   let waitStep = $state<WaitStep | null>(null);
   let waitHint = $state(false);
   // The step just hit, kept for the 400 ms the fretboard shows it green.
@@ -299,6 +304,20 @@
   const synthWanted = $derived(song.has_audio && synthGain(practice.mix) > 0);
   const trackIndex = $derived(Math.max(0, document_.tracks.indexOf(track)));
   const waitSteps = $derived(buildWaitSteps(document_, track, { chords: practice.wait.chords }));
+  // In a loop the count is of the looped bars' notes, so it never runs past its total.
+  const waitInLoop = (step: WaitStep) =>
+    loopA == null || loopB == null || (step.bar >= loopA && step.bar <= loopB);
+  const waitTotal = $derived(waitSteps.filter(waitInLoop).length);
+  const waitHits = $derived.by(() => {
+    void waitPlayedVersion;
+    const run = waitRun;
+    if (!run) return 0;
+    let count = 0;
+    waitSteps.forEach((step, index) => {
+      if (waitInLoop(step) && run.wasPlayed(index)) count += 1;
+    });
+    return count;
+  });
   const scoredSteps = $derived(buildScoredSteps(document_, track, song.has_audio));
   const fretEvents = $derived(practice.fretboard.on ? buildFretEvents(document_, track) : []);
   // While wait mode is on, the fretboard shows the note being waited on instead of the playhead.
@@ -952,6 +971,15 @@
       clicker.click(click.delay, click.accent, practice.metronome.volume);
   }
 
+  // While wait mode waits on a note the Play button skips it.
+  const playButtonLabel = $derived(
+    waitOn && waitState === "waiting" && !countingIn
+      ? t("wait.skip")
+      : playing
+        ? t("player.pause")
+        : t("player.play"),
+  );
+
   function toggle() {
     const api = player.api;
     if (!api) return;
@@ -1040,6 +1068,7 @@
       if (waitRun) {
         waitRun.seek(tick);
         waitStep = null;
+        waitNext = null;
         if (waitState !== "idle") waitState = "idle";
       }
     }
@@ -1092,6 +1121,7 @@
     currentMeasure = played;
     currentPosition = position;
     waitStep = null;
+    waitNext = null;
     if (waitState !== "idle") waitState = "idle";
     waitRun.reposition(tickOfBar(played) + position);
   }
@@ -1328,6 +1358,7 @@
         player.api?.pause();
         window.clearTimeout(waitFlash);
         waitStep = step;
+        waitHeard = null;
         waitHitStep = null;
         waitHint = false;
         waitState = "waiting";
@@ -1338,9 +1369,12 @@
           playedBarTicks(song.document, step.bar),
         );
       },
-      onHit: (step) => {
-        const wasHit = run.hits > waitHits;
-        waitHits = run.hits;
+      onHeard: (heard) => (waitHeard = heard),
+      onHit: (step, index, wasHit) => {
+        waitPlayedVersion += 1;
+        waitSkipped = !wasHit;
+        waitNext = waitSteps[index + 1] ?? null;
+        waitHeard = null;
         waitGrades = {
           ...waitGrades,
           [gemKey(step.bar, step.position)]: wasHit ? "hit" : "missed",
@@ -1366,7 +1400,9 @@
     waitRun = run;
     listenSession = run.listening;
     waitOn = true;
-    waitHits = 0;
+    waitPlayedVersion += 1;
+    waitHeard = null;
+    waitNext = null;
     waitState = "idle";
     waitRun.seek(currentMeasure > 0 ? tickOfBar(currentMeasure) : 0);
     applyPractice();
@@ -1382,6 +1418,8 @@
     waitState = "idle";
     waitStep = null;
     waitHitStep = null;
+    waitHeard = null;
+    waitNext = null;
     waitHint = false;
     waitGrades = {};
     applyPractice();
@@ -2026,7 +2064,7 @@
         data-testid="wait-status"
         data-state={waitState}
         data-hits={waitHits}
-        data-total={waitSteps.length}
+        data-total={waitTotal}
         role="status"
       >
         <Icon name="hourglass" size={16} />
@@ -2042,21 +2080,43 @@
               {t("wait.playNow", { note: midiToName(waitStep.midis[0]) })}
             {/if}
           {:else if waitState === "hit"}
-            {t("wait.hit")}
+            {waitSkipped ? t("wait.skipped") : t("wait.hit")}
           {:else if waitState === "done"}
-            {t("wait.done", { hits: waitHits, total: waitSteps.length })}
+            {t("wait.done", { hits: waitHits, total: waitTotal })}
+          {:else if waitNext}
+            {t("wait.next", {
+              note:
+                waitNext.kind === "dead"
+                  ? t("wait.mutedNote")
+                  : waitNext.kind === "chord"
+                    ? (waitNext.pcs ?? []).map((pc) => pitchClassName(pc)).join(" ")
+                    : midiToName(waitNext.midis[0]),
+            })}
           {:else}
             {t("wait.listening")}
           {/if}
         </span>
+        {#if waitState === "waiting" && waitStep && waitHeard}
+          <span class="pill" data-testid="wait-heard" data-kind={waitHeard.kind}
+            >{waitHeard.kind === "early"
+              ? t("wait.heardEarly")
+              : waitHeard.kind === "none"
+                ? t("wait.heardNothing")
+                : waitHeard.midi === undefined
+                  ? t("wait.heardOther")
+                  : waitHeard.kind === "wrong"
+                    ? t("wait.heardNote", { note: midiToName(waitHeard.midi) })
+                    : t(waitHeard.kind === "flat" ? "wait.heardFlat" : "wait.heardSharp", {
+                        note: midiToName(waitHeard.midi),
+                      })}</span
+          >
+        {/if}
         {#if waitHint && waitStep}
           <span class="pill pill-accent" data-testid="wait-hint"
             >{t("wait.hint", { string: waitStep.string + 1, fret: waitStep.fret })}</span
           >
         {/if}
-        <span class="muted small"
-          >{t("wait.progress", { hits: waitHits, total: waitSteps.length })}</span
-        >
+        <span class="muted small">{t("wait.progress", { hits: waitHits, total: waitTotal })}</span>
         {#if waitState === "waiting"}
           <button class="button" data-testid="wait-skip" onclick={() => waitRun?.skip()}
             >{t("wait.skip")}</button
@@ -2074,7 +2134,7 @@
           placement="above"
           onclick={() => step(-1)}
         />
-        <Tooltip text={playing ? t("player.pause") : t("player.play")} placement="above">
+        <Tooltip text={playButtonLabel} placement="above">
           {#snippet children(describedBy)}
             <button
               class="play-button"
@@ -2082,7 +2142,7 @@
               data-playing={playing}
               data-counting={countingIn}
               onclick={toggle}
-              aria-label={playing ? t("player.pause") : t("player.play")}
+              aria-label={playButtonLabel}
               aria-describedby={describedBy || undefined}
             >
               <Icon name={playing ? "pause" : "play"} size={24} />

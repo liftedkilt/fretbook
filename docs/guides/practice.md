@@ -29,6 +29,12 @@ On a tab without a recording press **Wait for me**. The cursor stops on each not
 microphone hears you play it (the right note in any octave counts by default). The other tracks play as backing, or
 turn the synth off.
 
+While the cursor waits, the dock says what it heard when it was not the note: another note ("Heard A3"), the right
+note out of tune ("a little flat" or "sharp", within 40 cents counts), nothing with a pitch in it, or "too early". An
+attack from before the cursor reached the note does not count, so when you play at tempo the cursor must reach each
+note before you play it: wait for it to stop. **Skip this note** (also the round Play button while waiting) moves on and
+shows "Skipped"; between notes the dock shows the next one. In a loop the count is of the notes in the looped bars.
+
 A beat of several different notes is checked as a chord, by its pitch content rather than string by string, so it is
 lenient (a missing or slightly wrong string still counts) and you can skip a beat. Turn that off in the panel to accept
 any one note of the chord. On a chord sheet, press **Wait for me** above the sheet: the lit chord is the one to strum,

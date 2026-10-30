@@ -44,7 +44,13 @@ function setup(steps: WaitStep[], hintSeconds = 0, match?: { anyOctave: boolean 
     setChroma: (on) => chroma.push(on),
     stop: stopped,
   };
-  const calls = { wait: [] as number[], hit: [] as number[], hint: [] as number[] };
+  const calls = {
+    wait: [] as number[],
+    hit: [] as number[],
+    hint: [] as number[],
+    hitFlags: [] as boolean[],
+    heard: [] as string[],
+  };
   const run = new WaitRun({
     steps,
     hintSeconds,
@@ -54,7 +60,11 @@ function setup(steps: WaitStep[], hintSeconds = 0, match?: { anyOctave: boolean 
       return session;
     },
     onWait: (_, index) => calls.wait.push(index),
-    onHit: (_, index) => calls.hit.push(index),
+    onHit: (_, index, hit) => {
+      calls.hit.push(index);
+      calls.hitFlags.push(hit);
+    },
+    onHeard: (heard) => calls.heard.push(heard.kind),
     onHint: (_, index) => calls.hint.push(index),
   });
   return {
@@ -72,6 +82,23 @@ function setup(steps: WaitStep[], hintSeconds = 0, match?: { anyOctave: boolean 
 describe("WaitRun", () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
+
+  it("tells whether a step was played or skipped, and what was heard on the way", async () => {
+    const { run, calls, hear } = setup([step(0, 40), step(960, 41)]);
+    await run.start();
+    run.reach(0);
+    hear({ ...attack(1, 45), cents: 0, onsetTime: 1 });
+    hear({ ...attack(1.5, 45), onset: false });
+    expect(calls.heard).toEqual(["wrong"]);
+    run.skip();
+    expect(calls.hitFlags).toEqual([false]);
+    expect(run.playedCount).toBe(0);
+    run.reach(1);
+    hear({ ...attack(3, 41), onsetTime: 3 });
+    expect(calls.hitFlags).toEqual([false, true]);
+    expect(run.playedCount).toBe(1);
+    expect(run.wasPlayed(1)).toBe(true);
+  });
 
   it("asks the detector for strict octaves only when any-octave is off", async () => {
     for (const [anyOctave, want] of [
