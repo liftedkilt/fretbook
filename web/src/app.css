@@ -101,6 +101,8 @@
   --side-w: 248px;
   --pad: clamp(16px, 3.2vw, 44px);
   --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
   /* Room the player's floating dock takes at the bottom of the viewport. */
   --dock-space: calc(104px + var(--safe-b));
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -1058,7 +1060,8 @@ textarea {
 
 .content {
   margin-left: var(--side-w);
-  padding: clamp(20px, 3.4vw, 48px) var(--pad) 64px;
+  padding: clamp(20px, 3.4vw, 48px) calc(var(--pad) + var(--safe-r)) 64px
+    calc(var(--pad) + var(--safe-l));
   min-width: 0;
 }
 
@@ -1078,7 +1081,8 @@ textarea {
   .sidebar {
     align-items: center;
     padding: 1.1rem 0.7rem;
-    overflow: visible;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .brand {
@@ -1087,7 +1091,7 @@ textarea {
 }
 
 /* Phone: a top bar, and a bottom tab bar on the library. */
-@media (max-width: 767px) {
+@media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
   :root {
     --side-w: 0px;
     font-size: var(--fs-body);
@@ -1106,7 +1110,7 @@ textarea {
     justify-content: space-between;
     gap: 1rem;
     height: calc(58px + env(safe-area-inset-top, 0px));
-    padding: env(safe-area-inset-top, 0px) 12px 0 16px;
+    padding: env(safe-area-inset-top, 0px) calc(12px + var(--safe-r)) 0 calc(16px + var(--safe-l));
     background: var(--glass);
     border-bottom: 1px solid var(--glass-line);
     backdrop-filter: blur(20px) saturate(1.6);
@@ -1132,7 +1136,7 @@ textarea {
 
   .content {
     margin-left: 0;
-    padding: 20px 16px 48px;
+    padding: 20px calc(16px + var(--safe-r)) 48px calc(16px + var(--safe-l));
   }
 
   .shell-library .content {
@@ -1793,8 +1797,8 @@ textarea {
 
 .dock {
   position: fixed;
-  left: calc(var(--side-w) + var(--pad));
-  right: var(--pad);
+  left: calc(var(--side-w) + var(--pad) + var(--safe-l));
+  right: calc(var(--pad) + var(--safe-r));
   bottom: calc(14px + var(--safe-b));
   z-index: 40;
   display: grid;
@@ -2036,10 +2040,10 @@ textarea {
   cursor: pointer;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
   .dock {
-    left: 8px;
-    right: 8px;
+    left: calc(8px + var(--safe-l));
+    right: calc(8px + var(--safe-r));
     bottom: calc(8px + var(--safe-b));
   }
 
@@ -2393,7 +2397,7 @@ textarea {
   white-space: nowrap;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
   .editor-bar {
     top: calc(66px + env(safe-area-inset-top, 0px));
     grid-template-columns: auto minmax(0, 1fr);
@@ -4420,7 +4424,7 @@ kbd {
   padding: var(--sp-2);
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
   .tuner-row {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }

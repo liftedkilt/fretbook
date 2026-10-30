@@ -111,7 +111,7 @@
     color: var(--accent-text);
   }
 
-  @media (max-width: 767px) {
+  @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
     .popover {
       right: auto;
       left: 0;

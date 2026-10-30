@@ -1419,7 +1419,7 @@
     const slot = sheetSlot;
     const place = () => {
       if (!slot) return;
-      if (window.innerWidth < 768) {
+      if (matchMedia("(max-width: 767px), (max-height: 500px) and (pointer: coarse)").matches) {
         slot.style.removeProperty("--sheet-height");
         return;
       }
@@ -2033,7 +2033,7 @@
     transform: translateX(-50%);
   }
 
-  @media (max-width: 767px) {
+  @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
     .player-body {
       display: block;
     }
@@ -2102,7 +2102,7 @@
   }
 
   /* Saved loops stay in the practice panel on a phone: they would push the music down. */
-  @media (max-width: 767px) {
+  @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
     .song-saved-loops {
       display: none;
     }

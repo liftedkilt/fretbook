@@ -163,7 +163,7 @@
     margin: 0;
     font-size: 0.8rem;
   }
-  @media (max-width: 767px) {
+  @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
     .play-bar {
       top: calc(58px + env(safe-area-inset-top, 0px) + 6px);
       padding: 0.5rem 0.75rem;
