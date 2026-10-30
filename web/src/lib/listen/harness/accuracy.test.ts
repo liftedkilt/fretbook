@@ -98,6 +98,19 @@ describe("drop A and guitar-range lock", { timeout: 60_000 }, () => {
   });
 });
 
+// Onset times of the clean attacks before the soft-repluck rule (#410). Stored calibration is
+// measured against these, so they may move by a few milliseconds and no more.
+const CLEAN_ONSETS: Record<string, number[]> = {
+  "bass-riff": [
+    0.3091, 0.9105, 1.5118, 2.1032, 2.8048, 3.0553, 3.3059, 3.5565, 3.9073, 4.218, 4.5703, 4.871,
+    5.2102, 5.7113,
+  ],
+  "guitar-riff": [
+    0.3091, 0.8102, 1.3114, 1.8025, 2.3036, 2.7045, 2.9551, 3.2057, 3.4562, 3.807, 4.0576, 4.3082,
+    4.3699, 4.5587, 4.9095, 5.4107,
+  ],
+};
+
 describe("committed WAV fixtures", { timeout: 30_000 }, () => {
   for (const name of ["bass-riff", "guitar-riff"]) {
     it(name, () => {
@@ -118,6 +131,13 @@ describe("committed WAV fixtures", { timeout: 30_000 }, () => {
       expect(report.octaveErrors).toBe(0);
       expect(report.onsetRecall).toBeGreaterThanOrEqual(0.9);
       expect(report.onsetPrecision).toBeGreaterThanOrEqual(0.85);
+      const times = runEngine(wav.samples, wav.sampleRate)
+        .filter((e) => e.onsetTime !== null)
+        .map((e) => e.onsetTime as number);
+      expect(times).toHaveLength(CLEAN_ONSETS[name].length);
+      times.forEach((time, i) =>
+        expect(Math.abs(time - CLEAN_ONSETS[name][i])).toBeLessThan(0.005),
+      );
     });
   }
 });
