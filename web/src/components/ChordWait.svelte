@@ -27,6 +27,7 @@
     transpose = 0,
     flats = false,
     capo,
+    hideToggle = false,
     onactive,
   }: {
     text: string;
@@ -34,6 +35,8 @@
     flats?: boolean;
     /** Replaces the sheet's own `{capo:}` when the reader applied a capo suggestion. */
     capo?: number;
+    /** The dock's ⋯ menu drives the run on a phone, through `toggle` and `isOn`. */
+    hideToggle?: boolean;
     onactive: (key: string | null) => void;
   } = $props();
 
@@ -119,6 +122,14 @@
     else void start();
   }
 
+  export function toggleRun() {
+    toggle();
+  }
+
+  export function isOn() {
+    return on;
+  }
+
   // The steps belong to the sheet as it was when the run began: a transposition or an edit ends it.
   $effect(() => {
     void built;
@@ -139,6 +150,8 @@
   >
     <button
       class="toggle"
+      class:visually-hidden={hideToggle}
+      hidden={hideToggle}
       data-testid="chord-wait-toggle"
       aria-pressed={on}
       title={t("chordWait.about")}

@@ -1538,6 +1538,8 @@
   },
   "chordDiagrams": {
     "heading": "Chord diagrams",
+    "show": "Show chord diagrams",
+    "hide": "Hide chord diagrams",
     "toolTitle": "Chord library",
     "toolDescription": "Look up any chord, see several voicings for guitar, bass or ukulele, and hear it strummed.",
     "openTool": "Open chord library",
