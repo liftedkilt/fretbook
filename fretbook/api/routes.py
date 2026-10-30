@@ -636,10 +636,15 @@ def import_url(body: ImportUrlBody, ctx: AppContext = Depends(_ctx), user: Princ
 async def import_file(
     file: UploadFile = File(...),
     kind: str | None = Form(default=None),
+    on_duplicate: Literal["skip", "keep_both", "replace"] = Form(default="keep_both"),
     ctx: AppContext = Depends(_ctx),
     user: Principal = Depends(_user),
 ) -> JSONResponse:
-    """Queue a Guitar Pro, MusicXML, ChordPro, or Fretbook JSON upload."""
+    """Queue a Guitar Pro, MusicXML, ChordPro, or Fretbook JSON upload.
+
+    `on_duplicate` (`skip`, `replace` or `keep_both`, the default) says what to do
+    when it matches a song already in the library.
+    """
     filename = file.filename or "upload"
     request = ImportRequest(owner_id=user.user_id, filename=filename, kind=kind)
     try:
@@ -653,7 +658,13 @@ async def import_file(
     job_id = ctx.jobs.enqueue(
         user.user_id,
         job_kind,
-        {"path": str(path), "filename": filename, "kind": kind, "prefer": _prefer(ctx, user)},
+        {
+            "path": str(path),
+            "filename": filename,
+            "kind": kind,
+            "prefer": _prefer(ctx, user),
+            "on_duplicate": on_duplicate,
+        },
     )
     return _json({"job_id": job_id}, status_code=202)
 

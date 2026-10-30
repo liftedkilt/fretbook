@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 import uuid
 from pathlib import Path
+from typing import Literal
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 from fastapi.responses import JSONResponse
@@ -29,6 +30,7 @@ from fretbook.importers.zip_safety import safe_extract_zip
 router = APIRouter()
 
 MAX_URL_CHARS = 2000
+DuplicateAction = Literal["skip", "keep_both", "replace"]
 _SINGLE_URL = re.compile(r"^https?://\S+$", re.IGNORECASE)
 _TEXT_SUFFIX = {
     sniff.MUSICXML: ".musicxml",
@@ -66,6 +68,7 @@ async def import_auto(
     file: UploadFile | None = File(default=None),
     text: str | None = Form(default=None, max_length=sniff.MAX_TEXT_CHARS),
     url: str | None = Form(default=None, max_length=MAX_URL_CHARS),
+    on_duplicate: DuplicateAction = Form(default="keep_both"),
     ctx: AppContext = Depends(context),
     user: Principal = Depends(principal),
 ) -> JSONResponse:
@@ -73,6 +76,8 @@ async def import_auto(
 
     Send exactly one of ``file``, ``text`` or ``url``. Text that is a single link is treated as a link.
     Input that matches no supported format is refused with `import.noFileImporter`.
+    `on_duplicate` (`skip`, `replace` or `keep_both`, the default) says what to do
+    when a file or text matches a song already in the library.
     """
     pasted = (text or "").strip()
     link = (url or "").strip()
@@ -81,13 +86,13 @@ async def import_auto(
     if pasted and _SINGLE_URL.match(pasted):
         pasted, link = "", pasted
     if file is not None:
-        return await _from_file(file, ctx, user)
+        return await _from_file(file, ctx, user, on_duplicate)
     if pasted:
-        return _from_text(pasted, ctx, user)
+        return _from_text(pasted, ctx, user, on_duplicate)
     return _from_link(link, ctx, user)
 
 
-async def _from_file(file: UploadFile, ctx: AppContext, user: Principal) -> JSONResponse:
+async def _from_file(file: UploadFile, ctx: AppContext, user: Principal, on_duplicate: DuplicateAction) -> JSONResponse:
     filename = file.filename or "upload"
     path = ctx.settings.inbox_dir / f"{uuid.uuid4().hex}-{_safe_name(filename)}"
     await _spool(file, path, ctx.settings.max_upload_bytes)
@@ -124,6 +129,7 @@ async def _from_file(file: UploadFile, ctx: AppContext, user: Principal) -> JSON
                         "filename": item.filename,
                         "kind": None,
                         "prefer": _prefer(ctx, user),
+                        "on_duplicate": on_duplicate,
                         "tags": [zip_stem],
                     },
                 )
@@ -136,10 +142,10 @@ async def _from_file(file: UploadFile, ctx: AppContext, user: Principal) -> JSON
     except ImportError as exc:
         path.unlink(missing_ok=True)
         raise _fail(exc) from exc
-    return _queue_file(ctx, user, path, filename, importer.kind)
+    return _queue_file(ctx, user, path, filename, importer.kind, on_duplicate)
 
 
-def _from_text(text: str, ctx: AppContext, user: Principal) -> JSONResponse:
+def _from_text(text: str, ctx: AppContext, user: Principal, on_duplicate: DuplicateAction) -> JSONResponse:
     kind = sniff.sniff_text(text)
     try:
         refuse_by_content(kind)
@@ -160,10 +166,12 @@ def _from_text(text: str, ctx: AppContext, user: Principal) -> JSONResponse:
     except ImportError as exc:
         path.unlink(missing_ok=True)
         raise _fail(exc) from exc
-    return _queue_file(ctx, user, path, filename, importer.kind)
+    return _queue_file(ctx, user, path, filename, importer.kind, on_duplicate)
 
 
-def _queue_file(ctx: AppContext, user: Principal, path: Path, filename: str, kind: str) -> JSONResponse:
+def _queue_file(
+    ctx: AppContext, user: Principal, path: Path, filename: str, kind: str, on_duplicate: DuplicateAction
+) -> JSONResponse:
     try:
         job_kind = import_job_kind(ctx, kind)
     except Exception:
@@ -172,7 +180,13 @@ def _queue_file(ctx: AppContext, user: Principal, path: Path, filename: str, kin
     job_id = ctx.jobs.enqueue(
         user.user_id,
         job_kind,
-        {"path": str(path), "filename": filename, "kind": None, "prefer": _prefer(ctx, user)},
+        {
+            "path": str(path),
+            "filename": filename,
+            "kind": None,
+            "prefer": _prefer(ctx, user),
+            "on_duplicate": on_duplicate,
+        },
     )
     return JSONResponse({"job_id": job_id, "detected": kind}, status_code=202)
 

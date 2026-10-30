@@ -37,3 +37,28 @@ test("text that is not music says what Fretbook can read", async ({ page }) => {
   await expect(page.getByTestId("add-error")).toContainText("Couldn't recognise");
   await expect(page).toHaveURL(/\/$/);
 });
+
+for (const choice of ["skip", "replace"] as const) {
+  test(`dropping the same file twice with ${choice} leaves one song`, async ({ page, seed }) => {
+    const buffer = await import("node:fs").then((fs) =>
+      fs.readFileSync(fixture("sunny-chords.cho")),
+    );
+    const drop = async () => {
+      await page.goto("/");
+      await page.getByTestId("add-song").click();
+      await page.getByTestId("add-more-toggle").click();
+      await page.getByTestId(choice === "skip" ? "dup-skip" : "dup-replace").check();
+      await page.getByTestId("any-file-input").setInputFiles({
+        name: "sunny-chords.cho",
+        mimeType: "text/plain",
+        buffer,
+      });
+    };
+    await drop();
+    await expect(page).toHaveURL(/\/songs\/[^/]+$/);
+    await drop();
+    if (choice === "skip") await expect(page.getByTestId("add-notice")).toBeVisible();
+    else await expect(page).toHaveURL(/\/songs\/[^/]+$/);
+    await expect.poll(async () => (await seed.list()).length).toBe(1);
+  });
+}

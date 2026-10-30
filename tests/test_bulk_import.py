@@ -253,3 +253,27 @@ def test_zip_safety_zip_bomb_rejected(tmp_path: Path) -> None:
         )
         assert resp.status_code == 400
         assert resp.json()["detail"]["key"] == "import.zipBomb"
+
+
+def _auto_import(client, *, on_duplicate: str | None = None) -> dict:
+    data = {"on_duplicate": on_duplicate} if on_duplicate else None
+    files = {"file": ("song.cho", b"{title: Twice}\n{artist: Me}\n[C]Hello [G]world\n")}
+    response = client.post("/api/imports/auto", files=files, data=data)
+    assert response.status_code == 202, response.text
+    client.app.state.ctx.jobs.run_once()
+    return client.get(f"/api/jobs/{response.json()['job_id']}").json()
+
+
+def test_auto_import_honours_the_duplicate_choice(tmp_path) -> None:
+    with TestClient(create_app(Settings.for_tests(tmp_path))) as client:
+        first = _auto_import(client)
+        assert first["status"] == "done", first
+        skipped = _auto_import(client, on_duplicate="skip")
+        assert skipped["result"]["skipped"] is True
+        assert skipped["result"]["song_id"] == first["result"]["song_id"]
+        assert client.get("/api/songs").json()["total"] == 1
+        replaced = _auto_import(client, on_duplicate="replace")
+        assert replaced["result"]["song_id"] == first["result"]["song_id"]
+        assert client.get("/api/songs").json()["total"] == 1
+        _auto_import(client)
+        assert client.get("/api/songs").json()["total"] == 2
