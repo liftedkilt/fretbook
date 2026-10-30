@@ -115,3 +115,32 @@ test("switches between Tab, Highway and Split views and remembers the choice", a
   await expect(page.getByTestId("player-stage")).toHaveAttribute("data-view", "split");
   await expect(page.getByTestId("highway-canvas")).toBeVisible();
 });
+
+test.describe("touch screen", () => {
+  test.use({ hasTouch: true });
+
+  test("tapping controls on a touch screen does not stick tooltips", async ({ page, seed }) => {
+    await page.setViewportSize({ width: 390, height: 664 });
+    const song = await seed.musicXmlTab();
+    await page.goto(`/songs/${song.id}`);
+    await expect(page.getByTestId("player-score").locator("svg").first()).toBeVisible();
+
+    const play = page.getByTestId("player-play");
+    await expect(play).toBeEnabled();
+
+    // Tap play to start playback; tooltip must not stick on touch
+    await play.tap();
+    await expect(page.getByRole("tooltip")).toHaveCount(0);
+
+    // Tap dock controls; tooltips must not stick
+    await page.getByTestId("player-next").tap();
+    await expect(page.getByRole("tooltip")).toHaveCount(0);
+
+    await page.getByTestId("player-prev").tap();
+    await expect(page.getByRole("tooltip")).toHaveCount(0);
+
+    // Tap play to pause; tooltip still does not stick
+    await play.tap();
+    await expect(page.getByRole("tooltip")).toHaveCount(0);
+  });
+});
