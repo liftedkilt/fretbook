@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, untrack } from "svelte";
+  import { onMount, untrack, type Snippet } from "svelte";
 
   import CapoSuggestions from "./CapoSuggestions.svelte";
   import ChordSetupPicker from "./ChordSetupPicker.svelte";
@@ -34,11 +34,13 @@
     initialTranspose = 0,
     readOnly = false,
     shared = false,
+    belowHeader,
   }: {
     song: SongDetail;
     initialTranspose?: number;
     readOnly?: boolean;
     shared?: boolean;
+    belowHeader?: Snippet;
   } = $props();
 
   let pickerOpen = $state(false);
@@ -202,6 +204,7 @@
     {song}
     {readOnly}
     {shared}
+    {belowHeader}
     eyebrow={t("library.chordSheet")}
     facts={capo > 0 ? [{ label: t("player.capo", { fret: capo }) }] : []}
     onsetlist={() => (pickerOpen = true)}

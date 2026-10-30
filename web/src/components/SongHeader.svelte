@@ -47,6 +47,7 @@
     onsetlist,
     exportItems,
     afterFacts,
+    belowHeader,
   }: {
     song: SongDetail;
     /** The viewer can't edit the song (a band viewer, or an anonymous share link). */
@@ -66,6 +67,8 @@
     exportItems: ExportItem[];
     /** Rendered under the facts, for example the song's saved loops. */
     afterFacts?: Snippet;
+    /** A phone-only bar that sticks under the header, for example the setlist's previous / next. */
+    belowHeader?: Snippet;
   } = $props();
 
   const locked = $derived(ui.demoMode || readOnly || shared);
@@ -366,6 +369,8 @@
     {#if afterFacts}{@render afterFacts()}{/if}
   {/snippet}
 </PageHeader>
+
+{#if belowHeader}{@render belowHeader()}{/if}
 
 <SongMetadata
   {song}
