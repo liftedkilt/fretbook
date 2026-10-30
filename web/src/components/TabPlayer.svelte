@@ -476,10 +476,25 @@
     };
   }
 
+  // On a phone the page is the only scroller: the score grows to its full height and
+  // alphaTab follows the cursor by scrolling the document, below the sticky top bar.
+  const PHONE = "(max-width: 767px), (max-height: 500px) and (pointer: coarse)";
+  let phone = $state(matchMedia(PHONE).matches);
+  $effect(() => {
+    const query = matchMedia(PHONE);
+    const sync = () => (phone = query.matches);
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  });
+
   $effect(() => {
     const element = host;
-    const scrollElement = scroller;
     const source = tex;
+    const onPhone = phone;
+    const scrollElement = onPhone ? (document.scrollingElement as HTMLElement | null) : scroller;
+    const barHeight = onPhone
+      ? (document.querySelector(".topbar")?.getBoundingClientRect().height ?? 0)
+      : 0;
     const useAudio = song.has_audio;
     if (!element || !scrollElement) return;
     return untrack(() => mountScorePlayer(element, scrollElement, source, useAudio));
@@ -507,7 +522,7 @@
     settings.player.enableUserInteraction = true;
     settings.player.scrollElement = scrollElement;
     // Negative: the playing system stops a little below the top edge, not above it.
-    settings.player.scrollOffsetY = -16;
+    settings.player.scrollOffsetY = -(16 + barHeight);
     settings.player.scrollMode = untrack(() => follow)
       ? alphaTab.ScrollMode.Continuous
       : alphaTab.ScrollMode.Off;
@@ -655,7 +670,7 @@
   // Follow scrolls inside the score, so the score itself must sit clear of the
   // floating dock; its scroll-margin-bottom in app.css leaves room for the dock.
   $effect(() => {
-    if (!playing || !follow || !scroller || ui.playerView === "highway") return;
+    if (!playing || !follow || !scroller || phone || ui.playerView === "highway") return;
     const score = scroller;
     untrack(() => {
       // On a phone the fretboard rides above the dock, so the score must clear it too.

@@ -2139,7 +2139,7 @@ textarea {
   }
 
   .player-page.has-fretboard .score {
-    height: max(260px, calc(100dvh - 96px - var(--dock-space) - 112px));
+    height: auto;
     scroll-margin-bottom: calc(var(--dock-space) + 112px);
   }
 
@@ -2161,9 +2161,13 @@ textarea {
     padding-bottom: calc(246px + var(--safe-b));
   }
 
-  /* Short enough to fit between the top bar and the dock once scrolled into view. */
-  .score {
-    height: max(320px, calc(100dvh - 96px - var(--dock-space)));
+  /* The page is the only scroller: no inner scroll box, so the music scrolls with the
+     page and the browser toolbar can collapse. alphaTab scrolls the document. */
+  .score,
+  .player-stage[data-view="split"] .score {
+    height: auto;
+    overflow: visible;
+    overscroll-behavior: auto;
     margin: 0 -8px;
     border-radius: var(--r-md);
   }
@@ -3243,6 +3247,12 @@ textarea {
 :root[data-fullscreen] .player-stage:not([data-view="split"]) .score {
   height: calc(100dvh - var(--dock-space) - 28px);
   margin: 0;
+}
+
+@media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
+  :root[data-fullscreen] .player-stage:not([data-view="split"]) .score {
+    height: auto;
+  }
 }
 
 /* ------------------------------------------------------------------- print */

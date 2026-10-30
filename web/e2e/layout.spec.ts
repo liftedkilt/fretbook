@@ -202,3 +202,19 @@ test("library cards and the tab bar fit a phone", async ({ page, seed }) => {
     expect(showing!.y + showing!.height).toBeLessThanOrEqual(bar!.y - 26);
   }
 });
+
+// On a phone the page is the only scroller: the score has no scroll box of its own, so a
+// swipe on the music moves the page (and the browser toolbar can collapse).
+test("the phone player scrolls the page, not the score", async ({ page, seed }) => {
+  const song = await seed.musicXmlTab();
+  await page.setViewportSize({ width: 390, height: 664 });
+  await page.goto(`/songs/${song.id}`);
+  const score = page.getByTestId("player-score");
+  await expect(score.locator("svg").first()).toBeVisible();
+  const box = await score.evaluate((element) => ({
+    overflow: getComputedStyle(element).overflowY,
+    scrollable: element.scrollHeight - element.clientHeight,
+  }));
+  expect(box.overflow).toBe("visible");
+  expect(box.scrollable).toBeLessThanOrEqual(1);
+});
