@@ -10,6 +10,26 @@ reaches the owner's library and, with sign-in on, the admin routes only if the o
 revoke tokens; that takes a signed-in session. The API is described by
 [`openapi.json`](https://github.com/liftedkilt/fretbook/blob/main/openapi.json).
 
+### Forward-auth proxies
+
+When Fretbook sits behind a forward-auth proxy (such as oauth2-proxy, Authelia or Authentik forward auth, or Zoraxy SSO),
+the proxy answers first. It will reject requests carrying `fb_` bearer tokens with a `302` redirect to the identity
+provider or `401 Unauthorized`, because the proxy only accepts its own session cookie or an identity token it can verify.
+
+To use API tokens in this setup:
+
+- **Prefer Fretbook's native OIDC:** If you use an identity provider, configure Fretbook's own
+  [Sign-in with OIDC](../self-hosting/oidc.md) instead of an external auth proxy. Fretbook validates both web sessions and
+  API tokens natively, so tokens work without proxy workarounds.
+- **Bypass `/api/` at the proxy:** Tell the proxy to skip authentication for `/api/` (for example, oauth2-proxy
+  `--skip-auth-route=^/api/`) and let Fretbook handle API authentication. Note that this requires Fretbook's OIDC mode: in
+  single-user mode, skipping auth on `/api/` leaves the API completely unprotected.
+- **Dedicated API hostname:** Route a separate hostname (such as `api.fretbook.example.com`) directly to Fretbook without
+  the forward-auth layer.
+
+See [Forward-auth proxies and API tokens](../self-hosting/reverse-proxy.md#forward-auth-proxies-and-api-tokens) for
+configuration examples and security trade-offs.
+
 ## `fretbook.cli`
 
 `fretbook-cli` wraps the common calls. Run `pip install .` in a checkout to put it on your path (the Docker image
