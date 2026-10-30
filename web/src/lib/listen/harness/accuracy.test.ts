@@ -10,6 +10,10 @@ import { decodeWav } from "./wav";
 // The audio is synthesized (see synth.ts), so these thresholds guard against regressions in the
 // detector rather than promise accuracy on a real instrument. Real recordings can be added as
 // fixtures; see fixtures/README.md.
+//
+// A weak unguided bass fundamental, a soft repeated pluck, and a second voice under the note
+// are the cases a laptop mic still fails. They are written up in
+// docs/design/tuner-and-wait-pitch.md. Extend this file there; do not lower the bars below.
 const RATES = [44100, 48000];
 
 // DSP over synthesized audio is CPU-heavy; shared CI runners can exceed the 5s default.

@@ -156,6 +156,8 @@
     starting = true;
     problem = null;
     try {
+      // The locked string changes the cents display only. The detector is not given that
+      // pitch as a target; see docs/design/tuner-and-wait-pitch.md.
       session = await startListening({
         a4,
         deviceId: deviceId || undefined,
