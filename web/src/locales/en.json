@@ -2098,6 +2098,7 @@
     "scrollSlower": "Scroll slower",
     "scrollFaster": "Scroll faster",
     "stage": "Stage mode",
+    "exitStage": "Exit stage mode",
     "pedalTitle": "Page-turner pedal",
     "pedalHint": "A Bluetooth pedal sends ordinary keys. Choose what each one does in the player and on chord sheets. “Keep” leaves a key to its normal job.",
     "reset": "Restore defaults",
