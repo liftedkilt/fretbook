@@ -173,6 +173,8 @@ export const ui = $state({
   notation: storedNotation(),
   /** Tab, scrolling note highway, or split view on the song page. */
   playerView: storedPlayerView(),
+  /** Title shown in the phone top bar when scrolled past the page title. */
+  topbarTitle: "",
   error: "",
 });
 
