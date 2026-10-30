@@ -372,7 +372,7 @@
     font-weight: 600;
   }
 
-  @media (max-width: 767px) {
+  @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
     .banner {
       flex-wrap: wrap;
     }

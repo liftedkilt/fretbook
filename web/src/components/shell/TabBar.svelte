@@ -49,7 +49,7 @@
     display: none;
   }
 
-  @media (max-width: 767px) {
+  @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
     .tabbar {
       position: fixed;
       left: var(--sp-3);

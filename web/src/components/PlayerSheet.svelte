@@ -213,7 +213,7 @@
 </script>
 
 <section
-  class="sheet"
+  class="player-panel"
   id="player-sheet"
   data-testid="player-sheet"
   data-tab={tab}
@@ -497,9 +497,10 @@
 </section>
 
 <style>
-  .sheet {
+  .player-panel {
     display: flex;
     flex-direction: column;
+    width: 100%;
     height: 100%;
     max-height: inherit;
     overflow: hidden;
@@ -665,13 +666,13 @@
   }
 
   @media (min-width: 768px) {
-    .sheet {
+    .player-panel {
       animation-name: sheet-side;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .sheet,
+    .player-panel,
     .tab,
     .mode {
       animation: none;

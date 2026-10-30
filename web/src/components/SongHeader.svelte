@@ -37,6 +37,7 @@
   let {
     song,
     readOnly = false,
+    shared = false,
     eyebrow,
     strings = 6,
     facts = [],
@@ -48,7 +49,10 @@
     afterFacts,
   }: {
     song: SongDetail;
+    /** The viewer can't edit the song (a band viewer, or an anonymous share link). */
     readOnly?: boolean;
+    /** An anonymous share link: no account, so no library actions at all. */
+    shared?: boolean;
     /** The instrument or "Chord sheet", shown before the artist. */
     eyebrow: string;
     strings?: number;
@@ -64,7 +68,9 @@
     afterFacts?: Snippet;
   } = $props();
 
-  const locked = $derived(ui.demoMode || readOnly);
+  const locked = $derived(ui.demoMode || readOnly || shared);
+  // Tags and favourites are the caller's own, so a band viewer can change them.
+  const ownLocked = $derived(ui.demoMode || shared);
 
   // The page keys this component by song id, so the starting values are the song's.
   // svelte-ignore state_referenced_locally
@@ -78,10 +84,11 @@
   let shareOpen = $state(false);
   let moveOpen = $state(false);
 
-  let phone = $state(typeof matchMedia !== "undefined" && matchMedia("(max-width: 767px)").matches);
+  const PHONE_QUERY = "(max-width: 767px), (max-height: 500px) and (pointer: coarse)";
+  let phone = $state(typeof matchMedia !== "undefined" && matchMedia(PHONE_QUERY).matches);
   $effect(() => {
     if (typeof matchMedia === "undefined") return;
-    const query = matchMedia("(max-width: 767px)");
+    const query = matchMedia(PHONE_QUERY);
     const update = () => (phone = query.matches);
     update();
     query.addEventListener("change", update);
@@ -179,7 +186,7 @@
 
   const items = $derived.by<OverflowItem[]>(() => {
     const list: OverflowItem[] = [];
-    if (phone && onretune && !readOnly)
+    if (phone && onretune && !shared)
       list.push({
         id: "transpose",
         label: t("songPage.transpose"),
@@ -196,7 +203,7 @@
         testid: "song-edit-link",
         onclick: () => navigate(editHref),
       });
-    if (!readOnly && offlineSupported())
+    if (!shared && offlineSupported())
       list.push({
         id: "offline",
         label: saved ? t("songPage.removeFromDevice") : t("songPage.keepOnDevice"),
@@ -205,7 +212,7 @@
         disabled: busy,
         onclick: () => void toggleOffline(),
       });
-    if (!readOnly)
+    if (!shared)
       list.push({
         id: "export",
         label: t("songPage.export"),
@@ -213,7 +220,7 @@
         testid: "export-open",
         onclick: () => (exportOpen = true),
       });
-    if (!readOnly && !ui.demoMode)
+    if (!shared && !ui.demoMode)
       list.push({
         id: "setlist",
         label: t("setlists.addToSetlist"),
@@ -229,7 +236,7 @@
         testid: "song-tuner",
         onclick: ontuner,
       });
-    if (!readOnly && ui.shareLinks)
+    if (!shared && !readOnly && ui.shareLinks)
       list.push({
         id: "share",
         label: t("sharing.share"),
@@ -237,10 +244,10 @@
         testid: "song-share",
         onclick: () => (shareOpen = true),
       });
-    if (!readOnly)
+    if (!shared)
       list.push({
         id: "move",
-        label: t("sharing.move"),
+        label: readOnly ? t("sharing.copySong") : t("sharing.move"),
         icon: "library",
         testid: "song-move",
         onclick: () => (moveOpen = true),
@@ -279,8 +286,8 @@
   titleClass="song-heading"
   eyebrow={phone ? "" : [eyebrow, song.artist].filter(Boolean).join(" · ")}
   subtitle={artistLine}
-  backHref={readOnly ? "" : "/"}
-  backLabel={readOnly ? "" : t("app.back")}
+  backHref={shared ? "" : "/"}
+  backLabel={shared ? "" : t("app.back")}
 >
   {#snippet leading()}
     <Cover
@@ -294,7 +301,7 @@
   {/snippet}
   {#snippet actions()}
     <div class="header-actions">
-      {#if !locked}
+      {#if !ownLocked}
         <IconButton
           class={favourite ? "song-star on" : "song-star"}
           icon={favourite ? "starFilled" : "star"}
@@ -304,7 +311,7 @@
           onclick={() => void toggleStar()}
         />
       {/if}
-      {#if !phone && onretune && !readOnly}
+      {#if !phone && onretune && !shared}
         <button type="button" class="button" data-testid="song-retune" onclick={onretune}>
           {t("songPage.transpose")}
         </button>
@@ -348,7 +355,7 @@
         {/if}
         <SongTags
           {tags}
-          {locked}
+          locked={ownLocked}
           {busy}
           onadd={(tag) => saveTags([...tags, tag])}
           onremove={(tag) => saveTags(tags.filter((own) => own !== tag))}
@@ -391,7 +398,7 @@
       </div>
       <SongTags
         {tags}
-        {locked}
+        locked={ownLocked}
         {busy}
         onadd={(tag) => saveTags([...tags, tag])}
         onremove={(tag) => saveTags(tags.filter((own) => own !== tag))}
@@ -400,8 +407,14 @@
   {/snippet}
 </SongMetadata>
 
-{#if !readOnly}
-  <SongLibraryActions songId={song.id} bind:shareOpen bind:moveOpen />
+{#if !shared}
+  <SongLibraryActions
+    songId={song.id}
+    libraryId={song.library_id ?? ""}
+    canMove={!readOnly}
+    bind:shareOpen
+    bind:moveOpen
+  />
   <ExportSheet
     open={exportOpen}
     subtitle={song.title}
@@ -444,7 +457,7 @@
     margin: 0;
   }
 
-  @media (max-width: 767px) {
+  @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
     :global(.page-header.song-header) {
       position: relative;
       gap: var(--sp-1);

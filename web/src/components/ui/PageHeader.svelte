@@ -177,7 +177,7 @@
   }
 
   /* Phones: actions wrap onto their own row under the title. */
-  @media (max-width: 767px) {
+  @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
     .identity {
       flex-wrap: wrap;
     }

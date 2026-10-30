@@ -47,6 +47,7 @@ export class PitchEngine {
   private readonly frame: Float32Array;
   private written = 0;
   private expectedFrequency: number | null = null;
+  private strictOctave = false;
   private pendingOnset: number | null = null;
   private heldMidi: number | null = null;
   private candidateMidi: number | null = null;
@@ -92,7 +93,8 @@ export class PitchEngine {
   }
 
   /** Tell the detector which note is expected next so octave errors resolve towards it. */
-  setExpectedMidi(midi: number | null): void {
+  setExpectedMidi(midi: number | null, strictOctave = false): void {
+    this.strictOctave = strictOctave;
     this.expectedFrequency = midi === null ? null : midiToFrequency(midi, this.a4);
   }
 
@@ -194,7 +196,10 @@ export class PitchEngine {
     let frequency: number | null = null;
     let clarity = 0;
     if (rms >= this.silenceRms) {
-      const result = this.mpm.detect(this.window, { expectedFrequency: this.expectedFrequency });
+      const result = this.mpm.detect(this.window, {
+        expectedFrequency: this.expectedFrequency,
+        strictOctave: this.strictOctave,
+      });
       if (result) {
         clarity = result.clarity;
         if (clarity >= this.minClarity) frequency = result.frequency;

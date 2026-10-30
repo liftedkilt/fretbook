@@ -77,9 +77,13 @@
       border-color 200ms var(--ease);
   }
 
-  .filter:hover:not(:disabled),
-  .tag:hover:not(:disabled) {
-    color: var(--text);
+  /* Hover is for pointers that can hover (touch keeps it stuck after a tap),
+     and never applies to a pressed chip, whose text must stay --bg on --text. */
+  @media (hover: hover) {
+    .filter:hover:not(:disabled):not([aria-pressed="true"]),
+    .tag:hover:not(:disabled):not([aria-pressed="true"]) {
+      color: var(--text);
+    }
   }
 
   .filter[aria-pressed="true"],

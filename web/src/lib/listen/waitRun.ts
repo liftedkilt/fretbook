@@ -82,7 +82,10 @@ export class WaitRun {
     if (!step) return false;
     this.current = index;
     this.matcher.wait(step);
-    this.session.setExpectedMidi(step.kind === "note" ? (step.midis[0] ?? null) : null);
+    this.session.setExpectedMidi(
+      step.kind === "note" ? (step.midis[0] ?? null) : null,
+      !(this.options.match?.anyOctave ?? DEFAULT_WAIT_OPTIONS.anyOctave),
+    );
     this.session.setChroma(step.kind === "chord");
     this.clearHint();
     if (this.options.hintSeconds > 0) {

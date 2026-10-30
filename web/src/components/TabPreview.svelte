@@ -29,6 +29,7 @@
         settings.core.fontDirectory = new URL("font/", document.baseURI).href;
         settings.core.logLevel = alphaTab.LogLevel.Warning;
         settings.player.playerMode = alphaTab.PlayerMode.Disabled;
+        settings.player.scrollMode = alphaTab.ScrollMode.Off;
         settings.display.staveProfile = alphaTab.StaveProfile.Tab;
         if (settings.notation?.elements && alphaTab.NotationElement) {
           settings.notation.elements.set(alphaTab.NotationElement.ScoreTitle, false);

@@ -181,7 +181,11 @@ describe("startListening", () => {
     session.setChroma(true);
     expect(port.postMessage).toHaveBeenCalledWith({ type: "chroma", on: true });
     expect(port.postMessage).toHaveBeenCalledWith({ type: "channel", index: 0 });
-    expect(port.postMessage).toHaveBeenCalledWith({ type: "expected", midi: 28 });
+    expect(port.postMessage).toHaveBeenCalledWith({
+      type: "expected",
+      midi: 28,
+      strictOctave: false,
+    });
 
     await session.stop();
     expect(track.stop).toHaveBeenCalled();

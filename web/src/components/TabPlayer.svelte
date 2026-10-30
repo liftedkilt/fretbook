@@ -119,7 +119,11 @@
   import type { SongDetail, TabSong } from "../lib/types";
   import { openTuner, setNotation, setPlayerView, ui } from "../lib/ui.svelte";
 
-  let { song: initial, readOnly = false }: { song: TabSong; readOnly?: boolean } = $props();
+  let {
+    song: initial,
+    readOnly = false,
+    shared = false,
+  }: { song: TabSong; readOnly?: boolean; shared?: boolean } = $props();
   let pickerOpen = $state(false);
 
   // The player owns its copy: taps, BPM edits, and uploads change it in place.
@@ -1565,7 +1569,7 @@
     const slot = sheetSlot;
     const place = () => {
       if (!slot) return;
-      if (window.innerWidth < 768) {
+      if (matchMedia("(max-width: 767px), (max-height: 500px) and (pointer: coarse)").matches) {
         slot.style.removeProperty("--sheet-height");
         return;
       }
@@ -1624,6 +1628,7 @@
   <SongHeader
     {song}
     {readOnly}
+    {shared}
     eyebrow={instrumentLabel(track.instrument)}
     strings={track.tuning_midi.length}
     facts={[
@@ -2188,7 +2193,7 @@
     pointer-events: none;
   }
 
-  @media (max-width: 767px) {
+  @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
     .player-body {
       display: block;
     }
@@ -2270,7 +2275,7 @@
   }
 
   /* Saved loops stay in the practice panel on a phone: they would push the music down. */
-  @media (max-width: 767px) {
+  @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
     .song-saved-loops {
       display: none;
     }

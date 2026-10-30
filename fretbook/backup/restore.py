@@ -290,6 +290,8 @@ def restore_archive(
     counts = {"imported": 0, "skipped": 0, "copied": 0, "failed": 0}
     # Archive song id -> id in this library, for setlists. A song kept as a copy may get a new id.
     song_ids: dict[str, str] = {}
+    # Songs this run has created. They are not "already in the library" for the duplicate check.
+    created: set[str] = set()
     warnings: list[Notice] = []
     total = len(manifest.songs)
     progress(f"Restoring {total} songs", "backup.restoring")
@@ -297,7 +299,9 @@ def restore_archive(
         for entry in manifest.songs:
             outcome: Literal["imported", "skipped", "copied", "failed"]
             try:
-                outcome = _restore_song(settings, songs, media, owner_id, archive, entry, mode, warnings, song_ids)
+                outcome = _restore_song(
+                    settings, songs, media, owner_id, archive, entry, mode, warnings, song_ids, created
+                )
             except (
                 BackupError,
                 ValueError,
@@ -455,11 +459,12 @@ def _restore_song(
     mode: Mode,
     warnings: list[Notice],
     song_ids: dict[str, str],
+    created: set[str],
 ) -> Literal["imported", "skipped", "copied"]:
     existing_id = (
         entry.id
         if songs.get_song(owner_id, entry.id) is not None
-        else songs.find_duplicate_id(owner_id, entry.title, entry.artist, entry.source_kind)
+        else songs.find_duplicate_id(owner_id, entry.title, entry.artist, entry.source_kind, created)
     )
     existing = existing_id is not None
     if existing_id and mode == "skip":
@@ -495,6 +500,7 @@ def _restore_song(
             Notice("backup.metadataFailed", f"could not restore the details of {entry.title}", {"title": entry.title})
         )
     song_ids[entry.id] = song["id"]
+    created.add(song["id"])
     for item in entry.media:
         try:
             _restore_media(settings, media, owner_id, song["id"], archive, item)

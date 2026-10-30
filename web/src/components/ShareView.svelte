@@ -36,9 +36,9 @@
   {:else}
     <Page width="wide">
       {#if song.content_kind === "chords"}
-        <ChordSheetView {song} readOnly />
+        <ChordSheetView {song} readOnly shared />
       {:else}
-        <TabPlayer song={song as TabSong} readOnly />
+        <TabPlayer song={song as TabSong} readOnly shared />
       {/if}
     </Page>
   {/if}

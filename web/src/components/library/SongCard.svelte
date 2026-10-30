@@ -339,7 +339,7 @@
   }
 
   /* Phones: a list row (cover, title, meta, star, menu). Nothing destructive is one tap away. */
-  @media (max-width: 767px) {
+  @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
     .song {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
