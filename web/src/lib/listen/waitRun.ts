@@ -12,6 +12,9 @@ import {
 /** A run counts as played through when this share of the steps were played (the rest may have been skipped). */
 export const COMPLETE_HIT_SHARE = 0.8;
 
+/** Wrong notes heard in a row, with no step played between, before wait mode suspects the backing. */
+export const BLEED_WRONG_NOTES = 4;
+
 export interface WaitRunOptions {
   steps: WaitStep[];
   /** Opens the microphone; `startListening` in the app, a fake in tests. */
@@ -25,6 +28,8 @@ export interface WaitRunOptions {
   onHit: (step: WaitStep, index: number, hit: boolean) => void;
   /** An attack was heard that did not count: a wrong note, out of tune, too early. */
   onHeard?: (heard: WaitHeard, step: WaitStep, index: number) => void;
+  /** Several wrong notes in a row: the microphone is probably hearing the backing, not the player. */
+  onBleed?: () => void;
   /** The beat has been waiting for `hintSeconds`. */
   onHint: (step: WaitStep, index: number) => void;
 }
@@ -45,6 +50,8 @@ export class WaitRun {
   private readonly handled = new Set<number>();
   private readonly played = new Set<number>();
   hits = 0;
+  private wrongStreak = 0;
+  private bleedReported = false;
 
   /** How many different steps were played since the run last started from the first step. */
   get playedCount(): number {
@@ -166,6 +173,11 @@ export class WaitRun {
   private noteHeard(before: WaitHeard | null): void {
     const heard = this.matcher.heard;
     if (heard && heard !== before && this.current >= 0) {
+      if (heard.kind === "wrong") this.wrongStreak += 1;
+      if (this.wrongStreak >= BLEED_WRONG_NOTES && !this.bleedReported) {
+        this.bleedReported = true;
+        this.options.onBleed?.();
+      }
       this.options.onHeard?.(heard, this.options.steps[this.current], this.current);
     }
   }
@@ -174,6 +186,7 @@ export class WaitRun {
     const index = this.current;
     const step = this.options.steps[index];
     this.release();
+    if (hit) this.wrongStreak = 0;
     this.passed = index;
     this.handled.add(index);
     if (hit) {

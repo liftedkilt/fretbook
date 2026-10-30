@@ -246,6 +246,7 @@
   // The step just hit, kept for the 400 ms the fretboard shows it green.
   let waitHitStep = $state<WaitStep | null>(null);
   let waitError = $state("");
+  let waitBleed = $state(false);
   let waitGrades = $state<Record<string, GemState>>({});
   let waitRun: WaitRun | null = null;
   // A recording cannot stop on every miss, so wait mode swaps the score player to the synth for
@@ -1348,6 +1349,7 @@
     if (!player.api || waitRun || waitStarting) return;
     if (scoreRun) stopScore();
     waitError = "";
+    waitBleed = false;
     waitGrades = {};
     const run = new WaitRun({
       steps: waitSteps,
@@ -1391,6 +1393,7 @@
         player.api?.play();
       },
       onHint: () => (waitHint = true),
+      onBleed: () => (waitBleed = !practice.wait.silent),
     });
     waitStarting = true;
     try {
@@ -1466,6 +1469,7 @@
     waitHeard = null;
     waitNext = null;
     waitHint = false;
+    waitBleed = false;
     waitGrades = {};
     applyPractice();
   }
@@ -2161,6 +2165,9 @@
           <span class="pill pill-accent" data-testid="wait-hint"
             >{t("wait.hint", { string: waitStep.string + 1, fret: waitStep.fret })}</span
           >
+        {/if}
+        {#if waitBleed}
+          <span class="pill" role="alert" data-testid="wait-bleed">{t("wait.bleed")}</span>
         {/if}
         <span class="muted small">{t("wait.progress", { hits: waitHits, total: waitTotal })}</span>
         {#if waitState === "waiting"}
