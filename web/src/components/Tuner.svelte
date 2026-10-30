@@ -20,6 +20,7 @@
     A4_MIN,
     PitchSmoother,
     TuneTracker,
+    IN_TUNE_CENTS,
     centsFromString,
     chromaticMatch,
     clampA4,
@@ -113,7 +114,7 @@
       ? ""
       : ticked
         ? t("tuner.inTune")
-        : shown === 0 || Math.abs(shown) <= 3
+        : Math.abs(shown) <= IN_TUNE_CENTS
           ? t("tuner.holdSteady")
           : shown < 0
             ? t("tuner.tuneUp")

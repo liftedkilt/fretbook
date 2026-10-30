@@ -4,8 +4,13 @@ import { DEFAULT_A4, centsBetween, describePitch, midiToFrequency } from "./list
 export const A4_MIN = 432;
 export const A4_MAX = 446;
 
-/** A string counts as in tune within this many cents. */
-export const IN_TUNE_CENTS = 3;
+/**
+ * A string counts as in tune within this many cents. Phone tuners use a similarly wide green zone,
+ * and a string this close is inside what most players can hear; large real drift still resets the hold.
+ * The hold is fed the cents of the median-smoothed pitch (see `PitchSmoother`), so one stray reading
+ * does not fail it.
+ */
+export const IN_TUNE_CENTS = 6;
 
 /** Readings this close to centre are shown as exactly centred, so the display does not twitch. */
 export const DEAD_ZONE_CENTS = 1.5;
