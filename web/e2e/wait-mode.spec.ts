@@ -109,3 +109,33 @@ test("clicking a later bar on the score moves the wait to that bar's note", asyn
   await score.click({ position: { x: 396, y: 190 } });
   await expect(status).toContainText("Play A1");
 });
+
+test("a song with a recording can be waited on with the synth, and the recording comes back", async ({
+  page,
+  seed,
+}) => {
+  const song = await seed.musicXmlTabWithAudio();
+  await page.goto(`/songs/${song.id}`);
+  await expect(page.getByTestId("player-score").locator("svg").first()).toBeVisible();
+
+  await page.getByTestId("player-panel-toggle").click();
+  await page.getByTestId("wait-silent").check();
+  await expect(page.getByTestId("wait-toggle")).toBeEnabled();
+  await page.getByTestId("wait-toggle").click();
+  const status = page.getByTestId("wait-status");
+  await expect(status).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByTestId("wait-uses-synth")).toBeVisible();
+  // The recording stays silent for the run.
+  await expect(page.getByTestId("player-audio")).toHaveJSProperty("paused", true);
+
+  await page.getByTestId("player-play").click();
+  await expect(status).toHaveAttribute("data-state", "waiting");
+  await expect(status).toHaveAttribute("data-hits", "8", { timeout: 50_000 });
+  await expect(page.getByTestId("player-audio")).toHaveJSProperty("paused", true);
+
+  // Turning wait off hands playback back to the recording.
+  await page.getByTestId("wait-toggle").click();
+  await expect(status).toHaveCount(0);
+  await page.getByTestId("player-play").click();
+  await expect(page.getByTestId("player-audio")).toHaveJSProperty("paused", false);
+});

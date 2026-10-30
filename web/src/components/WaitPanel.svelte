@@ -8,6 +8,7 @@
     practice,
     on,
     available,
+    usesSynth = false,
     error,
     onchange,
     ontoggle,
@@ -16,6 +17,8 @@
     practice: PracticeSettings;
     on: boolean;
     available: boolean;
+    /** A recording is attached: wait mode plays the synth for the run. */
+    usesSynth?: boolean;
     error: string;
     onchange: () => void;
     ontoggle: () => void;
@@ -28,6 +31,9 @@
   {#if !hideToggle}<h3>{t("wait.title")}</h3>{/if}
   {#if available}
     <p class="muted small">{t("wait.about")}</p>
+    {#if usesSynth}<p class="muted small" data-testid="wait-uses-synth">
+        {t("wait.usesSynth")}
+      </p>{/if}
     <div class="mix-row">
       {#if !hideToggle}
         <button class="button" data-testid="wait-toggle" aria-pressed={on} onclick={ontoggle}

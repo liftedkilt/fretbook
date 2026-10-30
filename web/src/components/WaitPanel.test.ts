@@ -44,7 +44,7 @@ describe("WaitPanel", () => {
     expect(given.onchange).toHaveBeenCalledOnce();
   });
 
-  it("explains why it is off while a recording is attached", () => {
+  it("explains why it is off when unavailable", () => {
     render(WaitPanel, { props: props({ available: false }) });
     expect(screen.getByTestId("wait-unavailable")).toBeTruthy();
     expect(screen.queryByTestId("wait-toggle")).toBeNull();

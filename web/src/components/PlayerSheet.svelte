@@ -52,6 +52,7 @@
     rate,
     waitOn,
     waitAvailable,
+    waitUsesSynth = false,
     waitError,
     scoreOn,
     scoreSummary,
@@ -117,6 +118,8 @@
     rate: number;
     waitOn: boolean;
     waitAvailable: boolean;
+    /** The song has a recording, so wait mode plays the synth instead. */
+    waitUsesSynth?: boolean;
     waitError: string;
     scoreOn: boolean;
     scoreSummary: ScoreSummary | null;
@@ -309,6 +312,7 @@
           {practice}
           on={waitOn}
           available
+          usesSynth={waitUsesSynth}
           error={waitError}
           hideToggle
           onchange={onwaitoptions}

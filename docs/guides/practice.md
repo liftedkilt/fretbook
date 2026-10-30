@@ -25,9 +25,10 @@ track, `-`/`+` volume, `[`/`]` speed.
 
 ## Wait mode
 
-On a tab without a recording press **Wait for me**. The cursor stops on each note of the chosen track until the
+Press **Wait for me**. The cursor stops on each note of the chosen track until the
 microphone hears you play it (the right note in any octave counts by default). The other tracks play as backing, or
-turn the synth off.
+turn the synth off. If the song has a recording, wait mode temporarily plays the built-in synth
+instead and keeps the recording silent; the recording comes back when you stop waiting.
 
 While the cursor waits, the dock says what it heard when it was not the note: another note ("Heard A3"), the right
 note out of tune ("a little flat" or "sharp", within 40 cents counts), nothing with a pitch in it, or "too early". An
