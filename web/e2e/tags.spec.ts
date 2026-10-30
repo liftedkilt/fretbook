@@ -105,3 +105,24 @@ test("rename, merge and delete a tag from the library", async ({ page, seed }) =
   await expect(page.getByTestId("song-tag")).toHaveCount(1);
   await expect(page.getByTestId("song-tag")).toHaveText(/jazz/);
 });
+
+test("a pressed library filter chip keeps a readable label while hovered", async ({
+  page,
+  seed,
+}) => {
+  const song = await seed.create({ title: "Hover Song", artist: "Band" });
+  await page.goto(`/songs/${song.id}`);
+  await page.getByTestId("song-favourite").click();
+  await expect(page.getByTestId("song-favourite")).toHaveAttribute("aria-pressed", "true");
+
+  await page.goto("/");
+  const chip = page.getByTestId("library-filter-favourites");
+  await chip.click();
+  await expect(chip).toHaveAttribute("aria-pressed", "true");
+  await chip.hover();
+  const [color, background] = await chip.evaluate((el) => {
+    const s = getComputedStyle(el);
+    return [s.color, s.backgroundColor];
+  });
+  expect(color).not.toBe(background);
+});
