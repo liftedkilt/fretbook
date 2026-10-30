@@ -235,6 +235,8 @@
   let waitState = $state<WaitState>("idle");
   // Bumped when a step is played, so the count below follows the run.
   let waitPlayedVersion = $state(0);
+  // Every note played in the run, passes of a loop included; `waitHits` below is what the dock shows.
+  let waitRunHits = $state(0);
   // What was heard on the step being waited on that did not count, and the note after a hit.
   let waitHeard = $state<WaitHeard | null>(null);
   let waitSkipped = $state(false);
@@ -1372,6 +1374,7 @@
       onHeard: (heard) => (waitHeard = heard),
       onHit: (step, index, wasHit) => {
         waitPlayedVersion += 1;
+        waitRunHits = run.hits;
         waitSkipped = !wasHit;
         waitNext = waitSteps[index + 1] ?? null;
         waitHeard = null;
@@ -1401,6 +1404,7 @@
     listenSession = run.listening;
     waitOn = true;
     waitPlayedVersion += 1;
+    waitRunHits = 0;
     waitHeard = null;
     waitNext = null;
     waitState = "idle";
@@ -2063,7 +2067,7 @@
         class="wait-status"
         data-testid="wait-status"
         data-state={waitState}
-        data-hits={waitHits}
+        data-hits={waitRunHits}
         data-total={waitTotal}
         role="status"
       >
