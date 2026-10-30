@@ -118,11 +118,24 @@ describe("SongHeader", () => {
     confirmSpy.mockRestore();
   });
 
-  it("hides every edit action in a read-only library", () => {
-    render(SongHeader, props({ readOnly: true, onretune: vi.fn() }));
+  it("hides every account action on an anonymous share link", () => {
+    render(SongHeader, props({ readOnly: true, shared: true, onretune: vi.fn() }));
     expect(screen.queryByTestId("song-favourite")).toBeNull();
     expect(screen.queryByTestId("song-retune")).toBeNull();
     expect(screen.queryByTestId("song-edit-link")).toBeNull();
     expect(screen.queryByTestId("song-more")).toBeNull();
+  });
+
+  it("keeps the non-editing actions for a band viewer", async () => {
+    render(SongHeader, props({ readOnly: true, onretune: vi.fn() }));
+    expect(screen.getByTestId("song-favourite")).toBeTruthy();
+    expect(screen.getByTestId("song-retune")).toBeTruthy();
+    expect(screen.queryByTestId("song-edit-link")).toBeNull();
+    await fireEvent.click(screen.getByTestId("song-more"));
+    expect(screen.getByTestId("export-open")).toBeTruthy();
+    expect(screen.getByTestId("song-add-to-setlist")).toBeTruthy();
+    expect(screen.getByTestId("song-move")).toBeTruthy();
+    expect(screen.queryByTestId("song-delete")).toBeNull();
+    expect(screen.queryByTestId("song-share")).toBeNull();
   });
 });

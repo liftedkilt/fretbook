@@ -119,7 +119,11 @@
   import type { SongDetail, TabSong } from "../lib/types";
   import { openTuner, setNotation, setPlayerView, ui } from "../lib/ui.svelte";
 
-  let { song: initial, readOnly = false }: { song: TabSong; readOnly?: boolean } = $props();
+  let {
+    song: initial,
+    readOnly = false,
+    shared = false,
+  }: { song: TabSong; readOnly?: boolean; shared?: boolean } = $props();
   let pickerOpen = $state(false);
 
   // The player owns its copy: taps, BPM edits, and uploads change it in place.
@@ -1478,6 +1482,7 @@
   <SongHeader
     {song}
     {readOnly}
+    {shared}
     eyebrow={instrumentLabel(track.instrument)}
     strings={track.tuning_midi.length}
     facts={[
