@@ -19,12 +19,21 @@ const mockImportTranscribe = vi.fn();
 const mockImportDocument = vi.fn();
 const mockWaitForJob = vi.fn();
 const mockListSongs = vi.fn();
+const mockProcessBulkImport = vi.fn();
 const emptyPage = {
   items: [],
   total: 0,
   next_cursor: null,
   counts: { all: 0, bass: 0, electric: 0, acoustic: 0, chords: 0 },
 };
+
+vi.mock("../lib/bulkImport", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../lib/bulkImport")>();
+  return {
+    ...actual,
+    processBulkImport: (...args: unknown[]) => mockProcessBulkImport(...args),
+  };
+});
 
 vi.mock("../lib/api", () => ({
   ApiError: class ApiError extends Error {},
@@ -130,6 +139,75 @@ describe("AddSheet", () => {
 
     expect(screen.getByTestId("add-file-input")).toBeInTheDocument();
     expect(screen.queryByTestId("add-url")).toBeNull();
+  });
+
+  it("passes the selected duplicate choice to processBulkImport for multi-file upload in file mode", async () => {
+    render(AddSheet);
+
+    await fireEvent.click(screen.getByTestId("add-more-toggle"));
+    await fireEvent.click(screen.getByTestId("dup-replace"));
+
+    await fireEvent.click(screen.getByTestId("add-mode-file"));
+
+    const file1 = new File(["riff 1"], "riff1.cho");
+    const file2 = new File(["riff 2"], "riff2.cho");
+    await fireEvent.change(screen.getByTestId("add-file-input"), {
+      target: { files: [file1, file2] },
+    });
+
+    expect(mockProcessBulkImport).toHaveBeenCalledWith({
+      files: [file1, file2],
+      duplicates: "replace",
+      family: "bass",
+    });
+    expect(ui.sheet).toBe("");
+  });
+
+  it("passes the selected duplicate choice to processBulkImport for zip upload in file mode", async () => {
+    render(AddSheet);
+
+    await fireEvent.click(screen.getByTestId("add-more-toggle"));
+    await fireEvent.click(screen.getByTestId("dup-keep"));
+
+    await fireEvent.click(screen.getByTestId("add-mode-file"));
+
+    const zip = new File(["archive data"], "songs.zip");
+    await fireEvent.change(screen.getByTestId("add-file-input"), {
+      target: { files: [zip] },
+    });
+
+    expect(mockProcessBulkImport).toHaveBeenCalledWith({
+      files: [zip],
+      duplicates: "keep_both",
+      family: "bass",
+    });
+    expect(ui.sheet).toBe("");
+  });
+
+  it("passes the selected duplicate choice to processBulkImport when multiple files are dropped in file mode", async () => {
+    render(AddSheet);
+
+    await fireEvent.click(screen.getByTestId("add-more-toggle"));
+    await fireEvent.click(screen.getByTestId("dup-replace"));
+    await fireEvent.click(screen.getByTestId("add-mode-file"));
+
+    const dropzone = screen.getByTestId("add-file-input").closest("label")!;
+    const file1 = new File(["riff 1"], "riff1.cho");
+    const file2 = new File(["riff 2"], "riff2.cho");
+
+    await fireEvent.drop(dropzone, {
+      dataTransfer: {
+        files: [file1, file2],
+        items: [],
+      },
+    });
+
+    expect(mockProcessBulkImport).toHaveBeenCalledWith({
+      files: [file1, file2],
+      duplicates: "replace",
+      family: "bass",
+    });
+    expect(ui.sheet).toBe("");
   });
 
   it("switches to blank tab source mode and creates a tab", async () => {

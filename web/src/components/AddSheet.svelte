@@ -658,7 +658,7 @@
           if (files.length === 0) return;
           if (files.length > 1 || files[0].name.toLowerCase().endsWith(".zip")) {
             closeSheet();
-            void processBulkImport({ files, family: defaultFamily() });
+            void processBulkImport({ files, duplicates, family: defaultFamily() });
           } else {
             void submitFile(files[0], duplicates);
           }
@@ -682,7 +682,7 @@
             event.currentTarget.value = "";
             if (files.length > 1 || files[0].name.toLowerCase().endsWith(".zip")) {
               closeSheet();
-              void processBulkImport({ files, family: defaultFamily() });
+              void processBulkImport({ files, duplicates, family: defaultFamily() });
             } else {
               void submitFile(files[0], duplicates);
             }
