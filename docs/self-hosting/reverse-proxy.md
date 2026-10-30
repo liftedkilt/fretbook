@@ -23,6 +23,9 @@ damage instrument sound.
 6. **Leave share links reachable** when `FRETBOOK_SHARE_LINKS=true`. The proxy must allow unauthenticated
    `GET` of `/share/` and `/api/share/`. Those routes answer 404 until the flag is on, and a login wall in
    front of them defeats the link.
+7. **Pass API tokens through to `/api`** if you put an external auth proxy in front of Fretbook. Forward-auth proxies
+   (oauth2-proxy, Authelia, Authentik) intercept bearer tokens and break scripts and the CLI. See
+   [Forward-auth proxies and API tokens](#forward-auth-proxies-and-api-tokens).
 
 If the proxy and Fretbook are containers on one Docker network, give the network a fixed subnet and the proxy a
 fixed address, so the value of `FRETBOOK_FORWARDED_ALLOW_IPS` does not change when containers restart:
@@ -114,6 +117,92 @@ Create a proxy rule for `fretbook.example.com` pointing at `fretbook:8137` (or t
 terminated by Zoraxy. Keep Zoraxy from rewriting the `Host` header to the target (leave "rewrite host header"
 off), and make sure `X-Forwarded-Proto` is sent. Then set `FRETBOOK_FORWARDED_ALLOW_IPS` to Zoraxy's address as
 seen by Fretbook.
+
+## Forward-auth proxies and API tokens
+
+If you place a forward-auth proxy (such as oauth2-proxy, Authelia or Authentik forward auth, or Zoraxy with SSO) in front
+of Fretbook, the proxy inspects every incoming request before Fretbook sees it.
+
+When using personal API tokens (`Authorization: Bearer fb_...`) with [the CLI or scripts](../guides/cli.md), the forward-auth
+proxy fails to recognize the token and responds with a `302` redirect to the identity provider's login page or `401 Unauthorized`.
+Fretbook never sees the request.
+
+### Prefer Fretbook's native OIDC
+
+If you run an identity provider (such as Pocket ID, Authelia, Authentik, or Keycloak), the cleanest and most robust setup
+is to use Fretbook's built-in [Sign-in with OIDC](oidc.md) instead of an external auth proxy.
+
+With native OIDC:
+
+- Reverse proxies (Caddy, Traefik, nginx) act as standard reverse proxies with no auth proxy layer.
+- Fretbook manages web browser authentication and redirects unauthenticated browser requests to your provider.
+- Requests with `Authorization: Bearer fb_...` bypass the OIDC flow and are validated directly by Fretbook.
+- Personal API tokens work with no extra proxy configuration.
+
+### Keeping a forward-auth proxy
+
+If you keep a forward-auth proxy in front of Fretbook (for example, to enforce centralized SSO policies across all
+services), you have two options for allowing API tokens through.
+
+#### Option 1: Bypass `/api/` at the proxy
+
+Configure the forward-auth proxy to skip authentication on `/api/` and forward those requests directly to Fretbook. Fretbook's
+own authentication backend then guards the API.
+
+- **oauth2-proxy**:
+  Pass `--skip-auth-route="^/api/"` (or `--skip-auth-regex="^/api/"`, or in the configuration file `skip_auth_routes = ["^/api/"]`).
+  If share links are enabled (`FRETBOOK_SHARE_LINKS=true`), also include `/share/`:
+  ```ini
+  skip_auth_routes = [
+      "^/api/",
+      "^/share/"
+  ]
+  ```
+- **Authelia**:
+  Add an access control bypass rule in `configuration.yml` under `access_control.rules`:
+  ```yaml
+  access_control:
+    rules:
+      - domain: fretbook.example.com
+        resources:
+          - "^/api/.*$"
+        policy: bypass
+  ```
+- **Authentik**:
+  In the Authentik Proxy Provider under **Advanced protocol settings**, add `^/api/.*` to **Unauthenticated paths**.
+- **nginx with `auth_request`**:
+  Omit `auth_request` in the `/api/` location block (or set `auth_request off;`):
+  ```nginx
+  location /api/ {
+      auth_request off;
+      proxy_pass http://127.0.0.1:8137;
+      # ... proxy headers ...
+  }
+  ```
+
+**Security trade-offs:**
+
+- **With Fretbook OIDC enabled (`FRETBOOK_OIDC_ISSUER` set):** This arrangement is safe. Fretbook inspects every `/api`
+  request: calls without a valid `fb_` bearer token or active Fretbook session cookie return `401 Unauthorized`. Admin routes
+  still require an admin token or admin session.
+- **In single-user mode (no `FRETBOOK_OIDC_ISSUER`):** ⚠️ **High risk.** In single-user mode, Fretbook has no built-in login
+  and treats unauthenticated requests as the owner of the library. If you bypass `/api/` at the proxy in single-user mode,
+  **anyone who can reach your server can read, modify, or delete songs without authenticating**. Only bypass `/api/` in single-user
+  mode if access to the server is restricted to a private network, VPN, or client certificate.
+- **Token brute-force defense:** Bypassing the proxy means API authentication requests reach Fretbook directly. If your proxy
+  provides rate limiting or abuse prevention, ensure rate limits still apply to `/api/`.
+
+#### Option 2: Serve a dedicated API hostname
+
+Expose a secondary hostname (such as `api.fretbook.example.com`) that routes directly to Fretbook without the forward-auth
+proxy, while keeping `fretbook.example.com` behind the auth proxy for browser access.
+
+**Security trade-offs:**
+
+- Keeps browser SSO strictly enforced on the primary web hostname.
+- Allows separate firewall, VPN, IP allowlisting, or rate-limiting rules on the API hostname.
+- As with Option 1, Fretbook OIDC should be enabled so requests to the API hostname without an API token cannot access the library anonymously.
+- Requires configuring an additional DNS record and TLS certificate.
 
 ## Serving under a sub-path
 
