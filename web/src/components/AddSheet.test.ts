@@ -276,7 +276,10 @@ describe("AddSheet", () => {
       await fireEvent.click(screen.getByTestId("any-submit"));
 
       await vi.waitFor(() =>
-        expect(mockImportAuto).toHaveBeenCalledWith({ url: "https://example.com/tab" }),
+        expect(mockImportAuto).toHaveBeenCalledWith({
+          url: "https://example.com/tab",
+          on_duplicate: "skip",
+        }),
       );
       await vi.waitFor(() => expect(ui.sheet).toBe(""));
     });
@@ -299,7 +302,9 @@ describe("AddSheet", () => {
       await fireEvent.input(screen.getByTestId("any-text"), { target: { value: TAB } });
       await fireEvent.click(screen.getByTestId("any-submit"));
 
-      await vi.waitFor(() => expect(mockImportAuto).toHaveBeenCalledWith({ text: TAB }));
+      await vi.waitFor(() =>
+        expect(mockImportAuto).toHaveBeenCalledWith({ text: TAB, on_duplicate: "skip" }),
+      );
     });
 
     it("asks for something to add when the box is empty", async () => {
@@ -315,7 +320,9 @@ describe("AddSheet", () => {
       const file = new File(["G  C\nHello"], "download", { type: "application/octet-stream" });
       await fireEvent.change(screen.getByTestId("any-file-input"), { target: { files: [file] } });
 
-      await vi.waitFor(() => expect(mockImportAuto).toHaveBeenCalledWith({ file }));
+      await vi.waitFor(() =>
+        expect(mockImportAuto).toHaveBeenCalledWith({ file, on_duplicate: "skip" }),
+      );
     });
 
     it("asks for stem, instrument and grid for an audio file, then transcribes it", async () => {

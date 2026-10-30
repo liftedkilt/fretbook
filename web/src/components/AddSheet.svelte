@@ -238,6 +238,7 @@
     const warnings = job.result?.warnings ?? [];
     if (warnings.length)
       notice = t("library.warnings", { warnings: warnings.map((item) => keyed(item)).join(" ") });
+    if (job.result?.skipped) return;
     if (job.result?.song_id) {
       url = "";
       videoId = "";
@@ -300,7 +301,7 @@
     busy = "";
   }
 
-  async function submitFile(file: File) {
+  async function submitFile(file: File, onDuplicate: DuplicateAction) {
     error = "";
     notice = "";
     busy = t("library.importing");
@@ -315,11 +316,16 @@
           artist: parsed.artist,
           source_kind: "guitarpro",
           document: parsed.document,
+          on_duplicate: onDuplicate,
         });
+        if (onDuplicate === "skip" && ui.songs.some((song) => song.id === saved.id)) {
+          notice = t("import.skippedDuplicate", { title: saved.title });
+          return;
+        }
         finish(`/songs/${saved.id}`);
         return;
       }
-      const started = await importFile(file);
+      const started = await importFile(file, onDuplicate);
       await runJob(started.job_id);
     } catch (err) {
       error = message(err);
@@ -341,7 +347,7 @@
       return;
     }
     if ("file" in input && (await isGuitarProFile(input.file))) {
-      await submitFile(input.file);
+      await submitFile(input.file, input.duplicates ?? duplicates);
       return;
     }
     if ("file" in input && (await isMidiFile(input.file))) {
@@ -365,7 +371,7 @@
     notice = "";
     busy = t("library.importing");
     try {
-      const started = await importAuto(input);
+      const started = await importAuto({ ...input, on_duplicate: duplicates });
       await runJob(started.job_id);
     } catch (err) {
       error = message(err);
@@ -651,7 +657,7 @@
             closeSheet();
             void processBulkImport({ files, family: defaultFamily() });
           } else {
-            void submitFile(files[0]);
+            void submitFile(files[0], duplicates);
           }
         }}
       >
@@ -675,7 +681,7 @@
               closeSheet();
               void processBulkImport({ files, family: defaultFamily() });
             } else {
-              void submitFile(files[0]);
+              void submitFile(files[0], duplicates);
             }
           }}
         />
@@ -886,7 +892,7 @@
     {#if error}<p class="alert" role="alert" data-testid="add-error">
         <Icon name="alert" size={18} />{error}
       </p>{/if}
-    {#if notice}<p class="notice">{notice}</p>{/if}
+    {#if notice}<p class="notice" data-testid="add-notice">{notice}</p>{/if}
   </div>
 </Sheet>
 

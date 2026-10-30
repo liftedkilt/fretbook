@@ -794,6 +794,16 @@
             ],
             "title": "File"
           },
+          "on_duplicate": {
+            "default": "keep_both",
+            "enum": [
+              "skip",
+              "keep_both",
+              "replace"
+            ],
+            "title": "On Duplicate",
+            "type": "string"
+          },
           "text": {
             "anyOf": [
               {
@@ -877,6 +887,16 @@
               }
             ],
             "title": "Kind"
+          },
+          "on_duplicate": {
+            "default": "keep_both",
+            "enum": [
+              "skip",
+              "keep_both",
+              "replace"
+            ],
+            "title": "On Duplicate",
+            "type": "string"
           }
         },
         "required": [
@@ -10997,7 +11017,7 @@
     },
     "/api/imports/auto": {
       "post": {
-        "description": "Work out what a dropped file, pasted text, or a pasted link is, and queue its import.\n\nSend exactly one of ``file``, ``text`` or ``url``. Text that is a single link is treated as a link.\nInput that matches no supported format is refused with `import.noFileImporter`.",
+        "description": "Work out what a dropped file, pasted text, or a pasted link is, and queue its import.\n\nSend exactly one of ``file``, ``text`` or ``url``. Text that is a single link is treated as a link.\nInput that matches no supported format is refused with `import.noFileImporter`.\n`on_duplicate` (`skip`, `replace` or `keep_both`, the default) says what to do\nwhen a file or text matches a song already in the library.",
         "operationId": "import_auto_api_imports_auto_post",
         "requestBody": {
           "content": {
@@ -11180,7 +11200,7 @@
     },
     "/api/imports/file": {
       "post": {
-        "description": "Queue a Guitar Pro, MusicXML, ChordPro, or Fretbook JSON upload.",
+        "description": "Queue a Guitar Pro, MusicXML, ChordPro, or Fretbook JSON upload.\n\n`on_duplicate` (`skip`, `replace` or `keep_both`, the default) says what to do\nwhen it matches a song already in the library.",
         "operationId": "import_file_api_imports_file_post",
         "requestBody": {
           "content": {
