@@ -15,15 +15,120 @@
 
   const tipId = `tip-${Math.random().toString(36).slice(2, 8)}`;
   let open = $state(false);
+  let touchActive = false;
+
+  function canHover(): boolean {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return true;
+    }
+    return !window.matchMedia("(hover: none)").matches;
+  }
+
+  function handlePointerDown(event: PointerEvent) {
+    if (event.pointerType === "touch") {
+      touchActive = true;
+      open = false;
+    } else {
+      touchActive = false;
+    }
+  }
+
+  function handlePointerUp(event: PointerEvent) {
+    if (event.pointerType === "touch") {
+      open = false;
+    }
+  }
+
+  function handlePointerCancel(event: PointerEvent) {
+    if (event.pointerType === "touch") {
+      open = false;
+    }
+  }
+
+  function handleTouchStart() {
+    touchActive = true;
+    open = false;
+  }
+
+  function handleTouchEnd() {
+    open = false;
+  }
+
+  function handlePointerEnter(event: PointerEvent) {
+    if (event.pointerType === "touch" || !canHover()) {
+      return;
+    }
+    touchActive = false;
+    open = true;
+  }
+
+  function handlePointerLeave(event: PointerEvent) {
+    if (event.pointerType === "touch") {
+      open = false;
+      return;
+    }
+    open = false;
+  }
+
+  function handleMouseEnter(event: MouseEvent) {
+    if (!canHover() || touchActive) {
+      return;
+    }
+    if ("pointerType" in event && (event as PointerEvent).pointerType === "touch") {
+      return;
+    }
+    open = true;
+  }
+
+  function handleMouseLeave() {
+    open = false;
+  }
+
+  function handleFocusIn(event: FocusEvent) {
+    const target = event.target as HTMLElement | null;
+    if (
+      typeof CSS !== "undefined" &&
+      typeof CSS.supports === "function" &&
+      CSS.supports("selector(:focus-visible)")
+    ) {
+      if (target?.matches?.(":focus-visible")) {
+        touchActive = false;
+        open = true;
+      }
+      return;
+    }
+    // Fallback for test environments (e.g. jsdom) where :focus-visible is not implemented:
+    if (!touchActive && canHover()) {
+      open = true;
+    }
+  }
+
+  function handleFocusOut() {
+    open = false;
+  }
+
+  function handleKeyDown(event: KeyboardEvent) {
+    if (event.key === "Escape" && open) {
+      open = false;
+    }
+  }
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <span
   class="tip"
-  onmouseenter={() => (open = true)}
-  onmouseleave={() => (open = false)}
-  onfocusin={() => (open = true)}
-  onfocusout={() => (open = false)}
+  onpointerdown={handlePointerDown}
+  onpointerup={handlePointerUp}
+  onpointercancel={handlePointerCancel}
+  ontouchstart={handleTouchStart}
+  ontouchend={handleTouchEnd}
+  onpointerenter={handlePointerEnter}
+  onpointerleave={handlePointerLeave}
+  onmouseenter={handleMouseEnter}
+  onmouseleave={handleMouseLeave}
+  onfocusin={handleFocusIn}
+  onfocusout={handleFocusOut}
+  onkeydown={handleKeyDown}
 >
   {@render children(open ? tipId : "")}
   {#if open}
@@ -63,5 +168,11 @@
 
   .above {
     bottom: calc(100% + var(--sp-2));
+  }
+
+  @media (hover: none) {
+    .tip:not(:has(:focus-visible)) .bubble {
+      display: none;
+    }
   }
 </style>

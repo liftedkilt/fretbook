@@ -87,6 +87,106 @@ describe("IconButton", () => {
     expect(screen.getByRole("tooltip")).toHaveTextContent("Keyboard shortcuts");
     expect(button).toHaveAttribute("aria-describedby", screen.getByRole("tooltip").id);
   });
+
+  it("shows tooltip on mouse hover and hides on mouse leave", async () => {
+    render(IconButton, { label: "Play", icon: "play", testid: "play" });
+    const button = screen.getByTestId("play");
+    const tip = button.closest(".tip")!;
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+
+    await fireEvent.pointerEnter(tip, { pointerType: "mouse" });
+    expect(screen.getByRole("tooltip")).toHaveTextContent("Play");
+
+    await fireEvent.pointerLeave(tip, { pointerType: "mouse" });
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
+  it("does not show tooltip on touch input", async () => {
+    render(IconButton, { label: "Play", icon: "play", testid: "play-touch" });
+    const button = screen.getByTestId("play-touch");
+    const tip = button.closest(".tip")!;
+
+    // Touch tap: pointerdown + pointerup with pointerType === "touch"
+    await fireEvent.pointerDown(tip, { pointerType: "touch" });
+    await fireEvent.pointerUp(tip, { pointerType: "touch" });
+    await fireEvent.focusIn(button);
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+
+    // Touch hover attempt
+    await fireEvent.pointerEnter(tip, { pointerType: "touch" });
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
+  it("does not open tooltip on hover when the device cannot hover", async () => {
+    const origMatchMedia = window.matchMedia;
+    window.matchMedia = vi.fn().mockImplementation((query) => ({
+      matches: query === "(hover: none)",
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+
+    try {
+      render(IconButton, { label: "Play", icon: "play", testid: "play-no-hover" });
+      const tip = screen.getByTestId("play-no-hover").closest(".tip")!;
+      await fireEvent.pointerEnter(tip, { pointerType: "mouse" });
+      expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+    } finally {
+      window.matchMedia = origMatchMedia;
+    }
+  });
+
+  it("closes an open tooltip on touch", async () => {
+    render(IconButton, { label: "Play", icon: "play", testid: "play-close-touch" });
+    const button = screen.getByTestId("play-close-touch");
+    const tip = button.closest(".tip")!;
+
+    await fireEvent.pointerEnter(tip, { pointerType: "mouse" });
+    expect(screen.getByRole("tooltip")).toHaveTextContent("Play");
+
+    await fireEvent.pointerDown(tip, { pointerType: "touch" });
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
+  it("closes tooltip on Escape key", async () => {
+    render(IconButton, { label: "Play", icon: "play", testid: "play-esc" });
+    const button = screen.getByTestId("play-esc");
+    const tip = button.closest(".tip")!;
+
+    await fireEvent.pointerEnter(tip, { pointerType: "mouse" });
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+
+    await fireEvent.keyDown(button, { key: "Escape" });
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
+  it("shows tooltip on focus only when :focus-visible matches", async () => {
+    const origCSS = (globalThis as unknown as { CSS?: unknown }).CSS;
+    (globalThis as unknown as { CSS: { supports: (q: string) => boolean } }).CSS = {
+      supports: (q: string) => q === "selector(:focus-visible)",
+    };
+
+    try {
+      render(IconButton, { label: "Play", icon: "play", testid: "play-fv" });
+      const button = screen.getByTestId("play-fv");
+
+      // Without :focus-visible (e.g. click or tap focus), no tooltip
+      button.matches = (sel: string) => sel !== ":focus-visible";
+      await fireEvent.focusIn(button);
+      expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+
+      // With :focus-visible (keyboard focus), tooltip appears
+      button.matches = (sel: string) => sel === ":focus-visible";
+      await fireEvent.focusIn(button);
+      expect(screen.getByRole("tooltip")).toHaveTextContent("Play");
+    } finally {
+      (globalThis as unknown as { CSS?: unknown }).CSS = origCSS;
+    }
+  });
 });
 
 describe("OverflowMenu", () => {
