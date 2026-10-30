@@ -7,6 +7,15 @@ export interface Scenario {
   notes: TruthNote[];
   seconds: number;
   noiseFloor?: number;
+  fundamentalGain?: number;
+  /** A second voice mixed under the notes (speaker bleed). Not part of the truth. */
+  bleed?: TruthNote[];
+  /**
+   * The onset bars in accuracy.test.ts are not met yet. Those checks are written as `it.fails`, so
+   * they turn red when the fix lands and this marker has to be removed. Names the issue that
+   * closes it. Pitch bars still apply in full.
+   */
+  pending?: string;
 }
 
 function line(
@@ -58,6 +67,21 @@ export const dropAScenario: Scenario = (() => {
   return { name: "bass drop A and low B", instrument: "bass", notes, seconds: total(notes) };
 })();
 
+/** Low bass with a fundamental about a twentieth of the second harmonic (`mpm.test.ts` uses an eighth). */
+const weakFundamental = line([23, 25, 28, 30, 33, 35, 38], 0.8, 0.7);
+/** The same pitch plucked hard, then softly while it still rings. */
+const softRepluck = [
+  ...line([28], 0.5, 0.5),
+  ...[0.9, 1.5, 2.1].map((start) => ({ midi: 28, start, duration: 0.5, velocity: 0.04 })),
+  ...[2.7, 3.2, 3.7].map((start) => ({ midi: 40, start, duration: 0.45, velocity: 0.04 })),
+];
+const bleedNotes = line([28, 31, 33, 35, 38], 0.7, 0.6);
+/** A quiet backing note a fourth above, ringing across the played notes. */
+const bleedVoice: TruthNote[] = [
+  { midi: 43, start: 0.25, duration: 1.7, velocity: 0.3 },
+  { midi: 45, start: 2.0, duration: 1.7, velocity: 0.3 },
+];
+
 export const SCENARIOS: Scenario[] = [
   { name: "bass range B0-G3", instrument: "bass", notes: bassRange, seconds: total(bassRange) },
   {
@@ -93,15 +117,45 @@ export const SCENARIOS: Scenario[] = [
     noiseFloor: 0.004,
   },
   dropAScenario,
+
+  {
+    name: "bass weak fundamental, unguided",
+    instrument: "bass",
+    notes: weakFundamental,
+    seconds: total(weakFundamental),
+    fundamentalGain: 0.1,
+  },
+  {
+    name: "bass soft repluck",
+    instrument: "bass",
+    notes: softRepluck,
+    seconds: total(softRepluck),
+    pending: "#410: the +12% energy rule and 60 ms gap miss a soft second pluck",
+  },
+  {
+    name: "bass with quiet second voice",
+    instrument: "bass",
+    notes: bleedNotes,
+    seconds: total(bleedNotes),
+    bleed: bleedVoice,
+    pending: "#409: the backing note's attack is reported as an onset of the played line",
+  },
 ];
 
 export function renderScenario(scenario: Scenario, sampleRate: number, seed = 7): Float32Array {
-  return renderNotes(scenario.notes, scenario.seconds, {
+  const options = {
     sampleRate,
     instrument: scenario.instrument,
     seed,
+    fundamentalGain: scenario.fundamentalGain,
+  };
+  const played = renderNotes(scenario.notes, scenario.seconds, {
+    ...options,
     noiseFloor: scenario.noiseFloor,
   });
+  if (!scenario.bleed) return played;
+  const bleed = renderNotes(scenario.bleed, scenario.seconds, { ...options, seed: seed + 1 });
+  return played.map((v, i) => v + bleed[i]);
 }
 
 /** Small WAV fixtures committed under `fixtures/`, written by `scripts/make-listen-fixtures.ts`. */

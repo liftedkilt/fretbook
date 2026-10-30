@@ -72,7 +72,9 @@ describe("MpmDetector", () => {
     const plain = detector.detect(samples);
     const guided = detector.detect(samples, { expectedFrequency: f0 });
     expect(Math.abs(1200 * Math.log2((guided?.frequency ?? 1) / f0))).toBeLessThan(5);
+    // Unguided, the weak fundamental must still not read an octave high.
     expect(plain).not.toBeNull();
+    expect(Math.abs(1200 * Math.log2((plain?.frequency ?? 1) / f0))).toBeLessThan(5);
   });
 });
 

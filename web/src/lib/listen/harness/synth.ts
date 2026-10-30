@@ -21,6 +21,8 @@ export interface SynthOptions {
   seed?: number;
   /** RMS of white background noise relative to full scale. */
   noiseFloor?: number;
+  /** Extra gain on the fundamental of low bass notes (below MIDI 40); 1 keeps the default. */
+  fundamentalGain?: number;
 }
 
 /** Small deterministic PRNG (mulberry32). */
@@ -68,7 +70,7 @@ export function renderNotes(
     for (let h = 1; h * f0 < sampleRate * 0.45 && h <= 14; h++) {
       let amp = 1 / h ** (instrument === "bass" ? 0.9 : 1.1);
       if (instrument === "bass" && note.midi < 40) {
-        if (h === 1) amp *= 0.35;
+        if (h === 1) amp *= 0.35 * (options.fundamentalGain ?? 1);
         if (h === 2) amp *= 1.4;
       }
       const frequency = f0 * h * Math.sqrt(1 + stretch * h * h);
