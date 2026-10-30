@@ -275,6 +275,62 @@ export class PitchSmoother {
   }
 }
 
+/** Smoothed readings in a row on one string before auto mode tells the detector about it. */
+export const PRIOR_STABLE_READINGS = 3;
+
+/** Auto mode only trusts a string for the hint when the reading is this close to it. */
+export const PRIOR_MAX_CENTS = 50;
+
+/**
+ * Picks the MIDI note to give the detector as its expected note, so a weak low fundamental is
+ * not read an octave high. A locked string is always the hint. In auto mode the hint starts only
+ * once the smoothed pitch has settled on one string, and drops as soon as the pitch moves more
+ * than `NEW_NOTE_CENTS` away from it, so a wrong guess cannot stick.
+ */
+export class ExpectedNotePrior {
+  private candidate: number | null = null;
+  private count = 0;
+  private hinted: number | null = null;
+
+  /** `frequency` is the smoothed pitch (`null` when nothing is heard); `locked` is a string index. */
+  push(
+    frequency: number | null,
+    strings: number[],
+    a4: number,
+    locked: number | null,
+  ): number | null {
+    if (locked !== null) {
+      this.reset();
+      return strings[locked] ?? null;
+    }
+    if (frequency === null) {
+      this.reset();
+      return null;
+    }
+    if (this.hinted !== null) {
+      const away = centsBetween(frequency, midiToFrequency(strings[this.hinted], a4));
+      if (Math.abs(away) <= NEW_NOTE_CENTS) return strings[this.hinted];
+      this.reset();
+    }
+    const match = nearestString(frequency, strings, a4);
+    if (!match || Math.abs(match.cents) > PRIOR_MAX_CENTS) {
+      this.candidate = null;
+      this.count = 0;
+      return null;
+    }
+    this.count = match.index === this.candidate ? this.count + 1 : 1;
+    this.candidate = match.index;
+    if (this.count >= PRIOR_STABLE_READINGS) this.hinted = match.index;
+    return this.hinted === null ? null : strings[this.hinted];
+  }
+
+  reset(): void {
+    this.candidate = null;
+    this.count = 0;
+    this.hinted = null;
+  }
+}
+
 export interface TuneUpdate {
   /** 0 to 1: how far the current string is through its hold. */
   progress: number;

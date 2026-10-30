@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { midiToFrequency } from "./listen/notes";
 import {
+  ExpectedNotePrior,
   playReferenceTone,
   A4_MAX,
   A4_MIN,
@@ -337,5 +338,50 @@ describe("instruments and custom tuning", () => {
     expect(loaded.tuning).toBe("dropD");
     expect(loaded.customMidi).toEqual([43, 38, 33, 26]);
     vi.unstubAllGlobals();
+  });
+});
+
+describe("ExpectedNotePrior", () => {
+  const hz = (midi: number, cents = 0) => midiToFrequency(midi) * 2 ** (cents / 1200);
+
+  it("always hints the locked string", () => {
+    const prior = new ExpectedNotePrior();
+    expect(prior.push(null, STANDARD, 440, 5)).toBe(40);
+    expect(prior.push(hz(64), STANDARD, 440, 5)).toBe(40);
+  });
+
+  it("waits for a stable nearest string in auto mode", () => {
+    const prior = new ExpectedNotePrior();
+    expect(prior.push(hz(45, 4), STANDARD, 440, null)).toBeNull();
+    expect(prior.push(hz(45, 3), STANDARD, 440, null)).toBeNull();
+    expect(prior.push(hz(45, 5), STANDARD, 440, null)).toBe(45);
+  });
+
+  it("does not hint from a reading far from every string", () => {
+    const prior = new ExpectedNotePrior();
+    for (let i = 0; i < 6; i++) expect(prior.push(hz(47, 0), STANDARD, 440, null)).toBeNull();
+  });
+
+  it("does not count readings that alternate between strings", () => {
+    const prior = new ExpectedNotePrior();
+    for (let i = 0; i < 6; i++) {
+      expect(prior.push(hz(i % 2 ? 45 : 50), STANDARD, 440, null)).toBeNull();
+    }
+  });
+
+  it("clears the hint after a jump of more than 80 cents", () => {
+    const prior = new ExpectedNotePrior();
+    for (let i = 0; i < 3; i++) prior.push(hz(45), STANDARD, 440, null);
+    expect(prior.push(hz(45, 70), STANDARD, 440, null)).toBe(45);
+    expect(prior.push(hz(50), STANDARD, 440, null)).toBeNull();
+    expect(prior.push(hz(50), STANDARD, 440, null)).toBeNull();
+    expect(prior.push(hz(50), STANDARD, 440, null)).toBe(50);
+  });
+
+  it("clears the hint when the pitch drops out", () => {
+    const prior = new ExpectedNotePrior();
+    for (let i = 0; i < 3; i++) prior.push(hz(45), STANDARD, 440, null);
+    expect(prior.push(null, STANDARD, 440, null)).toBeNull();
+    expect(prior.push(hz(45), STANDARD, 440, null)).toBeNull();
   });
 });

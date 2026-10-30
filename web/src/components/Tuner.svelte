@@ -18,6 +18,7 @@
   import {
     A4_MAX,
     A4_MIN,
+    ExpectedNotePrior,
     PitchSmoother,
     TuneTracker,
     IN_TUNE_CENTS,
@@ -72,6 +73,8 @@
   let session = $state<ListenSession | null>(null);
   const tracker = new TuneTracker();
   const smoother = new PitchSmoother();
+  const prior = new ExpectedNotePrior();
+  let sentExpected: number | null = null;
 
   function readMuted(): boolean {
     try {
@@ -121,10 +124,18 @@
             : t("tuner.tuneDown"),
   );
 
+  /** Tell the detector the string being tuned; it only needs a message when the note changes. */
+  function sendExpected(midi: number | null) {
+    if (midi === sentExpected) return;
+    sentExpected = midi;
+    session?.setExpectedMidi(midi, false);
+  }
+
   function onPitch(event: PitchEvent) {
     // The reference tone comes out of the speakers and into the mic: it is not the string.
     if (tone) return;
     const frequency = smoother.push(event.time, event.frequency);
+    if (strings && auto) sendExpected(prior.push(frequency, strings, a4, null));
     if (frequency === null) {
       reading = null;
       ticked = tracker.update(event.time, null, null).confirmed;
@@ -159,8 +170,7 @@
     starting = true;
     problem = null;
     try {
-      // The locked string changes the cents display only. The detector is not given that
-      // pitch as a target; see docs/design/tuner-and-wait-pitch.md.
+      sentExpected = null;
       session = await startListening({
         a4,
         deviceId: deviceId || undefined,
@@ -169,6 +179,7 @@
         onLevel: ({ peak }) => (level = peak),
       });
       running = true;
+      syncLockedExpected();
     } catch (error) {
       problem = error instanceof ListenError ? error.problem : "other";
     } finally {
@@ -176,7 +187,14 @@
     }
   }
 
+  /** A locked string is the hint from the start; auto mode earns its hint from the readings. */
+  function syncLockedExpected() {
+    prior.reset();
+    sendExpected(running && strings && !auto ? strings[locked] : null);
+  }
+
   function clearReading() {
+    prior.reset();
     reading = null;
     ticked = false;
     trail = [];
@@ -188,6 +206,7 @@
     const current = session;
     session = null;
     running = false;
+    sentExpected = null;
     level = 0;
     clearReading();
     stopTone();
@@ -229,6 +248,12 @@
       stopTone();
       startOver();
     });
+  });
+
+  // Follow the locked string, and drop the hint when switching back to auto
+  $effect(() => {
+    void [running, auto, locked, strings];
+    untrack(syncLockedExpected);
   });
 
   // Stop if deactivated
