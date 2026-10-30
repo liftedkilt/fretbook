@@ -64,3 +64,11 @@ test("chord changes show a drill for the chosen chords", async ({ page }) => {
   await page.getByTestId("exercise-chords").fill("G nope");
   await expect(page.getByTestId("exercise-error")).toBeVisible();
 });
+
+test("the exercise preview does not scroll the page on load", async ({ page }) => {
+  await page.goto("/tools/exercises");
+  await expect(page.getByTestId("tab-preview").locator("svg").first()).toBeVisible();
+  // alphaTab's cursor scroll fires shortly after the first render.
+  await page.waitForTimeout(1500);
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+});
