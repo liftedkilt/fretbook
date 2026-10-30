@@ -20,7 +20,15 @@
     libraryId = "",
     shareOpen = $bindable(false),
     moveOpen = $bindable(false),
-  }: { songId: string; libraryId?: string; shareOpen?: boolean; moveOpen?: boolean } = $props();
+    canMove = true,
+  }: {
+    songId: string;
+    libraryId?: string;
+    shareOpen?: boolean;
+    moveOpen?: boolean;
+    /** A band viewer can copy the song but not move it out of the band. */
+    canMove?: boolean;
+  } = $props();
 
   let libraries = $state<LibraryInfo[]>([]);
   let shares = $state<ShareLink[]>([]);
@@ -169,8 +177,8 @@
 
 <Sheet
   open={moveOpen}
-  title={t("sharing.move")}
-  subtitle={t("sharing.moveHint")}
+  title={canMove ? t("sharing.move") : t("sharing.copySong")}
+  subtitle={canMove ? t("sharing.moveHint") : ""}
   testid="move-sheet"
   onclose={() => (moveOpen = false)}
 >
@@ -200,13 +208,15 @@
     >
       {t("sharing.copySong")}
     </button>
-    <button
-      type="button"
-      data-testid="move-move"
-      disabled={busy || !destination}
-      onclick={() => void transfer("move")}
-    >
-      {t("sharing.moveSong")}
-    </button>
+    {#if canMove}
+      <button
+        type="button"
+        data-testid="move-move"
+        disabled={busy || !destination}
+        onclick={() => void transfer("move")}
+      >
+        {t("sharing.moveSong")}
+      </button>
+    {/if}
   </p>
 </Sheet>

@@ -33,7 +33,13 @@
     song,
     initialTranspose = 0,
     readOnly = false,
-  }: { song: SongDetail; initialTranspose?: number; readOnly?: boolean } = $props();
+    shared = false,
+  }: {
+    song: SongDetail;
+    initialTranspose?: number;
+    readOnly?: boolean;
+    shared?: boolean;
+  } = $props();
 
   let pickerOpen = $state(false);
   let transpose = $state(untrack(() => initialTranspose));
@@ -190,6 +196,7 @@
   <SongHeader
     {song}
     {readOnly}
+    {shared}
     eyebrow={t("library.chordSheet")}
     facts={capo > 0 ? [{ label: t("player.capo", { fret: capo }) }] : []}
     onsetlist={() => (pickerOpen = true)}
