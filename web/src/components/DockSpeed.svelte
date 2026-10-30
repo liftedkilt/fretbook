@@ -112,9 +112,15 @@
   }
 
   @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
+    /* The button sits mid-dock, so anchor to the (positioned) dock bar instead of it. */
+    .speed {
+      position: static;
+    }
+
     .popover {
-      right: auto;
-      left: 0;
+      right: var(--sp-2);
+      left: var(--sp-2);
+      width: auto;
     }
   }
 

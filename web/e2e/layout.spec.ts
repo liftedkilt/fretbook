@@ -254,3 +254,20 @@ test("the phone library shows a song on the first screen", async ({ page, seed }
   await page.evaluate(() => window.scrollTo(0, 0));
   await expect(page.getByTestId("topbar-title")).toHaveCount(0);
 });
+
+test("the phone speed picker sits entirely on screen", async ({ page, seed }) => {
+  const song = await seed.musicXmlTab();
+  await page.setViewportSize({ width: 390, height: 664 });
+  await page.goto(`/songs/${song.id}`);
+  await page.getByTestId("player-speed").click();
+  await expect(page.getByTestId("player-speed-popover")).toBeVisible();
+  const width = await page.evaluate(() => window.innerWidth);
+  const buttons = page.getByTestId("player-speed-popover").locator("button");
+  const count = await buttons.count();
+  expect(count).toBeGreaterThan(0);
+  for (let i = 0; i < count; i += 1) {
+    const box = (await buttons.nth(i).boundingBox())!;
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(width);
+  }
+});
