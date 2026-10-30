@@ -21,7 +21,10 @@ export interface PitchEvent {
 export interface EngineOptions {
   sampleRate: number;
   a4?: number;
-  /** Lowest note to track; sets the analysis window (B0 = 30.9 Hz needs about 85 ms at 48 kHz). */
+  /**
+   * Lowest note to track; sets the long analysis window (default 25 Hz, so drop A at 27.5 Hz fits
+   * with margin; about 85 ms at 48 kHz).
+   */
   minFrequency?: number;
   maxFrequency?: number;
   /** Seconds between pitch readings. */
@@ -32,12 +35,18 @@ export interface EngineOptions {
   minClarity?: number;
 }
 
+/** Pitches below this (about D2) are read from the long window; guitar pitches from the short one. */
+const SHORT_WINDOW_MIN_FREQUENCY = 75;
+
 /** Streaming monophonic pitch and onset detector. Feed it audio blocks; it returns events. */
 export class PitchEngine {
   readonly sampleRate: number;
   readonly windowSize: number;
   private readonly a4: number;
   private readonly mpm: MpmDetector;
+  /** Reads guitar-range pitches from the newest ~43 ms, so the attack and the last note smear less. */
+  private readonly shortMpm: MpmDetector;
+  private readonly shortWindowSize: number;
   private readonly onsets: OnsetDetector;
   private readonly pitchHop: number;
   private readonly silenceRms: number;
@@ -67,14 +76,26 @@ export class PitchEngine {
   constructor(options: EngineOptions) {
     this.sampleRate = options.sampleRate;
     this.a4 = options.a4 ?? DEFAULT_A4;
-    // 28 Hz sits just above a 5-string drop A (27.5 Hz). The fixed window that follows is
-    // the bass-vs-latency tradeoff in docs/design/tuner-and-wait-pitch.md.
-    this.windowSize = windowSizeFor(this.sampleRate, options.minFrequency ?? 28);
+    // Two windows (short for guitar pitches, long for low ones): the tradeoff is in
+    // docs/design/tuner-and-wait-pitch.md.
+    const minFrequency = options.minFrequency ?? 25;
+    const maxFrequency = options.maxFrequency ?? 2000;
+    this.windowSize = windowSizeFor(this.sampleRate, minFrequency);
     this.mpm = new MpmDetector({
       sampleRate: this.sampleRate,
       windowSize: this.windowSize,
-      minFrequency: options.minFrequency ?? 28,
-      maxFrequency: options.maxFrequency ?? 2000,
+      minFrequency,
+      maxFrequency,
+    });
+    this.shortWindowSize = Math.min(
+      this.windowSize,
+      windowSizeFor(this.sampleRate, SHORT_WINDOW_MIN_FREQUENCY * 0.8),
+    );
+    this.shortMpm = new MpmDetector({
+      sampleRate: this.sampleRate,
+      windowSize: this.shortWindowSize,
+      minFrequency: SHORT_WINDOW_MIN_FREQUENCY * 0.8,
+      maxFrequency,
     });
     this.onsets = new OnsetDetector({ sampleRate: this.sampleRate });
     const hop = this.onsets.hopSize;
@@ -198,10 +219,29 @@ export class PitchEngine {
     let frequency: number | null = null;
     let clarity = 0;
     if (rms >= this.silenceRms) {
-      const result = this.mpm.detect(this.window, {
+      const detect = {
         expectedFrequency: this.expectedFrequency,
         strictOctave: this.strictOctave,
-      });
+      };
+      // Like YIN's minFreq: try the short window first, and only a low (or unreadable) candidate
+      // pays for the long one.
+      let result = null;
+      if (
+        this.shortWindowSize < this.windowSize &&
+        (this.expectedFrequency === null || this.expectedFrequency >= SHORT_WINDOW_MIN_FREQUENCY)
+      ) {
+        const short = this.shortMpm.detect(
+          this.window.subarray(this.windowSize - this.shortWindowSize),
+          detect,
+        );
+        if (
+          short &&
+          short.clarity >= this.minClarity &&
+          short.frequency >= SHORT_WINDOW_MIN_FREQUENCY
+        )
+          result = short;
+      }
+      result ??= this.mpm.detect(this.window, detect);
       if (result) {
         clarity = result.clarity;
         if (clarity >= this.minClarity) frequency = result.frequency;
