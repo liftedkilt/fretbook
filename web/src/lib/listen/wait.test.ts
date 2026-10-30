@@ -166,6 +166,70 @@ function feed(matcher: WaitMatcher, events: PitchEvent[]): number {
 }
 
 describe("WaitMatcher", () => {
+  it("accepts a steady expected pitch when the onset was missed", () => {
+    const matcher = new WaitMatcher();
+    matcher.push(event(1, null));
+    matcher.wait(note(28));
+    const events = [1.02, 1.04, 1.06, 1.08].map((time) => event(time, 28));
+    expect(feed(matcher, events)).toBe(2);
+  });
+
+  it("does not accept a note that was already ringing when the cursor stopped", () => {
+    const matcher = new WaitMatcher();
+    matcher.push(event(1, 28));
+    matcher.wait(note(28));
+    const events = Array.from({ length: 20 }, (_, i) => event(1.02 + i * 0.02, 28));
+    expect(feed(matcher, events)).toBe(-1);
+  });
+
+  it("accepts the note again once the ringing one has died away", () => {
+    const matcher = new WaitMatcher();
+    matcher.push(event(1, 28));
+    matcher.wait(note(28));
+    const events = [
+      event(1.02, 28),
+      event(1.04, null),
+      event(1.06, 28),
+      event(1.08, 28),
+      event(1.1, 28),
+    ];
+    expect(feed(matcher, events)).toBe(4);
+  });
+
+  it("needs the steady readings to be in a row and in tune", () => {
+    const matcher = new WaitMatcher();
+    matcher.push(event(1, null));
+    matcher.wait(note(28));
+    const events = [
+      event(1.02, 28),
+      event(1.04, 28),
+      event(1.06, 28, { cents: 45 }),
+      event(1.08, 28),
+      event(1.1, 41),
+      event(1.12, 28),
+    ];
+    expect(feed(matcher, events)).toBe(-1);
+  });
+
+  it("lets go of a clearly wrong attack before the settle window ends", () => {
+    const matcher = new WaitMatcher();
+    matcher.push(event(1, null));
+    matcher.wait(note(28));
+    expect(matcher.push(event(1.05, 30, { onset: true, onsetTime: 1.04 }))).toBe(false);
+    expect(matcher.push(event(1.07, 30))).toBe(false);
+    expect(matcher.wrong).toBe(1);
+    expect(matcher.heard).toEqual({ kind: "wrong", midi: 30 });
+    // The real attack, well inside what would have been the first attack's 0.3 s.
+    expect(matcher.push(event(1.12, 28, { onset: true, onsetTime: 1.11 }))).toBe(true);
+  });
+
+  it("widens the early grace by the calibrated latency", () => {
+    const matcher = new WaitMatcher({ ...DEFAULT_WAIT_OPTIONS, latencySeconds: 0.1 });
+    matcher.push(event(5, null));
+    matcher.wait(note(28));
+    expect(feed(matcher, [event(5.02, 28, { onset: true, onsetTime: 4.85 })])).toBe(0);
+  });
+
   it("waits for an attack and then the right pitch", () => {
     const matcher = new WaitMatcher();
     matcher.push(event(1, null));

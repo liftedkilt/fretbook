@@ -42,6 +42,12 @@ export interface WaitOptions {
   settleSeconds: number;
   /** An attack this far before the cursor stopped still counts (latency), seconds. */
   earlySeconds: number;
+  /** Calibrated output latency, seconds; widens the early grace so a late-sounding synth beat still counts. */
+  latencySeconds: number;
+  /** In-tune readings of the expected note in a row that count without an onset (the tuner's idea of a note). */
+  steadyReadings: number;
+  /** Wrong-pitch readings in a row that disarm an attack before the full settle window ends. */
+  wrongReadings: number;
   /** Lowest chroma match (0..1) that counts as the chord. Lenient: a missing string still passes. */
   chordThreshold: number;
   /** How long after a strum the chord may keep being checked, seconds. */
@@ -53,6 +59,9 @@ export const DEFAULT_WAIT_OPTIONS: WaitOptions = {
   centsTolerance: 40,
   settleSeconds: 0.3,
   earlySeconds: 0.08,
+  latencySeconds: 0,
+  steadyReadings: 3,
+  wrongReadings: 2,
   chordThreshold: 0.6,
   chordSettleSeconds: 1.2,
 };
@@ -151,6 +160,12 @@ export class WaitMatcher {
   heard: WaitHeard | null = null;
   /** The latest pitch reading since the armed attack, judged when the settle window ends. */
   private pending: WaitHeard | null = null;
+  /** The pitch read last, whatever the step: tells whether a note was already ringing when the wait began. */
+  private lastMidi: number | null = null;
+  /** The expected pitch was already sounding when the wait began, so only a new attack can count. */
+  private ringing = false;
+  private steady = 0;
+  private wrongStreak = 0;
 
   constructor(private readonly options: WaitOptions = DEFAULT_WAIT_OPTIONS) {}
 
@@ -164,6 +179,18 @@ export class WaitMatcher {
     this.wrong = 0;
     this.heard = null;
     this.pending = null;
+    const last = this.lastMidi;
+    this.ringing =
+      step !== null &&
+      step.kind === "note" &&
+      last !== null &&
+      step.midis.some((midi) => pitchMatches(last, midi, this.options.anyOctave));
+    this.steady = 0;
+    this.wrongStreak = 0;
+  }
+
+  private get earlyGrace(): number {
+    return this.options.earlySeconds + this.options.latencySeconds;
   }
 
   get waiting(): WaitStep | null {
@@ -180,7 +207,7 @@ export class WaitMatcher {
     if (!step || step.kind !== "chord") return false;
     if (event.onset) {
       const at = event.onsetTime ?? event.time;
-      if (at < this.since - this.options.earlySeconds) {
+      if (at < this.since - this.earlyGrace) {
         this.heard = { kind: "early" };
         return false;
       }
@@ -207,11 +234,12 @@ export class WaitMatcher {
   push(event: PitchEvent): boolean {
     this.clock = Math.max(this.clock, event.time);
     const step = this.step;
+    this.lastMidi = event.midi;
     // A chord is judged on the chroma, not on the single pitch the detector makes of it.
     if (!step || step.kind === "chord") return false;
     if (event.onset) {
       const at = event.onsetTime ?? event.time;
-      if (at < this.since - this.options.earlySeconds) {
+      if (at < this.since - this.earlyGrace) {
         this.heard = { kind: "early" };
         return false;
       }
@@ -219,7 +247,8 @@ export class WaitMatcher {
       this.armedAt = at;
       this.pending = null;
     }
-    if (step.kind === "dead" || this.armedAt === null) return false;
+    if (step.kind === "dead") return false;
+    if (this.armedAt === null) return this.pushSteady(event, step);
     if (event.time - this.armedAt > this.options.settleSeconds) {
       // The attack was something else; wait for the next one.
       if (event.midi !== null) this.wrong += 1;
@@ -235,7 +264,44 @@ export class WaitMatcher {
     this.pending = right
       ? { kind: event.cents < 0 ? "flat" : "sharp", midi: heard }
       : { kind: "wrong", midi: heard };
+    // A clearly wrong note held for a few readings is not going to turn into the right one; let
+    // go now so a backing attack does not keep the matcher busy through the real one.
+    this.wrongStreak = right ? 0 : this.wrongStreak + 1;
+    if (this.wrongStreak >= this.options.wrongReadings) {
+      this.wrong += 1;
+      this.heard = this.pending;
+      this.pending = null;
+      this.armedAt = null;
+      this.wrongStreak = 0;
+    }
     return false;
+  }
+
+  /**
+   * No attack was caught (a soft repluck the onset detector missed): the expected note read in
+   * tune a few times in a row counts, as on the tuner. A note that was already ringing when the
+   * cursor stopped does not, until the pitch has gone away or changed.
+   */
+  private pushSteady(event: PitchEvent, step: WaitStep): boolean {
+    const midi = event.midi;
+    const right =
+      midi !== null &&
+      event.cents !== null &&
+      Math.abs(event.cents) <= this.options.centsTolerance &&
+      this.matchesStep(midi, step);
+    if (!right) {
+      this.steady = 0;
+      // Anything but the expected pitch ends the ringing note.
+      if (midi === null || !this.matchesStep(midi, step)) this.ringing = false;
+      return false;
+    }
+    if (this.ringing || event.time <= this.since) return false;
+    this.steady += 1;
+    return this.steady >= this.options.steadyReadings;
+  }
+
+  private matchesStep(midi: number, step: WaitStep): boolean {
+    return step.midis.some((expected) => pitchMatches(midi, expected, this.options.anyOctave));
   }
 }
 
