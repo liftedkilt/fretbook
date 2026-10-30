@@ -204,7 +204,9 @@ test("library cards and the tab bar fit a phone", async ({ page, seed }) => {
 });
 
 test("the phone library shows a song on the first screen", async ({ page, seed }) => {
-  await seed.musicXmlTab();
+  for (let i = 1; i <= 6; i += 1) {
+    await seed.create({ title: `Song ${i}`, artist: "Artist" });
+  }
   await page.setViewportSize({ width: 390, height: 664 });
   await page.goto("/");
   const card = page.getByTestId("song-card").first();
@@ -215,4 +217,18 @@ test("the phone library shows a song on the first screen", async ({ page, seed }
   const bar = await page.locator(".tabbar").boundingBox();
   expect(box!.y + box!.height).toBeLessThanOrEqual(bar!.y);
   await noSidewaysScroll(page);
+
+  // The large title collapses into the top bar on scroll and search stays sticky.
+  await page.evaluate(() => window.scrollTo(0, 200));
+  await expect(page.getByTestId("topbar-title")).toBeVisible();
+  await expect(page.getByTestId("topbar-title")).toHaveText("Your library");
+
+  const searchBox = (await page.getByTestId("library-search").boundingBox())!;
+  expect(searchBox).not.toBeNull();
+  expect(searchBox.y).toBeGreaterThanOrEqual(58);
+  expect(searchBox.y).toBeLessThan(120);
+
+  // Scrolling back restores the top bar.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect(page.getByTestId("topbar-title")).toHaveCount(0);
 });

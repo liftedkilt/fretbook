@@ -89,8 +89,13 @@
     <header class="topbar">
       <a class="brand" href={hrefFor("/")} onclick={(event) => followLink(event, "/")}>
         <img src="favicon.svg" alt={t("app.title")} width="30" height="30" />
-        <span class="wordmark" aria-hidden="true">Fret<em>book</em></span>
+        {#if !ui.topbarTitle}
+          <span class="wordmark" aria-hidden="true">Fret<em>book</em></span>
+        {/if}
       </a>
+      {#if ui.topbarTitle}
+        <span class="topbar-title" data-testid="topbar-title">{ui.topbarTitle}</span>
+      {/if}
       <div class="topbar-actions">
         <IconButton
           class="ghost"
