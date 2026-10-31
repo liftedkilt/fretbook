@@ -6,7 +6,7 @@ import { alphaTab } from "@coderline/alphatab-vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { svelteTesting } from "@testing-library/svelte/vite";
 import { build, type Plugin } from "vite";
-import { defineConfig, type ProxyOptions } from "vitest/config";
+import { configDefaults, defineConfig, type ProxyOptions } from "vitest/config";
 
 // The API refuses a write whose Origin host is not the Host header. The dev
 // proxy must keep the browser's host, or every save from `npm run dev` is a 403.
@@ -105,6 +105,9 @@ export default defineConfig({
           name: "unit",
           environment: "node",
           include: ["src/lib/**/*.test.ts"],
+          // The listen harness is its own project, run after this one. Listing it here as well
+          // would put the long synchronous file back on the shared worker pool.
+          exclude: [...configDefaults.exclude, "src/lib/listen/harness/**/*.test.ts"],
         },
       },
       {
@@ -127,6 +130,27 @@ export default defineConfig({
           setupFiles: ["src/setupTests.ts"],
         },
       },
+      {
+        // Synthesized-audio DSP. `accuracy.test.ts` is about 70s of synchronous work on a
+        // loaded GitHub-hosted runner, and it used to run in the unit pool beside every other
+        // file. Vitest 3.2 answers worker `onTaskUpdate` calls with birpc's fixed 60s timeout
+        // (not `testTimeout` or `teardownTimeout`). When that ack misses, the run exits 1
+        // after every test has passed:
+        // https://github.com/liftedkilt/fretbook/actions/runs/41122382472
+        // Run this project only once the others have finished, in one fork, so the main
+        // process has a free core to acknowledge the worker. `workerYield.ts` returns to the
+        // event loop between cases so a pending ack is read before the next DSP call.
+        extends: true,
+        test: {
+          name: "listen-harness",
+          environment: "node",
+          include: ["src/lib/listen/harness/**/*.test.ts"],
+          setupFiles: ["src/lib/listen/harness/workerYield.ts"],
+          sequence: { groupOrder: 1 },
+          pool: "forks",
+          poolOptions: { forks: { singleFork: true } },
+        },
+      },
     ],
     coverage: {
       provider: "v8",
@@ -143,6 +167,8 @@ export default defineConfig({
         "src/lib/listen/processor.ts",
         // Glue between the service worker events and `offline/swCore.ts`, which is tested. Playwright covers it.
         "src/sw.ts",
+        // Test-only: yields the listen-harness worker. Not product code.
+        "src/lib/listen/harness/workerYield.ts",
       ],
       reporter: ["text-summary", "html", "json-summary"],
       reportsDirectory: "coverage",

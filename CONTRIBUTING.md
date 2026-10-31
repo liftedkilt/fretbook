@@ -73,7 +73,7 @@ To keep `git blame` useful after the one-off reformat: `git config blame.ignoreR
 
 ### Component tests
 
-Svelte components are tested with `@testing-library/svelte` in `web/src/components/*.test.ts`. Vitest uses a separate `jsdom` environment project for component tests so the library unit tests in `web/src/lib` stay fast under `node`. Mock `web/src/lib/api.ts` with `vi.mock` to test component behavior in isolation without a backend:
+Svelte components are tested with `@testing-library/svelte` in `web/src/components/*.test.ts`. Vitest uses a separate `jsdom` environment project for component tests so the library unit tests in `web/src/lib` stay fast under `node`. The listen harness (`web/src/lib/listen/harness`) is a third project: it runs after the others, in a single fork, and yields the worker between tests. That suite is synchronous DSP and was tripping Vitest's 60s worker RPC timeout when it shared the pool with the rest of the run. Mock `web/src/lib/api.ts` with `vi.mock` to test component behavior in isolation without a backend:
 
 ```ts
 import { fireEvent, render, screen } from "@testing-library/svelte";
