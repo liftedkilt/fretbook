@@ -23,12 +23,24 @@ const presets = [
   { id: "guitar-6", label_key: "y", label: "6-string guitar", family: "guitar" },
 ];
 
+function meWith(lessons: boolean) {
+  return {
+    user_id: "u",
+    display_name: "U",
+    email: "",
+    authenticated: false,
+    role: "user",
+    settings: { default_instrument: "bass-4", lessons_enabled: lessons },
+  } as typeof ui.me;
+}
+
 describe("FirstRun", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     ui.presets = presets as typeof ui.presets;
     ui.defaultInstrument = "bass-4";
     ui.sheet = "";
+    ui.me = meWith(true);
     mockListSongs.mockResolvedValue({
       items: [],
       total: 0,
@@ -59,6 +71,12 @@ describe("FirstRun", () => {
     await fireEvent.click(screen.getByTestId("first-run-add-demo"));
     expect(await screen.findByRole("alert")).toHaveTextContent("boom");
     expect(screen.getByTestId("first-run-add-demo")).toBeEnabled();
+  });
+
+  it("hides the course card while Lessons is off", () => {
+    ui.me = meWith(false);
+    render(FirstRun);
+    expect(screen.queryByTestId("first-run-course")).not.toBeInTheDocument();
   });
 
   it("saves the instrument and points the course at it", async () => {

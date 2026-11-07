@@ -342,6 +342,21 @@ export async function loadMeta(): Promise<void> {
   metaLoaded = true;
 }
 
+/** Lessons (experimental) is a per-user setting, off by default; it gates every Lessons entry point. */
+export function lessonsEnabled(
+  me: { settings?: { lessons_enabled?: boolean } } | null | undefined,
+): boolean {
+  return me?.settings?.lessons_enabled === true;
+}
+
+export async function setLessonsEnabled(next: boolean): Promise<void> {
+  const saved = await saveSettings({
+    default_instrument: ui.defaultInstrument,
+    lessons_enabled: next,
+  });
+  if (ui.me) ui.me = { ...ui.me, settings: saved };
+}
+
 export async function setDefaultInstrument(next: string): Promise<void> {
   ui.defaultInstrument = (await saveSettings({ default_instrument: next })).default_instrument;
 }

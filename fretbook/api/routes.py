@@ -118,6 +118,7 @@ class ImportDocumentBody(_Body):
 
 class SettingsBody(_Body):
     default_instrument: str
+    lessons_enabled: bool | None = None  # omitted: left as it is
 
 
 def _ctx(ctx: AppContext = Depends(context)) -> AppContext:
@@ -240,10 +241,14 @@ def me(ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> JSO
 def update_settings(
     body: SettingsBody, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)
 ) -> JSONResponse:
-    """Replace the caller's default instrument preset."""
+    """Replace the caller's default instrument preset and, when given, the Lessons (experimental) switch."""
     if not is_preset(body.default_instrument):
         raise api_error(400, "settings.unknownInstrument", "unknown instrument preset", preset=body.default_instrument)
-    return _json(ctx.songs.update_settings(user.user_id, default_instrument=body.default_instrument))
+    return _json(
+        ctx.songs.update_settings(
+            user.user_id, default_instrument=body.default_instrument, lessons_enabled=body.lessons_enabled
+        )
+    )
 
 
 @router.get("/api/songs", response_model=SongPage, tags=["songs"], responses=AUTH_RESPONSES)

@@ -15,6 +15,7 @@
     subscribePracticeMarks,
   } from "../lib/celebrate";
   import { t } from "../lib/i18n.svelte";
+  import { lessonsEnabled, ui } from "../lib/ui.svelte";
   import { agoDays, goalProgress, localDay, minutesOf, ringOffset } from "../lib/practiceLog";
   import { formatDuration } from "../lib/practiceText";
   import { followLink, hrefFor } from "../lib/router.svelte";
@@ -133,7 +134,7 @@
   const resume = $derived.by(() => {
     if (!stats) return null;
     const song = stats.recent[0] ?? null;
-    const lesson = stats.last_lesson;
+    const lesson = lessonsEnabled(ui.me) ? stats.last_lesson : null;
     if (lesson && (!song || Date.parse(lesson.opened_at) > Date.parse(song.last_practised))) {
       return { path: lessonPath(lesson.course_id, lesson.lesson_id) };
     }

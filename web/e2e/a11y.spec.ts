@@ -4,6 +4,10 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "./support/fixtures";
 import { menuItem } from "./support/song-page";
 
+test.beforeEach(async ({ seed }) => {
+  await seed.enableLessons();
+});
+
 const TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
 
 /** Wait for all running CSS/Web animations on the page (excluding infinite loops) to finish. */

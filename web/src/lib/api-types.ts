@@ -1214,7 +1214,7 @@ export interface paths {
         get?: never;
         /**
          * Update Settings
-         * @description Replace the caller's default instrument preset.
+         * @description Replace the caller's default instrument preset and, when given, the Lessons (experimental) switch.
          */
         put: operations["update_settings_api_me_settings_put"];
         post?: never;
@@ -4128,11 +4128,18 @@ export interface components {
         Settings: {
             /** Default Instrument */
             default_instrument: string;
+            /**
+             * Lessons Enabled
+             * @default false
+             */
+            lessons_enabled: boolean;
         };
         /** SettingsBody */
         SettingsBody: {
             /** Default Instrument */
             default_instrument: string;
+            /** Lessons Enabled */
+            lessons_enabled?: boolean | null;
         };
         /** ShareBody */
         ShareBody: {

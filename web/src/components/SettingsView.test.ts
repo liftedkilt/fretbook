@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/svelte";
+import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { InstrumentPreset, Me } from "../lib/types";
 import { ui } from "../lib/ui.svelte";
@@ -98,7 +98,9 @@ describe("SettingsView", () => {
   });
 
   it("renders default instrument options and updates when changed", async () => {
-    mockSaveSettings.mockResolvedValueOnce({ default_instrument: "guitar-6" });
+    mockSaveSettings.mockResolvedValueOnce({
+      default_instrument: "guitar-6",
+    });
 
     render(SettingsView);
 
@@ -107,8 +109,31 @@ describe("SettingsView", () => {
 
     await fireEvent.change(instrumentSelect, { target: { value: "guitar-6" } });
 
-    expect(mockSaveSettings).toHaveBeenCalledWith({ default_instrument: "guitar-6" });
+    expect(mockSaveSettings).toHaveBeenCalledWith({
+      default_instrument: "guitar-6",
+    });
     expect(ui.defaultInstrument).toBe("guitar-6");
+  });
+
+  it("turns Lessons on from the Experimental setting", async () => {
+    mockSaveSettings.mockResolvedValueOnce({ default_instrument: "bass-4", lessons_enabled: true });
+    ui.me = {
+      user_id: "u",
+      display_name: "U",
+      email: "",
+      authenticated: false,
+      role: "user",
+      settings: { default_instrument: "bass-4", lessons_enabled: false },
+    };
+    render(SettingsView);
+    const box = screen.getByTestId("lessons-enabled");
+    expect(box).not.toBeChecked();
+    await fireEvent.click(box);
+    expect(mockSaveSettings).toHaveBeenCalledWith({
+      default_instrument: "bass-4",
+      lessons_enabled: true,
+    });
+    await waitFor(() => expect(ui.me?.settings.lessons_enabled).toBe(true));
   });
 
   it("displays error when saving default instrument fails", async () => {
@@ -119,7 +144,9 @@ describe("SettingsView", () => {
     const instrumentSelect = screen.getByRole("combobox", { name: /default instrument/i });
     await fireEvent.change(instrumentSelect, { target: { value: "guitar-6" } });
 
-    expect(mockSaveSettings).toHaveBeenCalledWith({ default_instrument: "guitar-6" });
+    expect(mockSaveSettings).toHaveBeenCalledWith({
+      default_instrument: "guitar-6",
+    });
     expect(await screen.findByRole("alert")).toHaveTextContent("Network failure");
   });
 
@@ -142,7 +169,7 @@ describe("SettingsView", () => {
       email: "player@example.com",
       authenticated: true,
       role: "admin",
-      settings: { default_instrument: "bass-4" },
+      settings: { default_instrument: "bass-4", lessons_enabled: false },
     };
     ui.me = me;
 
@@ -168,7 +195,7 @@ describe("SettingsView", () => {
       email: "root@example.com",
       authenticated: true,
       role: "admin",
-      settings: { default_instrument: "bass-4" },
+      settings: { default_instrument: "bass-4", lessons_enabled: false },
     };
 
     render(SettingsView);
@@ -269,7 +296,7 @@ describe("SettingsView", () => {
       email: "",
       authenticated: false,
       role: "user",
-      settings: { default_instrument: "bass-4" },
+      settings: { default_instrument: "bass-4", lessons_enabled: false },
     };
     const { unmount } = render(SettingsView);
     expect(await screen.findByTestId("ytdlp-setting")).toHaveTextContent("2026.01.01");
@@ -282,7 +309,7 @@ describe("SettingsView", () => {
       email: "m@example.com",
       authenticated: true,
       role: "admin",
-      settings: { default_instrument: "bass-4" },
+      settings: { default_instrument: "bass-4", lessons_enabled: false },
     };
     render(SettingsView);
     expect(screen.queryByTestId("ytdlp-setting")).not.toBeInTheDocument();

@@ -186,6 +186,19 @@ def test_cross_site_writes_are_refused(tmp_path: Path) -> None:
         assert client.get("/api/songs", headers={"Origin": "https://evil.example"}).status_code == 200
 
 
+def test_lessons_setting_defaults_off_and_round_trips(tmp_path: Path) -> None:
+    with _client(tmp_path) as client:
+        assert client.get("/api/me").json()["settings"]["lessons_enabled"] is False
+        on = client.put("/api/me/settings", json={"default_instrument": "bass-4", "lessons_enabled": True})
+        assert on.json()["lessons_enabled"] is True
+        assert client.get("/api/me").json()["settings"]["lessons_enabled"] is True
+        # An older client that omits the field leaves it alone.
+        kept = client.put("/api/me/settings", json={"default_instrument": "guitar-6"})
+        assert kept.json() == {"default_instrument": "guitar-6", "lessons_enabled": True}
+        off = client.put("/api/me/settings", json={"default_instrument": "guitar-6", "lessons_enabled": False})
+        assert off.json()["lessons_enabled"] is False
+
+
 def test_default_instrument_is_a_user_setting(tmp_path: Path) -> None:
     with _client(tmp_path) as client:
         me = client.get("/api/me").json()
@@ -193,7 +206,7 @@ def test_default_instrument_is_a_user_setting(tmp_path: Path) -> None:
         assert client.put("/api/me/settings", json={"default_instrument": "nope"}).status_code == 400
         saved = client.put("/api/me/settings", json={"default_instrument": "guitar-7"})
         assert saved.status_code == 200
-        assert saved.json() == {"default_instrument": "guitar-7"}
+        assert saved.json() == {"default_instrument": "guitar-7", "lessons_enabled": False}
         assert client.get("/api/me").json()["settings"]["default_instrument"] == "guitar-7"
         song = client.post("/api/songs", json={"title": "Default"}).json()
         assert song["string_count"] == 7

@@ -5519,6 +5519,11 @@
           "default_instrument": {
             "title": "Default Instrument",
             "type": "string"
+          },
+          "lessons_enabled": {
+            "default": false,
+            "title": "Lessons Enabled",
+            "type": "boolean"
           }
         },
         "required": [
@@ -5532,6 +5537,17 @@
           "default_instrument": {
             "title": "Default Instrument",
             "type": "string"
+          },
+          "lessons_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lessons Enabled"
           }
         },
         "required": [
@@ -14077,7 +14093,7 @@
     },
     "/api/me/settings": {
       "put": {
-        "description": "Replace the caller's default instrument preset.",
+        "description": "Replace the caller's default instrument preset and, when given, the Lessons (experimental) switch.",
         "operationId": "update_settings_api_me_settings_put",
         "requestBody": {
           "content": {

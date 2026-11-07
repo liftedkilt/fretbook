@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { resetCelebrations } from "../lib/celebrate";
 import type { PracticeStats } from "../lib/types";
+import { ui } from "../lib/ui.svelte";
 import PracticeView from "./PracticeView.svelte";
 
 const mockStats = vi.fn();
@@ -153,7 +154,35 @@ describe("PracticeView", () => {
     expect(screen.getByTestId("practice-best")).toHaveTextContent("88%");
   });
 
+  function setLessons(on: boolean) {
+    ui.me = {
+      user_id: "u",
+      display_name: "U",
+      email: "",
+      authenticated: false,
+      role: "user",
+      settings: { default_instrument: "bass-4", lessons_enabled: on },
+    } as typeof ui.me;
+  }
+
+  it("only resumes a song while Lessons is off", async () => {
+    setLessons(false);
+    mockStats.mockResolvedValue(
+      stats({
+        last_lesson: {
+          course_id: "basics",
+          lesson_id: "one",
+          opened_at: "2026-03-10T11:00:00+00:00",
+        },
+      }),
+    );
+    render(PracticeView);
+    const link = await screen.findByTestId("practice-continue");
+    expect(link.getAttribute("href")).toContain("/songs/s1");
+  });
+
   it("continues the last lesson when it was opened after the last song", async () => {
+    setLessons(true);
     mockStats.mockResolvedValue(
       stats({
         last_lesson: {
@@ -169,6 +198,7 @@ describe("PracticeView", () => {
   });
 
   it("keeps the song when it was practised after the last lesson", async () => {
+    setLessons(true);
     mockStats.mockResolvedValue(
       stats({
         last_lesson: {

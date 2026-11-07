@@ -34,6 +34,8 @@
     openSheet,
     refreshSongs,
     setDefaultInstrument,
+    setLessonsEnabled,
+    lessonsEnabled,
     setTheme,
     ui,
     type Theme,
@@ -175,6 +177,15 @@
     }
   }
 
+  async function changeLessons(next: boolean) {
+    error = "";
+    try {
+      await setLessonsEnabled(next);
+    } catch (err) {
+      error = err instanceof Error ? err.message : t("error.generic");
+    }
+  }
+
   async function changeDefault(next: string) {
     error = "";
     try {
@@ -288,6 +299,23 @@
                 icon: item.icon,
               }))}
             />
+          </div>
+
+          <h3 id="experimental" class="sub">{t("experimental.heading")}</h3>
+          <div class="row">
+            <div class="copy">
+              <strong>{t("experimental.lessons")}</strong>
+              <p class="hint">{t("experimental.lessonsHint")}</p>
+            </div>
+            <label class="switch">
+              <input
+                type="checkbox"
+                data-testid="lessons-enabled"
+                aria-label={t("experimental.lessons")}
+                checked={lessonsEnabled(ui.me)}
+                onchange={(event) => void changeLessons(event.currentTarget.checked)}
+              />
+            </label>
           </div>
         </section>
 
@@ -579,6 +607,12 @@
     display: grid;
     gap: var(--sp-2);
     min-width: 0;
+  }
+
+  .sub {
+    margin: var(--sp-4) 0 0;
+    font-size: var(--fs-sm);
+    color: var(--text-3);
   }
 
   .hint {

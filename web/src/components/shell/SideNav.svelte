@@ -3,14 +3,19 @@
   import Icon from "../Icon.svelte";
   import { t } from "../../lib/i18n.svelte";
   import { followLink, hrefFor, routePath } from "../../lib/router.svelte";
-  import { openSheet, ui } from "../../lib/ui.svelte";
+  import { sideNavIds } from "../../lib/nav";
+  import { lessonsEnabled, openSheet, ui } from "../../lib/ui.svelte";
 
   const path = $derived(routePath());
   const isAdmin = $derived(ui.me?.role === "admin");
   const activeSong = $derived(path.match(/^\/songs\/([^/]+)/)?.[1] ?? "");
 
   // The same five destinations as the tab bar, in the same order.
-  const destinations = $derived([
+  const lessonsOn = $derived(lessonsEnabled(ui.me));
+  const destinations = $derived(
+    sideNavIds(lessonsOn).map((id) => all.find((item) => item.id === id)!),
+  );
+  const all = $derived([
     {
       id: "practice",
       icon: "target",

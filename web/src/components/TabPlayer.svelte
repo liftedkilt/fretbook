@@ -122,7 +122,7 @@
   } from "../lib/sync";
   import { midiToName, tuningLabel } from "../lib/tuning";
   import type { SongDetail, TabSong } from "../lib/types";
-  import { openTuner, setNotation, setPlayerView, ui } from "../lib/ui.svelte";
+  import { lessonsEnabled, openTuner, setNotation, setPlayerView, ui } from "../lib/ui.svelte";
 
   let {
     song: initial,
@@ -171,7 +171,10 @@
   });
   const scheduler = new ClickScheduler();
   // Opened from a lesson (`?lesson=<course>/<lesson>`): scored and wait-mode results go to that lesson.
-  const lessonRef = typeof location === "undefined" ? null : parseLessonParam(location.search);
+  const lessonRef =
+    typeof location === "undefined" || !lessonsEnabled(ui.me)
+      ? null
+      : parseLessonParam(location.search);
   let lessonBanner = $state<LessonRunBanner>();
 
   let tapIndex = $state(0);
