@@ -2,7 +2,9 @@
 
 Fretbook teaches with **courses**: ordered lessons grouped into levels, with prerequisites, one set for guitar and one for bass. Lessons are plain Markdown files, so people and coding agents can write them, review them in a pull request, and share them as a zip.
 
-This page is the format reference. To *use* the lessons, open **Lessons** in the sidebar (on a phone: the **Lessons** tab). See [Learning a song](guides/lessons.md) for how lessons fit with the practice tools.
+> **Lessons is experimental and off by default.** Turn it on per user in **Settings → General → Experimental → Lessons (experimental)**. The setting is stored on your account, so it follows you across devices. Existing progress is kept whether it is on or off.
+
+This page is the format reference. To *use* the lessons, turn the setting on, then open **Lessons** in the sidebar (on a phone: the **Lessons** tab). See [Learning a song](guides/lessons.md) for how lessons fit with the practice tools.
 
 ## The built-in courses
 
