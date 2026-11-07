@@ -239,7 +239,9 @@ export function getMe(): Promise<Me> {
   return request<ContractMe>("/api/me");
 }
 
-export function saveSettings(settings: Settings): Promise<Settings> {
+export function saveSettings(
+  settings: Partial<Settings> & Pick<Settings, "default_instrument">,
+): Promise<Settings> {
   return request<ContractSettings>("/api/me/settings", json("PUT", settings));
 }
 

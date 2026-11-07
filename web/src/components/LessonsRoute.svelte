@@ -4,6 +4,10 @@
   import LessonsView from "./LessonsView.svelte";
   import LessonView from "./LessonView.svelte";
   import { t } from "../lib/i18n.svelte";
+  import { followLink, hrefFor } from "../lib/router.svelte";
+  import { lessonsEnabled, ui } from "../lib/ui.svelte";
+  import Page from "./ui/Page.svelte";
+  import PageHeader from "./ui/PageHeader.svelte";
 
   // Everything under /lessons. Ids are never "new" or "edit" (the server refuses them), so those words
   // can be addresses of their own.
@@ -30,7 +34,22 @@
   });
 </script>
 
-{#if route.page === "lessons"}
+{#if !ui.me}
+  <p class="muted">{t("app.loading")}</p>
+{:else if !lessonsEnabled(ui.me)}
+  <Page width="page" testid="lessons-off">
+    <PageHeader title={t("experimental.offTitle")} subtitle={t("experimental.offBody")} />
+    <p>
+      <a
+        class="button primary"
+        data-testid="lessons-open-settings"
+        href={hrefFor("/settings") + "#general"}
+        onclick={(event) => followLink(event, "/settings#general")}
+        >{t("experimental.openSettings")}</a
+      >
+    </p>
+  </Page>
+{:else if route.page === "lessons"}
   <LessonsView />
 {:else if route.page === "newCourse"}
   <LessonEditor kind="course" />

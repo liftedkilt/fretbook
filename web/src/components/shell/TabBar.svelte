@@ -2,14 +2,18 @@
   import Icon from "../Icon.svelte";
   import { t } from "../../lib/i18n.svelte";
   import { followLink, hrefFor, routePath } from "../../lib/router.svelte";
-  import { openSheet, ui } from "../../lib/ui.svelte";
+  import { lessonsEnabled, openSheet, ui } from "../../lib/ui.svelte";
 
   const path = $derived(routePath());
 
-  // Practice · Library · (+) · Lessons · Tools. Setlists sits under Library on a phone.
+  // Practice · Library · (+) · Lessons · Tools. Setlists sits under Library on a phone. With Lessons off
+  // (the default) Setlists takes Lessons' slot.
+  const lessonsOn = $derived(lessonsEnabled(ui.me));
   const current = $derived({
     practice: path === "/practice" || path === "/practice/",
-    library: path === "/" || path.startsWith("/setlists") || path.startsWith("/songs/"),
+    library:
+      path === "/" || (lessonsOn && path.startsWith("/setlists")) || path.startsWith("/songs/"),
+    setlists: path.startsWith("/setlists"),
     lessons: path === "/lessons" || path.startsWith("/lessons/"),
     tools: path.startsWith("/tools"),
   });
@@ -40,7 +44,11 @@
       <span><Icon name="plus" size={26} /></span>
     </button>
   {/if}
-  {@render tab("lessons", "graduation", t("lessons.nav"), "/lessons", current.lessons)}
+  {#if lessonsOn}
+    {@render tab("lessons", "graduation", t("lessons.nav"), "/lessons", current.lessons)}
+  {:else}
+    {@render tab("setlists", "listMusic", t("setlists.nav"), "/setlists", current.setlists)}
+  {/if}
   {@render tab("tools", "wrench", t("tools.nav"), "/tools", current.tools)}
 </nav>
 

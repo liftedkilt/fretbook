@@ -2,7 +2,14 @@ import { expect, test } from "./support/fixtures";
 import { openExport } from "./support/song-page";
 import { startServer } from "./support/server";
 
-test("an empty library offers every way to start", async ({ page }) => {
+test("the welcome has no course card while Lessons is off (the default)", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByTestId("first-run-tuner")).toBeVisible();
+  await expect(page.getByTestId("first-run-course")).toHaveCount(0);
+});
+
+test("an empty library offers every way to start", async ({ page, seed }) => {
+  await seed.enableLessons();
   await page.goto("/");
   await expect(page.getByTestId("library-empty")).toBeVisible();
   for (const step of ["import", "demo", "instrument", "tuner", "course"]) {
@@ -21,7 +28,8 @@ test("an empty library offers every way to start", async ({ page }) => {
   await expect(page).toHaveURL(/\/lessons\/(bass|guitar)-first-steps$/);
 });
 
-test("the default instrument chosen on the welcome sticks", async ({ page }) => {
+test("the default instrument chosen on the welcome sticks", async ({ page, seed }) => {
+  await seed.enableLessons();
   await page.goto("/");
   await page.getByTestId("first-run-instrument").getByRole("combobox").selectOption("guitar-6");
   await page.reload();

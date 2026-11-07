@@ -1,6 +1,10 @@
 import { expect, test } from "./support/fixtures";
 import { fixture } from "./support/paths";
 
+test.beforeEach(async ({ seed }) => {
+  await seed.enableLessons();
+});
+
 // The fake microphone plays the riff of `practice-riff-played.wav` on a loop, as in wait-mode.spec.ts.
 test.use({
   permissions: ["microphone"],

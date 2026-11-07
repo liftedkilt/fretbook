@@ -346,6 +346,7 @@ export interface Meta {
 
 export interface Settings {
   default_instrument: string;
+  lessons_enabled: boolean;
 }
 
 export interface Me {

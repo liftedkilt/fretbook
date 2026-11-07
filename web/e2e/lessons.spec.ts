@@ -1,5 +1,9 @@
 import { expect, test } from "./support/fixtures";
 
+test.beforeEach(async ({ seed }) => {
+  await seed.enableLessons();
+});
+
 test("work through a built-in course: lessons unlock, progress is kept, and continue resumes", async ({
   page,
 }) => {

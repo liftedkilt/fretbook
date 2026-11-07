@@ -5,6 +5,7 @@
   import { followLink, hrefFor } from "../lib/router.svelte";
   import {
     defaultFamily,
+    lessonsEnabled,
     openSheet,
     refreshSongs,
     setDefaultInstrument,
@@ -86,16 +87,19 @@
       </div>
       <button onclick={() => openSheet("tuner")}>{t("firstRun.tunerButton")}</button>
     </li>
-    <li data-testid="first-run-course">
-      <div>
-        <strong>{t("firstRun.courseTitle")}</strong>
-        <p class="muted">{t("firstRun.courseBody")}</p>
-      </div>
-      <a
-        class="button"
-        href={hrefFor(`/lessons/${course}`)}
-        onclick={(event) => followLink(event, `/lessons/${course}`)}>{t("firstRun.courseButton")}</a
-      >
-    </li>
+    {#if lessonsEnabled(ui.me)}
+      <li data-testid="first-run-course">
+        <div>
+          <strong>{t("firstRun.courseTitle")}</strong>
+          <p class="muted">{t("firstRun.courseBody")}</p>
+        </div>
+        <a
+          class="button"
+          href={hrefFor(`/lessons/${course}`)}
+          onclick={(event) => followLink(event, `/lessons/${course}`)}
+          >{t("firstRun.courseButton")}</a
+        >
+      </li>
+    {/if}
   </ul>
 </div>

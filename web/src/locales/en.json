@@ -2509,5 +2509,13 @@
     "delete": "Delete song…",
     "level": "Level {level}",
     "details": "Details"
+  },
+  "experimental": {
+    "heading": "Experimental",
+    "lessons": "Lessons (experimental)",
+    "lessonsHint": "Guided lessons and courses. Still in progress, so things may change.",
+    "offTitle": "Lessons is turned off",
+    "offBody": "Lessons is turned off. Turn it on in Settings → Experimental.",
+    "openSettings": "Open Settings"
   }
 }

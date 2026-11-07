@@ -205,16 +205,22 @@ class SongRepository:
 
     def get_settings(self, user_id: str) -> dict[str, Any]:
         with self._session() as conn:
-            row = conn.execute("SELECT default_instrument FROM users WHERE id = ?", (user_id,)).fetchone()
+            row = conn.execute(
+                "SELECT default_instrument, lessons_enabled FROM users WHERE id = ?", (user_id,)
+            ).fetchone()
         instrument = row["default_instrument"] if row else DEFAULT_PRESET
         if not is_preset(instrument):
             instrument = DEFAULT_PRESET
-        return {"default_instrument": instrument}
+        return {"default_instrument": instrument, "lessons_enabled": bool(row["lessons_enabled"]) if row else False}
 
-    def update_settings(self, user_id: str, *, default_instrument: str) -> dict[str, Any]:
+    def update_settings(
+        self, user_id: str, *, default_instrument: str, lessons_enabled: bool | None = None
+    ) -> dict[str, Any]:
         get_preset(default_instrument)
         with self._session() as conn:
             conn.execute("UPDATE users SET default_instrument = ? WHERE id = ?", (default_instrument, user_id))
+            if lessons_enabled is not None:
+                conn.execute("UPDATE users SET lessons_enabled = ? WHERE id = ?", (int(lessons_enabled), user_id))
         return self.get_settings(user_id)
 
     def reset_user_data(self, user_id: str) -> None:
@@ -233,7 +239,9 @@ class SongRepository:
                 "setlists",
             ):
                 conn.execute(f"DELETE FROM {table} WHERE owner_id = ?", (user_id,))  # noqa: S608 - fixed names
-            conn.execute("UPDATE users SET default_instrument = ? WHERE id = ?", (DEFAULT_PRESET, user_id))
+            conn.execute(
+                "UPDATE users SET default_instrument = ?, lessons_enabled = 0 WHERE id = ?", (DEFAULT_PRESET, user_id)
+            )
 
     # --- audio calibration -------------------------------------------------
 

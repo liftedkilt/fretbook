@@ -22,6 +22,18 @@ type JobBody = {
 export class Seeder {
   constructor(private readonly request: APIRequestContext) {}
 
+  /** Turns on Lessons (experimental) for the single user; it is off by default. */
+  async enableLessons(): Promise<void> {
+    const me = await this.ok<{ settings: { default_instrument: string } }>(
+      await this.request.get("/api/me"),
+    );
+    await this.ok(
+      await this.request.put("/api/me/settings", {
+        data: { default_instrument: me.settings.default_instrument, lessons_enabled: true },
+      }),
+    );
+  }
+
   private async ok<T>(response: APIResponse): Promise<T> {
     if (!response.ok())
       throw new Error(`${response.url()} answered ${response.status()}: ${await response.text()}`);

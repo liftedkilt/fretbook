@@ -2509,5 +2509,13 @@
     "delete": "Excluir música…",
     "level": "Nível {level}",
     "details": "Detalhes"
+  },
+  "experimental": {
+    "heading": "Experimental",
+    "lessons": "Lições (experimental)",
+    "lessonsHint": "Lições e cursos guiados. Ainda em desenvolvimento, então as coisas podem mudar.",
+    "offTitle": "As lições estão desativadas",
+    "offBody": "As lições estão desativadas. Ative-as em Configurações → Experimental.",
+    "openSettings": "Abrir configurações"
   }
 }

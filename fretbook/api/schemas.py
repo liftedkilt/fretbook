@@ -119,6 +119,8 @@ class Settings(BaseModel):
     """Per-user preferences. ``default_instrument`` is a preset id from ``GET /api/meta``."""
 
     default_instrument: str
+    lessons_enabled: bool = False
+    """Show Lessons (experimental). Off by default; progress is kept either way."""
 
 
 class AudioCalibration(BaseModel):
