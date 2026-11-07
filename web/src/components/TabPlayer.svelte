@@ -171,10 +171,12 @@
   });
   const scheduler = new ClickScheduler();
   // Opened from a lesson (`?lesson=<course>/<lesson>`): scored and wait-mode results go to that lesson.
-  const lessonRef =
+  // Reactive: `ui.me` may still be loading when the player mounts, and Lessons must be on.
+  const lessonRef = $derived(
     typeof location === "undefined" || !lessonsEnabled(ui.me)
       ? null
-      : parseLessonParam(location.search);
+      : parseLessonParam(location.search),
+  );
   let lessonBanner = $state<LessonRunBanner>();
 
   let tapIndex = $state(0);
