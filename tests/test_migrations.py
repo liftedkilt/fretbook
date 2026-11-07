@@ -900,6 +900,8 @@ def verify_v21(conn: sqlite3.Connection) -> None:
     assert member["role"] == "edit"
     song = conn.execute("SELECT title, owner_id FROM songs WHERE id = 'song-v21'").fetchone()
     assert tuple(song) == ("Library Song", "user-v21")
+    # Lessons is experimental (migration 022): users that already existed read as off.
+    assert conn.execute("SELECT lessons_enabled FROM users WHERE id = 'user-v21'").fetchone()[0] == 0
     conn.execute("UPDATE users SET display_name = 'Renamed V21' WHERE id = 'user-v21'")
     assert conn.execute("SELECT name FROM libraries WHERE id = 'user-v21'").fetchone()[0] == "Renamed V21"
     conn.execute(
@@ -911,6 +913,20 @@ def verify_v21(conn: sqlite3.Connection) -> None:
     assert conn.execute("PRAGMA foreign_key_check").fetchall() == []
     assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
     conn.rollback()
+
+
+def seed_v22(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        INSERT INTO users (id, external_subject, display_name, created_at, lessons_enabled)
+        VALUES ('user-v22', 'sub-v22', 'User V22', '2026-01-22T00:00:00Z', 1)
+        """
+    )
+    conn.commit()
+
+
+def verify_v22(conn: sqlite3.Connection) -> None:
+    assert conn.execute("SELECT lessons_enabled FROM users WHERE id = 'user-v22'").fetchone()[0] == 1
 
 
 SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.Connection], None]]] = {
@@ -935,6 +951,7 @@ SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.C
     19: (seed_v19, verify_v19),
     20: (seed_v20, verify_v20),
     21: (seed_v21, verify_v21),
+    22: (seed_v22, verify_v22),
 }
 
 
