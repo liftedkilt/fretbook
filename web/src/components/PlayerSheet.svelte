@@ -526,7 +526,7 @@
   .tabs {
     display: flex;
     flex: 1;
-    gap: var(--sp-1);
+    gap: 0;
     min-width: 0;
     overflow-x: auto;
     scrollbar-width: none;
@@ -541,7 +541,7 @@
     gap: var(--sp-1);
     min-height: 40px;
     margin-bottom: -1px;
-    padding: var(--sp-2) var(--sp-3);
+    padding: var(--sp-2);
     border: 0;
     border-bottom: calc(var(--sp-1) / 2) solid transparent;
     border-radius: 0;
@@ -672,6 +672,15 @@
   @media (min-width: 768px) {
     .player-panel {
       animation-name: sheet-side;
+    }
+  }
+
+  /* On a phone the player wraps this in its own bottom sheet, so the panel is flat inside it. */
+  @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
+    .player-panel {
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
     }
   }
 

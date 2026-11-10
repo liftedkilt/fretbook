@@ -315,6 +315,7 @@
                 checked={lessonsEnabled(ui.me)}
                 onchange={(event) => void changeLessons(event.currentTarget.checked)}
               />
+              <span class="switch-track"></span>
             </label>
           </div>
         </section>
