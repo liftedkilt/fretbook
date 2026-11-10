@@ -2517,5 +2517,14 @@
     "offTitle": "As lições estão desativadas",
     "offBody": "As lições estão desativadas. Ative-as em Configurações → Experimental.",
     "openSettings": "Abrir configurações"
+  },
+  "crash": {
+    "title": "Esta página encontrou um problema",
+    "body": "Algo deu errado ao mostrar esta página. Sua biblioteca não foi afetada.",
+    "retry": "Tentar de novo",
+    "reload": "Recarregar o Fretbook",
+    "details": "Detalhes técnicos",
+    "copy": "Copiar detalhes",
+    "copied": "Copiado"
   }
 }

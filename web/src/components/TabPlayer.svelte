@@ -88,6 +88,7 @@
   import { waitFocus } from "../lib/listen/waitFretboard";
   import { followPlayed, playedBars } from "../lib/playback";
   import { parseLessonParam } from "../lib/lessonRun";
+  import { keepAwake } from "../lib/wakeLock";
   import { IdleWatch, localDay, PracticeTimer, WAIT_IDLE_MS } from "../lib/practiceLog";
   import {
     ClickScheduler,
@@ -281,6 +282,11 @@
 
   // Scored play-along: the music keeps playing and every note of the chosen track is graded.
   let scoreOn = $state(false);
+
+  // Nobody touches a phone on a music stand while they play, so keep its screen on meanwhile.
+  $effect(() => {
+    if (playing || waitOn || scoreOn || handsFree.stage) return keepAwake();
+  });
   let scoreSummary = $state<ScoreSummary | null>(null);
   let scoreGrades = $state<Record<string, GemState>>({});
   let scoreError = $state("");

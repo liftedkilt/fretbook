@@ -2517,5 +2517,14 @@
     "offTitle": "Lessons is turned off",
     "offBody": "Lessons is turned off. Turn it on in Settings → Experimental.",
     "openSettings": "Open Settings"
+  },
+  "crash": {
+    "title": "This page hit a problem",
+    "body": "Something went wrong while showing this page. Your library is not affected.",
+    "retry": "Try again",
+    "reload": "Reload Fretbook",
+    "details": "Technical details",
+    "copy": "Copy details",
+    "copied": "Copied"
   }
 }

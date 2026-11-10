@@ -8,6 +8,8 @@ import ChordSheetView from "./ChordSheetView.svelte";
 const pdf = vi.hoisted(() => vi.fn());
 const strum = vi.hoisted(() => vi.fn());
 vi.mock("../lib/export/pdf", () => ({ downloadChordSheetPdf: pdf }));
+const awake = vi.hoisted(() => ({ letGo: vi.fn(), keep: vi.fn() }));
+vi.mock("../lib/wakeLock", () => ({ keepAwake: awake.keep.mockImplementation(() => awake.letGo) }));
 vi.mock("../lib/chords/strum", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../lib/chords/strum")>()),
   playStrum: strum,
@@ -155,6 +157,18 @@ describe("ChordSheetView hands-free", () => {
     await fireEvent.keyDown(document.body, { key: "ArrowRight" });
     expect(button).toHaveAttribute("aria-pressed", "true");
     await fireEvent.click(button);
+  });
+
+  it("keeps the screen on while the sheet scrolls, and lets it sleep after", async () => {
+    awake.keep.mockClear();
+    awake.letGo.mockClear();
+    render(ChordSheetView, { props: { song: song("{duration: 3:00}\n[C]Hello") } });
+    expect(awake.keep).not.toHaveBeenCalled();
+    await fireEvent.click(screen.getByTestId("autoscroll"));
+    expect(awake.keep).toHaveBeenCalledTimes(1);
+    expect(awake.letGo).not.toHaveBeenCalled();
+    await fireEvent.click(screen.getByTestId("autoscroll"));
+    expect(awake.letGo).toHaveBeenCalledTimes(1);
   });
 
   it("changes the scroll speed and switches stage mode", async () => {

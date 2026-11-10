@@ -101,6 +101,11 @@ song length of 3½ minutes. The ± buttons scale the speed from 0.5× to 2×.
 **Stage mode** (the monitor button) draws chord sheets in large print and the tab larger, and hides the song header and
 panels so only the music and the transport are left.
 
+**The screen stays on** while a tab is playing, in wait mode and scored play, in stage mode, and while a chord sheet
+auto-scrolls or waits for a chord, so a phone or tablet on a music stand does not dim or lock mid-song. It goes back to
+the device's own timeout when you stop. Browsers only allow this on HTTPS pages (or `localhost`), and some refuse it in
+battery-saver mode.
+
 ## Language
 
 English and Brazilian Portuguese. The header switcher remembers the choice. With none saved, the browser language is
