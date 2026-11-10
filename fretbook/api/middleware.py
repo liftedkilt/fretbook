@@ -107,3 +107,28 @@ class SameOriginMiddleware:
                     await _json_error(send, 403, "request.crossOrigin", "cross-site requests are not allowed")
                     return
         await self.app(scope, receive, send)
+
+
+class NoSniffMiddleware:
+    """Add ``X-Content-Type-Options: nosniff`` to every response.
+
+    Uploaded files and imported text are served back from this origin. Without the header a browser
+    may guess a type other than the declared one, and run an upload as a script or a page.
+    """
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        async def with_header(message: Message) -> None:
+            if message["type"] == "http.response.start":
+                headers = [item for item in message.get("headers", []) if item[0].lower() != b"x-content-type-options"]
+                headers.append((b"x-content-type-options", b"nosniff"))
+                message = {**message, "headers": headers}
+            await send(message)
+
+        await self.app(scope, receive, with_header)

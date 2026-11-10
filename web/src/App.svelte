@@ -6,6 +6,7 @@
   import CalibrationSheet from "./components/CalibrationSheet.svelte";
   import ChordLibraryView from "./components/ChordLibraryView.svelte";
   import EditorView from "./components/EditorView.svelte";
+  import ErrorBoundary from "./components/ErrorBoundary.svelte";
   import ExercisesView from "./components/ExercisesView.svelte";
   import Icon from "./components/Icon.svelte";
   import IconButton from "./components/ui/IconButton.svelte";
@@ -129,53 +130,55 @@
           <Icon name="info" size={18} />{t("demo.banner")}
         </p>{/if}
       {#if ui.error}<p class="alert" role="alert"><Icon name="alert" size={18} />{ui.error}</p>{/if}
-      {#if isLibrary}
-        <LibraryView />
-      {:else if isTools}
-        <ToolsView />
-      {:else if isToolsTuner}
-        <StandaloneTunerView />
-      {:else if isToolsMetronome}
-        <StandaloneMetronomeView />
-      {:else if isToolsTrainer}
-        <TrainerView />
-      {:else if isToolsRhythm}
-        <RhythmTrainerView />
-      {:else if isToolsChords}
-        <ChordLibraryView />
-      {:else if isToolsExercises}
-        <ExercisesView />
-      {:else if isSettings}
-        <SettingsView />
-      {:else if path === "/admin" && isAdmin && ui.me}
-        <AdminView self={ui.me.user_id} />
-      {:else if path === "/admin" && !ui.me}
-        <p class="muted">{t("app.loading")}</p>
-      {:else if isPractice}
-        <PracticeView />
-      {:else if isLessons}
-        <LessonsRoute {path} />
-      {:else if isSetlists}
-        <SetlistsView />
-      {:else if isBands}
-        <BandsView />
-      {:else if setlistPlay}
-        <SetlistPlayView id={setlistPlay[1]} position={setlistPlay[2]} />
-      {:else if setlistPage}
-        <SetlistView id={setlistPage[1]} />
-      {:else if edit}
-        <EditorView id={edit[1]} />
-      {:else if play}
-        <SongView id={play[1]} />
-      {:else}
-        <div class="empty-state">
-          <span class="empty-art"><Icon name="library" size={34} /></span>
-          <h1 class="display">{t("app.notFound")}</h1>
-          <a class="button" href={hrefFor("/")} onclick={(event) => followLink(event, "/")}
-            >{t("app.back")}</a
-          >
-        </div>
-      {/if}
+      <ErrorBoundary {path}>
+        {#if isLibrary}
+          <LibraryView />
+        {:else if isTools}
+          <ToolsView />
+        {:else if isToolsTuner}
+          <StandaloneTunerView />
+        {:else if isToolsMetronome}
+          <StandaloneMetronomeView />
+        {:else if isToolsTrainer}
+          <TrainerView />
+        {:else if isToolsRhythm}
+          <RhythmTrainerView />
+        {:else if isToolsChords}
+          <ChordLibraryView />
+        {:else if isToolsExercises}
+          <ExercisesView />
+        {:else if isSettings}
+          <SettingsView />
+        {:else if path === "/admin" && isAdmin && ui.me}
+          <AdminView self={ui.me.user_id} />
+        {:else if path === "/admin" && !ui.me}
+          <p class="muted">{t("app.loading")}</p>
+        {:else if isPractice}
+          <PracticeView />
+        {:else if isLessons}
+          <LessonsRoute {path} />
+        {:else if isSetlists}
+          <SetlistsView />
+        {:else if isBands}
+          <BandsView />
+        {:else if setlistPlay}
+          <SetlistPlayView id={setlistPlay[1]} position={setlistPlay[2]} />
+        {:else if setlistPage}
+          <SetlistView id={setlistPage[1]} />
+        {:else if edit}
+          <EditorView id={edit[1]} />
+        {:else if play}
+          <SongView id={play[1]} />
+        {:else}
+          <div class="empty-state">
+            <span class="empty-art"><Icon name="library" size={34} /></span>
+            <h1 class="display">{t("app.notFound")}</h1>
+            <a class="button" href={hrefFor("/")} onclick={(event) => followLink(event, "/")}
+              >{t("app.back")}</a
+            >
+          </div>
+        {/if}
+      </ErrorBoundary>
     </main>
 
     {#if hasTabbar}

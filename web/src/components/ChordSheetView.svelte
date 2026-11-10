@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { keepAwake } from "../lib/wakeLock";
   import { onMount, untrack, type Snippet } from "svelte";
 
   import CapoSuggestions from "./CapoSuggestions.svelte";
@@ -107,6 +108,11 @@
   // Hands-free: a pedal key turns the page or starts the auto-scroll, which reaches the end of the
   // sheet as the song ends (from `{duration:}`, else the tempo and line count, else a typical song).
   let scrolling = $state(false);
+
+  // A chord sheet is read hands-off: keep the screen on while it scrolls, waits for a chord or is on stage.
+  $effect(() => {
+    if (scrolling || stage || activeChord !== null) return keepAwake();
+  });
   const stage = $derived(handsFree.stage);
   const scrollSpeed = $derived(
     autoScrollSpeed({

@@ -12,7 +12,7 @@ from pathlib import Path
 import httpx
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from starlette.responses import Response
 
 from fretbook import __version__
@@ -28,7 +28,7 @@ from fretbook.api.lesson_routes import router as lesson_router
 from fretbook.api.library_routes import router as library_router
 from fretbook.api.llm_routes import router as llm_router
 from fretbook.api.metadata_routes import router as metadata_router
-from fretbook.api.middleware import BodyLimitMiddleware, SameOriginMiddleware
+from fretbook.api.middleware import BodyLimitMiddleware, NoSniffMiddleware, SameOriginMiddleware
 from fretbook.api.midi_routes import router as midi_router
 from fretbook.api.practice_routes import router as practice_router
 from fretbook.api.retune_routes import router as retune_router
@@ -56,6 +56,7 @@ from fretbook.jobs.registry import register_kinds
 from fretbook.jobs.runner import JobRunner
 from fretbook.llm.service import LlmService
 from fretbook.score.legacy import legacy_document, load_legacy_dir
+from fretbook.static_files import static_response
 from fretbook.storage.libraries import LibraryStore
 from fretbook.storage.media import MediaStore, QuotaExceeded
 from fretbook.storage.repository import SongRepository
@@ -304,6 +305,7 @@ def create_app(
     app.add_exception_handler(RequestValidationError, _validation_error)
     app.add_exception_handler(QuotaExceeded, _quota_exceeded)
     app.add_middleware(SameOriginMiddleware)
+    app.add_middleware(NoSniffMiddleware)
     if settings.demo_mode:
         app.add_middleware(DemoReadOnlyMiddleware)
     # Room for multipart framing around the largest allowed upload.
@@ -371,7 +373,7 @@ def create_app(
         candidate = (static / full_path).resolve()
         root = static.resolve()
         if candidate.is_file() and candidate.is_relative_to(root):
-            return FileResponse(candidate)
+            return static_response(request, candidate, candidate.relative_to(root).as_posix())
         page = _index(settings)
         if settings.share_links and full_path.startswith("share/"):
             page.headers["Cache-Control"] = "private, no-store"
