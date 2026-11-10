@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fretbook"
-version = "0.1.3"
+version = "0.1.4"
 description = "Self-hosted tabs and sheet music for bass and guitar."
 license = "MIT"
 requires-python = ">=3.12"
