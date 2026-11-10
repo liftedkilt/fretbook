@@ -2677,7 +2677,8 @@
       padding-bottom: var(--safe-b);
       overflow: hidden;
       border-radius: var(--r-lg) var(--r-lg) 0 0;
-      background: var(--glass-solid);
+      /* The same surface as the panel inside, so the grabber and the panel read as one sheet. */
+      background: var(--surface);
       border-top: 1px solid var(--glass-line);
       box-shadow: var(--shadow-lg);
     }
@@ -2697,8 +2698,11 @@
       width: 100%;
       height: 24px;
       min-height: 24px;
+      /* The shared sheet grabber adds a gap below itself, which read as a second, empty sheet. */
+      margin: 0;
       padding: 0;
       border: 0;
+      border-radius: 0;
       background: transparent;
     }
 

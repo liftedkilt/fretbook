@@ -128,6 +128,8 @@ describe("SettingsView", () => {
     render(SettingsView);
     const box = screen.getByTestId("lessons-enabled");
     expect(box).not.toBeChecked();
+    // The checkbox itself is invisible; the track after it is the switch that is drawn.
+    expect(box.nextElementSibling).toHaveClass("switch-track");
     await fireEvent.click(box);
     expect(mockSaveSettings).toHaveBeenCalledWith({
       default_instrument: "bass-4",

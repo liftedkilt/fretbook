@@ -66,12 +66,13 @@
 
   label {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
     gap: 0.5rem;
   }
 
+  /* A select is full width by default, which wraps it under its label. */
   select {
+    width: auto;
     min-width: 12rem;
   }
 
