@@ -123,7 +123,7 @@ class UserStore:
             rows = conn.execute(
                 """
                 SELECT u.id, u.display_name, u.email, u.role, u.external_subject, u.created_at, u.last_login_at,
-                       (SELECT COUNT(*) FROM songs s WHERE s.owner_id = u.id) AS song_count,
+                       (SELECT COUNT(*) FROM songs s WHERE s.owner_id = u.id AND s.deleted_at IS NULL) AS song_count,
                        (SELECT COUNT(*) FROM sessions x WHERE x.user_id = u.id AND x.expires_at > ?) AS session_count,
                        (
                            SELECT COUNT(*) FROM api_tokens t

@@ -48,6 +48,7 @@ from fretbook.score.instruments import family, get_preset, is_preset, presets_pa
 from fretbook.score.model import ScoreDocument, content_hash
 from fretbook.storage.media import AUDIO_TYPES
 from fretbook.storage.repository import RevisionConflict
+from fretbook.storage.trash import TrashStore
 from fretbook.tags import suggest_tags
 
 router = APIRouter()
@@ -438,9 +439,12 @@ def update_sync(
     responses=AUTH_RESPONSES,
 )
 def delete_song(song_id: str, ctx: AppContext = Depends(_ctx), user: Principal = Depends(_user)) -> Response:
+    """Move the song to the trash, where it can be restored for `FRETBOOK_TRASH_DAYS` days (see `/api/trash`).
+
+    With `FRETBOOK_TRASH_DAYS=0` the song and its files are removed at once.
+    """
     require_song(ctx, user.user_id, song_id, write=True)
-    ctx.media.delete_song_files(user.user_id, song_id)
-    ctx.songs.delete_song(user.user_id, song_id)
+    TrashStore(ctx.settings, ctx.media).trash(user.user_id, song_id)
     return Response(status_code=204)
 
 

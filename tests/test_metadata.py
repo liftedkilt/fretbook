@@ -275,7 +275,10 @@ def test_deleting_a_song_removes_its_cover(client: TestClient) -> None:
     song = _blank(client)
     client.post(f"/api/songs/{song['id']}/cover", files={"file": ("c.png", PNG)})
     client.delete(f"/api/songs/{song['id']}")
-    assert not (client.app.state.ctx.settings.media_dir / "local" / song["id"]).exists()
+    folder = client.app.state.ctx.settings.media_dir / "local" / song["id"]
+    assert folder.exists()  # in the trash, the files are kept
+    assert client.delete(f"/api/trash/{song['id']}").status_code == 204
+    assert not folder.exists()
 
 
 # --- online lookup ---------------------------------------------------------------------------------------------

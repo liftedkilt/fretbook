@@ -21,6 +21,18 @@ sheets as ChordPro), its audio and kept uploads, the practice log and daily goal
 - Limits: `FRETBOOK_MAX_RESTORE_BYTES` (4 GiB) and `FRETBOOK_MAX_RESTORE_UNPACKED_BYTES` (16 GiB), and your
   [proxy's body limit](reverse-proxy.md).
 
+### The trash
+
+A deleted song goes to the trash (**Settings → Library → Trash**) and stays there for
+`FRETBOOK_TRASH_DAYS` days (default 30) before the server removes it and its files. The server
+purges the trash when it starts and once a day after that. Until then a trashed song's audio counts
+towards `FRETBOOK_USER_QUOTA_MB` and shows in the admin storage table. `FRETBOOK_TRASH_DAYS=0`
+turns the trash off: a delete is final at once, and whatever was in the trash goes at the next start.
+
+The library archive leaves trashed songs out, along with their practice sessions and setlist
+entries, so restore a song from the trash before you export if you want it in the file. A snapshot
+(below) is a copy of the whole database and media folder, so it does include the trash.
+
 ## Snapshot for cron or a sidecar
 
 ```sh

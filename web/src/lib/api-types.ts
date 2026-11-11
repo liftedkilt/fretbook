@@ -1503,7 +1503,12 @@ export interface paths {
          */
         put: operations["update_song_api_songs__song_id__put"];
         post?: never;
-        /** Delete Song */
+        /**
+         * Delete Song
+         * @description Move the song to the trash, where it can be restored for `FRETBOOK_TRASH_DAYS` days (see `/api/trash`).
+         *
+         *     With `FRETBOOK_TRASH_DAYS=0` the song and its files are removed at once.
+         */
         delete: operations["delete_song_api_songs__song_id__delete"];
         options?: never;
         head?: never;
@@ -2123,6 +2128,70 @@ export interface paths {
          * @description Revoke a token. It stops working at once.
          */
         delete: operations["revoke_token_api_tokens__token_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/trash": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Trash
+         * @description Deleted songs that can still be restored, newest first.
+         */
+        get: operations["list_trash_api_trash_get"];
+        put?: never;
+        post?: never;
+        /**
+         * Empty Trash
+         * @description Remove every song in the library's trash, and their files, for good.
+         */
+        delete: operations["empty_trash_api_trash_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/trash/{song_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete For Good
+         * @description Remove one song in the trash, and its files, for good.
+         */
+        delete: operations["delete_for_good_api_trash__song_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/trash/{song_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restore Song
+         * @description Put a deleted song back with its audio, sync, tags, setlist entries and practice history.
+         */
+        post: operations["restore_song_api_trash__song_id__restore_post"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -4677,6 +4746,35 @@ export interface components {
              */
             stem: "mix" | "bass" | "guitar";
         };
+        /** TrashedSong */
+        TrashedSong: {
+            /** Artist */
+            artist: string;
+            /** Content Kind */
+            content_kind: string;
+            /** Deleted At */
+            deleted_at: string;
+            /** Id */
+            id: string;
+            /** Media Bytes */
+            media_bytes: number;
+            /** Purge At */
+            purge_at: string;
+            /** Title */
+            title: string;
+        };
+        /** TrashEmptied */
+        TrashEmptied: {
+            /** Deleted */
+            deleted: number;
+        };
+        /** TrashList */
+        TrashList: {
+            /** Items */
+            items: components["schemas"]["TrashedSong"][];
+            /** Retention Days */
+            retention_days: number;
+        };
         /** UpdateSongBody */
         UpdateSongBody: {
             /**
@@ -4954,6 +5052,9 @@ export type TrackBar = components['schemas']['TrackBar'];
 export type TrackDifficulty = components['schemas']['TrackDifficulty'];
 export type TranscribeInfo = components['schemas']['TranscribeInfo'];
 export type TranscribeRequest = components['schemas']['TranscribeRequest'];
+export type TrashedSong = components['schemas']['TrashedSong'];
+export type TrashEmptied = components['schemas']['TrashEmptied'];
+export type TrashList = components['schemas']['TrashList'];
 export type UpdateSongBody = components['schemas']['UpdateSongBody'];
 export type UserStorage = components['schemas']['UserStorage'];
 export type ValidationBody = components['schemas']['ValidationBody'];
@@ -15302,6 +15403,310 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    list_trash_api_trash_get: {
+        parameters: {
+            query?: {
+                /** @description Library whose trash to use. Omit it for the caller's own. */
+                library?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrashList"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    empty_trash_api_trash_delete: {
+        parameters: {
+            query?: {
+                /** @description Library whose trash to use. Omit it for the caller's own. */
+                library?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrashEmptied"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    delete_for_good_api_trash__song_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                song_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    restore_song_api_trash__song_id__restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                song_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SongDetail"];
+                };
             };
             /** @description Keyed error. `detail` is {key, message, params}. */
             400: {

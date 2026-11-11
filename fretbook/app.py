@@ -40,6 +40,7 @@ from fretbook.api.stem_routes import router as stem_router
 from fretbook.api.tag_routes import router as tag_router
 from fretbook.api.token_routes import router as token_router
 from fretbook.api.transcribe_routes import router as transcribe_router
+from fretbook.api.trash_routes import router as trash_router
 from fretbook.api.universal_routes import router as universal_router
 from fretbook.api.youtube_audio_routes import router as youtube_audio_router
 from fretbook.audio.ytdlp_health import AutoUpdater
@@ -62,6 +63,7 @@ from fretbook.static_files import static_response
 from fretbook.storage.libraries import LibraryStore
 from fretbook.storage.media import MediaStore, QuotaExceeded
 from fretbook.storage.repository import SongRepository
+from fretbook.storage.trash import TrashPurger, TrashStore
 from fretbook.storage.users import UserStore
 
 logger = logging.getLogger("fretbook")
@@ -185,6 +187,7 @@ def create_app(
     )
 
     resetter = DemoResetter(ctx)
+    purger = TrashPurger(TrashStore(settings, media))
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -209,6 +212,7 @@ def create_app(
         jobs.start()
         updater.start()
         resetter.start()
+        purger.start()
         if inbox:
             inbox.start()
         backups.start()
@@ -216,6 +220,7 @@ def create_app(
         backups.stop()
         if inbox:
             inbox.stop()
+        purger.stop()
         resetter.stop()
         updater.stop()
         jobs.stop()
@@ -322,6 +327,7 @@ def create_app(
     )
     app.include_router(router)
     app.include_router(library_router)
+    app.include_router(trash_router)
     app.include_router(share_router)
     app.include_router(backup_router)
     app.include_router(ascii_tab_router)

@@ -21,6 +21,7 @@ from fretbook.db.migrate import utcnow
 from fretbook.storage.access import can_read, editable_library, song_access
 from fretbook.storage.media import MediaStore, QuotaExceeded
 from fretbook.storage.repository import SongRepository, _index_lyrics, _unique_slug
+from fretbook.storage.trash import TrashStore
 
 MAX_NAME = 80
 MAX_ACTIVE_SHARES = 20
@@ -85,7 +86,7 @@ class LibraryStore:
             rows = conn.execute(
                 """
                 SELECT l.id, l.kind, l.name, m.role,
-                       (SELECT count(*) FROM songs s WHERE s.owner_id = l.id) AS song_count
+                       (SELECT count(*) FROM songs s WHERE s.owner_id = l.id AND s.deleted_at IS NULL) AS song_count
                 FROM libraries l
                 JOIN library_members m ON m.library_id = l.id AND m.user_id = ?
                 ORDER BY l.kind DESC, lower(l.name), l.id
@@ -132,9 +133,14 @@ class LibraryStore:
         if library["kind"] != "band":
             raise api_error(403, "library.personal", "a personal library cannot be shared")
         with self._session() as conn:
-            songs = conn.execute("SELECT count(*) FROM songs WHERE owner_id = ?", (library_id,)).fetchone()[0]
+            songs = conn.execute(
+                "SELECT count(*) FROM songs WHERE owner_id = ? AND deleted_at IS NULL", (library_id,)
+            ).fetchone()[0]
             if songs:
                 raise api_error(409, "library.notEmpty", "move or delete this band's songs before deleting it")
+        # What is left is the band's trash, which goes with the band.
+        TrashStore(self.settings, self.media).empty(library_id)
+        with self._session() as conn:
             conn.execute("DELETE FROM libraries WHERE id = ?", (library_id,))
 
     def members(self, user_id: str, library_id: str) -> list[dict[str, Any]]:
@@ -447,7 +453,9 @@ class LibraryStore:
             ).fetchone()
             if share is None:
                 return None
-            row = conn.execute("SELECT * FROM songs WHERE id = ?", (share["song_id"],)).fetchone()
+            row = conn.execute(
+                "SELECT * FROM songs WHERE id = ? AND deleted_at IS NULL", (share["song_id"],)
+            ).fetchone()
             if row is None:
                 return None
             audio = conn.execute(

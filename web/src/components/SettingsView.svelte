@@ -7,6 +7,7 @@
   import LlmAdmin from "./LlmAdmin.svelte";
   import LlmSettings from "./LlmSettings.svelte";
   import PedalSettings from "./PedalSettings.svelte";
+  import TrashSettings from "./TrashSettings.svelte";
   import YtDlpStatus from "./YtDlpStatus.svelte";
   import Page from "./ui/Page.svelte";
   import PageHeader from "./ui/PageHeader.svelte";
@@ -466,6 +467,7 @@
               {/if}
             </section>
             <BackupSettings />
+            <TrashSettings />
           </section>
 
           <section id="tokens" class="block" data-testid="settings-section-tokens">

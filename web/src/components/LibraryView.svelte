@@ -11,9 +11,10 @@
   import Chip from "./ui/Chip.svelte";
   import Page from "./ui/Page.svelte";
   import PageHeader from "./ui/PageHeader.svelte";
-  import { addTags, deleteSong } from "../lib/api";
+  import { addTags } from "../lib/api";
   import { t } from "../lib/i18n.svelte";
   import { keyLabel } from "../lib/keys";
+  import { trashSong } from "../lib/trash.svelte";
   import type { LibraryLevel, LibrarySort, SongSummary, SortOrder } from "../lib/types";
   import {
     countFor,
@@ -127,7 +128,7 @@
   async function remove(song: SongSummary) {
     if (!confirm(t("library.confirmDelete", { title: song.title }))) return;
     try {
-      await deleteSong(song.id);
+      await trashSong(song);
       await refreshSongs();
     } catch (err) {
       error = err instanceof Error ? err.message : t("error.generic");

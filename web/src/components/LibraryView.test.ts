@@ -13,6 +13,8 @@ const mockSetFavourite = vi.fn();
 
 vi.mock("../lib/api", () => ({
   deleteSong: (...args: unknown[]) => mockDeleteSong(...args),
+  listTrash: vi.fn().mockResolvedValue({ retention_days: 30, items: [] }),
+  restoreSong: vi.fn(),
   listSongs: (...args: unknown[]) => mockListSongs(...args),
   listTags: vi.fn().mockResolvedValue([]),
   getFacets: (...args: unknown[]) => mockGetFacets(...args),

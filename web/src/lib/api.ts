@@ -62,6 +62,7 @@ import type {
   SongsMoved,
   SongTags as ContractSongTags,
   TagCount as ContractTagCount,
+  TrashList,
   TagsAdded,
   TagsChanged,
 } from "./api-types";
@@ -650,8 +651,29 @@ export async function patchSync(
   }
 }
 
+/** Moves the song to the trash (or removes it at once when the server has no trash). */
 export function deleteSong(id: string): Promise<void> {
   return request(`/api/songs/${id}`, { method: "DELETE" });
+}
+
+/** The deleted songs of a library that can still be restored, and how long the server keeps them. */
+export function listTrash(library = ""): Promise<TrashList> {
+  return request<TrashList>(withLibrary("/api/trash", library));
+}
+
+export async function restoreSong(id: string): Promise<void> {
+  await request(`/api/trash/${id}/restore`, { method: "POST" });
+}
+
+export function deleteTrashedSong(id: string): Promise<void> {
+  return request(`/api/trash/${id}`, { method: "DELETE" });
+}
+
+export async function emptyTrash(library = ""): Promise<number> {
+  const result = await request<{ deleted: number }>(withLibrary("/api/trash", library), {
+    method: "DELETE",
+  });
+  return result.deleted;
 }
 
 export function listSetlists(): Promise<SetlistSummary[]> {
