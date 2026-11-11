@@ -81,9 +81,22 @@ def take_snapshot(settings: Settings, dest: Path, *, keep: int | None = None) ->
     return final
 
 
+def list_snapshots(dest: Path) -> list[Path]:
+    """The finished ``fretbook-backup-*`` folders in ``dest``, oldest first. Empty when ``dest`` does not exist."""
+    if not dest.is_dir():
+        return []
+    return sorted(path for path in dest.iterdir() if path.is_dir() and _NAME.match(path.name))
+
+
+def snapshot_time(path: Path) -> datetime:
+    """When a snapshot was taken, from the UTC timestamp in its folder name."""
+    stamp = path.name[len(PREFIX) :].split("-", 1)[0]
+    return datetime.strptime(stamp, "%Y%m%dT%H%M%SZ").replace(tzinfo=UTC)
+
+
 def prune_snapshots(dest: Path, keep: int) -> list[Path]:
     """Delete the oldest ``fretbook-backup-*`` folders in ``dest`` so ``keep`` remain. Other files are left alone."""
-    snapshots = sorted(path for path in dest.iterdir() if path.is_dir() and _NAME.match(path.name))
+    snapshots = list_snapshots(dest)
     removed = snapshots[: max(len(snapshots) - keep, 0)]
     for path in removed:
         shutil.rmtree(path)

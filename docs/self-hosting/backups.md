@@ -42,6 +42,29 @@ docker compose exec fretbook python -m fretbook backup /data/snapshots --keep 7
 A snapshot inside the same volume protects against mistakes, not against losing the disk. Copy
 `/data/snapshots` somewhere else (restic, rclone, rsync).
 
+## Scheduled snapshots (in the server)
+
+Without cron, the server can take the same snapshot itself:
+
+| Variable | Default | |
+| --- | --- | --- |
+| `FRETBOOK_BACKUP_SCHEDULE` | `off` | `daily` or `weekly`. |
+| `FRETBOOK_BACKUP_DIR` | `$FRETBOOK_DATA_DIR/backups/snapshots` | Where the snapshot folders go. Not inside `media/`. |
+| `FRETBOOK_BACKUP_KEEP` | `7` | How many `fretbook-backup-*` folders to keep there. |
+
+The server looks when it starts and then every 10 minutes. A snapshot is due a day (or a week) after the newest
+`fretbook-backup-*` folder in `FRETBOOK_BACKUP_DIR`, whoever wrote it, so a restart neither skips nor repeats one.
+After each snapshot the oldest folders beyond `FRETBOOK_BACKUP_KEEP` are deleted; the pre-migration copies in
+`$FRETBOOK_DATA_DIR/backups` are never touched. A failure (a full disk, a folder the server cannot write) is logged
+and shown to admins; the server keeps running. Demo mode never takes snapshots.
+
+With sign-in on, **Admin → System → Backups** shows the schedule, the time and size of the newest snapshot, the last
+error and when the next one is due. **Back up now** writes one straight away (whether or not a schedule is set) and
+shows the folder it wrote.
+
+A snapshot on the same disk as the data is not an off-site backup: copy `FRETBOOK_BACKUP_DIR` to another machine or
+a cloud store as well.
+
 ## Restoring a snapshot
 
 1. Stop Fretbook.

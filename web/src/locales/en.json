@@ -2526,5 +2526,24 @@
     "details": "Technical details",
     "copy": "Copy details",
     "copied": "Copied"
+  },
+  "backupSchedule": {
+    "heading": "Backups",
+    "schedule": {
+      "off": "No schedule",
+      "daily": "Daily",
+      "weekly": "Weekly"
+    },
+    "scheduleLine": "{schedule}, keeping {keep}",
+    "nextDue": "next due {when}",
+    "directory": "Folder: {path}",
+    "last": "Last snapshot {when}, {size}",
+    "never": "No snapshot yet",
+    "lastError": "The last backup failed ({when}): {reason}",
+    "failed": "The backup failed: {reason}",
+    "busy": "A backup is already being written.",
+    "saved": "Saved to {path}",
+    "backUpNow": "Back up now",
+    "running": "Backing up…"
   }
 }

@@ -28,6 +28,9 @@ one is optional: the defaults give a single-user server on `127.0.0.1:8137`.
 | `FRETBOOK_DATA_DIR` | `data` | SQLite database, media, backups and the upload inbox. |
 | `FRETBOOK_DATABASE` | `$FRETBOOK_DATA_DIR/fretbook.sqlite` | Database file. |
 | `FRETBOOK_MIGRATION_BACKUPS_KEEP` | `5` | Number of automatic pre-migration backups to keep in `$FRETBOOK_DATA_DIR/backups`. |
+| `FRETBOOK_BACKUP_SCHEDULE` | `off` | `daily` or `weekly`: the server takes a snapshot of the database and media itself. See [Backups](../self-hosting/backups.md). |
+| `FRETBOOK_BACKUP_DIR` | `$FRETBOOK_DATA_DIR/backups/snapshots` | Where scheduled and **Back up now** snapshots go. Not inside the media folder. |
+| `FRETBOOK_BACKUP_KEEP` | `7` | Number of snapshots to keep in `FRETBOOK_BACKUP_DIR`. |
 | `FRETBOOK_FAILED_UPLOAD_RETENTION_DAYS` | `7` | Days to keep uploaded files from failed imports before cleaning them up. |
 | `FRETBOOK_USER_QUOTA_MB` | `0` (no limit) | Most media (audio, stems, covers, kept uploads) one user may store, in MB. Uploads over it are refused. |
 | `FRETBOOK_MAX_RESTORE_BYTES` | 4 GiB | Largest library archive accepted by Settings → Backup and restore. |
