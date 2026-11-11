@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.5](https://github.com/liftedkilt/fretbook/compare/v0.1.4...v0.1.5) (2026-11-11)
+
+
+### Features
+
+* deleted songs go to a trash and can be restored for 30 days ([#463](https://github.com/liftedkilt/fretbook/issues/463)) ([f37145b](https://github.com/liftedkilt/fretbook/commit/f37145bb56b825bb3212b357b143afe6e1cc9e3c))
+* scheduled backups from inside Fretbook ([4358fc6](https://github.com/liftedkilt/fretbook/commit/4358fc65d132f115bdff936293c17eea9ca5d2a1)), closes [#442](https://github.com/liftedkilt/fretbook/issues/442)
+* **web:** undo and redo in the tab editor and the chord sheet editor ([#462](https://github.com/liftedkilt/fretbook/issues/462)) ([05cf9bc](https://github.com/liftedkilt/fretbook/commit/05cf9bc8ceb48357d439955ffe70bc55b6ad616e))
+
 ## [0.1.4](https://github.com/liftedkilt/fretbook/compare/v0.1.3...v0.1.4) (2026-11-10)
 
 
