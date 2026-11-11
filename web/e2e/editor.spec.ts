@@ -68,6 +68,33 @@ test("keyboard editing still changes a fret, a duration, and the bars", async ({
   expect(saved.document.tracks[0].bars[1].voices[0].beats).toEqual([]);
 });
 
+test("undo and redo a note and a deleted bar", async ({ page, seed }) => {
+  const song = await seed.create({ title: "Second Thoughts", preset: "guitar-6" });
+  await page.goto(`/songs/${song.id}/edit`);
+  const chips = page.getByTestId(/^bar-chip-/);
+  const fret = page.getByTestId("beat-card").first().getByTestId("fret-input-0");
+  await expect(page.getByTestId("editor-undo")).toBeDisabled();
+  const bars = await chips.count();
+
+  await fret.fill("7");
+  await page.getByTestId("editor-bar-menu").click();
+  await page.getByTestId("editor-delete-measure").click();
+  await expect(chips).toHaveCount(bars - 1);
+
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(chips).toHaveCount(bars);
+  await expect(fret).toHaveValue("7");
+  await page.getByTestId("editor-undo").click();
+  await expect(fret).toHaveValue("");
+  await expect(page.getByTestId("editor-unsaved")).toHaveCount(0);
+  await expect(page.getByTestId("editor-undo")).toBeDisabled();
+
+  await page.getByTestId("editor-redo").click();
+  await expect(fret).toHaveValue("7");
+  await expect(chips).toHaveCount(bars);
+  await expect(page.getByTestId("editor-unsaved")).toBeVisible();
+});
+
 test("a second bar can be added and edited", async ({ page, seed }) => {
   const song = await seed.musicXmlTab();
   await page.goto(`/songs/${song.id}/edit`);

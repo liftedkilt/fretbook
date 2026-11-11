@@ -141,3 +141,127 @@ describe("TabEditor layout", () => {
     expect(label).toHaveTextContent("Repeat starts here");
   });
 });
+
+describe("TabEditor undo and redo", () => {
+  const chips = () => screen.queryAllByTestId(/^bar-chip-/);
+
+  it("undoes and redoes a deleted bar, and the state is clean again after undo", async () => {
+    renderEditor();
+    expect(screen.getByTestId("editor-undo")).toBeDisabled();
+    expect(screen.getByTestId("editor-redo")).toBeDisabled();
+    await fireEvent.click(screen.getByTestId("bar-chip-1"));
+    await fireEvent.click(screen.getByTestId("editor-bar-menu"));
+    await fireEvent.click(screen.getByTestId("editor-delete-measure"));
+    expect(chips()).toHaveLength(1);
+    expect(screen.getByTestId("editor-unsaved")).toBeInTheDocument();
+
+    await fireEvent.click(screen.getByTestId("editor-undo"));
+    expect(chips()).toHaveLength(2);
+    expect(screen.queryByTestId("editor-unsaved")).not.toBeInTheDocument();
+    expect(screen.getByTestId("editor-undo")).toBeDisabled();
+
+    await fireEvent.click(screen.getByTestId("editor-redo"));
+    expect(chips()).toHaveLength(1);
+    expect(screen.getByTestId("editor-redo")).toBeDisabled();
+  });
+
+  it("undoes a note with Ctrl+Z, redoes it with Ctrl+Shift+Z and Ctrl+Y", async () => {
+    renderEditor();
+    const fret = () => screen.getAllByTestId("fret-input-1")[0];
+    await fireEvent.input(fret(), { target: { value: "5" } });
+    expect(fret()).toHaveValue("5");
+
+    // In the cell itself the browser's own undo applies.
+    const native = new KeyboardEvent("keydown", {
+      key: "z",
+      ctrlKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    fret().dispatchEvent(native);
+    expect(native.defaultPrevented).toBe(false);
+    await fireEvent.keyDown(window, { key: "z", ctrlKey: true });
+    expect(fret()).toHaveValue("");
+    expect(screen.queryByTestId("editor-unsaved")).not.toBeInTheDocument();
+    await fireEvent.keyDown(window, { key: "Z", metaKey: true, shiftKey: true });
+    expect(fret()).toHaveValue("5");
+    await fireEvent.keyDown(window, { key: "z", ctrlKey: true });
+    await fireEvent.keyDown(window, { key: "y", ctrlKey: true });
+    expect(fret()).toHaveValue("5");
+  });
+
+  it("leaves Ctrl+Z to the browser in the title field", async () => {
+    renderEditor();
+    const title = screen.getByTestId("editor-song-title");
+    await fireEvent.input(title, { target: { value: "Walking" } });
+    const event = new KeyboardEvent("keydown", {
+      key: "z",
+      ctrlKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    title.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+    expect(title).toHaveValue("Walking");
+    // The button still undoes the title change.
+    await fireEvent.click(screen.getByTestId("editor-undo"));
+    expect(title).toHaveValue("Walking Home");
+  });
+
+  it("undoes a duration and an added track", async () => {
+    renderEditor();
+    await fireEvent.click(screen.getAllByTestId("duration-eighth")[0]);
+    await fireEvent.click(screen.getByRole("button", { name: /Add track/ }));
+    expect(screen.getAllByRole("tab")).toHaveLength(2);
+    await fireEvent.click(screen.getByTestId("editor-undo"));
+    expect(screen.queryAllByRole("tab")).toHaveLength(0);
+    await fireEvent.click(screen.getByTestId("editor-undo"));
+    expect(screen.getAllByTestId("duration-quarter")[0]).toHaveAttribute("aria-checked", "true");
+    expect(screen.queryByTestId("editor-unsaved")).not.toBeInTheDocument();
+  });
+
+  it("undoes a repeat and a time signature change", async () => {
+    renderEditor();
+    const start = screen.getByTestId("repeat-start") as HTMLInputElement;
+    const beats = screen.getByLabelText("Beats per bar") as HTMLInputElement;
+    await fireEvent.click(start);
+    expect(start.checked).toBe(true);
+    await fireEvent.change(beats, { target: { value: "3" } });
+    expect(beats).toHaveValue(3);
+
+    await fireEvent.click(screen.getByTestId("editor-undo"));
+    expect(beats).toHaveValue(4);
+    expect(start.checked).toBe(true);
+    await fireEvent.click(screen.getByTestId("editor-undo"));
+    expect((screen.getByTestId("repeat-start") as HTMLInputElement).checked).toBe(false);
+    expect(screen.queryByTestId("editor-unsaved")).not.toBeInTheDocument();
+  });
+
+  it("keeps the history across a save", async () => {
+    const api = await import("../lib/api");
+    vi.mocked(api.updateSong).mockImplementation(
+      async (_id, body) =>
+        ({
+          ...song(),
+          title: body.title,
+          artist: body.artist,
+          revision: 2,
+          document: body.document,
+        }) as never,
+    );
+    renderEditor();
+    await fireEvent.click(screen.getByTestId("editor-bar-menu"));
+    await fireEvent.click(screen.getByTestId("editor-add-measure"));
+    expect(chips()).toHaveLength(3);
+    await fireEvent.click(screen.getByTestId("editor-save"));
+    await vi.waitFor(() => expect(screen.getByTestId("editor-status")).toBeInTheDocument());
+    expect(screen.getByTestId("editor-undo")).not.toBeDisabled();
+
+    await fireEvent.click(screen.getByTestId("editor-undo"));
+    expect(chips()).toHaveLength(2);
+    expect(screen.getByTestId("editor-unsaved")).toBeInTheDocument();
+    await fireEvent.click(screen.getByTestId("editor-redo"));
+    expect(chips()).toHaveLength(3);
+    expect(screen.queryByTestId("editor-unsaved")).not.toBeInTheDocument();
+  });
+});

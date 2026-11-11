@@ -75,6 +75,13 @@ marks, loops, the metronome and slow-down work as before.
 The editor changes bars, which every track shares, so time signatures, tempo changes, sections, and inserting or
 deleting a bar apply to the whole song, and sync marks move with their bars.
 
+**Undo** and **Redo** in the editor header (Ctrl or ⌘ with Z, Ctrl or ⌘ with Shift and Z, or Ctrl+Y) step back and
+forward through the last 100 changes, in the tab editor and the chord sheet editor, and take you back to the bar or
+text where the change was. A burst of typing in one field is one step. Saving keeps the history, so you can still undo
+a change after saving; leaving the editor clears it. While you are typing in a text field, such as the title or a fret
+cell, the keys do the browser's own undo for that field (the buttons still use the editor's history). The chord sheet
+text is the exception: there the keys use the editor's history, so a change made with a button can be undone too.
+
 ## Setlists
 
 Named, ordered lists of songs for a rehearsal or a gig. Reorder by dragging or with the keyboard, add a note per song

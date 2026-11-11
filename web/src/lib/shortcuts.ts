@@ -55,6 +55,50 @@ export function shortcutFor(event: {
   return SHORTCUTS.find((item) => item.keys.includes(event.key))?.action ?? null;
 }
 
+/** The editors' undo and redo keys. They use Ctrl (Cmd on a Mac), so they live apart from the player's. */
+export type EditorShortcutAction = "undo" | "redo";
+
+export interface EditorShortcut {
+  action: EditorShortcutAction;
+  label: string;
+  labelKey: string;
+}
+
+export const EDITOR_SHORTCUTS: EditorShortcut[] = [
+  { action: "undo", label: "Ctrl/⌘ Z", labelKey: "editHistory.undo" },
+  { action: "redo", label: "Ctrl/⌘ Shift Z · Ctrl Y", labelKey: "editHistory.redo" },
+];
+
+/** Undo or redo for a key press in an editor, or null. */
+export function editorShortcutFor(event: {
+  key: string;
+  ctrlKey: boolean;
+  metaKey: boolean;
+  altKey: boolean;
+  shiftKey: boolean;
+}): EditorShortcutAction | null {
+  if (event.altKey || !(event.ctrlKey || event.metaKey)) return null;
+  const key = event.key.toLowerCase();
+  if (key === "z") return event.shiftKey ? "redo" : "undo";
+  if (key === "y" && event.ctrlKey && !event.shiftKey) return "redo";
+  return null;
+}
+
+const NOT_TEXT = ["checkbox", "radio", "button", "submit", "reset", "range", "color", "file"];
+
+/**
+ * Whether undo keys pressed in `target` belong to the browser: true in a text
+ * field with its own undo, unless the field opts in to the editor's history
+ * with `data-edit-history`.
+ */
+export function ownsUndo(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  if (target.closest("[data-edit-history]")) return false;
+  if (target instanceof HTMLTextAreaElement) return true;
+  if (target instanceof HTMLInputElement) return !NOT_TEXT.includes(target.type);
+  return target instanceof HTMLElement && target.isContentEditable === true;
+}
+
 export const RATES = [0.5, 0.6, 0.7, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5];
 
 /** The next slower or faster speed in the list, or the same one at either end. */

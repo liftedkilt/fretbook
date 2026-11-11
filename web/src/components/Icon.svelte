@@ -46,6 +46,7 @@
    * | Sixteenth note                  | noteSixteenth                      |
    * | Sixteenth-note triplet          | noteSixteenthTriplet               |
    * | Thirty-second note              | noteThirtySecond                   |
+   * | Undo / redo an edit             | undo / redo                        |
    *
    * A path may be "stroke|fill": the part after | is filled (a note head)
    * and the part before is stroked (stem, flags, dot, tuplet figure).
@@ -169,9 +170,11 @@
     noteThirtySecond:
       "M12.2 14.6V2.4M12.2 2.2c3.2.7 4.7 2.5 4.1 4.3-.35 1.15-1.9 1.45-3.3.7M12.2 5.2c3.2.7 4.7 2.5 4.1 4.3-.35 1.15-1.9 1.45-3.3.7M12.2 8.2c3.2.7 4.7 2.5 4.1 4.3-.35 1.15-1.9 1.45-3.3.7|M3.4 15.8a4.5 3.15 0 1 0 9 0 4.5 3.15 0 1 0-9 0",
     noteWhole: "M4.2 12a7.6 4.2 0 1 0 15.2 0 7.6 4.2 0 1 0-15.2 0",
+    redo: "M15 14l5-5-5-5M20 9H9.5a5.5 5.5 0 0 0 0 11H13",
     target:
       "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20ZM12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12ZM12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z",
     tuningFork: "M9 2v8a3 3 0 0 0 6 0V2M8 2h2M14 2h2M12 13v9",
+    undo: "M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11",
   };
 
   const FILLED = new Set(["play", "pause", "prev", "next", "starFilled"]);
