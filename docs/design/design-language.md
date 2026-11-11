@@ -253,6 +253,7 @@ Lucide-style, 24px grid, 1.8px stroke, round caps, inline in `Icon.svelte`. Rule
 | Full screen | `maximize` / `minimize` | One button per view |
 | Close / remove | `close` | Replaces the missing `x` |
 | Overflow menu | `more` | |
+| Undo / redo an edit | `undo` / `redo` (new) | Editor header only |
 
 ## 13. Motion
 

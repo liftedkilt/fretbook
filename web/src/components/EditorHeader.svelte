@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from "./Icon.svelte";
+  import IconButton from "./ui/IconButton.svelte";
   import PageHeader from "./ui/PageHeader.svelte";
   import { t } from "../lib/i18n.svelte";
   import { followLink, hrefFor } from "../lib/router.svelte";
@@ -14,6 +15,10 @@
     playHref = "",
     onPreview,
     previewPressed = false,
+    canUndo = false,
+    canRedo = false,
+    onundo,
+    onredo,
     onsave,
   }: {
     songId: string;
@@ -25,6 +30,11 @@
     /** Chord editor: a labelled Preview button. */
     onPreview?: () => void;
     previewPressed?: boolean;
+    canUndo?: boolean;
+    canRedo?: boolean;
+    /** Undo and Redo buttons, shown when given. */
+    onundo?: () => void;
+    onredo?: () => void;
     onsave: () => void;
   } = $props();
 
@@ -49,6 +59,24 @@
       {:else if dirty}
         <span class="unsaved" role="status" data-testid="editor-unsaved">{t("editor.unsaved")}</span
         >
+      {/if}
+      {#if onundo && onredo}
+        <span class="history">
+          <IconButton
+            label={t("editHistory.undo")}
+            icon="undo"
+            testid="editor-undo"
+            disabled={!canUndo}
+            onclick={onundo}
+          />
+          <IconButton
+            label={t("editHistory.redo")}
+            icon="redo"
+            testid="editor-redo"
+            disabled={!canRedo}
+            onclick={onredo}
+          />
+        </span>
       {/if}
       {#if playHref}
         <a
@@ -127,6 +155,11 @@
     .save {
       margin-left: auto;
     }
+  }
+
+  .history {
+    display: inline-flex;
+    gap: var(--sp-1);
   }
 
   .save-status {

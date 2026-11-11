@@ -9,6 +9,8 @@
   import { ApiError, getSong, updateSong } from "../lib/api";
   import { contentKey, mergeOnto, type EditBase } from "../lib/offline/merge";
   import { barTicks, EDITOR_DURATIONS } from "../lib/durations";
+  import { EditHistory } from "../lib/editHistory";
+  import { editorShortcutFor, ownsUndo } from "../lib/shortcuts";
   import { t, tOr } from "../lib/i18n.svelte";
   import BarRepeats from "./BarRepeats.svelte";
   import { remapSync } from "../lib/sync";
@@ -89,6 +91,91 @@
       document_.bpm !== loadedBpm ||
       contentKey(document_) !== loadedContent,
   );
+
+  // --- undo and redo ----------------------------------------------------
+
+  // What undo restores: the editable content, without the sync marks (the player owns those) or the revision.
+  type Snapshot = {
+    title: string;
+    artist: string;
+    document: Omit<ScoreDocument, "sync">;
+    origin: (number | null)[];
+  };
+  type Place = { trackId: string; barIndex: number; voiceIndex: number };
+
+  function snapshot(): Snapshot {
+    const { sync: _sync, ...document } = $state.snapshot(song.document) as ScoreDocument;
+    return {
+      title: song.title,
+      artist: song.artist,
+      document,
+      origin: $state.snapshot(origin),
+    };
+  }
+
+  function place(): Place {
+    return { trackId, barIndex, voiceIndex };
+  }
+
+  const history = untrack(() => new EditHistory<Snapshot, Place>(snapshot(), place()));
+  let canUndo = $state(false);
+  let canRedo = $state(false);
+  // Typing in one field is grouped into one step; each field gets its own key.
+  const fieldKeys = new WeakMap<Element, string>();
+  let fieldCount = 0;
+
+  function groupKey(): string | null {
+    const active = globalThis.document.activeElement;
+    const typing =
+      active instanceof HTMLTextAreaElement ||
+      (active instanceof HTMLInputElement && ["text", "number", ""].includes(active.type));
+    if (!active || !typing) return null;
+    if (!fieldKeys.has(active)) fieldKeys.set(active, `field-${(fieldCount += 1)}`);
+    return fieldKeys.get(active)!;
+  }
+
+  function syncHistory() {
+    canUndo = history.canUndo;
+    canRedo = history.canRedo;
+  }
+
+  // Every change to the content, from any control, is recorded here once it has happened.
+  $effect(() => {
+    const state = snapshot();
+    untrack(() => {
+      if (history.record(state, place(), { group: groupKey() })) syncHistory();
+    });
+  });
+
+  function restore(step: { state: Snapshot; meta: Place } | null) {
+    if (!step) return;
+    const { state, meta } = step;
+    song.title = state.title;
+    song.artist = state.artist;
+    song.document = { ...state.document, sync: song.document.sync } as ScoreDocument;
+    origin = state.origin;
+    const tracks = song.document.tracks;
+    trackId = tracks.some((item) => item.id === meta.trackId) ? meta.trackId : tracks[0].id;
+    barIndex = Math.max(0, Math.min(meta.barIndex, song.document.bars.length - 1));
+    voiceIndex = meta.voiceIndex;
+    syncHistory();
+  }
+
+  function undo() {
+    restore(history.undo());
+  }
+
+  function redo() {
+    restore(history.redo());
+  }
+
+  function onkeydown(event: KeyboardEvent) {
+    const action = editorShortcutFor(event);
+    if (!action || ownsUndo(event.target)) return;
+    event.preventDefault();
+    if (action === "undo") undo();
+    else redo();
+  }
 
   function reflow(list: Beat[]) {
     let position = 0;
@@ -379,6 +466,7 @@
         }
         saved = await send(latest.revision, merged, base);
       }
+      const savedOrigin = $state.snapshot(origin);
       song = saved as TabSong;
       savedTitle = song.title;
       savedArtist = song.artist;
@@ -387,6 +475,15 @@
       baseSync = structuredClone(saved.document!.sync);
       baseBars = structuredClone(saved.document!.bars);
       origin = song.document.bars.map((_, index) => index);
+      // Keep the history across the save: re-key every step's bar origins to the bars just saved.
+      history.rewrite((state) => ({
+        ...state,
+        origin: state.origin.map((source) => {
+          const at = source == null ? -1 : savedOrigin.indexOf(source);
+          return at < 0 ? null : at;
+        }),
+      }));
+      history.replace(snapshot(), place());
       status = t("editor.saved");
     } catch (err) {
       status = "";
@@ -405,10 +502,14 @@
     baseBars = structuredClone(latest.document.bars);
     origin = latest.document.bars.map((_, index) => index);
     barIndex = Math.min(barIndex, latest.document.bars.length - 1);
+    history.reset(snapshot(), place());
+    syncHistory();
     conflict = false;
     error = "";
   }
 </script>
+
+<svelte:window {onkeydown} />
 
 <div class="editor-page">
   <EditorHeader
@@ -416,6 +517,10 @@
     title={song.title}
     {dirty}
     {status}
+    {canUndo}
+    {canRedo}
+    onundo={undo}
+    onredo={redo}
     playHref={`/songs/${song.id}`}
     onsave={() => void save()}
   />

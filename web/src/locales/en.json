@@ -2545,5 +2545,10 @@
     "saved": "Saved to {path}",
     "backUpNow": "Back up now",
     "running": "Backing up…"
+  },
+  "editHistory": {
+    "undo": "Undo",
+    "redo": "Redo",
+    "inEditor": "In the editor"
   }
 }

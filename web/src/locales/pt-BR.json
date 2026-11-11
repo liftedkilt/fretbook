@@ -2545,5 +2545,10 @@
     "saved": "Salvo em {path}",
     "backUpNow": "Fazer backup agora",
     "running": "Fazendo backup…"
+  },
+  "editHistory": {
+    "undo": "Desfazer",
+    "redo": "Refazer",
+    "inEditor": "No editor"
   }
 }
