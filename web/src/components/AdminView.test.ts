@@ -12,6 +12,8 @@ const api = vi.hoisted(() => ({
   cancelAdminJob: vi.fn(),
   retryAdminJob: vi.fn(),
   getAdminSystem: vi.fn(),
+  getBackupSchedule: vi.fn(),
+  runBackupNow: vi.fn(),
 }));
 
 vi.mock("../lib/api", () => ({
@@ -86,6 +88,16 @@ describe("AdminView dashboard", () => {
     });
     api.cancelAdminJob.mockResolvedValue({ job_id: "j1" });
     api.retryAdminJob.mockResolvedValue({ job_id: "j2" });
+    api.getBackupSchedule.mockResolvedValue({
+      schedule: "off",
+      directory: "/data/backups/snapshots",
+      keep: 7,
+      last_snapshot: null,
+      next_due_at: null,
+      last_error: null,
+      last_error_at: null,
+      running: false,
+    });
     api.getAdminSystem.mockResolvedValue({
       version: "1.2.3",
       commit: null,

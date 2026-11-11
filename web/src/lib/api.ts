@@ -1,5 +1,6 @@
 import type {
   AdminUser as ContractAdminUser,
+  BackupSchedule,
   JobOverview as AdminJobOverview,
   OrphanReport as AdminOrphanReport,
   Storage as AdminStorageReport,
@@ -953,6 +954,16 @@ export function getAdminWorkers(): Promise<AdminWorkers> {
 
 export function getAdminSystem(): Promise<AdminSystemInfo> {
   return request("/api/admin/system");
+}
+
+/** The server's own snapshot schedule and the newest snapshot. */
+export function getBackupSchedule(): Promise<BackupSchedule> {
+  return request("/api/admin/backups");
+}
+
+/** Takes a snapshot now; answers with the updated status once it is written. */
+export function runBackupNow(): Promise<BackupSchedule> {
+  return request("/api/admin/backups", { method: "POST" });
 }
 
 export function getDemo(): Promise<DemoLibrary> {

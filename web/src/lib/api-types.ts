@@ -24,6 +24,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/backups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Admin Backups
+         * @description The snapshot schedule, the newest snapshot and the last error.
+         */
+        get: operations["admin_backups_api_admin_backups_get"];
+        put?: never;
+        /**
+         * Admin Backup Now
+         * @description Take a snapshot now and prune to `FRETBOOK_BACKUP_KEEP`. Answers when it is written.
+         *
+         *     400 `backupSchedule.demoMode` in demo mode, 409 `backupSchedule.busy` while one is being written,
+         *     500 `backupSchedule.failed` (with the reason) when it could not be written.
+         */
+        post: operations["admin_backup_now_api_admin_backups_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/jobs": {
         parameters: {
             query?: never;
@@ -2356,6 +2383,27 @@ export interface components {
             /** Start Seconds */
             start_seconds?: number | null;
         };
+        /** BackupSchedule */
+        BackupSchedule: {
+            /** Directory */
+            directory: string;
+            /** Keep */
+            keep: number;
+            /** Last Error */
+            last_error: string | null;
+            /** Last Error At */
+            last_error_at: string | null;
+            last_snapshot: components["schemas"]["LastSnapshot"] | null;
+            /** Next Due At */
+            next_due_at: string | null;
+            /** Running */
+            running: boolean;
+            /**
+             * Schedule
+             * @enum {string}
+             */
+            schedule: "off" | "daily" | "weekly";
+        };
         /**
          * Bar
          * @description One song-level bar (alphaTab's master bar).
@@ -3026,6 +3074,15 @@ export interface components {
             warnings?: components["schemas"]["ErrorDetail"][];
         } & {
             [key: string]: unknown;
+        };
+        /** LastSnapshot */
+        LastSnapshot: {
+            /** Bytes */
+            bytes: number;
+            /** Created At */
+            created_at: string;
+            /** Path */
+            path: string;
         };
         /** LessonBlock */
         LessonBlock: {
@@ -4758,6 +4815,7 @@ export type AudioCalibrationBody = components['schemas']['AudioCalibrationBody']
 export type AutoImportAccepted = components['schemas']['AutoImportAccepted'];
 export type AutoSyncProposal = components['schemas']['AutoSyncProposal'];
 export type AutoSyncRequest = components['schemas']['AutoSyncRequest'];
+export type BackupSchedule = components['schemas']['BackupSchedule'];
 export type Bar = components['schemas']['Bar'];
 export type Beat = components['schemas']['Beat'];
 export type BodyImportAutoApiImportsAutoPost = components['schemas']['Body_import_auto_api_imports_auto_post'];
@@ -4802,6 +4860,7 @@ export type JobAccepted = components['schemas']['JobAccepted'];
 export type JobCount = components['schemas']['JobCount'];
 export type JobOverview = components['schemas']['JobOverview'];
 export type JobResult = components['schemas']['JobResult'];
+export type LastSnapshot = components['schemas']['LastSnapshot'];
 export type LessonBlock = components['schemas']['LessonBlock'];
 export type LessonDetail = components['schemas']['LessonDetail'];
 export type LessonPackResult = components['schemas']['LessonPackResult'];
@@ -4923,6 +4982,172 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SongsMoved"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.adminOnly`: the caller is not an admin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    admin_backups_api_admin_backups_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupSchedule"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.required`: no session; sign in at `/auth/login`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `auth.adminOnly`: the caller is not an admin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. `params.current` is the stored revision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Keyed error. `detail` is {key, message, params}. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation failed. `detail` is a list of {type, loc, msg}, not a keyed error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationBody"];
+                };
+            };
+        };
+    };
+    admin_backup_now_api_admin_backups_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupSchedule"];
                 };
             };
             /** @description Keyed error. `detail` is {key, message, params}. */

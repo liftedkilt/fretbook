@@ -2,6 +2,7 @@
   import AdminJobs from "./AdminJobs.svelte";
   import AdminStorage from "./AdminStorage.svelte";
   import AdminSystem from "./AdminSystem.svelte";
+  import BackupScheduleStatus from "./BackupScheduleStatus.svelte";
   import Icon from "./Icon.svelte";
   import LlmAdmin from "./LlmAdmin.svelte";
   import YtDlpStatus from "./YtDlpStatus.svelte";
@@ -117,6 +118,7 @@
       <AdminSystem />
       {#if !ui.demoMode}
         <div class="server">
+          <BackupScheduleStatus />
           <YtDlpStatus />
           <LlmAdmin />
         </div>

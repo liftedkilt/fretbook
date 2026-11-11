@@ -21,6 +21,7 @@ from fretbook.api.ascii_tab_routes import router as ascii_tab_router
 from fretbook.api.autosync_routes import router as autosync_router
 from fretbook.api.backup import RESTORE_PATH
 from fretbook.api.backup import router as backup_router
+from fretbook.api.backup_schedule_routes import router as backup_schedule_router
 from fretbook.api.bulk_routes import router as bulk_router
 from fretbook.api.calibration_routes import router as calibration_router
 from fretbook.api.demo_routes import router as demo_router
@@ -44,6 +45,7 @@ from fretbook.api.youtube_audio_routes import router as youtube_audio_router
 from fretbook.audio.ytdlp_health import AutoUpdater
 from fretbook.auth import build_auth
 from fretbook.backup.restore import register_restore_handler
+from fretbook.backup.schedule import BackupScheduler
 from fretbook.config import Settings
 from fretbook.context import AppContext
 from fretbook.db.migrate import migrate
@@ -168,6 +170,7 @@ def create_app(
     register_kinds(jobs)
     updater = AutoUpdater(settings)
     inbox = InboxWatcher(settings, songs, media) if settings.inbox_watch_dir else None
+    backups = BackupScheduler(settings)
     ctx = AppContext(
         settings=settings,
         songs=songs,
@@ -178,6 +181,7 @@ def create_app(
         fetcher=fetcher,
         llm=LlmService(settings, transport=llm_transport),
         libraries=LibraryStore(settings, songs, media),
+        backups=backups,
     )
 
     resetter = DemoResetter(ctx)
@@ -207,7 +211,9 @@ def create_app(
         resetter.start()
         if inbox:
             inbox.start()
+        backups.start()
         yield
+        backups.stop()
         if inbox:
             inbox.stop()
         resetter.stop()
@@ -337,6 +343,7 @@ def create_app(
     app.include_router(lesson_router)
     app.include_router(demo_router)
     app.include_router(admin_router)
+    app.include_router(backup_schedule_router)
     auth_routes = ctx.auth.routes()
     if auth_routes is not None:
         app.include_router(auth_routes)

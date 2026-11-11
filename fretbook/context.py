@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from fretbook.auth.base import AuthBackend
+from fretbook.backup.schedule import BackupScheduler
 from fretbook.config import Settings
 from fretbook.importers.safe_fetch import SafeFetcher
 from fretbook.jobs.runner import JobRunner
@@ -25,3 +26,4 @@ class AppContext:
     # Fetches what the server downloads for the user (metadata lookups). ``None`` where nothing is fetched.
     fetcher: SafeFetcher | None = None
     libraries: LibraryStore | None = None
+    backups: BackupScheduler | None = None

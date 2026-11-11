@@ -80,6 +80,22 @@ ENV_VARS: tuple[EnvVar, ...] = (
         "Storage",
     ),
     EnvVar(
+        "FRETBOOK_BACKUP_SCHEDULE",
+        "`off`",
+        (
+            "`daily` or `weekly`: the server takes a snapshot of the database and media itself. See"
+            " [Backups](../self-hosting/backups.md)."
+        ),
+        "Storage",
+    ),
+    EnvVar(
+        "FRETBOOK_BACKUP_DIR",
+        "`$FRETBOOK_DATA_DIR/backups/snapshots`",
+        "Where scheduled and **Back up now** snapshots go. Not inside the media folder.",
+        "Storage",
+    ),
+    EnvVar("FRETBOOK_BACKUP_KEEP", "`7`", "Number of snapshots to keep in `FRETBOOK_BACKUP_DIR`.", "Storage"),
+    EnvVar(
         "FRETBOOK_FAILED_UPLOAD_RETENTION_DAYS",
         "`7`",
         "Days to keep uploaded files from failed imports before cleaning them up.",
@@ -298,6 +314,8 @@ ENV_VARS: tuple[EnvVar, ...] = (
     EnvVar("FRETBOOK_SESSION_MAX_AGE", "`604800`", "Session length in seconds (7 days).", "Sign-in (OIDC)"),
 )
 
+BACKUP_SCHEDULES = ("daily", "weekly")
+
 # Read from the environment but not settings a server operator sets: the command-line client's own
 # variables, and build information the Docker build stamps into the image.
 ENV_VARS_NOT_DOCUMENTED_HERE = frozenset({"FRETBOOK_URL", "FRETBOOK_TOKEN", "FRETBOOK_GIT_SHA"})
@@ -353,6 +371,10 @@ class Settings:
     demo_mode: bool = False
     # FRETBOOK_SHARE_LINKS: public read-only /share/<token> pages. Off unless the operator opts in.
     share_links: bool = False
+    # FRETBOOK_BACKUP_*: snapshots the web process takes itself. See fretbook/backup/schedule.py.
+    backup_schedule: str = "off"
+    backup_snapshot_dir: Path | None = None
+    backup_keep: int = 7
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -370,6 +392,8 @@ class Settings:
         watch_raw = os.environ.get("FRETBOOK_INBOX_DIR", "").strip()
         inbox_mode = os.environ.get("FRETBOOK_INBOX_MODE", "").strip().lower() or "move"
         lessons_raw = os.environ.get("FRETBOOK_LESSONS_DIR", "").strip()
+        schedule = os.environ.get("FRETBOOK_BACKUP_SCHEDULE", "").strip().lower()
+        backup_dir_raw = os.environ.get("FRETBOOK_BACKUP_DIR", "").strip()
         return cls(
             host=os.environ.get("FRETBOOK_HOST", "127.0.0.1"),
             port=int(os.environ.get("FRETBOOK_PORT", "8137")),
@@ -414,6 +438,9 @@ class Settings:
             lessons_dir=Path(lessons_raw).expanduser() if lessons_raw else None,
             demo_mode=_flag("FRETBOOK_DEMO_MODE", False),
             share_links=_flag("FRETBOOK_SHARE_LINKS", False),
+            backup_schedule=schedule if schedule in BACKUP_SCHEDULES else "off",
+            backup_snapshot_dir=Path(backup_dir_raw).expanduser() if backup_dir_raw else None,
+            backup_keep=max(1, _int("FRETBOOK_BACKUP_KEEP", 7)),
         )
 
     @classmethod
@@ -470,3 +497,8 @@ class Settings:
     @property
     def backup_dir(self) -> Path:
         return self.backups_dir
+
+    @property
+    def snapshots_dir(self) -> Path:
+        """Where the server's own snapshots go (``FRETBOOK_BACKUP_DIR``)."""
+        return self.backup_snapshot_dir or self.backups_dir / "snapshots"

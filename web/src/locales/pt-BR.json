@@ -2526,5 +2526,24 @@
     "details": "Detalhes técnicos",
     "copy": "Copiar detalhes",
     "copied": "Copiado"
+  },
+  "backupSchedule": {
+    "heading": "Backups",
+    "schedule": {
+      "off": "Sem agendamento",
+      "daily": "Diário",
+      "weekly": "Semanal"
+    },
+    "scheduleLine": "{schedule}, mantendo {keep}",
+    "nextDue": "próximo em {when}",
+    "directory": "Pasta: {path}",
+    "last": "Último snapshot em {when}, {size}",
+    "never": "Nenhum snapshot ainda",
+    "lastError": "O último backup falhou ({when}): {reason}",
+    "failed": "O backup falhou: {reason}",
+    "busy": "Já há um backup sendo gravado.",
+    "saved": "Salvo em {path}",
+    "backUpNow": "Fazer backup agora",
+    "running": "Fazendo backup…"
   }
 }
