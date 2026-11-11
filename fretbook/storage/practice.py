@@ -160,7 +160,8 @@ class PracticeRepository:
                 for row in conn.execute(
                     """
                     SELECT day, sum(duration_seconds) AS seconds, sum(sessions) AS sessions FROM (
-                        SELECT day, duration_seconds, 1 AS sessions FROM practice_sessions WHERE owner_id = ?
+                        SELECT day, duration_seconds, 1 AS sessions FROM practice_sessions
+                        WHERE owner_id = ? AND song_id IN (SELECT id FROM songs WHERE deleted_at IS NULL)
                         UNION ALL
                         SELECT day, duration_seconds, 1 AS sessions FROM practice_exercises WHERE owner_id = ?
                     ) GROUP BY day
@@ -188,7 +189,7 @@ class PracticeRepository:
                            max(p.started_at) AS last_practised, max(p.day) AS last_day,
                            max(p.speed) AS best_speed, max(p.score) AS best_score
                     FROM practice_sessions p JOIN songs s ON s.id = p.song_id
-                    WHERE p.owner_id = ? AND s.owner_id = p.owner_id GROUP BY s.id
+                    WHERE p.owner_id = ? AND s.owner_id = p.owner_id AND s.deleted_at IS NULL GROUP BY s.id
                     ORDER BY max(p.started_at) DESC, s.id
                     """,
                     (owner_id,),
@@ -199,7 +200,8 @@ class PracticeRepository:
             songs_this_month = conn.execute(
                 """
                 SELECT count(DISTINCT p.song_id) FROM practice_sessions p JOIN songs s ON s.id = p.song_id
-                WHERE p.owner_id = ? AND s.owner_id = p.owner_id AND substr(p.day, 1, 7) = ? AND p.day <= ?
+                WHERE p.owner_id = ? AND s.owner_id = p.owner_id AND s.deleted_at IS NULL
+                  AND substr(p.day, 1, 7) = ? AND p.day <= ?
                 """,
                 (owner_id, month, today.isoformat()),
             ).fetchone()[0]
@@ -230,7 +232,7 @@ class PracticeRepository:
                            count(p.id) AS session_count, count(DISTINCT p.day) AS practice_days,
                            max(p.day) AS last_day
                     FROM songs s LEFT JOIN practice_sessions p ON p.song_id = s.id AND p.owner_id = s.owner_id
-                    WHERE s.owner_id = ? GROUP BY s.id
+                    WHERE s.owner_id = ? AND s.deleted_at IS NULL GROUP BY s.id
                     """,
                     (owner_id,),
                 )
@@ -252,9 +254,11 @@ class PracticeRepository:
         """Sessions and trainer games (of one owner, or of all) and, for one owner, their goal, for the backup."""
         with self._session() as conn:
             where, args = (" WHERE owner_id = ?", (owner_id,)) if owner_id else ("", ())
+            # Sessions of songs in the trash stay out, like the songs themselves.
+            live = (" AND" if owner_id else " WHERE") + " song_id IN (SELECT id FROM songs WHERE deleted_at IS NULL)"
             sessions = [
                 _session_dict(row)
-                for row in conn.execute(f"SELECT * FROM practice_sessions{where} ORDER BY started_at, id", args)
+                for row in conn.execute(f"SELECT * FROM practice_sessions{where}{live} ORDER BY started_at, id", args)
             ]
             exercises = [
                 _exercise_dict(row)
@@ -414,7 +418,7 @@ def _rhythm_runs(conn: sqlite3.Connection, owner_id: str) -> list[dict[str, Any]
         parts = (run["pattern"] or "").split(":")
         if len(parts) == 3 and parts[0] == "song" and parts[2].isdigit():
             song = conn.execute(
-                "SELECT title FROM songs WHERE id = ? AND owner_id = ?", (parts[1], owner_id)
+                "SELECT title FROM songs WHERE id = ? AND owner_id = ? AND deleted_at IS NULL", (parts[1], owner_id)
             ).fetchone()
             run["bar"] = int(parts[2])
             if song is not None:

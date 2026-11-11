@@ -929,6 +929,27 @@ def verify_v22(conn: sqlite3.Connection) -> None:
     assert conn.execute("SELECT lessons_enabled FROM users WHERE id = 'user-v22'").fetchone()[0] == 1
 
 
+def seed_v23(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        "INSERT INTO users (id, external_subject, display_name, created_at) "
+        "VALUES ('user-v23', 'sub-v23', 'User V23', '2026-01-23T00:00:00Z')"
+    )
+    for song_id, deleted_at in (("song-v23-live", None), ("song-v23-trash", "2026-01-23T12:00:00+00:00")):
+        conn.execute(
+            """
+            INSERT INTO songs (id, owner_id, slug, title, source_kind, created_at, updated_at, deleted_at)
+            VALUES (?, 'user-v23', ?, 'Song V23', 'manual', '2026-01-23T00:00:00Z', '2026-01-23T00:00:00Z', ?)
+            """,
+            (song_id, song_id, deleted_at),
+        )
+    conn.commit()
+
+
+def verify_v23(conn: sqlite3.Connection) -> None:
+    rows = dict(conn.execute("SELECT id, deleted_at FROM songs WHERE owner_id = 'user-v23'").fetchall())
+    assert rows == {"song-v23-live": None, "song-v23-trash": "2026-01-23T12:00:00+00:00"}
+
+
 SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.Connection], None]]] = {
     1: (seed_v1, verify_v1),
     2: (seed_v2, verify_v2),
@@ -952,6 +973,7 @@ SEEDS: dict[int, tuple[Callable[[sqlite3.Connection], None], Callable[[sqlite3.C
     20: (seed_v20, verify_v20),
     21: (seed_v21, verify_v21),
     22: (seed_v22, verify_v22),
+    23: (seed_v23, verify_v23),
 }
 
 

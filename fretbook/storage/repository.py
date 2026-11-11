@@ -371,7 +371,7 @@ class SongRepository:
         """
         sort_sql, default_order = _SORTS[sort]
         direction = "DESC" if (order or default_order) == "desc" else "ASC"
-        where = ["s.owner_id = ?"]
+        where = ["s.owner_id = ?", "s.deleted_at IS NULL"]
         params: list[Any] = [owner_id]
         match = _fts_query(q)
         if match:
@@ -420,11 +420,13 @@ class SongRepository:
             counts = {"all": 0, "favourites": 0, **{name: 0 for name in _FILTERS}}
             for name, sql in _FILTERS.items():
                 counts[name] = conn.execute(
-                    f"SELECT count(*) FROM songs s WHERE s.owner_id = ? AND {sql}", (owner_id,)
+                    f"SELECT count(*) FROM songs s WHERE s.owner_id = ? AND s.deleted_at IS NULL AND {sql}", (owner_id,)
                 ).fetchone()[0]
-            counts["all"] = conn.execute("SELECT count(*) FROM songs WHERE owner_id = ?", (owner_id,)).fetchone()[0]
+            counts["all"] = conn.execute(
+                "SELECT count(*) FROM songs WHERE owner_id = ? AND deleted_at IS NULL", (owner_id,)
+            ).fetchone()[0]
             counts["favourites"] = conn.execute(
-                "SELECT count(*) FROM songs WHERE owner_id = ? AND favourite = 1", (owner_id,)
+                "SELECT count(*) FROM songs WHERE owner_id = ? AND favourite = 1 AND deleted_at IS NULL", (owner_id,)
             ).fetchone()[0]
             snippets = _lyric_snippets(conn, match, [row["id"] for row in rows]) if match else {}
         items = [_summary(row) for row in rows]
@@ -460,6 +462,7 @@ class SongRepository:
                        END AS library_role
                 FROM songs s
                 WHERE s.id = ?
+                  AND s.deleted_at IS NULL
                   AND (
                     s.owner_id = ?
                     OR EXISTS (
@@ -473,7 +476,7 @@ class SongRepository:
         return _detail(row) if row else None
 
     def find_by_source(self, owner_id: str, source_kind: str, **ref: Any) -> dict[str, Any] | None:
-        clauses = ["owner_id = ?", "source_kind = ?"]
+        clauses = ["owner_id = ?", "source_kind = ?", "deleted_at IS NULL"]
         values: list[Any] = [owner_id, source_kind]
         for key, value in ref.items():
             if not re.fullmatch(r"[A-Za-z0-9_]+", key):
@@ -488,7 +491,7 @@ class SongRepository:
         return self.get_song(owner_id, row["id"]) if row else None
 
     def id_taken(self, song_id: str) -> bool:
-        """Song ids are global, so this looks at every owner."""
+        """Song ids are global, so this looks at every owner, and at the trash."""
         with self._session() as conn:
             return conn.execute("SELECT 1 FROM songs WHERE id = ?", (song_id,)).fetchone() is not None
 
@@ -509,7 +512,8 @@ class SongRepository:
             row = conn.execute(
                 f"""
                 SELECT id FROM songs
-                WHERE owner_id = ? AND lower(title) = lower(?) AND lower(artist) = lower(?) AND source_kind = ?{skip}
+                WHERE owner_id = ? AND lower(title) = lower(?) AND lower(artist) = lower(?) AND source_kind = ?
+                  AND deleted_at IS NULL{skip}
                 ORDER BY created_at, id LIMIT 1
                 """,  # noqa: S608 - only placeholders are interpolated
                 (owner_id, title.strip(), artist.strip(), source_kind, *excluded),
@@ -531,6 +535,7 @@ class SongRepository:
                     """
                     SELECT id FROM songs
                     WHERE owner_id = ? AND json_extract(source_ref, '$.content_hash') = ?
+                      AND deleted_at IS NULL
                     ORDER BY created_at LIMIT 1
                     """,
                     (owner_id, content_hash),
@@ -544,7 +549,7 @@ class SongRepository:
                 rows = conn.execute(
                     """
                     SELECT id, title, artist FROM songs
-                    WHERE owner_id = ?
+                    WHERE owner_id = ? AND deleted_at IS NULL
                     ORDER BY created_at
                     """,
                     (owner_id,),
@@ -909,11 +914,13 @@ class SongRepository:
         with self._session() as conn:
             keys = conn.execute(
                 f"SELECT {_KEY_SQL} AS name, count(*) AS count FROM songs s "  # noqa: S608 - fixed SQL
-                f"WHERE s.owner_id = ? AND {_KEY_SQL} IS NOT NULL GROUP BY name ORDER BY count DESC, name",
+                f"WHERE s.owner_id = ? AND s.deleted_at IS NULL AND {_KEY_SQL} IS NOT NULL "
+                "GROUP BY name ORDER BY count DESC, name",
                 (owner_id,),
             ).fetchall()
             genres = conn.execute(
-                "SELECT min(genre) AS name, count(*) AS count FROM songs WHERE owner_id = ? AND genre != '' "
+                "SELECT min(genre) AS name, count(*) AS count FROM songs "
+                "WHERE owner_id = ? AND deleted_at IS NULL AND genre != '' "
                 "GROUP BY lower(genre) ORDER BY count DESC, lower(genre)",
                 (owner_id,),
             ).fetchall()
@@ -972,7 +979,7 @@ class SongRepository:
                 """
                 SELECT min(t.tag) AS tag, count(*) AS count
                 FROM song_tags t JOIN songs s ON s.id = t.song_id
-                WHERE s.owner_id = ?
+                WHERE s.owner_id = ? AND s.deleted_at IS NULL
                 GROUP BY t.tag_key
                 ORDER BY count DESC, t.tag_key
                 """,
@@ -988,7 +995,7 @@ class SongRepository:
         """
         old_key, new_key = tag_key(tag), tag_key(new_name)
         with self._session(immediate=True) as conn:
-            owned = "SELECT id FROM songs WHERE owner_id = ?"
+            owned = "SELECT id FROM songs WHERE owner_id = ? AND deleted_at IS NULL"
             count = conn.execute(
                 f"SELECT count(*) FROM song_tags WHERE tag_key = ? AND song_id IN ({owned})", (old_key, owner_id)
             ).fetchone()[0]
@@ -1015,12 +1022,14 @@ class SongRepository:
         """Remove a tag from every one of the owner's songs. Returns how many songs had it."""
         with self._session(immediate=True) as conn:
             cursor = conn.execute(
-                "DELETE FROM song_tags WHERE tag_key = ? AND song_id IN (SELECT id FROM songs WHERE owner_id = ?)",
+                "DELETE FROM song_tags WHERE tag_key = ? AND song_id IN "
+                "(SELECT id FROM songs WHERE owner_id = ? AND deleted_at IS NULL)",
                 (tag_key(tag), owner_id),
             )
             return cursor.rowcount
 
     def delete_song(self, owner_id: str, song_id: str) -> bool:
+        """Remove a live song's row for good. The trash (``fretbook.storage.trash``) is what a person's delete uses."""
         with self._session() as conn:
             library_id = editable_library(conn, owner_id, song_id)
             if library_id is None:

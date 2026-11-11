@@ -12,13 +12,22 @@ import sqlite3
 _ROLES = frozenset({"view", "edit"})
 
 
-def song_access(conn: sqlite3.Connection, actor_id: str, song_id: str) -> tuple[str, str] | None:
+def song_access(
+    conn: sqlite3.Connection, actor_id: str, song_id: str, *, trashed: bool = False
+) -> tuple[str, str] | None:
     """``(library_id, role)`` when ``actor_id`` may see the song, else ``None``.
+
+    A song in the trash (``deleted_at`` set) does not exist here, so every caller answers as if it were gone.
+    Only the trash itself passes ``trashed=True``, which matches trashed songs and nothing else.
 
     The actor's own id counts as ``edit`` when it is the library id. That is how personal
     libraries and internal calls that already hold the library id keep working.
     """
-    row = conn.execute("SELECT owner_id FROM songs WHERE id = ?", (song_id,)).fetchone()
+    state = "IS NOT NULL" if trashed else "IS NULL"
+    row = conn.execute(
+        f"SELECT owner_id FROM songs WHERE id = ? AND deleted_at {state}",  # noqa: S608 - fixed text
+        (song_id,),
+    ).fetchone()
     if row is None:
         return None
     library_id = row["owner_id"]

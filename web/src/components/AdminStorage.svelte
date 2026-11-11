@@ -57,7 +57,7 @@
 
 <section class="card">
   <h2 class="card-title">{t("adminDashboard.storage.heading")}</h2>
-  <p class="muted">{t("adminDashboard.storage.hint")}</p>
+  <p class="muted">{t("adminDashboard.storage.hint")} {t("trash.adminNote")}</p>
   <div class="table-scroll">
     <table class="user-table" data-testid="storage-table">
       <thead>

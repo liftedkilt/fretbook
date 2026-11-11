@@ -32,7 +32,8 @@ one is optional: the defaults give a single-user server on `127.0.0.1:8137`.
 | `FRETBOOK_BACKUP_DIR` | `$FRETBOOK_DATA_DIR/backups/snapshots` | Where scheduled and **Back up now** snapshots go. Not inside the media folder. |
 | `FRETBOOK_BACKUP_KEEP` | `7` | Number of snapshots to keep in `FRETBOOK_BACKUP_DIR`. |
 | `FRETBOOK_FAILED_UPLOAD_RETENTION_DAYS` | `7` | Days to keep uploaded files from failed imports before cleaning them up. |
-| `FRETBOOK_USER_QUOTA_MB` | `0` (no limit) | Most media (audio, stems, covers, kept uploads) one user may store, in MB. Uploads over it are refused. |
+| `FRETBOOK_USER_QUOTA_MB` | `0` (no limit) | Most media (audio, stems, covers, kept uploads) one user may store, in MB. Uploads over it are refused. Songs in the trash count until they are purged. |
+| `FRETBOOK_TRASH_DAYS` | `30` | Days a deleted song stays in the trash, where it can be restored, before it is removed with its files. `0` turns the trash off: a delete is final at once. |
 | `FRETBOOK_MAX_RESTORE_BYTES` | 4 GiB | Largest library archive accepted by Settings → Backup and restore. |
 | `FRETBOOK_MAX_RESTORE_UNPACKED_BYTES` | 16 GiB | Largest total size a library archive may unpack to. |
 | `FRETBOOK_LESSONS_DIR` | `$FRETBOOK_DATA_DIR/lessons` | Folder of your own courses and lessons (`<course>/<lesson>.md`), added to the built-in ones. See [Writing lessons](../lessons.md). |

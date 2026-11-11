@@ -11,7 +11,7 @@
   import IconButton from "./ui/IconButton.svelte";
   import OverflowMenu, { type OverflowItem } from "./ui/OverflowMenu.svelte";
   import PageHeader from "./ui/PageHeader.svelte";
-  import { deleteSong, setSongTags } from "../lib/api";
+  import { setSongTags } from "../lib/api";
   import { coverSrc } from "../lib/cover";
   import { levelOf } from "../lib/difficulty";
   import { t } from "../lib/i18n.svelte";
@@ -19,6 +19,7 @@
   import { isSongSaved, removeSongOffline, saveSongOffline } from "../lib/offline/offline.svelte";
   import { offlineSupported } from "../lib/offline/store";
   import { followLink, hrefFor, navigate } from "../lib/router.svelte";
+  import { trashSong } from "../lib/trash.svelte";
   import type { SongDetail } from "../lib/types";
   import { refreshSongs, starSong, ui } from "../lib/ui.svelte";
 
@@ -176,7 +177,7 @@
   async function remove() {
     if (!confirm(t("library.confirmDelete", { title: song.title }))) return;
     try {
-      await deleteSong(song.id);
+      await trashSong(song);
       await refreshSongs().catch(() => undefined);
       navigate("/");
     } catch (err) {

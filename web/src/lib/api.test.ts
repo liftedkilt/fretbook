@@ -110,6 +110,11 @@ describe("request wrappers", () => {
       "api/songs/s1/sync",
     ],
     ["deleteSong", () => api.deleteSong("s1"), "DELETE", "api/songs/s1"],
+    ["listTrash", () => api.listTrash(), "GET", "api/trash"],
+    ["listTrash", () => api.listTrash("band 1"), "GET", "api/trash?library=band%201"],
+    ["restoreSong", () => api.restoreSong("s1"), "POST", "api/trash/s1/restore"],
+    ["deleteTrashedSong", () => api.deleteTrashedSong("s1"), "DELETE", "api/trash/s1"],
+    ["emptyTrash", () => api.emptyTrash("b1"), "DELETE", "api/trash?library=b1"],
     ["uploadAudio", () => api.uploadAudio("s1", file), "POST", "api/songs/s1/audio"],
     [
       "attachYouTubeAudio",

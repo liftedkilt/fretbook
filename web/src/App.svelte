@@ -1,6 +1,7 @@
 <script lang="ts">
   import AddSheet from "./components/AddSheet.svelte";
   import CelebrationToast from "./components/CelebrationToast.svelte";
+  import TrashUndo from "./components/TrashUndo.svelte";
   import AdminView from "./components/AdminView.svelte";
   import BandsView from "./components/BandsView.svelte";
   import CalibrationSheet from "./components/CalibrationSheet.svelte";
@@ -187,6 +188,7 @@
   </div>
 
   <CelebrationToast />
+  <TrashUndo />
   <AddSheet />
   <TunerSheet />
   <CalibrationSheet />

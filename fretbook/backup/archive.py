@@ -67,9 +67,10 @@ def write_archive(
 ) -> ArchiveSummary:
     """Write the archive to ``dest``. ``owner_id=None`` exports every user's songs (admins only)."""
     with session(settings.database_path) as conn:
-        query = "SELECT id, owner_id FROM songs"
+        # Songs in the trash are left out of the archive.
+        query = "SELECT id, owner_id FROM songs WHERE deleted_at IS NULL"
         rows = conn.execute(
-            f"{query} WHERE owner_id = ? ORDER BY created_at, id" if owner_id else f"{query} ORDER BY created_at, id",
+            f"{query} AND owner_id = ? ORDER BY created_at, id" if owner_id else f"{query} ORDER BY created_at, id",
             (owner_id,) if owner_id else (),
         ).fetchall()
         schema_version = conn.execute("SELECT COALESCE(MAX(version), 0) FROM schema_migrations").fetchone()[0]

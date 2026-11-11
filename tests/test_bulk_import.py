@@ -261,7 +261,15 @@ def _auto_import(client, *, on_duplicate: str | None = None) -> dict:
     response = client.post("/api/imports/auto", files=files, data=data)
     assert response.status_code == 202, response.text
     client.app.state.ctx.jobs.run_once()
-    return client.get(f"/api/jobs/{response.json()['job_id']}").json()
+    # The app's own job thread polls too and may have claimed the job first, in which case
+    # run_once found nothing and the job is still running: wait for whichever of them finishes it.
+    job: dict = {}
+    for _ in range(500):
+        job = client.get(f"/api/jobs/{response.json()['job_id']}").json()
+        if job["status"] in ("done", "error"):
+            break
+        time.sleep(0.02)
+    return job
 
 
 def test_auto_import_honours_the_duplicate_choice(tmp_path) -> None:

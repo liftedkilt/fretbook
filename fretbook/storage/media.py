@@ -129,7 +129,7 @@ class MediaStore:
         return {"id": media_id, "kind": kind, "filename": Path(filename).name}
 
     def usage(self, owner_id: str) -> int:
-        """Bytes of media the user stores."""
+        """Bytes of media the user stores. Songs in the trash still count until they are purged."""
         with self._session() as conn:
             row = conn.execute("SELECT COALESCE(SUM(byte_size), 0) FROM media WHERE owner_id = ?", (owner_id,))
             return int(row.fetchone()[0])
@@ -248,8 +248,15 @@ class MediaStore:
         library_id = self._library(owner_id, song_id, write=True)
         if library_id is None:
             return
+        self.remove_files(library_id, song_id, self.song_rows(song_id))
+
+    def song_rows(self, song_id: str) -> list[sqlite3.Row]:
+        """Every media row of a song, whoever asks. For callers that have already checked access."""
         with self._session() as conn:
-            rows = conn.execute("SELECT * FROM media WHERE song_id = ?", (song_id,)).fetchall()
+            return conn.execute("SELECT * FROM media WHERE song_id = ?", (song_id,)).fetchall()
+
+    def remove_files(self, library_id: str, song_id: str, rows: list[sqlite3.Row]) -> None:
+        """Delete the files behind ``rows`` and the song's folder. The rows themselves go with the song's row."""
         folders: set[Path] = set()
         for row in rows:
             path = self.path_for(row)

@@ -104,7 +104,15 @@ ENV_VARS: tuple[EnvVar, ...] = (
     EnvVar(
         "FRETBOOK_USER_QUOTA_MB",
         "`0` (no limit)",
-        "Most media (audio, stems, covers, kept uploads) one user may store, in MB. Uploads over it are refused.",
+        "Most media (audio, stems, covers, kept uploads) one user may store, in MB. Uploads over it are refused. "
+        "Songs in the trash count until they are purged.",
+        "Storage",
+    ),
+    EnvVar(
+        "FRETBOOK_TRASH_DAYS",
+        "`30`",
+        "Days a deleted song stays in the trash, where it can be restored, before it is removed with its files. "
+        "`0` turns the trash off: a delete is final at once.",
         "Storage",
     ),
     EnvVar(
@@ -351,6 +359,7 @@ class Settings:
     ytdlp_cookies: Path | None = None
     migration_backups_keep: int = 5
     user_quota_mb: int = 0
+    trash_days: int = 30
     max_restore_bytes: int = 4 * 1024**3
     max_restore_unpacked_bytes: int = 16 * 1024**3
     allow_private_urls: bool = False
@@ -424,6 +433,7 @@ class Settings:
             ytdlp_cookies=Path(cookies).expanduser() if cookies else None,
             migration_backups_keep=backups_keep,
             user_quota_mb=max(0, _int("FRETBOOK_USER_QUOTA_MB", 0)),
+            trash_days=max(0, _int("FRETBOOK_TRASH_DAYS", 30)),
             max_restore_bytes=_int("FRETBOOK_MAX_RESTORE_BYTES", 4 * 1024**3),
             max_restore_unpacked_bytes=_int("FRETBOOK_MAX_RESTORE_UNPACKED_BYTES", 16 * 1024**3),
             allow_private_urls=_flag("FRETBOOK_ALLOW_PRIVATE_URLS", False),

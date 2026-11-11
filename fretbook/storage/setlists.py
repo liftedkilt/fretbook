@@ -49,7 +49,8 @@ class SetlistRepository:
             rows = conn.execute(
                 """
                 SELECT l.id, l.name, l.created_at, l.updated_at,
-                       (SELECT count(*) FROM setlist_entries e WHERE e.setlist_id = l.id) AS entry_count
+                       (SELECT count(*) FROM setlist_entries e JOIN songs s ON s.id = e.song_id
+                        WHERE e.setlist_id = l.id AND s.deleted_at IS NULL) AS entry_count
                 FROM setlists l
                 WHERE l.owner_id = ?
                 ORDER BY l.name COLLATE NOCASE, l.created_at, l.id
@@ -108,7 +109,9 @@ class SetlistRepository:
             current = [
                 EntryInput(row["song_id"], row["note"], row["transpose"])
                 for row in conn.execute(
-                    "SELECT song_id, note, transpose FROM setlist_entries WHERE setlist_id = ? ORDER BY position",
+                    "SELECT e.song_id, e.note, e.transpose FROM setlist_entries e "
+                    "JOIN songs s ON s.id = e.song_id AND s.deleted_at IS NULL "
+                    "WHERE e.setlist_id = ? ORDER BY e.position",
                     (setlist_id,),
                 )
             ]
@@ -154,6 +157,19 @@ def _write_entries(conn: sqlite3.Connection, owner_id: str, setlist_id: str, ent
     missing = [song_id for song_id in wanted if song_id not in owned]
     if missing:
         raise UnknownSongs(missing)
+    # Entries of songs in the trash are not in ``entries`` (nobody can see them). They are kept, near where they
+    # were, so a restored song is back in its setlists.
+    hidden = conn.execute(
+        """
+        SELECT e.song_id, e.position, e.note, e.transpose FROM setlist_entries e
+        JOIN songs s ON s.id = e.song_id AND s.deleted_at IS NOT NULL
+        WHERE e.setlist_id = ? ORDER BY e.position, e.id
+        """,
+        (setlist_id,),
+    ).fetchall()
+    ordered = list(entries)
+    for row in hidden:
+        ordered.insert(min(row["position"], len(ordered)), EntryInput(row["song_id"], row["note"], row["transpose"]))
     conn.execute("DELETE FROM setlist_entries WHERE setlist_id = ?", (setlist_id,))
     conn.executemany(
         "INSERT INTO setlist_entries (id, setlist_id, song_id, position, note, transpose) VALUES (?, ?, ?, ?, ?, ?)",
@@ -166,7 +182,7 @@ def _write_entries(conn: sqlite3.Connection, owner_id: str, setlist_id: str, ent
                 entry.note.strip()[:MAX_NOTE],
                 max(-MAX_TRANSPOSE, min(MAX_TRANSPOSE, entry.transpose)),
             )
-            for position, entry in enumerate(entries)
+            for position, entry in enumerate(ordered)
         ],
     )
 
@@ -185,6 +201,7 @@ def _load(conn: sqlite3.Connection, owner_id: str, setlist_id: str) -> dict[str,
                s.title, s.artist, s.content_kind, s.preferred_instrument, s.string_count
         FROM setlist_entries e
         JOIN songs s ON s.id = e.song_id
+          AND s.deleted_at IS NULL
           AND (
             s.owner_id = ?
             OR EXISTS (

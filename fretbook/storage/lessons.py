@@ -99,7 +99,9 @@ class LessonProgressRepository:
         wait session the player left unfinished: only one flagged ``completed`` shows the song was played through.
         """
         with self._session() as conn:
-            song = conn.execute("SELECT bpm FROM songs WHERE id = ? AND owner_id = ?", (song_id, owner_id)).fetchone()
+            song = conn.execute(
+                "SELECT bpm FROM songs WHERE id = ? AND owner_id = ? AND deleted_at IS NULL", (song_id, owner_id)
+            ).fetchone()
             if song is None:
                 return {"found": False, "runs": [], "waited": False}
             rows = conn.execute(

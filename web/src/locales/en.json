@@ -2550,5 +2550,23 @@
     "undo": "Undo",
     "redo": "Redo",
     "inEditor": "In the editor"
+  },
+  "trash": {
+    "heading": "Trash",
+    "hint": "Deleted songs stay here for {days} days, then they are removed for good. Until then their audio still counts towards your storage.",
+    "empty": "The trash is empty.",
+    "deletedOn": "Deleted {date}",
+    "purgedOn": "Removed for good {date}",
+    "restore": "Restore",
+    "restored": "Restored {title}.",
+    "deleteForGood": "Delete for good",
+    "confirmDelete": "Delete {title} for good? This cannot be undone.",
+    "emptyTrash": "Empty trash",
+    "confirmEmpty": "Delete all {count} songs in the trash for good? This cannot be undone.",
+    "moved": "{title} moved to the trash",
+    "undo": "Undo",
+    "undoFailed": "The song could not be restored. Try again from Settings.",
+    "dismiss": "Dismiss",
+    "adminNote": "Songs in the trash are counted until they are purged."
   }
 }

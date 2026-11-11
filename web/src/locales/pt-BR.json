@@ -2550,5 +2550,23 @@
     "undo": "Desfazer",
     "redo": "Refazer",
     "inEditor": "No editor"
+  },
+  "trash": {
+    "heading": "Lixeira",
+    "hint": "As músicas excluídas ficam aqui por {days} dias e depois são removidas de vez. Até lá, o áudio delas ainda conta no seu armazenamento.",
+    "empty": "A lixeira está vazia.",
+    "deletedOn": "Excluída em {date}",
+    "purgedOn": "Removida de vez em {date}",
+    "restore": "Restaurar",
+    "restored": "{title} foi restaurada.",
+    "deleteForGood": "Excluir de vez",
+    "confirmDelete": "Excluir {title} de vez? Isso não pode ser desfeito.",
+    "emptyTrash": "Esvaziar a lixeira",
+    "confirmEmpty": "Excluir de vez as {count} músicas da lixeira? Isso não pode ser desfeito.",
+    "moved": "{title} foi para a lixeira",
+    "undo": "Desfazer",
+    "undoFailed": "Não foi possível restaurar a música. Tente de novo em Configurações.",
+    "dismiss": "Dispensar",
+    "adminNote": "As músicas na lixeira são contadas até serem removidas."
   }
 }

@@ -31,6 +31,7 @@ from fretbook.score.model import (
     TrackBar,
     Voice,
 )
+from fretbook.storage.trash import TrashStore
 
 logger = logging.getLogger("fretbook")
 
@@ -217,6 +218,7 @@ def reset(ctx: AppContext) -> None:
             ctx.media.delete_song_files(owner, item["id"])
             ctx.songs.delete_song(owner, item["id"])
         page = ctx.songs.list_songs(owner, limit=200)
+    TrashStore(ctx.settings, ctx.media).empty(owner)
     ctx.songs.reset_user_data(owner)
     install(ctx, owner)
 
